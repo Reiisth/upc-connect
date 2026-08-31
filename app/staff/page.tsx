@@ -1,22 +1,18 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { Suspense } from "react";
+import { requireStaff } from "@/lib/auth";
+import { getStaffPortalPath } from "@/lib/staff-roles";
 
-export default async function StaffPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    redirect("/staff/login");
-  }
-
+export default function StaffPage() {
   return (
-    <main>
-      <h1>Staff Portal</h1>
-      <p>Welcome! You are logged in.</p>
-    </main>
+    <Suspense fallback={<p className="p-6">Opening Staff Portal…</p>}>
+      <StaffRoleRouter />
+    </Suspense>
   );
+}
+
+async function StaffRoleRouter() {
+  const { staffRole } = await requireStaff();
+
+  return redirect(getStaffPortalPath(staffRole));
 }
