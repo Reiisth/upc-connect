@@ -31,8 +31,17 @@ export async function RolePortalLayout({
           >
             Dashboard
           </Link>
-        </nav>
 
+          {role === "system_admin" && (
+            <Link
+              href="/staff/admin/members"
+              className="block rounded-md px-3 py-2 text-sm hover:bg-accent"
+            >
+              Members
+            </Link>
+          )}
+        </nav>
+        
         <div className="mt-6 border-t pt-4 text-xs text-muted-foreground">
           <p className="truncate">{user.email}</p>
         </div>
