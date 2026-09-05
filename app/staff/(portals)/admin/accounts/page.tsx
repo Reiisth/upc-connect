@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
+import Link from "next/link";
 
 export default async function AdminAccountsPage() {
   await requireRole("system_admin");
@@ -83,18 +84,33 @@ export default async function AdminAccountsPage() {
           <tr>
             <th>Email</th>
             <th>Linked Members</th>
+            <th>Action</th>
           </tr>
         </thead>
 
         <tbody>
           {accounts.map((account) => (
             <tr key={account.userId}>
-              <td>{account.email}</td>
+              <td>
+                <Link href={`/staff/admin/accounts/${account.userId}`}>
+                  {account.email}
+                </Link>
+              </td>
 
               <td>
                 {account.members.map((member) => (
                   <div key={member}>{member}</div>
                 ))}
+              </td>
+
+              <td>
+                <Link
+                  href={`/staff/admin/members/invite?email=${encodeURIComponent(
+                    account.email,
+                  )}`}
+                >
+                  Link Members
+                </Link>
               </td>
             </tr>
           ))}

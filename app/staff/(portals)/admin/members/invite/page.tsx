@@ -5,11 +5,14 @@ import { inviteMembers } from "../actions";
 export default async function InviteMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ memberId?: string }>;
+  searchParams: Promise<{
+    memberId?: string;
+    email?: string;
+  }>;
 }) {
   await requireRole("system_admin");
 
-  const { memberId } = await searchParams;
+  const { memberId, email } = await searchParams;
   const admin = createAdminClient();
 
   const { data: members, error: membersError } = await admin
@@ -81,6 +84,7 @@ export default async function InviteMembersPage({
             name="email"
             type="email"
             list="existing-accounts"
+            defaultValue={email ?? ""}
             placeholder="Search existing email or enter a new one"
             autoComplete="off"
             required
