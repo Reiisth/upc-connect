@@ -33,15 +33,23 @@ export async function RolePortalLayout({
           </Link>
 
           {role === "system_admin" && (
-            <Link
-              href="/staff/admin/members"
-              className="block rounded-md px-3 py-2 text-sm hover:bg-accent"
-            >
-              Members
-            </Link>
+            <>
+              <Link
+                href="/staff/admin/members"
+                className="block rounded-md px-3 py-2 text-sm hover:bg-accent"
+              >
+                Members
+              </Link>
+              <Link
+                href="/staff/admin/accounts"
+                className="block rounded-md px-3 py-2 text-sm hover:bg-accent"
+              >
+                Accounts
+              </Link>
+            </>
           )}
         </nav>
-        
+
         <div className="mt-6 border-t pt-4 text-xs text-muted-foreground">
           <p className="truncate">{user.email}</p>
         </div>
