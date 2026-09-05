@@ -31,7 +31,7 @@ export default function MemberLoginPage() {
       return;
     }
 
-    router.push("/member");
+    router.push("/member/select-profile");
     router.refresh();
   }
 

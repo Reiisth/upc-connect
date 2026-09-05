@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Prompt, Radio_Canada } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -9,14 +10,21 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "UPC Connect",
+  description: "Integrated church management system for UPC Batangas",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  display: "swap",
+const prompt = Prompt({
+  variable: "--font-prompt",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const radioCanada = Radio_Canada({
+  variable: "--font-radio-canada",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export default function RootLayout({
@@ -26,7 +34,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body
+        className={`${prompt.variable} ${radioCanada.variable} antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

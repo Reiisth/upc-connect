@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
+import { logoutMember } from "./actions";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -44,11 +45,27 @@ export default async function MemberPortalLayout({
           >
             Profiles
           </Link>
+
+          <Link
+            href="/member/select-profile"
+            className="block rounded-md px-3 py-2 text-sm hover:bg-accent"
+          >
+            Switch Profile
+          </Link>
         </nav>
 
         <div className="mt-6 border-t pt-4 text-xs text-muted-foreground">
           <p className="truncate">{user.email}</p>
         </div>
+
+        <form action={logoutMember} className="mt-4">
+          <button
+            type="submit"
+            className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
+          >
+            Log Out
+          </button>
+        </form>
       </aside>
 
       <main className="p-6 md:p-8">{children}</main>
