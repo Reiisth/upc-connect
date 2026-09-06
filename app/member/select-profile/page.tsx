@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
@@ -35,16 +35,44 @@ export default async function SelectProfilePage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/30 p-6">
-      <div className="w-full max-w-4xl">
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold">Who&apos;s using UPC Connect?</h1>
-          <p className="mt-2 text-muted-foreground">
-            Choose a member profile to continue.
+    <main className="min-h-screen bg-[#EEF3FB] px-5 py-8 sm:px-6 sm:py-12">
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="flex justify-center">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/upc-logo.png"
+              alt="UPC Connect"
+              width={52}
+              height={52}
+              priority
+            />
+
+            <div>
+              <p className="font-heading text-xl font-semibold text-[#203264]">
+                UPC CONNECT
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Member Portal
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 text-center">
+          <p className="text-sm font-medium text-[#5D94E8]">
+            Choose a profile
+          </p>
+
+          <h1 className="mt-2 font-body text-3xl font-semibold text-[#203264] sm:text-4xl">
+            Who&apos;s using UPC Connect?
+          </h1>
+
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+            Select the member profile you want to access.
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {links?.map((link) => {
             const member = link.members;
 
@@ -66,6 +94,8 @@ export default async function SelectProfilePage() {
               .join("")
               .toUpperCase();
 
+            const isComplete = member.profile_status === "completed";
+
             return (
               <form
                 key={member.id}
@@ -76,24 +106,52 @@ export default async function SelectProfilePage() {
               >
                 <button
                   type="submit"
-                  className="group w-full rounded-xl border bg-background p-6 text-center transition hover:border-foreground/20 hover:shadow-md"
+                  className="group w-full rounded-3xl border bg-white p-6 text-center shadow-sm transition hover:-translate-y-1 hover:border-[#5D94E8]/40 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-[#5D94E8]/15"
                 >
-                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-muted text-2xl font-semibold transition group-hover:scale-105">
+                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-brand-gradient font-heading text-2xl font-semibold text-white shadow-md transition group-hover:scale-105">
                     {initials}
                   </div>
 
-                  <h2 className="mt-4 font-semibold">{fullName}</h2>
+                  <h2 className="mt-5 font-heading text-lg font-semibold text-[#203264]">
+                    {fullName}
+                  </h2>
 
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {member.profile_status === "completed"
-                      ? "Profile ready"
-                      : "Profile incomplete"}
+                  <div className="mt-3">
+                    <span
+                      className={
+                        isComplete
+                          ? "inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700"
+                          : "inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
+                      }
+                    >
+                      {isComplete ? "Profile ready" : "Profile incomplete"}
+                    </span>
+                  </div>
+
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    Tap to continue
                   </p>
                 </button>
               </form>
             );
           })}
         </div>
+
+        {!links?.length && (
+          <div className="mt-10 rounded-3xl border bg-white p-8 text-center">
+            <h2 className="font-heading text-xl font-semibold text-[#203264]">
+              No profiles found
+            </h2>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              There are no member profiles connected to this account yet.
+            </p>
+          </div>
+        )}
+
+        <p className="mt-10 text-center text-xs text-muted-foreground">
+          Signed in as {user.email}
+        </p>
       </div>
     </main>
   );

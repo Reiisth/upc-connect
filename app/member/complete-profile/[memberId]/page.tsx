@@ -1,7 +1,28 @@
-import { createClient } from "@/lib/supabase/server";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
-export default async function MemberProfilePage({
+import { createClient } from "@/lib/supabase/server";
+import MemberProfileForm from "./member-profile-form";
+
+export default function MemberProfilePage({
+  params,
+}: {
+  params: Promise<{ memberId: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <p className="text-center text-sm text-muted-foreground">
+          Loading...
+        </p>
+      }
+    >
+      <MemberProfileContent params={params} />
+    </Suspense>
+  );
+}
+
+async function MemberProfileContent({
   params,
 }: {
   params: Promise<{ memberId: string }>;
@@ -14,7 +35,7 @@ export default async function MemberProfilePage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth/login");
+    redirect("/member/login");
   }
 
   const { data: link } = await supabase
@@ -23,20 +44,38 @@ export default async function MemberProfilePage({
     .eq("user_id", user.id)
     .eq("member_id", memberId)
     .eq("relationship", "member")
-    .single();
+    .maybeSingle();
 
   if (!link) {
     redirect("/auth/error?error=Member profile not linked to this account");
   }
 
-  const { data: member } = await supabase
+  const { data: member, error: memberError } = await supabase
     .from("members")
     .select("*")
     .eq("id", memberId)
     .single();
 
-  if (!member) {
+  if (memberError || !member) {
     redirect("/auth/error?error=Member profile not found");
+  }
+
+  const { data: branches, error: branchesError } = await supabase
+    .from("church_branches")
+    .select("id, name")
+    .order("name");
+
+  if (branchesError) {
+    throw new Error(branchesError.message);
+  }
+
+  const { data: departments, error: departmentsError } = await supabase
+    .from("departments")
+    .select("id, name")
+    .order("name");
+
+  if (departmentsError) {
+    throw new Error(departmentsError.message);
   }
 
   async function updateProfile(formData: FormData) {
@@ -49,7 +88,7 @@ export default async function MemberProfilePage({
     } = await supabase.auth.getUser();
 
     if (!user) {
-      redirect("/auth/login");
+      redirect("/member/login");
     }
 
     const { data: link } = await supabase
@@ -58,21 +97,78 @@ export default async function MemberProfilePage({
       .eq("user_id", user.id)
       .eq("member_id", memberId)
       .eq("relationship", "member")
-      .single();
+      .maybeSingle();
 
     if (!link) {
       redirect("/auth/error?error=Member profile not linked to this account");
     }
 
+    const zoneValue = String(formData.get("zone") ?? "").trim();
+
     const { error } = await supabase
       .from("members")
       .update({
-        middle_name: String(formData.get("middle_name") ?? "").trim() || null,
-        birth_date: String(formData.get("birth_date") ?? "") || null,
-        gender: String(formData.get("gender") ?? "") || null,
+        first_name:
+          String(formData.get("first_name") ?? "").trim(),
+
+        last_name:
+          String(formData.get("last_name") ?? "").trim(),
+
+
+        middle_name:
+          String(formData.get("middle_name") ?? "").trim() || null,
+
+        nickname:
+          String(formData.get("nickname") ?? "").trim() || null,
+
+        birth_date:
+          String(formData.get("birth_date") ?? "") || null,
+
+        gender:
+          String(formData.get("gender") ?? "") || null,
+
+        civil_status:
+          String(formData.get("civil_status") ?? "").trim() || null,
+
+        zone: zoneValue ? Number(zoneValue) : null,
+
         phone_number:
           String(formData.get("phone_number") ?? "").trim() || null,
-        email: String(formData.get("email") ?? "").trim() || null,
+
+        street_address:
+          String(formData.get("street_address") ?? "").trim() || null,
+
+        barangay:
+          String(formData.get("barangay") ?? "").trim() || null,
+
+        city:
+          String(formData.get("city") ?? "").trim() || null,
+
+        province:
+          String(formData.get("province") ?? "").trim() || null,
+
+        country:
+          String(formData.get("country") ?? "").trim() || null,
+
+        wedding_anniversary:
+          ["married", "widowed"].includes(
+            String(formData.get("civil_status") ?? ""),
+          )
+            ? String(formData.get("wedding_anniversary") ?? "") || null
+            : null,
+
+        first_attendance_date:
+          String(formData.get("first_attendance_date") ?? "") || null,
+
+        department:
+          String(formData.get("department") ?? "").trim() || null,
+
+        position:
+          String(formData.get("position") ?? "").trim() || null,
+
+        church_branch_id:
+          String(formData.get("church_branch_id") ?? "").trim() || null,
+
         account_status: "connected",
         profile_status: "completed",
         profile_completed_at: new Date().toISOString(),
@@ -84,69 +180,34 @@ export default async function MemberProfilePage({
       throw new Error(error.message);
     }
 
-    redirect("/member/complete-profile");
+    redirect("/member/select-profile");
   }
 
   return (
-    <main>
-      <h1>
-        Complete profile for {member.first_name} {member.last_name}
-      </h1>
+    <main className="min-h-screen bg-[#EEF3FB] px-4 py-6 sm:px-6 sm:py-10">
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="mb-8">
+          <p className="text-sm font-medium text-[#5D94E8]">
+            Member Profile
+          </p>
 
-      <form action={updateProfile}>
-        <div>
-          <label htmlFor="middle_name">Middle name</label>
-          <input
-            id="middle_name"
-            name="middle_name"
-            defaultValue={member.middle_name ?? ""}
-          />
+          <h1 className="mt-2 font-body text-3xl font-semibold text-[#203264]">
+            Complete profile for {member.first_name} {member.last_name}
+          </h1>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            Fill in the member information below.
+          </p>
         </div>
 
-        <div>
-          <label htmlFor="birth_date">Birth date</label>
-          <input
-            id="birth_date"
-            name="birth_date"
-            type="date"
-            defaultValue={member.birth_date ?? ""}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="gender">Gender</label>
-          <select
-            id="gender"
-            name="gender"
-            defaultValue={member.gender ?? ""}
-          >
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="phone_number">Phone number</label>
-          <input
-            id="phone_number"
-            name="phone_number"
-            defaultValue={member.phone_number ?? ""}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            defaultValue={member.email ?? user.email ?? ""}
-          />
-        </div>
-
-        <button type="submit">Save Profile</button>
-      </form>
+        <MemberProfileForm
+          member={member}
+          accountEmail={user.email ?? ""}
+          branches={branches ?? []}
+          departments={departments ?? []}
+          action={updateProfile}
+        />
+      </div>
     </main>
   );
 }
