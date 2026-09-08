@@ -1,15 +1,33 @@
+import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { logoutMember } from "./actions";
+import { SwitchCamera, LogOut } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { logoutMember } from "./actions";
+import MemberNavigation from "./components/MemberNavigation";
+import { cookies } from "next/headers";
+import { MemberProvider } from "./components/MemberProvider";
 
-export default async function MemberPortalLayout({
+
+export default function MemberPortalLayout({
   children,
-}: Readonly<{
-  children: ReactNode;
-}>) {
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<MemberPortalLoading />}>
+      <MemberPortalShell>{children}</MemberPortalShell>
+    </Suspense>
+  );
+}
+
+async function MemberPortalShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const supabase = await createClient();
 
   const {
@@ -20,55 +38,128 @@ export default async function MemberPortalLayout({
     redirect("/member/login");
   }
 
+  const cookieStore = await cookies();
+  const selectedMemberId = cookieStore.get("selected_member_id")?.value;
+
+  if (!selectedMemberId) {
+    redirect("/member/select-profile");
+  }
+
+  const { data: memberLink, error: memberLinkError } = await supabase
+    .from("account_members")
+    .select("member_id")
+    .eq("user_id", user.id)
+    .eq("member_id", selectedMemberId)
+    .eq("relationship", "member")
+    .maybeSingle();
+
+  if (memberLinkError) {
+    throw new Error(memberLinkError.message);
+  }
+
+  if (!memberLink) {
+    redirect("/member/select-profile");
+  }
+
+
+  const { data: member, error: memberError } = await supabase
+    .from("members")
+    .select(`
+    id,
+    first_name,
+    middle_name,
+    last_name,
+    nickname,
+    birth_date,
+    gender,
+    phone_number,
+    email,
+    civil_status,
+    street_address,
+    barangay,
+    city,
+    province,
+    country,
+    position,
+    church_branch_id,
+    department_id,
+    department:departments (
+      name
+    )
+  `)
+    .eq("id", selectedMemberId)
+    .single();
+
+  if (memberError) {
+    throw new Error(memberError.message);
+  }
+
   return (
-    <div className="min-h-screen bg-muted/30 md:grid md:grid-cols-[16rem_1fr]">
-      <aside className="border-b bg-background p-4 md:min-h-screen md:border-b-0 md:border-r">
-        <Link href="/member" className="text-lg font-semibold">
-          UPC Connect
-        </Link>
+    <div className="min-h-screen bg-[#EEF3FB] md:flex">
+      {/* DESKTOP SIDEBAR */}
+      <aside className="hidden w-64 shrink-0 flex-col border-r bg-white md:flex">
+        <div className="flex items-center gap-3 border-b px-5 py-5">
+          <Image
+            src="/upc-logo.png"
+            alt="UPC Connect"
+            width={44}
+            height={44}
+            priority
+          />
 
-        <p className="mt-1 text-sm text-muted-foreground">
-          Member Portal
-        </p>
+          <div>
+            <p className="font-heading text-lg font-semibold text-[#203264]">
+              UPC CONNECT
+            </p>
 
-        <nav className="mt-6 space-y-1">
-          <Link
-            href="/member"
-            className="block rounded-md px-3 py-2 text-sm hover:bg-accent"
-          >
-            Dashboard
-          </Link>
-
-          <Link
-            href="/member/profiles"
-            className="block rounded-md px-3 py-2 text-sm hover:bg-accent"
-          >
-            Profiles
-          </Link>
-
-          <Link
-            href="/member/select-profile"
-            className="block rounded-md px-3 py-2 text-sm hover:bg-accent"
-          >
-            Switch Profile
-          </Link>
-        </nav>
-
-        <div className="mt-6 border-t pt-4 text-xs text-muted-foreground">
-          <p className="truncate">{user.email}</p>
+            <p className="text-xs text-muted-foreground">
+              Member Portal
+            </p>
+          </div>
         </div>
 
-        <form action={logoutMember} className="mt-4">
-          <button
-            type="submit"
-            className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
+        <MemberNavigation variant="desktop" />
+
+        <div className="border-t p-4">
+          <Link
+            href="/member/select-profile"
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[#203264] transition hover:bg-[#EEF3FB]"
           >
-            Log Out
-          </button>
-        </form>
+            <SwitchCamera className="h-5 w-5" />
+            Switch Profile
+          </Link>
+
+          <form action={logoutMember}>
+            <button
+              type="submit"
+              className="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+            >
+              <LogOut className="h-5 w-5" />
+              Logout
+            </button>
+          </form>
+        </div>
       </aside>
 
-      <main className="p-6 md:p-8">{children}</main>
+      {/* PAGE CONTENT */}
+      <MemberProvider key={member.id} member={member}>
+        <main className="min-w-0 flex-1 pb-20 md:pb-0">
+          {children}
+        </main>
+      </MemberProvider>
+
+      {/* MOBILE NAV */}
+      <MemberNavigation variant="mobile" />
+    </div>
+  );
+}
+
+function MemberPortalLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#EEF3FB]">
+      <p className="text-sm text-muted-foreground">
+        Loading member portal...
+      </p>
     </div>
   );
 }

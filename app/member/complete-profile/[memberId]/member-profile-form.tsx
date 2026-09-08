@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { useFormStatus } from "react-dom";
 
 type Branch = {
   id: string;
@@ -850,12 +851,28 @@ export default function MemberProfileForm({
         </div>
       </section>
 
-      <button
-        type="submit"
-        className="w-full rounded-xl bg-brand-gradient px-5 py-3 font-semibold text-white transition hover:opacity-95 sm:w-auto"
-      >
-        Save Profile
-      </button>
+      <SaveProfileButton />
     </form>
+  );
+}
+
+function SaveProfileButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+    >
+      {pending ? (
+        <>
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          Saving changes...
+        </>
+      ) : (
+        "Save Profile"
+      )}
+    </button>
   );
 }

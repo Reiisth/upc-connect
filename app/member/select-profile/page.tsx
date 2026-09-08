@@ -1,10 +1,19 @@
 import Image from "next/image";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { selectMemberProfile } from "./actions";
 
 export default async function SelectProfilePage() {
+  return (
+    <Suspense fallback={<SelectProfileLoading />}>
+      <SelectProfileContent />
+    </Suspense>
+  );
+}
+
+async function SelectProfileContent() {
   const supabase = await createClient();
 
   const {
@@ -72,7 +81,7 @@ export default async function SelectProfilePage() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {links?.map((link) => {
             const member = link.members;
 
@@ -103,34 +112,28 @@ export default async function SelectProfilePage() {
                   "use server";
                   await selectMemberProfile(member.id);
                 }}
+                className="h-full"
               >
                 <button
                   type="submit"
-                  className="group w-full rounded-3xl border bg-white p-6 text-center shadow-sm transition hover:-translate-y-1 hover:border-[#5D94E8]/40 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-[#5D94E8]/15"
+                  className="h-full min-h-[150px] w-full rounded-2xl border bg-white p-3 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:min-h-[190px] sm:p-5"
                 >
-                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-brand-gradient font-heading text-2xl font-semibold text-white shadow-md transition group-hover:scale-105">
-                    {initials}
+                  <div className="flex h-full flex-col items-center justify-center text-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-gradient text-lg font-semibold text-white sm:h-20 sm:w-20 sm:text-2xl">
+                      {member.first_name.charAt(0)}
+                      {member.last_name.charAt(0)}
+                    </div>
+
+                    <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] sm:text-base">
+                      {member.first_name} {member.last_name}
+                    </h2>
+
+                    <p className="mt-1 text-xs text-gray-500 sm:text-sm">
+                      {member.profile_status === "completed"
+                        ? "Profile ready"
+                        : "Complete profile"}
+                    </p>
                   </div>
-
-                  <h2 className="mt-5 font-heading text-lg font-semibold text-[#203264]">
-                    {fullName}
-                  </h2>
-
-                  <div className="mt-3">
-                    <span
-                      className={
-                        isComplete
-                          ? "inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700"
-                          : "inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
-                      }
-                    >
-                      {isComplete ? "Profile ready" : "Profile incomplete"}
-                    </span>
-                  </div>
-
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    Tap to continue
-                  </p>
                 </button>
               </form>
             );
@@ -153,6 +156,16 @@ export default async function SelectProfilePage() {
           Signed in as {user.email}
         </p>
       </div>
+    </main>
+  );
+}
+
+function SelectProfileLoading() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#EEF3FB]">
+      <p className="text-sm text-muted-foreground">
+        Loading profiles...
+      </p>
     </main>
   );
 }
