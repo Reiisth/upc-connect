@@ -65,28 +65,33 @@ async function MemberPortalShell({
   const { data: member, error: memberError } = await supabase
     .from("members")
     .select(`
-    id,
-    first_name,
-    middle_name,
-    last_name,
-    nickname,
-    birth_date,
-    gender,
-    phone_number,
-    email,
-    civil_status,
-    street_address,
-    barangay,
-    city,
-    province,
-    country,
-    position,
-    church_branch_id,
-    department_id,
-    department:departments (
-      name
-    )
-  `)
+      id,
+      first_name,
+      middle_name,
+      last_name,
+      nickname,
+      birth_date,
+      gender,
+      phone_number,
+      email,
+      zone,
+      civil_status,
+      street_address,
+      barangay,
+      city,
+      province,
+      country,
+      position,
+      church_branch_id,
+      department_id,
+      photo_url,
+      department:departments (
+        name
+      ),
+      church_branch:church_branches (
+        name
+      )
+    `)
     .eq("id", selectedMemberId)
     .single();
 

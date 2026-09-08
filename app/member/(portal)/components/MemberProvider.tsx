@@ -25,10 +25,19 @@ type Member = {
   position: string | null;
 
   department:
-    | {
-        name: string;
-      }
-    | null;
+  | {
+    name: string;
+  }
+  | null;
+
+  zone: number | null;
+  photo_url: string | null;
+
+  church_branch:
+  | {
+    name: string;
+  }
+  | null;
 };
 
 type MemberContextType = {
