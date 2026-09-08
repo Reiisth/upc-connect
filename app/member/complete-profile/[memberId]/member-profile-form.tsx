@@ -339,7 +339,7 @@ export default function MemberProfileForm({
               id="nickname"
               name="nickname"
               defaultValue={member.nickname ?? ""}
-              onChange={(event) => {
+              onChange={() => {
                 setFieldErrors((current) => ({
                   ...current,
                   nickname: false,
