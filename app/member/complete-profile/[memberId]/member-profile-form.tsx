@@ -47,7 +47,7 @@ type MemberProfileFormProps = {
     country: string | null;
     wedding_anniversary: string | null;
     first_attendance_date: string | null;
-    department: string | null;
+    department_id: string | null;
     position: string | null;
     church_branch_id: string | null;
     civil_status: string | null;
