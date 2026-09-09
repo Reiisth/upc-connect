@@ -87,7 +87,7 @@ export default function SetPasswordPage() {
               Welcome to UPC Connect
             </p>
 
-            <h1 className="mt-4 font-heading text-4xl font-semibold leading-tight">
+            <h1 className="mt-4 font-body text-4xl font-semibold leading-tight">
               Create your account password.
             </h1>
 
