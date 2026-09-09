@@ -40,6 +40,22 @@ export async function updateMemberProfile(formData: FormData) {
     redirect("/member/select-profile");
   }
 
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+
+  const birthDateValue = String(formData.get("birth_date") ?? "").trim();
+  const attendanceDateValue = String(
+    formData.get("first_attendance_date") ?? "",
+  ).trim();
+
+  if (birthDateValue && new Date(birthDateValue) > today) {
+    throw new Error("Birth date cannot be in the future.");
+  }
+
+  if (attendanceDateValue && new Date(attendanceDateValue) > today) {
+    throw new Error("First attendance date cannot be in the future.");
+  }
+
   const civilStatus = String(
     formData.get("civil_status") ?? "",
   ).trim();
@@ -52,8 +68,7 @@ export async function updateMemberProfile(formData: FormData) {
         String(formData.get("middle_name") ?? "").trim() || null,
       last_name: String(formData.get("last_name") ?? "").trim(),
       nickname: String(formData.get("nickname") ?? "").trim() || null,
-      birth_date:
-        String(formData.get("birth_date") ?? "").trim() || null,
+      birth_date: birthDateValue || null,
       gender: String(formData.get("gender") ?? "").trim() || null,
       civil_status: civilStatus || null,
       zone:
@@ -77,8 +92,7 @@ export async function updateMemberProfile(formData: FormData) {
         String(formData.get("department_id") ?? "").trim() || null,
       position:
         String(formData.get("position") ?? "").trim() || null,
-      first_attendance_date:
-        String(formData.get("first_attendance_date") ?? "").trim() || null,
+      first_attendance_date: attendanceDateValue || null,
       wedding_anniversary:
         civilStatus === "single"
           ? null

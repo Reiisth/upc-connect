@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  UserRound,
+  IdCardLanyard,
   CalendarDays,
   WalletCards,
 } from "lucide-react";
@@ -15,8 +15,8 @@ type MemberNavigationProps = {
 const navigation = [
   {
     href: "/member",
-    label: "Member Information",
-    icon: UserRound,
+    label: "My UPC ID",
+    icon: IdCardLanyard,
   },
   {
     href: "/member/attendance",

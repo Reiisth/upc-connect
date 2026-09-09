@@ -65,6 +65,7 @@ export default function MemberProfileForm({
   departments,
   action,
 }: MemberProfileFormProps) {
+  const today = new Date().toISOString().split("T")[0];
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const formRef = useRef<HTMLFormElement>(null);
   const [country, setCountry] = useState(member.country ?? "Philippines");
@@ -360,6 +361,7 @@ export default function MemberProfileForm({
               name="birth_date"
               type="date"
               value={birthDate}
+              max={today}
               onChange={(event) => {
                 setBirthDate(event.target.value);
 
@@ -829,6 +831,7 @@ export default function MemberProfileForm({
               name="first_attendance_date"
               type="date"
               defaultValue={member.first_attendance_date ?? ""}
+              max={today}
               className={inputClass}
             />
           </div>

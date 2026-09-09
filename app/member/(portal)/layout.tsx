@@ -102,7 +102,7 @@ async function MemberPortalShell({
   return (
     <div className="min-h-screen bg-[#EEF3FB] md:flex">
       {/* DESKTOP SIDEBAR */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r bg-white md:flex">
+      <aside className="hidden h-screen w-64 shrink-0 flex-col border-r bg-white md:sticky md:top-0 md:flex">
         <div className="flex items-center gap-3 border-b px-5 py-5">
           <Image
             src="/upc-logo.png"
@@ -148,6 +148,48 @@ async function MemberPortalShell({
 
       {/* PAGE CONTENT */}
       <MemberProvider key={member.id} member={member}>
+        {/* MOBILE HEADER */}
+        <div className="flex items-center justify-between border-b bg-white px-4 py-3 md:hidden">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/upc-logo.png"
+              alt="UPC Connect"
+              width={36}
+              height={36}
+            />
+
+            <div>
+              <p className="font-heading text-sm font-semibold text-[#203264]">
+                UPC CONNECT
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Member Portal
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Link
+              href="/member/select-profile"
+              aria-label="Switch profile"
+              title="Switch profile"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-[#203264] transition hover:bg-[#EEF3FB]"
+            >
+              <SwitchCamera className="h-5 w-5" />
+            </Link>
+
+            <form action={logoutMember}>
+              <button
+                type="submit"
+                aria-label="Logout"
+                title="Logout"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-red-600 transition hover:bg-red-50"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
+            </form>
+          </div>
+        </div>
         <main className="min-w-0 flex-1 pb-20 md:pb-0">
           {children}
         </main>

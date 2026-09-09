@@ -2,14 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 
 export default function MemberLoginPage() {
+  useEffect(() => {
+    const resetForm = () => {
+      setEmail("");
+      setPassword("");
+    };
+
+    resetForm();
+
+    window.addEventListener("pageshow", resetForm);
+
+    return () => {
+      window.removeEventListener("pageshow", resetForm);
+    };
+  }, []);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,18 +34,27 @@ export default function MemberLoginPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setError(null);
+    setError("");
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const supabase = createClient();
 
-    if (error) {
-      setError(error.message);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(getLoginErrorMessage(error));
+        return;
+      }
+
+      router.push("/member/select-profile");
+    } catch (error) {
+      setError(getLoginErrorMessage(error));
+    } finally {
       setLoading(false);
-      return;
     }
 
     router.push("/member/select-profile");
@@ -148,16 +172,28 @@ export default function MemberLoginPage() {
                     Password
                   </label>
 
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="Enter your password"
-                    autoComplete="current-password"
-                    required
-                    className="w-full rounded-xl border bg-white px-4 py-3 outline-none transition placeholder:text-muted-foreground focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="Password"
+                      className="w-full rounded-xl border bg-white px-4 py-3 pr-12 outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((current) => !current)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-[#203264]"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {error && (
@@ -189,4 +225,38 @@ export default function MemberLoginPage() {
       </div>
     </main>
   );
+}
+
+function getLoginErrorMessage(error: unknown) {
+  if (error instanceof TypeError) {
+    return "Unable to reach the server. Please check your internet connection and try again.";
+  }
+
+  if (error && typeof error === "object" && "message" in error) {
+    const message = String(error.message).toLowerCase();
+
+    if (message.includes("invalid login credentials")) {
+      return "The email or password you entered is incorrect.";
+    }
+
+    if (message.includes("email not confirmed")) {
+      return "Please confirm your email address before logging in.";
+    }
+
+    if (message.includes("too many requests")) {
+      return "Too many login attempts. Please wait a moment and try again.";
+    }
+
+    if (message.includes("network")) {
+      return "A network error occurred. Please check your connection.";
+    }
+
+    if (message.includes("fetch")) {
+      return "The server could not be reached. Please try again.";
+    }
+
+    return String(error.message);
+  }
+
+  return "Something went wrong. Please try again.";
 }
