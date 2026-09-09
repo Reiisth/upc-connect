@@ -98,8 +98,8 @@ export default function MemberCard({ member }: MemberCardProps) {
             type="button"
             onClick={() => setSide("front")}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${side === "front"
-                ? "bg-[#203264] text-white"
-                : "text-muted-foreground"
+              ? "bg-[#203264] text-white"
+              : "text-muted-foreground"
               }`}
           >
             Front
@@ -109,8 +109,8 @@ export default function MemberCard({ member }: MemberCardProps) {
             type="button"
             onClick={() => setSide("back")}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${side === "back"
-                ? "bg-[#203264] text-white"
-                : "text-muted-foreground"
+              ? "bg-[#203264] text-white"
+              : "text-muted-foreground"
               }`}
           >
             Back
@@ -164,9 +164,11 @@ export default function MemberCard({ member }: MemberCardProps) {
 
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#EEF3FB] text-[#203264] shadow-sm">
                   {member.photo_url ? (
-                    <img
+                    <Image
                       src={member.photo_url}
                       alt={fullName}
+                      width={80}
+                      height={80}
                       className="h-full w-full object-cover"
                     />
                   ) : (
