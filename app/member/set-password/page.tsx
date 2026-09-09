@@ -46,7 +46,7 @@ export default function SetPasswordPage() {
         return;
       }
 
-      router.push("/member/complete-profile");
+      router.push("/member/select-profile");
     } catch {
       setError(
         "Unable to reach the server. Please check your connection and try again.",

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
 import { selectMemberProfile } from "./actions";
@@ -85,6 +86,7 @@ async function SelectProfileContent() {
           {links?.map((link) => {
             const member = link.members;
 
+
             if (!member) return null;
 
             const fullName = [
@@ -105,7 +107,7 @@ async function SelectProfileContent() {
 
             const isComplete = member.profile_status === "completed";
 
-            return (
+            return isComplete ? (
               <form
                 key={member.id}
                 action={async () => {
@@ -120,22 +122,41 @@ async function SelectProfileContent() {
                 >
                   <div className="flex h-full flex-col items-center justify-center text-center">
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-gradient text-lg font-semibold text-white sm:h-20 sm:w-20 sm:text-2xl">
-                      {member.first_name.charAt(0)}
-                      {member.last_name.charAt(0)}
+                      {initials}
                     </div>
 
                     <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] sm:text-base">
                       {member.first_name} {member.last_name}
                     </h2>
 
-                    <p className="mt-1 text-xs text-gray-500 sm:text-sm">
-                      {member.profile_status === "completed"
-                        ? "Profile ready"
-                        : "Complete profile"}
+                    <p className="mt-1 text-xs text-green-600 sm:text-sm">
+                      Profile ready
                     </p>
                   </div>
                 </button>
               </form>
+            ) : (
+              <Link
+                key={member.id}
+                href={`/member/complete-profile/${member.id}`}
+                className="h-full"
+              >
+                <div className="h-full min-h-[150px] w-full rounded-2xl border border-amber-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:min-h-[190px] sm:p-5">
+                  <div className="flex h-full flex-col items-center justify-center text-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-lg font-semibold text-amber-700 sm:h-20 sm:w-20 sm:text-2xl">
+                      {initials}
+                    </div>
+
+                    <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] sm:text-base">
+                      {member.first_name} {member.last_name}
+                    </h2>
+
+                    <p className="mt-1 text-xs font-medium text-amber-600 sm:text-sm">
+                      Complete profile
+                    </p>
+                  </div>
+                </div>
+              </Link>
             );
           })}
         </div>
