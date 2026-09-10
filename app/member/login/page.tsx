@@ -13,6 +13,7 @@ export default function MemberLoginPage() {
     const resetForm = () => {
       setEmail("");
       setPassword("");
+      setShowPassword(false);
     };
 
     resetForm();

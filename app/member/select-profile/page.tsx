@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import ProfileGrid from "./ProfileGrid";
 
 import { createClient } from "@/lib/supabase/server";
 import { selectMemberProfile } from "./actions";
@@ -82,83 +83,19 @@ async function SelectProfileContent() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {links?.map((link) => {
-            const member = link.members;
-
-
-            if (!member) return null;
-
-            const fullName = [
-              member.first_name,
-              member.last_name,
-            ]
-              .filter(Boolean)
-              .join(" ");
-
-            const initials = [
-              member.first_name?.[0],
-              member.last_name?.[0],
-            ]
-              .filter(Boolean)
-              .join("")
-              .toUpperCase();
-
-            const isComplete = member.profile_status === "completed";
-
-            return isComplete ? (
-              <form
-                key={member.id}
-                action={async () => {
-                  "use server";
-                  await selectMemberProfile(member.id);
-                }}
-                className="h-full"
-              >
-                <button
-                  type="submit"
-                  className="h-full min-h-[150px] w-full rounded-2xl border bg-white p-3 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:min-h-[190px] sm:p-5"
-                >
-                  <div className="flex h-full flex-col items-center justify-center text-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-gradient text-lg font-semibold text-white sm:h-20 sm:w-20 sm:text-2xl">
-                      {initials}
-                    </div>
-
-                    <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] sm:text-base">
-                      {fullName}
-                    </h2>
-
-                    <p className="mt-1 text-xs text-green-600 sm:text-sm">
-                      Profile ready
-                    </p>
-                  </div>
-                </button>
-              </form>
-            ) : (
-              <Link
-                key={member.id}
-                href={`/member/complete-profile/${member.id}`}
-                className="h-full"
-              >
-                <div className="h-full min-h-[150px] w-full rounded-2xl border border-amber-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:min-h-[190px] sm:p-5">
-                  <div className="flex h-full flex-col items-center justify-center text-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-lg font-semibold text-amber-700 sm:h-20 sm:w-20 sm:text-2xl">
-                      {initials}
-                    </div>
-
-                    <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] sm:text-base">
-                      {fullName}
-                    </h2>
-
-                    <p className="mt-1 text-xs font-medium text-amber-600 sm:text-sm">
-                      Complete profile
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        <ProfileGrid
+          members={
+            links
+              ?.map((link) => link.members)
+              .filter((member): member is NonNullable<typeof member> => Boolean(member))
+              .map((member) => ({
+                id: member.id,
+                first_name: member.first_name,
+                last_name: member.last_name,
+                profile_status: member.profile_status,
+              })) ?? []
+          }
+        />
 
         {!links?.length && (
           <div className="mt-10 rounded-3xl border bg-white p-8 text-center">
