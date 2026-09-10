@@ -91,7 +91,6 @@ async function SelectProfileContent() {
 
             const fullName = [
               member.first_name,
-              member.middle_name,
               member.last_name,
             ]
               .filter(Boolean)
@@ -126,7 +125,7 @@ async function SelectProfileContent() {
                     </div>
 
                     <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] sm:text-base">
-                      {member.first_name} {member.last_name}
+                      {fullName}
                     </h2>
 
                     <p className="mt-1 text-xs text-green-600 sm:text-sm">
@@ -148,7 +147,7 @@ async function SelectProfileContent() {
                     </div>
 
                     <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] sm:text-base">
-                      {member.first_name} {member.last_name}
+                      {fullName}
                     </h2>
 
                     <p className="mt-1 text-xs font-medium text-amber-600 sm:text-sm">
