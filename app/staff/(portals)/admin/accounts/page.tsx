@@ -1,9 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireRole } from "@/lib/auth";
 import Link from "next/link";
 
 export default async function AdminAccountsPage() {
-  await requireRole("system_admin");
 
   const admin = createAdminClient();
 

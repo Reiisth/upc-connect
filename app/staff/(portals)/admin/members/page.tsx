@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireRole } from "@/lib/auth";
 import { disconnectMember } from "./actions";
 
 export default async function AdminMembersPage() {
-  await requireRole("system_admin");
 
   const admin = createAdminClient();
 
