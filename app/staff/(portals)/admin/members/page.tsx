@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { Plus, UsersRound } from "lucide-react";
+
 import { createAdminClient } from "@/lib/supabase/admin";
-import { disconnectMember } from "./actions";
+import MembersTable from "./MembersTable";
 
 export default async function AdminMembersPage() {
-
   const admin = createAdminClient();
 
   const { data: members, error } = await admin
@@ -24,70 +25,85 @@ export default async function AdminMembersPage() {
     throw new Error(error.message);
   }
 
-  return (
-    <main>
-      <div>
-        <h1>Members</h1>
+  const totalMembers = members?.length ?? 0;
 
-        <Link href="/staff/admin/members/new">
+  const connectedMembers =
+    members?.filter(
+      (member) => member.account_status === "connected",
+    ).length ?? 0;
+
+  const incompleteProfiles =
+    members?.filter(
+      (member) => member.profile_status !== "completed",
+    ).length ?? 0;
+
+  return (
+    <main className="space-y-6">
+      {/* PAGE HEADER */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-[#5D94E8]">
+            <UsersRound className="h-4 w-4" />
+
+            <p className="text-sm font-medium">
+              Member Management
+            </p>
+          </div>
+
+          <h1 className="mt-1 font-body text-2xl font-semibold text-[#203264] sm:text-3xl">
+            Members
+          </h1>
+
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Manage church member records, account connections,
+            and profile completion.
+          </p>
+        </div>
+
+        <Link
+          href="/staff/admin/members/new"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#203264] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2C447D] sm:w-auto"
+        >
+          <Plus className="h-4 w-4" />
           Create Member
         </Link>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Account Status</th>
-            <th>Profile Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
+      {/* SUMMARY */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-2xl border bg-white p-4 shadow-sm">
+          <p className="text-xs text-muted-foreground">
+            Total Members
+          </p>
 
-        <tbody>
-          {members?.map((member) => {
-            const fullName = [
-              member.first_name,
-              member.middle_name,
-              member.last_name,
-            ]
-              .filter(Boolean)
-              .join(" ");
+          <p className="mt-2 font-heading text-2xl font-semibold text-[#203264]">
+            {totalMembers}
+          </p>
+        </div>
 
-            return (
-              <tr key={member.id}>
-                <td>{fullName}</td>
+        <div className="rounded-2xl border bg-white p-4 shadow-sm">
+          <p className="text-xs text-muted-foreground">
+            Connected
+          </p>
 
-                <td>{member.email ?? "—"}</td>
+          <p className="mt-2 font-heading text-2xl font-semibold text-green-700">
+            {connectedMembers}
+          </p>
+        </div>
 
-                <td>{member.account_status}</td>
+        <div className="rounded-2xl border bg-white p-4 shadow-sm">
+          <p className="text-xs text-muted-foreground">
+            Incomplete
+          </p>
 
-                <td>{member.profile_status}</td>
+          <p className="mt-2 font-heading text-2xl font-semibold text-amber-700">
+            {incompleteProfiles}
+          </p>
+        </div>
+      </div>
 
-                <td>
-                  {member.account_status === "no_account" ? (
-                    <Link
-                      href={`/staff/admin/members/invite?memberId=${member.id}`}
-                    >
-                      Connect Email
-                    </Link>
-                  ) : (
-                    <form
-                      action={async () => {
-                        "use server";
-                        await disconnectMember(member.id);
-                      }}
-                    >
-                      <button type="submit">Disconnect</button>
-                    </form>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      {/* MEMBER TABLE + SEARCH */}
+      <MembersTable members={members ?? []} />
     </main>
   );
 }
