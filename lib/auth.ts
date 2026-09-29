@@ -17,7 +17,14 @@ export async function getCurrentUser() {
   return user;
 }
 
-export async function getCurrentUserRoles(userId: string) {
+export async function getCurrentUserRoles(userId?: string) {
+  const targetUserId =
+    userId ?? (await getCurrentUser())?.id;
+
+  if (!targetUserId) {
+    return [];
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -27,28 +34,18 @@ export async function getCurrentUserRoles(userId: string) {
         name
       )
     `)
-    .eq("user_id", userId);
+    .eq("user_id", targetUserId);
 
   if (error) {
-    console.error("Error fetching user roles:", error);
-    return [];
+    throw new Error(error.message);
   }
 
   return (
-    data?.flatMap((userRole) => {
-      const relatedRoles = Array.isArray(userRole.roles)
-        ? userRole.roles
-        : userRole.roles
-          ? [userRole.roles]
-          : [];
-
-      return relatedRoles
-        .map((role) => role.name)
-        .filter((roleName): roleName is string => typeof roleName === "string");
-    }) ?? []
+    data
+      ?.map((item) => item.roles?.name)
+      .filter((role): role is string => Boolean(role)) ?? []
   );
 }
-
 export async function requireStaff() {
   const user = await getCurrentUser();
 

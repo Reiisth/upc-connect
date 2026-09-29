@@ -4,6 +4,18 @@ import { useMember } from "./MemberProvider";
 import MemberProfileForm from "../../complete-profile/[memberId]/member-profile-form";
 import { updateMemberProfile } from "../edit-profile/actions";
 
+type FieldDefinition = {
+  id: string;
+  field_key: string;
+  label: string;
+  field_type: string;
+  is_builtin: boolean;
+  is_required: boolean;
+  is_visible: boolean;
+  options: unknown;
+  sort_order: number;
+};
+
 type Branch = {
   id: string;
   name: string;
@@ -17,11 +29,13 @@ type Department = {
 type EditMemberProfileProps = {
   branches: Branch[];
   departments: Department[];
+  fieldDefinitions: FieldDefinition[];
 };
 
 export default function EditMemberProfile({
   branches,
   departments,
+  fieldDefinitions,
 }: EditMemberProfileProps) {
   const { member } = useMember();
 
@@ -43,6 +57,7 @@ export default function EditMemberProfile({
         accountEmail={member.email ?? ""}
         branches={branches}
         departments={departments}
+        fieldDefinitions={fieldDefinitions}
         action={updateMemberProfile}
       />
     </div>

@@ -4,6 +4,7 @@ import { ArrowLeft, Link2 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteMembers } from "../actions";
 import InviteMembersForm from "./InviteMembersForm";
+import { requirePortalTab } from "@/lib/require-portal-tab";
 
 export default async function InviteMembersPage({
   searchParams,
@@ -13,6 +14,7 @@ export default async function InviteMembersPage({
     email?: string;
   }>;
 }) {
+  await requirePortalTab("members");
   const { memberId, email } = await searchParams;
 
   const admin = createAdminClient();
@@ -20,12 +22,13 @@ export default async function InviteMembersPage({
   const { data: members, error: membersError } = await admin
     .from("members")
     .select(`
-      id,
-      first_name,
-      middle_name,
-      last_name,
-      account_status
-    `)
+    id,
+    first_name,
+    middle_name,
+    last_name,
+    account_status
+  `)
+    .eq("account_status", "no_account")
     .order("last_name");
 
   if (membersError) {
@@ -76,7 +79,7 @@ export default async function InviteMembersPage({
   return (
     <main className="mx-auto w-full max-w-3xl">
       <Link
-        href="/staff/admin/members"
+        href="/portal/members"
         className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-[#203264]"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -92,7 +95,7 @@ export default async function InviteMembersPage({
           </p>
         </div>
 
-        <h1 className="mt-1 font-heading text-2xl font-semibold text-[#203264] sm:text-3xl">
+        <h1 className="mt-1 font-body text-2xl font-semibold text-[#203264] sm:text-3xl">
           Connect Members to Account
         </h1>
 
@@ -104,7 +107,7 @@ export default async function InviteMembersPage({
 
       <div className="mt-7 rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
         <InviteMembersForm
-          key={`${memberId ?? "none"}-${email ?? "none"}`}
+          key={`${memberId ?? ""}:${email ?? ""}`}
           members={members ?? []}
           existingEmails={existingEmails}
           defaultEmail={email ?? ""}

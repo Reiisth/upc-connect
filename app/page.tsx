@@ -30,7 +30,7 @@ export default function Home() {
             </Link>
 
             <Link
-              href="/member/login"
+              href="/login"
               className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
             >
               Member Login
@@ -68,7 +68,7 @@ export default function Home() {
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/member/login"
+                href="/login"
                 className="rounded-lg bg-white px-6 py-3 font-semibold text-[#203264] transition hover:bg-white/90"
               >
                 Access Member Portal
@@ -176,10 +176,6 @@ export default function Home() {
       <footer className="border-t">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>© UPC Batangas. UPC Connect.</p>
-
-          <Link href="/staff/login" className="hover:text-foreground hover:underline">
-            Staff Portal
-          </Link>
         </div>
       </footer>
     </main>

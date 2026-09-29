@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { useFormStatus } from "react-dom";
+import ConfiguredField from "./ConfiguredField";
 
 type Branch = {
   id: string;
@@ -353,26 +354,21 @@ export default function MemberProfileForm({
           </div>
 
           {nicknameField?.is_visible !== false && (
-            <div>
-              <label
-                htmlFor="nickname"
-                className="mb-2 block text-sm font-medium text-[#203264]"
-              >
-                {nicknameField?.label ?? "Nickname"}
-
-                {nicknameField?.is_required && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
+            <ConfiguredField
+              definition={getFieldDefinition("nickname")}
+              fallbackLabel="Nickname"
+              htmlFor="nickname"
+            >
               <input
                 id="nickname"
                 name="nickname"
                 defaultValue={member.nickname ?? ""}
-                required={nicknameField?.is_required ?? false}
-                className="w-full rounded-xl border bg-white px-4 py-3 text-sm"
+                required={
+                  getFieldDefinition("nickname")?.is_required ?? false
+                }
+                className="w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
               />
-            </div>
+            </ConfiguredField>
           )}
 
           <div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Mail, Search, UsersRound } from "lucide-react";
 import { useFormStatus } from "react-dom";
 
@@ -28,15 +28,6 @@ export default function InviteMembersForm({
   action,
 }: InviteMembersFormProps) {
   const [search, setSearch] = useState("");
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
-    defaultMemberId ? [defaultMemberId] : [],
-  );
-
-  useEffect(() => {
-    setSelectedMemberIds(
-      defaultMemberId ? [defaultMemberId] : [],
-    );
-  }, [defaultMemberId]);
 
   const filteredMembers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -140,18 +131,7 @@ export default function InviteMembersForm({
                   type="checkbox"
                   name="member_ids"
                   value={member.id}
-                  checked={selectedMemberIds.includes(member.id)}
-                  onChange={(event) => {
-                    setSelectedMemberIds((current) => {
-                      if (event.target.checked) {
-                        return [...current, member.id];
-                      }
-
-                      return current.filter(
-                        (id) => id !== member.id,
-                      );
-                    });
-                  }}
+                  defaultChecked={member.id === defaultMemberId}
                   className="h-4 w-4 rounded border-gray-300"
                 />
 
