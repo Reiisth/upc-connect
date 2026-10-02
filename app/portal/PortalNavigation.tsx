@@ -150,10 +150,9 @@ export default function PortalNavigation({
         const Icon = item.icon;
 
         const isActive =
-          item.href === "/portal"
-            ? pathname === "/portal"
-            : pathname.startsWith(item.href);
-
+          pathname === item.href ||
+          (item.href !== "/portal" &&
+            pathname.startsWith(`${item.href}/`));
         return (
           <Link
             key={item.tab}
