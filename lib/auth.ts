@@ -21,9 +21,7 @@ export async function getCurrentUserRoles(userId?: string) {
   const targetUserId =
     userId ?? (await getCurrentUser())?.id;
 
-  if (!targetUserId) {
-    return [];
-  }
+  if (!targetUserId) return [];
 
   const supabase = await createClient();
 
@@ -42,10 +40,11 @@ export async function getCurrentUserRoles(userId?: string) {
 
   return (
     data
-      ?.map((item) => item.roles?.name)
+      ?.map((item) => item.roles?.[0]?.name)
       .filter((role): role is string => Boolean(role)) ?? []
   );
 }
+
 export async function requireStaff() {
   const user = await getCurrentUser();
 

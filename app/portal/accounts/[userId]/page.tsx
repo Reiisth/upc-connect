@@ -139,7 +139,7 @@ async function AccountDetailsContent({
         {links?.length ? (
           <div className="divide-y">
             {links.map((link) => {
-              const member = link.members;
+              const member = link.members?.[0];
 
               if (!member) return null;
 

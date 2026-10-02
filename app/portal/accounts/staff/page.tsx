@@ -36,7 +36,7 @@ async function StaffAccountsContent() {
   const roleMap = new Map<string, string[]>();
 
   for (const link of staffRoleLinks ?? []) {
-    const roleName = link.roles?.name;
+    const roleName = link.roles?.[0]?.name;
 
     if (!roleName) continue;
 

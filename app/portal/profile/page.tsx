@@ -45,9 +45,11 @@ async function ProfileContent() {
 
   const members =
     links
-      ?.map((link) => link.members)
-      .filter((member): member is NonNullable<typeof member> => Boolean(member)) ??
-    [];
+      ?.map((link) => link.members?.[0])
+      .filter(
+        (member): member is NonNullable<typeof member> =>
+          Boolean(member),
+      ) ?? [];
 
   return (
     <main className="space-y-6">

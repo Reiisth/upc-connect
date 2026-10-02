@@ -49,7 +49,9 @@ async function MemberAccountsContent() {
   >();
 
   for (const link of links ?? []) {
-    const member = link.members;
+    const member = Array.isArray(link.members)
+      ? link.members[0]
+      : link.members;
 
     if (!member) continue;
 
