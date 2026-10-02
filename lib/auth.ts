@@ -40,7 +40,18 @@ export async function getCurrentUserRoles(userId?: string) {
 
   return (
     data
-      ?.map((item) => item.roles?.[0]?.name)
+      ?.map((item) => {
+        const roles = item.roles as
+          | { name: string }
+          | { name: string }[]
+          | null;
+
+        if (!roles) return null;
+
+        return Array.isArray(roles)
+          ? roles[0]?.name ?? null
+          : roles.name;
+      })
       .filter((role): role is string => Boolean(role)) ?? []
   );
 }
