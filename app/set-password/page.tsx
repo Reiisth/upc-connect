@@ -46,6 +46,47 @@ export default function SetPasswordPage() {
         return;
       }
 
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        setError("Unable to verify your account.");
+        return;
+      }
+
+      const { data: linkedMembers, error: linkedMembersError } =
+        await supabase
+          .from("account_members")
+          .select("member_id")
+          .eq("user_id", user.id)
+          .eq("relationship", "member");
+
+      if (linkedMembersError) {
+        setError(linkedMembersError.message);
+        return;
+      }
+
+      const memberIds =
+        linkedMembers?.map((link) => link.member_id) ?? [];
+
+      if (memberIds.length > 0) {
+        const { error: updateMembersError } = await supabase
+          .from("members")
+          .update({
+            account_status: "connected",
+            accepted_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .in("id", memberIds);
+
+        if (updateMembersError) {
+          setError(updateMembersError.message);
+          return;
+        }
+      }
+
       router.push("/portal/profile");
       router.refresh();
     } catch {

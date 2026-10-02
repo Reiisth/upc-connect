@@ -27,15 +27,17 @@ async function ProfileContent() {
   const { data: links, error } = await supabase
     .from("account_members")
     .select(`
-    members (
+    members!inner (
       id,
       first_name,
       last_name,
-      profile_status
+      profile_status,
+      is_archived
     )
   `)
     .eq("user_id", user.id)
-    .eq("relationship", "member");
+    .eq("relationship", "member")
+    .eq("members.is_archived", false);
 
   if (error) {
     throw new Error(error.message);

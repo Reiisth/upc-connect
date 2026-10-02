@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePortalTab } from "@/lib/require-portal-tab";
 import { createClient } from "@/lib/supabase/server";
@@ -28,6 +29,27 @@ export async function createMember(formData: FormData) {
   }
 
   redirect("/portal/members");
+}
+
+export async function archiveMember(memberId: string) {
+  await requirePortalTab("members");
+
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("members")
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", memberId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/portal/members");
 }
 
 export async function inviteMembers(memberIds: string[], email: string) {

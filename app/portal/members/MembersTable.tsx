@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { disconnectMember } from "./actions";
+import { disconnectMember, archiveMember } from "./actions";
+import ConfirmActionModal from "./ConfirmActionModal";
+import { Archive, MailPlus, Unplug } from "lucide-react";
 
 type Member = {
   id: string;
@@ -18,6 +20,54 @@ type Member = {
 type MembersTableProps = {
   members: Member[];
 };
+
+function ArchiveMemberButton({
+  memberId,
+  memberName,
+}: {
+  memberId: string;
+  memberName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleArchive() {
+    setLoading(true);
+
+    try {
+      await archiveMember(memberId);
+      setOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 font-medium text-slate-500 transition hover:text-slate-700 hover:underline"
+      >
+        <Archive className="h-3.5 w-3.5" />
+        Archive
+      </button>
+
+      <ConfirmActionModal
+        open={open}
+        title="Archive member?"
+        description={`${memberName} will be removed from the active members list, but their profile, attendance, contributions, and other historical records will be preserved.`}
+        confirmLabel="Archive"
+        loadingLabel="Archiving..."
+        loading={loading}
+        onConfirm={handleArchive}
+        onClose={() => {
+          if (!loading) setOpen(false);
+        }}
+      />
+    </>
+  );
+}
 
 export default function MembersTable({ members }: MembersTableProps) {
   const [search, setSearch] = useState("");
@@ -68,7 +118,7 @@ export default function MembersTable({ members }: MembersTableProps) {
               <th className="px-5 py-4">Email</th>
               <th className="px-5 py-4">Account Status</th>
               <th className="px-5 py-4">Profile Status</th>
-              <th className="px-5 py-4">Action</th>
+              <th className="px-5 py-4">Actions</th>
             </tr>
           </thead>
 
@@ -107,23 +157,27 @@ export default function MembersTable({ members }: MembersTableProps) {
                   </td>
 
                   <td className="px-5 py-4">
-                    {member.account_status === "no_account" ? (
-                      <Link
-                        href={`/portal/members/invite?memberId=${member.id}`}
-                        className="font-medium text-[#5D94E8] hover:underline"
-                      >
-                        Connect Email
-                      </Link>
-                    ) : (
-                      <form action={disconnectMember.bind(null, member.id)}>
-                        <button
-                          type="submit"
-                          className="font-medium text-red-600 transition hover:text-red-700 hover:underline"
+                    <div className="flex flex-col items-start gap-2">
+                      {member.account_status === "no_account" ? (
+                        <Link
+                          href={`/portal/members/invite?memberId=${member.id}`}
+                          className="inline-flex items-center gap-1.5 font-medium text-[#5D94E8] transition hover:text-[#4B82D6] hover:underline"
                         >
-                          Disconnect
-                        </button>
-                      </form>
-                    )}
+                          <MailPlus className="h-3.5 w-3.5" />
+                          Connect Email
+                        </Link>
+                      ) : (
+                        <DisconnectMemberButton
+                          memberId={member.id}
+                          memberName={`${member.first_name} ${member.last_name}`}
+                        />
+                      )}
+
+                      <ArchiveMemberButton
+                        memberId={member.id}
+                        memberName={`${member.first_name} ${member.last_name}`}
+                      />
+                    </div>
                   </td>
                 </tr>
               );
@@ -146,6 +200,54 @@ export default function MembersTable({ members }: MembersTableProps) {
   );
 }
 
+function DisconnectMemberButton({
+  memberId,
+  memberName,
+}: {
+  memberId: string;
+  memberName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleDisconnect() {
+    setLoading(true);
+
+    try {
+      await disconnectMember(memberId);
+      setOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 font-medium text-red-600 transition hover:text-red-700 hover:underline"
+      >
+        <Unplug className="h-3.5 w-3.5" />
+        Disconnect
+      </button>
+
+      <ConfirmActionModal
+        open={open}
+        title="Disconnect member?"
+        description={`${memberName} will no longer be linked to their current login account. Their member profile and records will remain in the system.`}
+        confirmLabel="Disconnect"
+        loadingLabel="Disconnecting..."
+        loading={loading}
+        destructive
+        onConfirm={handleDisconnect}
+        onClose={() => {
+          if (!loading) setOpen(false);
+        }}
+      />
+    </>
+  );
+}
 function StatusBadge({
   type,
   value,

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Plus, UsersRound } from "lucide-react";
+import MembersSkeleton from "./MembersSkeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePortalTab } from "@/lib/require-portal-tab";
@@ -8,7 +9,7 @@ import MembersTable from "./MembersTable";
 
 export default function PortalMembersPage() {
   return (
-    <Suspense fallback={<MembersLoading />}>
+    <Suspense fallback={<MembersSkeleton />}>
       <MembersPageContent />
     </Suspense>
   );
@@ -31,6 +32,7 @@ async function MembersPageContent() {
       profile_status,
       created_at
     `)
+    .eq("is_archived", false)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -114,13 +116,5 @@ async function MembersPageContent() {
 
       <MembersTable members={members ?? []} />
     </main>
-  );
-}
-
-function MembersLoading() {
-  return (
-    <div className="flex min-h-[300px] items-center justify-center">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#203264] border-t-transparent" />
-    </div>
   );
 }

@@ -29,6 +29,7 @@ export default async function InviteMembersPage({
     account_status
   `)
     .eq("account_status", "no_account")
+    .eq("is_archived", false)
     .order("last_name");
 
   if (membersError) {
