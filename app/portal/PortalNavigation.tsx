@@ -14,6 +14,7 @@ import {
   Settings,
   UserRound,
   SlidersHorizontal,
+  IdCardLanyard,
 } from "lucide-react";
 
 import {
@@ -84,13 +85,19 @@ const navigationItems: {
       tab: "profile",
       label: "Profile",
       href: "/portal/profile",
-      icon: UserRound,
+      icon: IdCardLanyard,
     },
     {
       tab: "field_management",
       label: "Field Management",
       href: "/portal/field-management",
       icon: SlidersHorizontal,
+    },
+    {
+      tab: "account",
+      label: "My Account",
+      href: "/portal/account",
+      icon: UserRound,
     },
   ];
 
@@ -121,8 +128,8 @@ export default function PortalNavigation({
                 key={item.tab}
                 href={item.href}
                 className={`flex min-w-[72px] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-medium transition ${isActive
-                    ? "bg-[#EEF3FB] text-[#203264]"
-                    : "text-muted-foreground hover:bg-[#F8FAFD] hover:text-[#203264]"
+                  ? "bg-[#EEF3FB] text-[#203264]"
+                  : "text-muted-foreground hover:bg-[#F8FAFD] hover:text-[#203264]"
                   }`}
               >
                 <Icon className="h-5 w-5" />
@@ -152,8 +159,8 @@ export default function PortalNavigation({
             key={item.tab}
             href={item.href}
             className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${isActive
-                ? "bg-[#EEF3FB] text-[#203264]"
-                : "text-muted-foreground hover:bg-[#EEF3FB] hover:text-[#203264]"
+              ? "bg-[#EEF3FB] text-[#203264]"
+              : "text-muted-foreground hover:bg-[#EEF3FB] hover:text-[#203264]"
               }`}
           >
             <Icon className="h-5 w-5" />

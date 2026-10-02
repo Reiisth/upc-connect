@@ -35,5 +35,9 @@ export async function GET(request: NextRequest) {
     redirect(`/auth/error?error=${encodeURIComponent(error.message)}`);
   }
 
+  if (type === "invite") {
+    redirect("/set-password");
+  }
+
   redirect(next);
 }

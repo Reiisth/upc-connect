@@ -22,19 +22,10 @@ type FieldDefinition = {
   sort_order: number;
 };
 
-type PSGCProvince = {
+type PSGCRegion = {
   code: string;
   name: string;
-};
-
-type PSGCCity = {
-  code: string;
-  name: string;
-};
-
-type PSGCBarangay = {
-  code: string;
-  name: string;
+  regionNumber: number;
 };
 
 type Department = {
@@ -57,6 +48,7 @@ type MemberProfileFormProps = {
     barangay: string | null;
     city: string | null;
     province: string | null;
+    region: string | null;
     country: string | null;
     wedding_anniversary: string | null;
     first_attendance_date: string | null;
@@ -88,23 +80,26 @@ export default function MemberProfileForm({
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const formRef = useRef<HTMLFormElement>(null);
   const [country, setCountry] = useState(member.country ?? "Philippines");
-  const [provinces, setProvinces] = useState<PSGCProvince[]>([]);
 
+  const [regions, setRegions] = useState<PSGCRegion[]>([]);
+
+  const [region, setRegion] = useState(member.region ?? "");
   const [province, setProvince] = useState(member.province ?? "");
-
-  const [cities, setCities] = useState<PSGCCity[]>([]);
-
   const [city, setCity] = useState(member.city ?? "");
-
-  const [barangays, setBarangays] = useState<PSGCBarangay[]>([]);
-
   const [barangay, setBarangay] = useState(member.barangay ?? "");
+
 
   const [civilStatus, setCivilStatus] = useState(member.civil_status ?? "");
 
   const [firstName, setFirstName] = useState(member.first_name ?? "");
   const [lastName, setLastName] = useState(member.last_name ?? "");
   const [birthDate, setBirthDate] = useState(member.birth_date ?? "");
+
+  const selectedRegion = regions.find(
+    (item) => item.name.toLowerCase() === region.toLowerCase(),
+  );
+
+  const isNCR = selectedRegion?.regionNumber === 13;
 
   const getInputClass = (field: string) =>
     fieldErrors[field]
@@ -132,11 +127,15 @@ export default function MemberProfileForm({
       "gender",
       "civil_status",
       "country",
-      "province",
+      "region",
       "city",
       "barangay",
       "church_branch_id",
     ];
+
+    if (country === "Philippines" && !isNCR) {
+      requiredFields.splice(9, 0, "province");
+    }
 
     const errors: Record<string, boolean> = {};
 
@@ -192,73 +191,15 @@ export default function MemberProfileForm({
   }
 
   useEffect(() => {
-    if (country !== "Philippines") return;
-
-    async function loadProvinces() {
-      const response = await fetch("/api/psgc/provinces");
+    async function loadRegions() {
+      const response = await fetch("/api/psgc/regions");
       const data = await response.json();
 
-      setProvinces(Array.isArray(data) ? data : data.data ?? []);
+      setRegions(Array.isArray(data) ? data : []);
     }
 
-    loadProvinces();
-  }, [country]);
-
-  useEffect(() => {
-    if (country !== "Philippines" || !province) {
-      setCities([]);
-      return;
-    }
-
-    const selectedProvince = provinces.find(
-      (item) => item.name.toLowerCase() === province.toLowerCase(),
-    );
-
-    if (!selectedProvince) {
-      setCities([]);
-      return;
-    }
-
-    async function loadCities() {
-      const response = await fetch(
-        `/api/psgc/cities/${selectedProvince!.code}`,
-      );
-
-      const data = await response.json();
-
-      setCities(Array.isArray(data) ? data : data.data ?? []);
-    }
-
-    loadCities();
-  }, [country, province, provinces]);
-
-  useEffect(() => {
-    if (country !== "Philippines" || !city) {
-      setBarangays([]);
-      return;
-    }
-
-    const selectedCity = cities.find(
-      (item) => item.name.toLowerCase() === city.toLowerCase(),
-    );
-
-    if (!selectedCity) {
-      setBarangays([]);
-      return;
-    }
-
-    async function loadBarangays() {
-      const response = await fetch(
-        `/api/psgc/barangays/${selectedCity!.code}`,
-      );
-
-      const data = await response.json();
-
-      setBarangays(Array.isArray(data) ? data : data.data ?? []);
-    }
-
-    loadBarangays();
-  }, [country, city, cities]);
+    loadRegions();
+  }, []);
 
   const age = useMemo(() => {
     if (!birthDate) return null;
@@ -381,6 +322,9 @@ export default function MemberProfileForm({
               type="date"
               value={birthDate}
               max={today}
+              onClick={(event) => {
+                event.currentTarget.showPicker?.();
+              }}
               onChange={(event) => {
                 setBirthDate(event.target.value);
 
@@ -539,9 +483,6 @@ export default function MemberProfileForm({
                 setProvince("");
                 setCity("");
                 setBarangay("");
-                setProvinces([]);
-                setCities([]);
-                setBarangays([]);
 
                 setFieldErrors((current) => ({
                   ...current,
@@ -581,44 +522,76 @@ export default function MemberProfileForm({
 
           {country === "Philippines" ? (
             <>
-              <div>
-                <label htmlFor="province" className={labelClass}>
-                  Province
+              <div className="sm:col-span-2">
+                <label htmlFor="region" className={labelClass}>
+                  Region
                 </label>
 
-                <input
-                  id="province"
-                  name="province"
-                  list="province-options"
-                  placeholder="Search province"
-                  value={province}
+                <select
+                  id="region"
+                  name="region"
+                  value={region}
                   onChange={(event) => {
-                    setProvince(event.target.value);
+                    const value = event.target.value;
+
+                    setRegion(value);
+                    setProvince("");
                     setCity("");
                     setBarangay("");
-                    setCities([]);
-                    setBarangays([]);
 
                     setFieldErrors((current) => ({
                       ...current,
+                      region: false,
                       province: false,
                       city: false,
                       barangay: false,
                     }));
                   }}
-                  className={getInputClass("province")}
-                />
+                  className={getInputClass("region")}
+                >
+                  <option value="">Select region</option>
 
-                <RequiredMessage field="province" />
-
-                <datalist id="province-options">
-                  {provinces.map((province) => (
-                    <option key={province.code} value={province.name} />
+                  {regions.map((regionOption) => (
+                    <option
+                      key={regionOption.code}
+                      value={regionOption.name}
+                    >
+                      {regionOption.name}
+                    </option>
                   ))}
-                </datalist>
+                </select>
+
+                <RequiredMessage field="region" />
               </div>
 
-              <div>
+              {!isNCR && (
+                <div className="sm:col-span-2">
+                  <label htmlFor="province" className={labelClass}>
+                    Province
+                  </label>
+
+                  <input
+                    id="province"
+                    name="province"
+                    type="text"
+                    value={province}
+                    onChange={(event) => {
+                      setProvince(event.target.value);
+
+                      setFieldErrors((current) => ({
+                        ...current,
+                        province: false,
+                      }));
+                    }}
+                    placeholder="Enter province"
+                    className={getInputClass("province")}
+                  />
+
+                  <RequiredMessage field="province" />
+                </div>
+              )}
+
+              <div className="sm:col-span-2">
                 <label htmlFor="city" className={labelClass}>
                   City / Municipality
                 </label>
@@ -626,30 +599,21 @@ export default function MemberProfileForm({
                 <input
                   id="city"
                   name="city"
-                  list="city-options"
-                  placeholder="Search city or municipality"
+                  type="text"
                   value={city}
                   onChange={(event) => {
                     setCity(event.target.value);
-                    setBarangay("");
-                    setBarangays([]);
 
                     setFieldErrors((current) => ({
                       ...current,
                       city: false,
-                      barangay: false,
                     }));
                   }}
+                  placeholder="Enter city or municipality"
                   className={getInputClass("city")}
                 />
 
                 <RequiredMessage field="city" />
-
-                <datalist id="city-options">
-                  {cities.map((city) => (
-                    <option key={city.code} value={city.name} />
-                  ))}
-                </datalist>
               </div>
 
               <div className="sm:col-span-2">
@@ -660,8 +624,7 @@ export default function MemberProfileForm({
                 <input
                   id="barangay"
                   name="barangay"
-                  list="barangay-options"
-                  placeholder="Search barangay"
+                  type="text"
                   value={barangay}
                   onChange={(event) => {
                     setBarangay(event.target.value);
@@ -671,16 +634,11 @@ export default function MemberProfileForm({
                       barangay: false,
                     }));
                   }}
+                  placeholder="Enter barangay"
                   className={getInputClass("barangay")}
                 />
 
                 <RequiredMessage field="barangay" />
-
-                <datalist id="barangay-options">
-                  {barangays.map((barangay) => (
-                    <option key={barangay.code} value={barangay.name} />
-                  ))}
-                </datalist>
               </div>
             </>
           ) : (
@@ -700,8 +658,6 @@ export default function MemberProfileForm({
                     setProvince(event.target.value);
                     setCity("");
                     setBarangay("");
-                    setCities([]);
-                    setBarangays([]);
 
                     setFieldErrors((current) => ({
                       ...current,
@@ -730,7 +686,6 @@ export default function MemberProfileForm({
                   onChange={(event) => {
                     setCity(event.target.value);
                     setBarangay("");
-                    setBarangays([]);
 
                     setFieldErrors((current) => ({
                       ...current,
@@ -851,6 +806,9 @@ export default function MemberProfileForm({
               type="date"
               defaultValue={member.first_attendance_date ?? ""}
               max={today}
+              onClick={(event) => {
+                event.currentTarget.showPicker?.();
+              }}
               className={inputClass}
             />
           </div>

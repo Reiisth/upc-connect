@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 type Member = {
   id: string;
@@ -18,6 +18,14 @@ export default function ProfileGrid({ members }: ProfileGridProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (pathname === "/portal/profile") {
+      setIsNavigating(false);
+      setSelectedId(null);
+    }
+  }, [pathname]);
 
   function handleProfileClick(member: Member) {
     if (isNavigating) return;
@@ -25,7 +33,10 @@ export default function ProfileGrid({ members }: ProfileGridProps) {
     setIsNavigating(true);
     setSelectedId(member.id);
 
-    router.push(`/portal/profile/${member.id}`);
+    router.push(
+      `/portal/profile/${member.id}?status=${member.profile_status === "completed" ? "completed" : "incomplete"
+      }`,
+    );
   }
 
   return (

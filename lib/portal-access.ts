@@ -6,7 +6,6 @@ export const portalTabs = {
     "evangelism_officer",
     "spiritual_ministry_officer",
     "usher",
-    "member",
   ],
 
   members: [
@@ -24,7 +23,6 @@ export const portalTabs = {
   contributions: [
     "accounting_officer",
     "pastor",
-    "member",
   ],
 
   baptisms: [
@@ -47,6 +45,16 @@ export const portalTabs = {
 
   accounts: [
     "system_admin",
+  ],
+
+  account: [
+    "system_admin",
+    "pastor",
+    "accounting_officer",
+    "evangelism_officer",
+    "spiritual_ministry_officer",
+    "usher",
+    "member",
   ],
 
   field_management: [

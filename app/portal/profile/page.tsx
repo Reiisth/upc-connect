@@ -1,13 +1,12 @@
 import { Suspense } from "react";
-
+import ProfileSkeleton from "./ProfileSkeleton";
 import { requirePortalTab } from "@/lib/require-portal-tab";
-import { getMemberFieldDefinitions } from "@/lib/member-fields";
 import { createClient } from "@/lib/supabase/server";
 import ProfileSelector from "./ProfileSelector";
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<ProfileLoading />}>
+    <Suspense fallback={<ProfileSkeleton />}>
       <ProfileContent />
     </Suspense>
   );
@@ -48,8 +47,6 @@ async function ProfileContent() {
       .filter((member): member is NonNullable<typeof member> => Boolean(member)) ??
     [];
 
-  const fieldDefinitions = await getMemberFieldDefinitions();
-
   return (
     <main className="space-y-6">
       <div>
@@ -57,7 +54,7 @@ async function ProfileContent() {
           Member Profile
         </p>
 
-        <h1 className="mt-1 font-heading text-3xl font-semibold text-[#203264]">
+        <h1 className="mt-1 font-body text-3xl font-semibold text-[#203264]">
           My Profile
         </h1>
 
@@ -68,13 +65,5 @@ async function ProfileContent() {
 
       <ProfileSelector members={members} />
     </main>
-  );
-}
-
-function ProfileLoading() {
-  return (
-    <div className="flex min-h-[300px] items-center justify-center">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#203264] border-t-transparent" />
-    </div>
   );
 }

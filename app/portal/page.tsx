@@ -1,17 +1,52 @@
-export default function PortalPage() {
-  return (
-    <div>
-      <p className="text-sm font-medium text-[#5D94E8]">
-        UPC Connect
-      </p>
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUserRoles } from "@/lib/auth";
+import { canAccessTab } from "@/lib/portal-access";
 
-      <h1 className="mt-1 font-heading text-3xl font-semibold text-[#203264]">
-        Dashboard
-      </h1>
+export default async function PortalPage() {
+  const user = await getCurrentUser();
 
-      <p className="mt-2 text-sm text-muted-foreground">
-        Welcome to your portal.
-      </p>
-    </div>
-  );
+  if (!user) {
+    redirect("/login");
+  }
+
+  const roles = await getCurrentUserRoles(user.id);
+
+  if (canAccessTab(roles, "dashboard")) {
+    redirect("/portal/dashboard");
+  }
+
+  if (canAccessTab(roles, "members")) {
+    redirect("/portal/members");
+  }
+
+  if (canAccessTab(roles, "accounts")) {
+    redirect("/portal/accounts");
+  }
+
+  if (canAccessTab(roles, "attendance")) {
+    redirect("/portal/attendance");
+  }
+
+  if (canAccessTab(roles, "contributions")) {
+    redirect("/portal/contributions");
+  }
+
+  if (canAccessTab(roles, "baptisms")) {
+    redirect("/portal/baptisms");
+  }
+
+  if (canAccessTab(roles, "reports")) {
+    redirect("/portal/reports");
+  }
+
+  if (canAccessTab(roles, "administration")) {
+    redirect("/portal/administration");
+  }
+
+  if (canAccessTab(roles, "profile")) {
+    redirect("/portal/profile");
+  }
+
+  redirect("/access-denied");
 }
