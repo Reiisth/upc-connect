@@ -45,7 +45,30 @@ async function ProfileContent() {
 
   const members =
     links
-      ?.map((link) => link.members?.[0])
+      ?.map((link) => {
+        const relatedMembers = link.members as
+          | {
+            id: string;
+            first_name: string;
+            last_name: string;
+            profile_status: string;
+            is_archived: boolean;
+          }
+          | {
+            id: string;
+            first_name: string;
+            last_name: string;
+            profile_status: string;
+            is_archived: boolean;
+          }[]
+          | null;
+
+        if (!relatedMembers) return null;
+
+        return Array.isArray(relatedMembers)
+          ? relatedMembers[0] ?? null
+          : relatedMembers;
+      })
       .filter(
         (member): member is NonNullable<typeof member> =>
           Boolean(member),
