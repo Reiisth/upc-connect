@@ -51,7 +51,7 @@ async function MemberProfileContent({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/member/login");
+    redirect("/login");
   }
 
   const { data: link } = await supabase

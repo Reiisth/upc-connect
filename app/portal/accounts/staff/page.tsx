@@ -36,7 +36,16 @@ async function StaffAccountsContent() {
   const roleMap = new Map<string, string[]>();
 
   for (const link of staffRoleLinks ?? []) {
-    const roleName = link.roles?.[0]?.name;
+    const roles = link.roles as
+      | { name: string }
+      | { name: string }[]
+      | null;
+
+    const roleName = !roles
+      ? null
+      : Array.isArray(roles)
+        ? roles[0]?.name ?? null
+        : roles.name;
 
     if (!roleName) continue;
 
