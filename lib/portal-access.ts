@@ -62,6 +62,43 @@ export const portalTabs = {
   ],
 } as const;
 
+export const memberAccess = {
+  manage: [
+    "system_admin",
+  ],
+
+  view: [
+    "system_admin",
+    "pastor",
+    "evangelism_officer",
+    "spiritual_ministry_officer",
+  ],
+} as const;
+
+export type MemberAccessLevel = "view" | "manage";
+
+export function getMemberAccess(
+  roles: string[],
+): MemberAccessLevel | null {
+  const canManage = memberAccess.manage.some((role) =>
+    roles.includes(role),
+  );
+
+  if (canManage) {
+    return "manage";
+  }
+
+  const canView = memberAccess.view.some((role) =>
+    roles.includes(role),
+  );
+
+  if (canView) {
+    return "view";
+  }
+
+  return null;
+}
+
 export type PortalTab = keyof typeof portalTabs;
 
 export function canAccessTab(

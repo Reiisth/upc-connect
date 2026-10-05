@@ -6,6 +6,9 @@ import MembersSkeleton from "./MembersSkeleton";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePortalTab } from "@/lib/require-portal-tab";
 import MembersTable from "./MembersTable";
+import { getMemberAccess } from "@/lib/portal-access";
+
+
 
 export default function PortalMembersPage() {
   return (
@@ -16,22 +19,44 @@ export default function PortalMembersPage() {
 }
 
 async function MembersPageContent() {
-  await requirePortalTab("members");
+  const { roles } = await requirePortalTab("members");
+  const memberAccess = getMemberAccess(roles);
+  const canManageMembers = memberAccess === "manage";
 
   const admin = createAdminClient();
 
   const { data: members, error } = await admin
     .from("members")
     .select(`
-      id,
-      first_name,
-      middle_name,
-      last_name,
-      email,
-      account_status,
-      profile_status,
-      created_at
-    `)
+    id,
+    first_name,
+    middle_name,
+    last_name,
+    nickname,
+    birth_date,
+    gender,
+    phone_number,
+    email,
+    zone,
+    civil_status,
+    street_address,
+    barangay,
+    city,
+    province,
+    country,
+    photo_url,
+    position,
+    member_status,
+    account_status,
+    profile_status,
+    created_at,
+    department:departments (
+      name
+    ),
+    church_branch:church_branches (
+      name
+    )
+  `)
     .eq("is_archived", false)
     .order("created_at", { ascending: false });
 
@@ -40,6 +65,11 @@ async function MembersPageContent() {
   }
 
   const totalMembers = members?.length ?? 0;
+
+  const activeMembers =
+    members?.filter(
+      (member) => member.member_status === "active",
+    ).length ?? 0;
 
   const connectedMembers =
     members?.filter(
@@ -50,6 +80,19 @@ async function MembersPageContent() {
     members?.filter(
       (member) => member.profile_status !== "completed",
     ).length ?? 0;
+
+  const normalizedMembers =
+    members?.map((member) => ({
+      ...member,
+
+      department: Array.isArray(member.department)
+        ? member.department[0] ?? null
+        : member.department ?? null,
+
+      church_branch: Array.isArray(member.church_branch)
+        ? member.church_branch[0] ?? null
+        : member.church_branch ?? null,
+    })) ?? [];
 
   return (
     <main className="space-y-6">
@@ -73,16 +116,18 @@ async function MembersPageContent() {
           </p>
         </div>
 
-        <Link
-          href="/portal/members/new"
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#203264] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2C447D] sm:w-auto"
-        >
-          <Plus className="h-4 w-4" />
-          Create Member
-        </Link>
+        {canManageMembers && (
+          <Link
+            href="/portal/members/new"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#203264] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2C447D] sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            Create Member
+          </Link>
+        )}
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="rounded-2xl border bg-white p-4 shadow-sm">
           <p className="text-xs text-muted-foreground">
             Total Members
@@ -90,6 +135,16 @@ async function MembersPageContent() {
 
           <p className="mt-2 font-heading text-2xl font-semibold text-[#203264]">
             {totalMembers}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-4 shadow-sm">
+          <p className="text-xs text-muted-foreground">
+            Active Members
+          </p>
+
+          <p className="mt-2 font-heading text-2xl font-semibold text-emerald-700">
+            {activeMembers}
           </p>
         </div>
 
@@ -114,7 +169,10 @@ async function MembersPageContent() {
         </div>
       </div>
 
-      <MembersTable members={members ?? []} />
+      <MembersTable
+        members={normalizedMembers}
+        canManage={canManageMembers}
+      />
     </main>
   );
 }

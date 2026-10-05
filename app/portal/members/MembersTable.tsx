@@ -6,19 +6,48 @@ import { Search } from "lucide-react";
 import { disconnectMember, archiveMember } from "./actions";
 import ConfirmActionModal from "./ConfirmActionModal";
 import { Archive, MailPlus, Unplug } from "lucide-react";
+import MemberCardModal from "./MemberCardModal";
 
 type Member = {
   id: string;
   first_name: string;
   middle_name: string | null;
   last_name: string;
+  nickname: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  phone_number: string | null;
   email: string | null;
+  zone: number | null;
+  civil_status: string | null;
+  street_address: string | null;
+  barangay: string | null;
+  city: string | null;
+  province: string | null;
+  country: string | null;
+  photo_url: string | null;
+  position: string | null;
+
+  member_status: string;
   account_status: string;
   profile_status: string;
+
+  department:
+  | {
+    name: string;
+  }
+  | null;
+
+  church_branch:
+  | {
+    name: string;
+  }
+  | null;
 };
 
 type MembersTableProps = {
   members: Member[];
+  canManage: boolean;
 };
 
 function ArchiveMemberButton({
@@ -69,13 +98,19 @@ function ArchiveMemberButton({
   );
 }
 
-export default function MembersTable({ members }: MembersTableProps) {
+export default function MembersTable({
+  members,
+  canManage
+}: MembersTableProps) {
   const [search, setSearch] = useState("");
+  const [memberStatusFilter, setMemberStatusFilter] = useState("all");
+  const [accountStatusFilter, setAccountStatusFilter] = useState("all");
+  const [profileStatusFilter, setProfileStatusFilter] = useState("all");
+  const [selectedMember, setSelectedMember] =
+    useState<Member | null>(null);
 
   const filteredMembers = useMemo(() => {
     const query = search.trim().toLowerCase();
-
-    if (!query) return members;
 
     return members.filter((member) => {
       const fullName = [
@@ -87,27 +122,86 @@ export default function MembersTable({ members }: MembersTableProps) {
         .join(" ")
         .toLowerCase();
 
-      return (
+      const matchesSearch =
+        !query ||
         fullName.includes(query) ||
         member.email?.toLowerCase().includes(query) ||
+        member.member_status.toLowerCase().includes(query) ||
         member.account_status.toLowerCase().includes(query) ||
-        member.profile_status.toLowerCase().includes(query)
+        member.profile_status.toLowerCase().includes(query);
+
+      const matchesMemberStatus =
+        memberStatusFilter === "all" ||
+        member.member_status === memberStatusFilter;
+
+      const matchesAccountStatus =
+        accountStatusFilter === "all" ||
+        member.account_status === accountStatusFilter;
+
+      const matchesProfileStatus =
+        profileStatusFilter === "all" ||
+        member.profile_status === profileStatusFilter;
+
+      return (
+        matchesSearch &&
+        matchesMemberStatus &&
+        matchesAccountStatus &&
+        matchesProfileStatus
       );
     });
-  }, [members, search]);
+  }, [
+    members,
+    search,
+    memberStatusFilter,
+    accountStatusFilter,
+    profileStatusFilter,
+  ]);
 
   return (
     <>
-      <div className="relative mt-6 max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-end">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
-        <input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search members..."
-          className="w-full rounded-xl border bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
-        />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search members..."
+            className="w-full rounded-xl border bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
+          />
+        </div>
+
+        <select
+          value={memberStatusFilter}
+          onChange={(event) => setMemberStatusFilter(event.target.value)}
+          className="rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8]"
+        >
+          <option value="all">All Member Statuses</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+
+        <select
+          value={accountStatusFilter}
+          onChange={(event) => setAccountStatusFilter(event.target.value)}
+          className="rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8]"
+        >
+          <option value="all">All Account Statuses</option>
+          <option value="connected">Connected</option>
+          <option value="invited">Invited</option>
+          <option value="no_account">No Account</option>
+        </select>
+
+        <select
+          value={profileStatusFilter}
+          onChange={(event) => setProfileStatusFilter(event.target.value)}
+          className="rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8]"
+        >
+          <option value="all">All Profile Statuses</option>
+          <option value="completed">Completed</option>
+          <option value="incomplete">Incomplete</option>
+        </select>
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border bg-white shadow-sm">
@@ -116,9 +210,12 @@ export default function MembersTable({ members }: MembersTableProps) {
             <tr>
               <th className="px-5 py-4">Name</th>
               <th className="px-5 py-4">Email</th>
+              <th className="px-5 py-4">Member Status</th>
               <th className="px-5 py-4">Account Status</th>
               <th className="px-5 py-4">Profile Status</th>
-              <th className="px-5 py-4">Actions</th>
+              {canManage && (
+                <th className="px-5 py-4">Actions</th>
+              )}
             </tr>
           </thead>
 
@@ -134,12 +231,25 @@ export default function MembersTable({ members }: MembersTableProps) {
 
               return (
                 <tr key={member.id}>
-                  <td className="px-5 py-4 font-medium text-[#203264]">
-                    {fullName}
+                  <td className="px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMember(member)}
+                      className="font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline"
+                    >
+                      {fullName}
+                    </button>
                   </td>
 
                   <td className="px-5 py-4">
                     {member.email ?? "—"}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <StatusBadge
+                      type="member"
+                      value={member.member_status}
+                    />
                   </td>
 
                   <td className="px-5 py-4">
@@ -155,30 +265,31 @@ export default function MembersTable({ members }: MembersTableProps) {
                       value={member.profile_status}
                     />
                   </td>
+                  {canManage && (
+                    <td className="px-5 py-4">
+                      <div className="flex flex-col items-start gap-2">
+                        {member.account_status === "no_account" ? (
+                          <Link
+                            href={`/portal/members/invite?memberId=${member.id}`}
+                            className="inline-flex items-center gap-1.5 font-medium text-[#5D94E8] transition hover:text-[#4B82D6] hover:underline"
+                          >
+                            <MailPlus className="h-3.5 w-3.5" />
+                            Connect Email
+                          </Link>
+                        ) : (
+                          <DisconnectMemberButton
+                            memberId={member.id}
+                            memberName={`${member.first_name} ${member.last_name}`}
+                          />
+                        )}
 
-                  <td className="px-5 py-4">
-                    <div className="flex flex-col items-start gap-2">
-                      {member.account_status === "no_account" ? (
-                        <Link
-                          href={`/portal/members/invite?memberId=${member.id}`}
-                          className="inline-flex items-center gap-1.5 font-medium text-[#5D94E8] transition hover:text-[#4B82D6] hover:underline"
-                        >
-                          <MailPlus className="h-3.5 w-3.5" />
-                          Connect Email
-                        </Link>
-                      ) : (
-                        <DisconnectMemberButton
+                        <ArchiveMemberButton
                           memberId={member.id}
                           memberName={`${member.first_name} ${member.last_name}`}
                         />
-                      )}
-
-                      <ArchiveMemberButton
-                        memberId={member.id}
-                        memberName={`${member.first_name} ${member.last_name}`}
-                      />
-                    </div>
-                  </td>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -186,7 +297,7 @@ export default function MembersTable({ members }: MembersTableProps) {
             {!filteredMembers.length && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={canManage ? 6 : 5}
                   className="px-5 py-10 text-center text-sm text-muted-foreground"
                 >
                   No members found.
@@ -196,6 +307,12 @@ export default function MembersTable({ members }: MembersTableProps) {
           </tbody>
         </table>
       </div>
+      {selectedMember && (
+        <MemberCardModal
+          member={selectedMember}
+          onClose={() => setSelectedMember(null)}
+        />
+      )}
     </>
   );
 }
@@ -252,11 +369,21 @@ function StatusBadge({
   type,
   value,
 }: {
-  type: "account" | "profile";
+  type: "member" | "account" | "profile";
   value: string;
 }) {
   let styles = "bg-gray-100 text-gray-700";
   let label = value.replaceAll("_", " ");
+
+  if (type === "member") {
+    if (value === "active") {
+      styles = "bg-green-100 text-green-700";
+      label = "Active";
+    } else if (value === "inactive") {
+      styles = "bg-slate-100 text-slate-600";
+      label = "Inactive";
+    }
+  }
 
   if (type === "account") {
     if (value === "connected") {
