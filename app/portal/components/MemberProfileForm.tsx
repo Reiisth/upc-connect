@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { useFormStatus } from "react-dom";
-import ConfiguredField from "./ConfiguredField";
 
 type Branch = {
   id: string;
@@ -15,9 +14,12 @@ type FieldDefinition = {
   field_key: string;
   label: string;
   field_type: string;
+  field_group: string;
   is_builtin: boolean;
   is_required: boolean;
   is_visible: boolean;
+  placeholder: string | null;
+  options_source: string | null;
   options: unknown;
   sort_order: number;
 };
@@ -61,6 +63,7 @@ type MemberProfileFormProps = {
   branches: Branch[];
   departments: Department[];
   fieldDefinitions: FieldDefinition[];
+  customFieldValues: Record<string, string | number | null>;
   action: (formData: FormData) => void | Promise<void>;
 };
 
@@ -70,12 +73,42 @@ export default function MemberProfileForm({
   branches,
   departments,
   fieldDefinitions,
+  customFieldValues,
   action,
 }: MemberProfileFormProps) {
   const getFieldDefinition = (fieldKey: string) =>
     fieldDefinitions.find(
       (field) => field.field_key === fieldKey,
     );
+
+  const isFieldVisible = (fieldKey: string) =>
+    getFieldDefinition(fieldKey)?.is_visible ?? true;
+
+  const isFieldRequired = (fieldKey: string) =>
+    getFieldDefinition(fieldKey)?.is_required ?? false;
+
+  const getFieldLabel = (
+    fieldKey: string,
+    fallback: string,
+  ) =>
+    getFieldDefinition(fieldKey)?.label || fallback;
+
+  const getFieldPlaceholder = (
+    fieldKey: string,
+    fallback = "",
+  ) =>
+    getFieldDefinition(fieldKey)?.placeholder || fallback;
+
+  const getFieldOptions = (fieldKey: string): string[] => {
+    const options = getFieldDefinition(fieldKey)?.options;
+
+    return Array.isArray(options)
+      ? options.filter(
+        (option): option is string =>
+          typeof option === "string",
+      )
+      : [];
+  };
   const today = new Date().toISOString().split("T")[0];
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const formRef = useRef<HTMLFormElement>(null);
@@ -99,6 +132,23 @@ export default function MemberProfileForm({
     (item) => item.name.toLowerCase() === region.toLowerCase(),
   );
 
+  const customFields = fieldDefinitions
+    .filter(
+      (field) =>
+        !field.is_builtin &&
+        field.is_visible,
+    )
+    .sort((a, b) => a.sort_order - b.sort_order);
+
+  const getFieldOrder = (
+    fieldKey: string,
+    offset = 0,
+  ) => {
+    const field = getFieldDefinition(fieldKey);
+
+    return (field?.sort_order ?? 999) * 2 + offset;
+  };
+
   const isNCR = selectedRegion?.regionNumber === 13;
 
   const getInputClass = (field: string) =>
@@ -119,22 +169,49 @@ export default function MemberProfileForm({
     const form = event.currentTarget;
     const formData = new FormData(form);
 
-    const requiredFields = [
-      "first_name",
-      "last_name",
-      "nickname",
-      "birth_date",
-      "gender",
-      "civil_status",
-      "country",
-      "region",
-      "city",
-      "barangay",
-      "church_branch_id",
-    ];
+    const requiredFields = fieldDefinitions
+      .filter(
+        (field) =>
+          field.is_visible &&
+          field.is_required &&
+          field.field_key !== "photo_url",
+      )
+      .map((field) =>
+        field.is_builtin
+          ? field.field_key
+          : `custom_field_${field.id}`,
+      );
 
-    if (country === "Philippines" && !isNCR) {
-      requiredFields.splice(9, 0, "province");
+
+    if (country !== "Philippines") {
+      const regionIndex = requiredFields.indexOf("region");
+
+      if (regionIndex !== -1) {
+        requiredFields.splice(regionIndex, 1);
+      }
+    }
+
+    if (
+      country === "Philippines" &&
+      isNCR
+    ) {
+      const provinceIndex =
+        requiredFields.indexOf("province");
+
+      if (provinceIndex !== -1) {
+        requiredFields.splice(provinceIndex, 1);
+      }
+    }
+
+    if (
+      !["married", "widowed"].includes(civilStatus)
+    ) {
+      const anniversaryIndex =
+        requiredFields.indexOf("wedding_anniversary");
+
+      if (anniversaryIndex !== -1) {
+        requiredFields.splice(anniversaryIndex, 1);
+      }
     }
 
     const errors: Record<string, boolean> = {};
@@ -146,6 +223,7 @@ export default function MemberProfileForm({
         errors[field] = true;
       }
     }
+
 
     let phoneValue = String(formData.get("phone_number") ?? "").trim();
 
@@ -228,8 +306,6 @@ export default function MemberProfileForm({
   const labelClass =
     "mb-2 block text-sm font-medium text-[#203264]";
 
-  const nicknameField = getFieldDefinition("nickname");
-
   return (
     <form
       ref={formRef}
@@ -243,103 +319,193 @@ export default function MemberProfileForm({
         </h2>
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
-          <div>
-            <label className={labelClass}>First Name</label>
-            <input
-              id="first_name"
-              name="first_name"
-              value={firstName}
-              onChange={(event) => {
-                setFirstName(event.target.value);
-                setFieldErrors((current) => ({
-                  ...current,
-                  first_name: false,
-                }));
+          {isFieldVisible("first_name") && (
+            <div
+              style={{
+                order: getFieldOrder("first_name"),
               }}
-              className={getInputClass("first_name")}
-              required
-            />
-            <RequiredMessage field="first_name" />
-          </div>
-
-          <div>
-            <label htmlFor="middle_name" className={labelClass}>
-              Middle Name
-            </label>
-            <input
-              id="middle_name"
-              name="middle_name"
-              defaultValue={member.middle_name ?? ""}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Last Name</label>
-            <input
-              id="last_name"
-              name="last_name"
-              value={lastName}
-              onChange={(event) => {
-                setLastName(event.target.value);
-                setFieldErrors((current) => ({
-                  ...current,
-                  last_name: false,
-                }));
-              }}
-              className={getInputClass("last_name")}
-              required
-            />
-
-            <RequiredMessage field="last_name" />
-          </div>
-
-          {nicknameField?.is_visible !== false && (
-            <ConfiguredField
-              definition={getFieldDefinition("nickname")}
-              fallbackLabel="Nickname"
-              htmlFor="nickname"
             >
+              <label htmlFor="first_name" className={labelClass}>
+                {getFieldLabel("first_name", "First Name")}
+                {isFieldRequired("first_name") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
+
+              <input
+                id="first_name"
+                name="first_name"
+                value={firstName}
+                placeholder={getFieldPlaceholder(
+                  "first_name",
+                  "Enter first name",
+                )}
+                required={isFieldRequired("first_name")}
+                onChange={(event) => {
+                  setFirstName(event.target.value);
+
+                  setFieldErrors((current) => ({
+                    ...current,
+                    first_name: false,
+                  }));
+                }}
+                className={getInputClass("first_name")}
+              />
+
+              <RequiredMessage field="first_name" />
+            </div>
+          )}
+
+          {isFieldVisible("middle_name") && (
+            <div
+              style={{
+                order: getFieldOrder("middle_name"),
+              }}
+            >
+              <label htmlFor="middle_name" className={labelClass}>
+                {getFieldLabel("middle_name", "Middle Name")}
+                {isFieldRequired("middle_name") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
+
+              <input
+                id="middle_name"
+                name="middle_name"
+                defaultValue={member.middle_name ?? ""}
+                placeholder={getFieldPlaceholder(
+                  "middle_name",
+                  "Enter middle name",
+                )}
+                required={isFieldRequired("middle_name")}
+                onChange={() => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    middle_name: false,
+                  }));
+                }}
+                className={getInputClass("middle_name")}
+              />
+
+              <RequiredMessage field="middle_name" />
+            </div>
+          )}
+
+          {isFieldVisible("last_name") && (
+            <div
+              style={{
+                order: getFieldOrder("last_name"),
+              }}
+            >
+              <label htmlFor="last_name" className={labelClass}>
+                {getFieldLabel("last_name", "Last Name")}
+                {isFieldRequired("last_name") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
+
+              <input
+                id="last_name"
+                name="last_name"
+                value={lastName}
+                placeholder={getFieldPlaceholder(
+                  "last_name",
+                  "Enter last name",
+                )}
+                required={isFieldRequired("last_name")}
+                onChange={(event) => {
+                  setLastName(event.target.value);
+
+                  setFieldErrors((current) => ({
+                    ...current,
+                    last_name: false,
+                  }));
+                }}
+                className={getInputClass("last_name")}
+              />
+
+              <RequiredMessage field="last_name" />
+            </div>
+          )}
+
+          {isFieldVisible("nickname") && (
+            <div
+              style={{
+                order: getFieldOrder("nickname"),
+              }}
+            >
+              <label htmlFor="nickname" className={labelClass}>
+                {getFieldLabel("nickname", "Nickname")}
+                {isFieldRequired("nickname") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
+
               <input
                 id="nickname"
                 name="nickname"
                 defaultValue={member.nickname ?? ""}
-                required={
-                  getFieldDefinition("nickname")?.is_required ?? false
-                }
-                className="w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
+                placeholder={getFieldPlaceholder(
+                  "nickname",
+                  "Enter nickname",
+                )}
+                required={isFieldRequired("nickname")}
+                onChange={() => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    nickname: false,
+                  }));
+                }}
+                className={getInputClass("nickname")}
               />
-            </ConfiguredField>
+
+              <RequiredMessage field="nickname" />
+            </div>
           )}
 
-          <div>
-            <label htmlFor="birth_date" className={labelClass}>
-              Birthday
-            </label>
-            <input
-              id="birth_date"
-              name="birth_date"
-              type="date"
-              value={birthDate}
-              max={today}
-              onClick={(event) => {
-                event.currentTarget.showPicker?.();
+          {isFieldVisible("birth_date") && (
+            <div
+              style={{
+                order: getFieldOrder("birth_date"),
               }}
-              onChange={(event) => {
-                setBirthDate(event.target.value);
+            >
+              <label htmlFor="birth_date" className={labelClass}>
+                {getFieldLabel("birth_date", "Birthday")}
+                {isFieldRequired("birth_date") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
 
-                setFieldErrors((current) => ({
-                  ...current,
-                  birth_date: false,
-                }));
-              }}
-              className={getInputClass("birth_date")}
-            />
+              <input
+                id="birth_date"
+                name="birth_date"
+                type="date"
+                value={birthDate}
+                max={today}
+                required={isFieldRequired("birth_date")}
+                onClick={(event) => {
+                  event.currentTarget.showPicker?.();
+                }}
+                onChange={(event) => {
+                  setBirthDate(event.target.value);
 
-            <RequiredMessage field="birth_date" />
-          </div>
+                  setFieldErrors((current) => ({
+                    ...current,
+                    birth_date: false,
+                  }));
+                }}
+                className={getInputClass("birth_date")}
+              />
 
-          <div>
+              <RequiredMessage field="birth_date" />
+            </div>
+          )}
+
+          <div
+            style={{
+              order: getFieldOrder("birth_date", 1),
+            }}
+          >
             <label className={labelClass}>Age</label>
             <input
               value={age ?? "Calculated from birthday"}
@@ -348,115 +514,212 @@ export default function MemberProfileForm({
             />
           </div>
 
-          <div>
-            <label htmlFor="gender" className={labelClass}>
-              Gender
-            </label>
-            <select
-              id="gender"
-              name="gender"
-              defaultValue={member.gender ?? ""}
-              onChange={() => {
-                setFieldErrors((current) => ({
-                  ...current,
-                  gender: false,
-                }));
+          {isFieldVisible("gender") && (
+            <div
+              style={{
+                order: getFieldOrder("gender"),
               }}
-              className={getInputClass("gender")}
             >
-              <option value="">Select gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
+              <label htmlFor="gender" className={labelClass}>
+                {getFieldLabel("gender", "Gender")}
+                {isFieldRequired("gender") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
 
-            <RequiredMessage field="gender" />
-          </div>
+              <select
+                id="gender"
+                name="gender"
+                defaultValue={member.gender ?? ""}
+                required={isFieldRequired("gender")}
+                onChange={() => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    gender: false,
+                  }));
+                }}
+                className={getInputClass("gender")}
+              >
+                <option value="">
+                  {getFieldPlaceholder("gender", "Select gender")}
+                </option>
 
-          <div>
-            <label htmlFor="civil_status" className={labelClass}>
-              Civil Status
-            </label>
+                {getFieldOptions("gender").map((option) => (
+                  <option
+                    key={option}
+                    value={option.toLowerCase()}
+                  >
+                    {option}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              id="civil_status"
-              name="civil_status"
-              value={civilStatus}
-              onChange={(event) => {
-                setCivilStatus(event.target.value);
+              <RequiredMessage field="gender" />
+            </div>
+          )}
 
-                setFieldErrors((current) => ({
-                  ...current,
-                  civil_status: false,
-                }));
+          {isFieldVisible("civil_status") && (
+            <div
+              style={{
+                order: getFieldOrder("civil_status"),
               }}
-              className={getInputClass("civil_status")}
             >
-              <option value="">Select civil status</option>
-              <option value="single">Single</option>
-              <option value="married">Married</option>
-              <option value="widowed">Widowed</option>
-              <option value="separated">Separated</option>
-              <option value="divorced">Divorced</option>
-            </select>
+              <label htmlFor="civil_status" className={labelClass}>
+                {getFieldLabel("civil_status", "Civil Status")}
+                {isFieldRequired("civil_status") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
 
-            <RequiredMessage field="civil_status" />
-          </div>
+              <select
+                id="civil_status"
+                name="civil_status"
+                value={civilStatus}
+                required={isFieldRequired("civil_status")}
+                onChange={(event) => {
+                  setCivilStatus(event.target.value);
 
-          <div>
-            <label htmlFor="zone" className={labelClass}>
-              Zone
-            </label>
-            <select
-              id="zone"
-              name="zone"
-              defaultValue={member.zone ?? ""}
-              className={inputClass}
-            >
-              <option value="">Select zone</option>
-              <option value="1">Zone 1</option>
-              <option value="2">Zone 2</option>
-              <option value="3">Zone 3</option>
-              <option value="4">Zone 4</option>
-              <option value="5">Zone 5</option>
-            </select>
-          </div>
+                  setFieldErrors((current) => ({
+                    ...current,
+                    civil_status: false,
+                  }));
+                }}
+                className={getInputClass("civil_status")}
+              >
+                <option value="">
+                  {getFieldPlaceholder(
+                    "civil_status",
+                    "Select civil status",
+                  )}
+                </option>
 
-          <div>
-            <label htmlFor="phone_number" className={labelClass}>
-              Mobile Number
-            </label>
-            <input
-              id="phone_number"
-              name="phone_number"
-              defaultValue={member.phone_number ?? ""}
-              onChange={() => {
-                setFieldErrors((current) => ({
-                  ...current,
-                  phone_number: false,
-                }));
+                {getFieldOptions("civil_status").map((option) => (
+                  <option
+                    key={option}
+                    value={option.toLowerCase()}
+                  >
+                    {option}
+                  </option>
+                ))}
+              </select>
+
+              <RequiredMessage field="civil_status" />
+            </div>
+          )}
+
+          {isFieldVisible("zone") && (
+            <div
+              style={{
+                order: getFieldOrder("zone"),
               }}
-              className={getInputClass("phone_number")}
-            />
+            >
+              <label htmlFor="zone" className={labelClass}>
+                {getFieldLabel("zone", "Zone")}
+                {isFieldRequired("zone") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
 
-            {fieldErrors.phone_number && (
-              <p className="mt-1 text-sm text-red-600">
-                Enter a valid phone number, including country code when needed.
-              </p>
-            )}
-          </div>
+              <select
+                id="zone"
+                name="zone"
+                defaultValue={member.zone ?? ""}
+                required={isFieldRequired("zone")}
+                onChange={() => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    zone: false,
+                  }));
+                }}
+                className={getInputClass("zone")}
+              >
+                <option value="">
+                  {getFieldPlaceholder("zone", "Select zone")}
+                </option>
 
-          <div>
-            <label htmlFor="email" className={labelClass}>
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={member.email ?? accountEmail}
-              readOnly
-              className={`${inputClass} bg-muted cursor-not-allowed`}
-            />
-          </div>
+                {getFieldOptions("zone").map((option) => (
+                  <option
+                    key={option}
+                    value={option}
+                  >
+                    Zone {option}
+                  </option>
+                ))}
+              </select>
+
+              <RequiredMessage field="zone" />
+            </div>
+          )}
+
+          {isFieldVisible("phone_number") && (
+            <div
+              style={{
+                order: getFieldOrder("phone_number"),
+              }}
+            >
+              <label htmlFor="phone_number" className={labelClass}>
+                {getFieldLabel("phone_number", "Mobile Number")}
+                {isFieldRequired("phone_number") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
+
+              <input
+                id="phone_number"
+                name="phone_number"
+                defaultValue={member.phone_number ?? ""}
+                placeholder={getFieldPlaceholder(
+                  "phone_number",
+                  "Enter mobile number",
+                )}
+                required={isFieldRequired("phone_number")}
+                onChange={() => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    phone_number: false,
+                  }));
+                }}
+                className={getInputClass("phone_number")}
+              />
+
+              {fieldErrors.phone_number && (
+                <p className="mt-1 text-sm text-red-600">
+                  Enter a valid phone number, including country code when needed.
+                </p>
+              )}
+            </div>
+          )}
+
+          {isFieldVisible("email") && (
+            <div
+              style={{
+                order: getFieldOrder("email"),
+              }}
+            >
+              <label htmlFor="email" className={labelClass}>
+                {getFieldLabel("email", "Email")}
+                {isFieldRequired("email") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
+
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={member.email ?? accountEmail}
+                readOnly
+                required={isFieldRequired("email")}
+                placeholder={getFieldPlaceholder(
+                  "email",
+                  "Enter email address",
+                )}
+                className={`${getInputClass("email")} bg-muted cursor-not-allowed`}
+              />
+
+              <RequiredMessage field="email" />
+            </div>
+          )}
         </div>
       </section>
 
@@ -466,124 +729,303 @@ export default function MemberProfileForm({
         </h2>
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label htmlFor="country" className={labelClass}>
-              Country
-            </label>
+          {isFieldVisible("country") && (
+            <div style={{
+              order: getFieldOrder("country"),
+            }}
+              className="sm:col-span-2">
+              <label htmlFor="country" className={labelClass}>
+                {getFieldLabel("country", "Country")}
+                {isFieldRequired("country") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
 
-            <input
-              id="country"
-              name="country"
-              list="countries"
-              value={country}
-              onChange={(event) => {
-                const value = event.target.value;
+              <input
+                id="country"
+                name="country"
+                list="countries"
+                value={country}
+                placeholder={getFieldPlaceholder(
+                  "country",
+                  "Enter country",
+                )}
+                required={isFieldRequired("country")}
+                onChange={(event) => {
+                  const value = event.target.value;
 
-                setCountry(value);
-                setProvince("");
-                setCity("");
-                setBarangay("");
+                  setCountry(value);
+                  setProvince("");
+                  setCity("");
+                  setBarangay("");
 
-                setFieldErrors((current) => ({
-                  ...current,
-                  country: false,
-                  province: false,
-                  city: false,
-                  barangay: false,
-                }));
+                  setFieldErrors((current) => ({
+                    ...current,
+                    country: false,
+                    province: false,
+                    city: false,
+                    barangay: false,
+                  }));
+                }}
+                className={getInputClass("country")}
+              />
+
+              <RequiredMessage field="country" />
+
+              <datalist id="countries">
+                <option value="Philippines" />
+                <option value="United States" />
+                <option value="Canada" />
+                <option value="Australia" />
+                <option value="Japan" />
+                <option value="Singapore" />
+                <option value="United Kingdom" />
+              </datalist>
+            </div>
+          )}
+
+          {isFieldVisible("street_address") && (
+            <div
+              style={{
+                order: getFieldOrder("street_address"),
               }}
-              className={getInputClass("country")}
-            />
+              className="sm:col-span-2">
+              <label htmlFor="street_address" className={labelClass}>
+                {getFieldLabel(
+                  "street_address",
+                  "Street Address",
+                )}
+                {isFieldRequired("street_address") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
 
-            <RequiredMessage field="country" />
+              <input
+                id="street_address"
+                name="street_address"
+                defaultValue={member.street_address ?? ""}
+                placeholder={getFieldPlaceholder(
+                  "street_address",
+                  "Enter street address",
+                )}
+                required={isFieldRequired("street_address")}
+                onChange={() => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    street_address: false,
+                  }));
+                }}
+                className={getInputClass("street_address")}
+              />
 
-            <datalist id="countries">
-              <option value="Philippines" />
-              <option value="United States" />
-              <option value="Canada" />
-              <option value="Australia" />
-              <option value="Japan" />
-              <option value="Singapore" />
-              <option value="United Kingdom" />
-            </datalist>
-          </div>
-
-          <div className="sm:col-span-2">
-            <label htmlFor="street_address" className={labelClass}>
-              Street Address
-            </label>
-            <input
-              id="street_address"
-              name="street_address"
-              defaultValue={member.street_address ?? ""}
-              className={inputClass}
-            />
-          </div>
+              <RequiredMessage field="street_address" />
+            </div>
+          )}
 
           {country === "Philippines" ? (
             <>
-              <div className="sm:col-span-2">
-                <label htmlFor="region" className={labelClass}>
-                  Region
-                </label>
+              {country === "Philippines" && isFieldVisible("region") && (
+                <div style={{
+                  order: getFieldOrder("region"),
+                }}
+                  className="sm:col-span-2">
+                  <label htmlFor="region" className={labelClass}>
+                    {getFieldLabel("region", "Region")}
+                    {isFieldRequired("region") && (
+                      <span className="ml-1 text-red-500">*</span>
+                    )}
+                  </label>
 
-                <select
-                  id="region"
-                  name="region"
-                  value={region}
-                  onChange={(event) => {
-                    const value = event.target.value;
+                  <select
+                    id="region"
+                    name="region"
+                    value={region}
+                    required={isFieldRequired("region")}
+                    onChange={(event) => {
+                      const value = event.target.value;
 
-                    setRegion(value);
-                    setProvince("");
-                    setCity("");
-                    setBarangay("");
+                      setRegion(value);
+                      setProvince("");
+                      setCity("");
+                      setBarangay("");
 
-                    setFieldErrors((current) => ({
-                      ...current,
-                      region: false,
-                      province: false,
-                      city: false,
-                      barangay: false,
-                    }));
-                  }}
-                  className={getInputClass("region")}
-                >
-                  <option value="">Select region</option>
-
-                  {regions.map((regionOption) => (
-                    <option
-                      key={regionOption.code}
-                      value={regionOption.name}
-                    >
-                      {regionOption.name}
+                      setFieldErrors((current) => ({
+                        ...current,
+                        region: false,
+                        province: false,
+                        city: false,
+                        barangay: false,
+                      }));
+                    }}
+                    className={getInputClass("region")}
+                  >
+                    <option value="">
+                      {getFieldPlaceholder("region", "Select region")}
                     </option>
-                  ))}
-                </select>
 
-                <RequiredMessage field="region" />
-              </div>
+                    {regions.map((regionOption) => (
+                      <option
+                        key={regionOption.code}
+                        value={regionOption.name}
+                      >
+                        {regionOption.name}
+                      </option>
+                    ))}
+                  </select>
 
-              {!isNCR && (
-                <div className="sm:col-span-2">
+                  <RequiredMessage field="region" />
+                </div>
+              )}
+
+              {country === "Philippines" &&
+                !isNCR &&
+                isFieldVisible("province") && (
+                  <div style={{
+                    order: getFieldOrder("province"),
+                  }}
+                    className="sm:col-span-2">
+                    <label htmlFor="province" className={labelClass}>
+                      {getFieldLabel("province", "Province")}
+                      {isFieldRequired("province") && (
+                        <span className="ml-1 text-red-500">*</span>
+                      )}
+                    </label>
+
+                    <input
+                      id="province"
+                      name="province"
+                      type="text"
+                      value={province}
+                      placeholder={getFieldPlaceholder(
+                        "province",
+                        "Enter province",
+                      )}
+                      required={isFieldRequired("province")}
+                      onChange={(event) => {
+                        setProvince(event.target.value);
+
+                        setFieldErrors((current) => ({
+                          ...current,
+                          province: false,
+                        }));
+                      }}
+                      className={getInputClass("province")}
+                    />
+
+                    <RequiredMessage field="province" />
+                  </div>
+                )}
+
+              {isFieldVisible("city") && (
+                <div style={{
+                  order: getFieldOrder("city"),
+                }}
+                  className="sm:col-span-2">
+                  <label htmlFor="city" className={labelClass}>
+                    {getFieldLabel("city", "City / Municipality")}
+                    {isFieldRequired("city") && (
+                      <span className="ml-1 text-red-500">*</span>
+                    )}
+                  </label>
+
+                  <input
+                    id="city"
+                    name="city"
+                    type="text"
+                    value={city}
+                    placeholder={getFieldPlaceholder(
+                      "city",
+                      "Enter city or municipality",
+                    )}
+                    required={isFieldRequired("city")}
+                    onChange={(event) => {
+                      setCity(event.target.value);
+
+                      setFieldErrors((current) => ({
+                        ...current,
+                        city: false,
+                      }));
+                    }}
+                    className={getInputClass("city")}
+                  />
+
+                  <RequiredMessage field="city" />
+                </div>
+              )}
+
+              {isFieldVisible("barangay") && (
+                <div
+                  style={{
+                    order: getFieldOrder("barangay"),
+                  }}
+                  className="sm:col-span-2">
+                  <label htmlFor="barangay" className={labelClass}>
+                    {getFieldLabel("barangay", "Barangay")}
+                    {isFieldRequired("barangay") && (
+                      <span className="ml-1 text-red-500">*</span>
+                    )}
+                  </label>
+
+                  <input
+                    id="barangay"
+                    name="barangay"
+                    type="text"
+                    value={barangay}
+                    placeholder={getFieldPlaceholder(
+                      "barangay",
+                      "Enter barangay",
+                    )}
+                    required={isFieldRequired("barangay")}
+                    onChange={(event) => {
+                      setBarangay(event.target.value);
+
+                      setFieldErrors((current) => ({
+                        ...current,
+                        barangay: false,
+                      }));
+                    }}
+                    className={getInputClass("barangay")}
+                  />
+
+                  <RequiredMessage field="barangay" />
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {isFieldVisible("province") && (
+                <div>
                   <label htmlFor="province" className={labelClass}>
-                    Province
+                    {getFieldLabel(
+                      "province",
+                      "State / Province / Region",
+                    )}
+                    {isFieldRequired("province") && (
+                      <span className="ml-1 text-red-500">*</span>
+                    )}
                   </label>
 
                   <input
                     id="province"
                     name="province"
-                    type="text"
                     value={province}
+                    placeholder={getFieldPlaceholder(
+                      "province",
+                      "Enter state/province/region",
+                    )}
+                    required={isFieldRequired("province")}
                     onChange={(event) => {
                       setProvince(event.target.value);
+                      setCity("");
+                      setBarangay("");
 
                       setFieldErrors((current) => ({
                         ...current,
                         province: false,
+                        city: false,
+                        barangay: false,
                       }));
                     }}
-                    placeholder="Enter province"
                     className={getInputClass("province")}
                   />
 
@@ -591,138 +1033,80 @@ export default function MemberProfileForm({
                 </div>
               )}
 
-              <div className="sm:col-span-2">
-                <label htmlFor="city" className={labelClass}>
-                  City / Municipality
-                </label>
+              {isFieldVisible("city") && (
+                <div style={{
+                  order: getFieldOrder("city"),
+                }}>
+                  <label htmlFor="city" className={labelClass}>
+                    {getFieldLabel("city", "City")}
+                    {isFieldRequired("city") && (
+                      <span className="ml-1 text-red-500">*</span>
+                    )}
+                  </label>
 
-                <input
-                  id="city"
-                  name="city"
-                  type="text"
-                  value={city}
-                  onChange={(event) => {
-                    setCity(event.target.value);
+                  <input
+                    id="city"
+                    name="city"
+                    value={city}
+                    placeholder={getFieldPlaceholder(
+                      "city",
+                      "Enter city or municipality",
+                    )}
+                    required={isFieldRequired("city")}
+                    onChange={(event) => {
+                      setCity(event.target.value);
+                      setBarangay("");
 
-                    setFieldErrors((current) => ({
-                      ...current,
-                      city: false,
-                    }));
-                  }}
-                  placeholder="Enter city or municipality"
-                  className={getInputClass("city")}
-                />
+                      setFieldErrors((current) => ({
+                        ...current,
+                        city: false,
+                        barangay: false,
+                      }));
+                    }}
+                    className={getInputClass("city")}
+                  />
 
-                <RequiredMessage field="city" />
-              </div>
+                  <RequiredMessage field="city" />
+                </div>
+              )}
 
-              <div className="sm:col-span-2">
-                <label htmlFor="barangay" className={labelClass}>
-                  Barangay
-                </label>
+              {isFieldVisible("barangay") && (
+                <div style={{
+                  order: getFieldOrder("barangay"),
+                }} className="sm:col-span-2">
+                  <label htmlFor="barangay" className={labelClass}>
+                    {getFieldLabel(
+                      "barangay",
+                      "Local Area / District",
+                    )}
+                    {isFieldRequired("barangay") && (
+                      <span className="ml-1 text-red-500">*</span>
+                    )}
+                  </label>
 
-                <input
-                  id="barangay"
-                  name="barangay"
-                  type="text"
-                  value={barangay}
-                  onChange={(event) => {
-                    setBarangay(event.target.value);
+                  <input
+                    id="barangay"
+                    name="barangay"
+                    value={barangay}
+                    placeholder={getFieldPlaceholder(
+                      "barangay",
+                      "Enter local area or district",
+                    )}
+                    required={isFieldRequired("barangay")}
+                    onChange={(event) => {
+                      setBarangay(event.target.value);
 
-                    setFieldErrors((current) => ({
-                      ...current,
-                      barangay: false,
-                    }));
-                  }}
-                  placeholder="Enter barangay"
-                  className={getInputClass("barangay")}
-                />
+                      setFieldErrors((current) => ({
+                        ...current,
+                        barangay: false,
+                      }));
+                    }}
+                    className={getInputClass("barangay")}
+                  />
 
-                <RequiredMessage field="barangay" />
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <label htmlFor="province" className={labelClass}>
-                  State / Province / Region
-                </label>
-
-                <input
-                  id="province"
-                  name="province"
-                  list="province-options"
-                  placeholder="Enter state/province/region"
-                  value={province}
-                  onChange={(event) => {
-                    setProvince(event.target.value);
-                    setCity("");
-                    setBarangay("");
-
-                    setFieldErrors((current) => ({
-                      ...current,
-                      province: false,
-                      city: false,
-                      barangay: false,
-                    }));
-                  }}
-                  className={getInputClass("province")}
-                />
-
-                <RequiredMessage field="province" />
-              </div>
-
-              <div>
-                <label htmlFor="city" className={labelClass}>
-                  City
-                </label>
-
-                <input
-                  id="city"
-                  name="city"
-                  list="city-options"
-                  placeholder="Enter city or municipality"
-                  value={city}
-                  onChange={(event) => {
-                    setCity(event.target.value);
-                    setBarangay("");
-
-                    setFieldErrors((current) => ({
-                      ...current,
-                      city: false,
-                      barangay: false,
-                    }));
-                  }}
-                  className={getInputClass("city")}
-                />
-
-                <RequiredMessage field="city" />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label htmlFor="barangay" className={labelClass}>
-                  Local Area / District
-                </label>
-
-                <input
-                  id="barangay"
-                  name="barangay"
-                  list="barangay-options"
-                  placeholder="Enter local area/district"
-                  value={barangay}
-                  onChange={(event) => {
-                    setBarangay(event.target.value);
-
-                    setFieldErrors((current) => ({
-                      ...current,
-                      barangay: false,
-                    }));
-                  }}
-                  className={getInputClass("barangay")}
-                />
-
-                <RequiredMessage field="barangay" />
-              </div>
+                  <RequiredMessage field="barangay" />
+                </div>
+              )}
             </>
           )}
         </div>
@@ -734,102 +1118,397 @@ export default function MemberProfileForm({
         </h2>
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
-          <div>
-            <label htmlFor="church_branch_id" className={labelClass}>
-              Church Branch
-            </label>
+          {isFieldVisible("church_branch_id") && (
+            <div
+              style={{
+                order: getFieldOrder("church_branch_id"),
+              }}>
+              <label htmlFor="church_branch_id" className={labelClass}>
+                {getFieldLabel("church_branch_id", "Church Branch")}
+                {isFieldRequired("church_branch_id") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
 
-            <select
-              id="church_branch_id"
-              name="church_branch_id"
-              defaultValue={member.church_branch_id ?? ""}
-              onChange={() => {
-                setFieldErrors((current) => ({
-                  ...current,
-                  church_branch_id: false,
-                }));
-              }}
-              className={getInputClass("church_branch_id")}
-            >
-              <option value="">Select church branch</option>
-
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
+              <select
+                id="church_branch_id"
+                name="church_branch_id"
+                defaultValue={member.church_branch_id ?? ""}
+                required={isFieldRequired("church_branch_id")}
+                onChange={() => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    church_branch_id: false,
+                  }));
+                }}
+                className={getInputClass("church_branch_id")}
+              >
+                <option value="">
+                  {getFieldPlaceholder(
+                    "church_branch_id",
+                    "Select church branch",
+                  )}
                 </option>
-              ))}
-            </select>
 
-            <RequiredMessage field="church_branch_id" />
-          </div>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
 
-          <div>
-            <label htmlFor="department_id" className={labelClass}>
-              Department
-            </label>
+              <RequiredMessage field="church_branch_id" />
+            </div>
+          )}
 
-            <select
-              id="department_id"
-              name="department_id"
-              defaultValue={member.department_id ?? ""}
-              className={inputClass}
-            >
-              <option value="">Select department</option>
+          {isFieldVisible("department_id") && (
+            <div style={{
+              order: getFieldOrder("department_id"),
+            }}>
+              <label htmlFor="department_id" className={labelClass}>
+                {getFieldLabel("department_id", "Department")}
+                {isFieldRequired("department_id") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
 
-              {departments.map((department) => (
-                <option key={department.id} value={department.id}>
-                  {department.name}
+              <select
+                id="department_id"
+                name="department_id"
+                defaultValue={member.department_id ?? ""}
+                required={isFieldRequired("department_id")}
+                onChange={() => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    department_id: false,
+                  }));
+                }}
+                className={getInputClass("department_id")}
+              >
+                <option value="">
+                  {getFieldPlaceholder(
+                    "department_id",
+                    "Select department",
+                  )}
                 </option>
-              ))}
-            </select>
-          </div>
 
-          <div>
-            <label htmlFor="position" className={labelClass}>
-              Position
-            </label>
-            <input
-              id="position"
-              name="position"
-              defaultValue={member.position ?? ""}
-              className={inputClass}
-            />
-          </div>
+                {departments.map((department) => (
+                  <option
+                    key={department.id}
+                    value={department.id}
+                  >
+                    {department.name}
+                  </option>
+                ))}
+              </select>
 
-          <div>
-            <label htmlFor="first_attendance_date" className={labelClass}>
-              First Date of Attendance
-            </label>
-            <input
-              id="first_attendance_date"
-              name="first_attendance_date"
-              type="date"
-              defaultValue={member.first_attendance_date ?? ""}
-              max={today}
-              onClick={(event) => {
-                event.currentTarget.showPicker?.();
-              }}
-              className={inputClass}
-            />
-          </div>
+              <RequiredMessage field="department_id" />
+            </div>
+          )}
 
-          {["married", "widowed"].includes(civilStatus) && (
-            <div>
-              <label htmlFor="wedding_anniversary" className={labelClass}>
-                Wedding Anniversary
+          {isFieldVisible("position") && (
+            <div
+              style={{
+                order: getFieldOrder("position"),
+              }}>
+              <label htmlFor="position" className={labelClass}>
+                {getFieldLabel("position", "Position")}
+                {isFieldRequired("position") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
               </label>
 
               <input
-                id="wedding_anniversary"
-                name="wedding_anniversary"
-                type="date"
-                defaultValue={member.wedding_anniversary ?? ""}
-                className={inputClass}
+                id="position"
+                name="position"
+                defaultValue={member.position ?? ""}
+                placeholder={getFieldPlaceholder(
+                  "position",
+                  "Enter position",
+                )}
+                required={isFieldRequired("position")}
+                onChange={() => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    position: false,
+                  }));
+                }}
+                className={getInputClass("position")}
               />
+
+              <RequiredMessage field="position" />
             </div>
           )}
+
+          {isFieldVisible("first_attendance_date") && (
+            <div style={{
+              order: getFieldOrder("first_attendance_date"),
+            }}>
+              <label htmlFor="first_attendance_date" className={labelClass}>
+                {getFieldLabel(
+                  "first_attendance_date",
+                  "First Date of Attendance",
+                )}
+                {isFieldRequired("first_attendance_date") && (
+                  <span className="ml-1 text-red-500">*</span>
+                )}
+              </label>
+
+              <input
+                id="first_attendance_date"
+                name="first_attendance_date"
+                type="date"
+                defaultValue={member.first_attendance_date ?? ""}
+                max={today}
+                required={isFieldRequired("first_attendance_date")}
+                onClick={(event) => {
+                  event.currentTarget.showPicker?.();
+                }}
+                onChange={() => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    first_attendance_date: false,
+                  }));
+                }}
+                className={getInputClass("first_attendance_date")}
+              />
+
+              <RequiredMessage field="first_attendance_date" />
+            </div>
+          )}
+
+          {["married", "widowed"].includes(civilStatus) &&
+            isFieldVisible("wedding_anniversary") && (
+              <div style={{
+                order: getFieldOrder("wedding_anniversary"),
+              }}>
+                <label
+                  htmlFor="wedding_anniversary"
+                  className={labelClass}
+                >
+                  {getFieldLabel(
+                    "wedding_anniversary",
+                    "Wedding Anniversary",
+                  )}
+
+                  {isFieldRequired("wedding_anniversary") && (
+                    <span className="ml-1 text-red-500">*</span>
+                  )}
+                </label>
+
+                <input
+                  id="wedding_anniversary"
+                  name="wedding_anniversary"
+                  type="date"
+                  defaultValue={member.wedding_anniversary ?? ""}
+                  required={isFieldRequired("wedding_anniversary")}
+                  onClick={(event) => {
+                    event.currentTarget.showPicker?.();
+                  }}
+                  onChange={() => {
+                    setFieldErrors((current) => ({
+                      ...current,
+                      wedding_anniversary: false,
+                    }));
+                  }}
+                  className={getInputClass("wedding_anniversary")}
+                />
+
+                <RequiredMessage field="wedding_anniversary" />
+              </div>
+            )}
         </div>
       </section>
+
+      {customFields.length > 0 && (
+        <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
+          <h2 className="font-body text-xl font-semibold text-[#203264]">
+            Additional Information
+          </h2>
+
+          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+            {customFields.map((field) => {
+              const fieldName = `custom_field_${field.id}`;
+
+              const label = (
+                <>
+                  {field.label}
+
+                  {field.is_required && (
+                    <span className="ml-1 text-red-500">*</span>
+                  )}
+                </>
+              );
+
+              if (field.field_type === "textarea") {
+                return (
+                  <div
+                    key={field.id}
+                    className="sm:col-span-2"
+                  >
+                    <label
+                      htmlFor={fieldName}
+                      className={labelClass}
+                    >
+                      {label}
+                    </label>
+
+                    <textarea
+                      id={fieldName}
+                      name={fieldName}
+                      rows={4}
+                      required={field.is_required}
+                      placeholder={field.placeholder ?? ""}
+                      defaultValue={
+                        customFieldValues[field.id] != null
+                          ? String(customFieldValues[field.id])
+                          : ""
+                      }
+                      onChange={() => {
+                        setFieldErrors((current) => ({
+                          ...current,
+                          [fieldName]: false,
+                        }));
+                      }}
+                      className={getInputClass(fieldName)}
+                    />
+
+                    <RequiredMessage field={fieldName} />
+                  </div>
+                );
+              }
+
+              if (field.field_type === "select") {
+                let options: {
+                  value: string;
+                  label: string;
+                }[] = [];
+
+                if (field.options_source === "departments") {
+                  options = departments.map((department) => ({
+                    value: department.id,
+                    label: department.name,
+                  }));
+                } else if (
+                  field.options_source === "church_branches"
+                ) {
+                  options = branches.map((branch) => ({
+                    value: branch.id,
+                    label: branch.name,
+                  }));
+                } else if (
+                  field.options_source === "psgc_regions"
+                ) {
+                  options = regions.map((region) => ({
+                    value: region.name,
+                    label: region.name,
+                  }));
+                } else {
+                  options = getFieldOptions(field.field_key).map(
+                    (option) => ({
+                      value: option,
+                      label: option,
+                    }),
+                  );
+                }
+
+                return (
+                  <div key={field.id}>
+                    <label
+                      htmlFor={fieldName}
+                      className={labelClass}
+                    >
+                      {label}
+                    </label>
+
+                    <select
+                      id={fieldName}
+                      name={fieldName}
+                      defaultValue={
+                        customFieldValues[field.id] != null
+                          ? String(customFieldValues[field.id])
+                          : ""
+                      }
+                      required={field.is_required}
+                      onChange={() => {
+                        setFieldErrors((current) => ({
+                          ...current,
+                          [fieldName]: false,
+                        }));
+                      }}
+                      className={getInputClass(fieldName)}
+                    >
+                      <option value="">
+                        {field.placeholder ||
+                          `Select ${field.label.toLowerCase()}`}
+                      </option>
+
+                      {options.map((option) => (
+                        <option
+                          key={option.value}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <RequiredMessage field={fieldName} />
+                  </div>
+                );
+              }
+
+              const htmlType =
+                field.field_type === "phone"
+                  ? "tel"
+                  : field.field_type === "number"
+                    ? "number"
+                    : field.field_type === "email"
+                      ? "email"
+                      : field.field_type === "date"
+                        ? "date"
+                        : "text";
+
+              return (
+                <div key={field.id}>
+                  <label
+                    htmlFor={fieldName}
+                    className={labelClass}
+                  >
+                    {label}
+                  </label>
+
+                  <input
+                    id={fieldName}
+                    name={fieldName}
+                    defaultValue={
+                      customFieldValues[field.id] != null
+                        ? String(customFieldValues[field.id])
+                        : ""
+                    }
+                    type={htmlType}
+                    required={field.is_required}
+                    placeholder={
+                      htmlType === "date"
+                        ? undefined
+                        : field.placeholder ?? ""
+                    }
+                    onChange={() => {
+                      setFieldErrors((current) => ({
+                        ...current,
+                        [fieldName]: false,
+                      }));
+                    }}
+                    className={getInputClass(fieldName)}
+                  />
+
+                  <RequiredMessage field={fieldName} />
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <SaveProfileButton />
     </form>

@@ -24,6 +24,7 @@ async function FieldManagementContent() {
     field_key,
     label,
     field_type,
+    field_group,
     is_builtin,
     is_required,
     is_visible,
@@ -45,7 +46,7 @@ async function FieldManagementContent() {
           System Configuration
         </p>
 
-        <h1 className="mt-1 font-heading text-3xl font-semibold text-[#203264]">
+        <h1 className="mt-1 font-body text-3xl font-semibold text-[#203264]">
           Field Management
         </h1>
 

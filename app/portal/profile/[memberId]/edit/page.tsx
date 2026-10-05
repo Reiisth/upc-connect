@@ -145,8 +145,8 @@ export default async function EditMemberProfilePage({
             String(formData.get("civil_status") ?? ""),
           )
             ? String(
-                formData.get("wedding_anniversary") ?? "",
-              ) || null
+              formData.get("wedding_anniversary") ?? "",
+            ) || null
             : null,
 
         first_attendance_date:
@@ -173,8 +173,76 @@ export default async function EditMemberProfilePage({
       throw new Error(error.message);
     }
 
+    const customDefinitions =
+      await getMemberFieldDefinitions();
+
+    const visibleCustomFields = customDefinitions.filter(
+      (field) =>
+        !field.is_builtin &&
+        field.is_visible,
+    );
+
+    const customValues = visibleCustomFields.map((field) => {
+      const formKey = `custom_field_${field.id}`;
+      const rawValue = String(
+        formData.get(formKey) ?? "",
+      ).trim();
+
+      let value: string | number | null = rawValue || null;
+
+      if (
+        field.field_type === "number" &&
+        rawValue !== ""
+      ) {
+        const numericValue = Number(rawValue);
+
+        value = Number.isNaN(numericValue)
+          ? null
+          : numericValue;
+      }
+
+      return {
+        member_id: memberId,
+        field_definition_id: field.id,
+        value,
+        updated_at: new Date().toISOString(),
+      };
+    });
+
+    if (customValues.length > 0) {
+      const { error: customFieldError } = await supabase
+        .from("member_custom_field_values")
+        .upsert(customValues, {
+          onConflict: "member_id,field_definition_id",
+        });
+
+      if (customFieldError) {
+        throw new Error(customFieldError.message);
+      }
+    }
+
     redirect(`/portal/profile/${memberId}`);
   }
+
+  const { data: customFieldValues, error: customValuesError } =
+    await supabase
+      .from("member_custom_field_values")
+      .select(`
+      field_definition_id,
+      value
+    `)
+      .eq("member_id", memberId);
+
+  if (customValuesError) {
+    throw new Error(customValuesError.message);
+  }
+
+  const customFieldValueMap = Object.fromEntries(
+    (customFieldValues ?? []).map((item) => [
+      item.field_definition_id,
+      item.value,
+    ]),
+  );
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -202,6 +270,7 @@ export default async function EditMemberProfilePage({
         branches={branches ?? []}
         departments={departments ?? []}
         fieldDefinitions={fieldDefinitions}
+        customFieldValues={customFieldValueMap}
         action={updateProfile}
       />
     </div>

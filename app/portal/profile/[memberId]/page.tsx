@@ -206,6 +206,54 @@ async function MemberProfileContent({
       throw new Error(error.message);
     }
 
+    const customDefinitions =
+      await getMemberFieldDefinitions();
+
+    const visibleCustomFields = customDefinitions.filter(
+      (field) =>
+        !field.is_builtin &&
+        field.is_visible,
+    );
+
+    const customValues = visibleCustomFields.map((field) => {
+      const formKey = `custom_field_${field.id}`;
+      const rawValue = String(
+        formData.get(formKey) ?? "",
+      ).trim();
+
+      let value: string | number | null = rawValue || null;
+
+      if (
+        field.field_type === "number" &&
+        rawValue !== ""
+      ) {
+        const numericValue = Number(rawValue);
+
+        value = Number.isNaN(numericValue)
+          ? null
+          : numericValue;
+      }
+
+      return {
+        member_id: memberId,
+        field_definition_id: field.id,
+        value,
+        updated_at: new Date().toISOString(),
+      };
+    });
+
+    if (customValues.length > 0) {
+      const { error: customFieldError } = await supabase
+        .from("member_custom_field_values")
+        .upsert(customValues, {
+          onConflict: "member_id,field_definition_id",
+        });
+
+      if (customFieldError) {
+        throw new Error(customFieldError.message);
+      }
+    }
+
     redirect("/portal/profile");
   }
 
@@ -236,6 +284,7 @@ async function MemberProfileContent({
           branches={branches ?? []}
           departments={departments ?? []}
           fieldDefinitions={fieldDefinitions}
+          customFieldValues={{}}
           action={updateProfile}
         />
       </div>
