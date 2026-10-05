@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { disconnectMember, archiveMember } from "./actions";
 import ConfirmActionModal from "./ConfirmActionModal";
@@ -31,6 +31,7 @@ type Member = {
   member_status: string;
   account_status: string;
   profile_status: string;
+  created_at: string;
 
   department:
   | {
@@ -108,11 +109,14 @@ export default function MembersTable({
   const [profileStatusFilter, setProfileStatusFilter] = useState("all");
   const [selectedMember, setSelectedMember] =
     useState<Member | null>(null);
+  const [sortBy, setSortBy] = useState("newest");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const filteredMembers = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return members.filter((member) => {
+    const filtered = members.filter((member) => {
       const fullName = [
         member.first_name,
         member.middle_name,
@@ -149,12 +153,78 @@ export default function MembersTable({
         matchesProfileStatus
       );
     });
+
+    return [...filtered].sort((a, b) => {
+      const nameA = `${a.first_name} ${a.middle_name ?? ""} ${a.last_name}`
+        .trim()
+        .toLowerCase();
+
+      const nameB = `${b.first_name} ${b.middle_name ?? ""} ${b.last_name}`
+        .trim()
+        .toLowerCase();
+
+      switch (sortBy) {
+        case "name_asc":
+          return nameA.localeCompare(nameB);
+
+        case "name_desc":
+          return nameB.localeCompare(nameA);
+
+        case "oldest":
+          return (
+            new Date(a.created_at).getTime() -
+            new Date(b.created_at).getTime()
+          );
+
+        case "active_first":
+          return a.member_status === b.member_status
+            ? 0
+            : a.member_status === "active"
+              ? -1
+              : 1;
+
+        case "inactive_first":
+          return a.member_status === b.member_status
+            ? 0
+            : a.member_status === "inactive"
+              ? -1
+              : 1;
+
+        case "newest":
+        default:
+          return (
+            new Date(b.created_at).getTime() -
+            new Date(a.created_at).getTime()
+          );
+      }
+    });
   }, [
     members,
     search,
     memberStatusFilter,
     accountStatusFilter,
     profileStatusFilter,
+    sortBy,
+  ]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredMembers.length / itemsPerPage),
+  );
+
+  const paginatedMembers = filteredMembers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    search,
+    memberStatusFilter,
+    accountStatusFilter,
+    profileStatusFilter,
+    sortBy,
   ]);
 
   return (
@@ -171,6 +241,19 @@ export default function MembersTable({
             className="w-full rounded-xl border bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
           />
         </div>
+
+        <select
+          value={sortBy}
+          onChange={(event) => setSortBy(event.target.value)}
+          className="rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8]"
+        >
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="name_asc">Name A–Z</option>
+          <option value="name_desc">Name Z–A</option>
+          <option value="active_first">Active First</option>
+          <option value="inactive_first">Inactive First</option>
+        </select>
 
         <select
           value={memberStatusFilter}
@@ -220,7 +303,7 @@ export default function MembersTable({
           </thead>
 
           <tbody className="divide-y">
-            {filteredMembers.map((member) => {
+            {paginatedMembers.map((member) => {
               const fullName = [
                 member.first_name,
                 member.middle_name,
@@ -312,6 +395,52 @@ export default function MembersTable({
           member={selectedMember}
           onClose={() => setSelectedMember(null)}
         />
+      )}
+      {filteredMembers.length > 0 && (
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing{" "}
+            {(currentPage - 1) * itemsPerPage + 1}
+            {"–"}
+            {Math.min(
+              currentPage * itemsPerPage,
+              filteredMembers.length,
+            )}{" "}
+            of {filteredMembers.length} members
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                setCurrentPage((page) =>
+                  Math.max(1, page - 1),
+                )
+              }
+              disabled={currentPage === 1}
+              className="rounded-xl border bg-white px-3 py-2 text-sm font-medium text-[#203264] transition hover:bg-[#EEF3FB] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Previous
+            </button>
+
+            <span className="px-2 text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              type="button"
+              onClick={() =>
+                setCurrentPage((page) =>
+                  Math.min(totalPages, page + 1),
+                )
+              }
+              disabled={currentPage === totalPages}
+              className="rounded-xl border bg-white px-3 py-2 text-sm font-medium text-[#203264] transition hover:bg-[#EEF3FB] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
     </>
   );
