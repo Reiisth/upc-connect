@@ -1,12 +1,31 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
-import { Search } from "lucide-react";
 import { disconnectMember, archiveMember } from "./actions";
-import ConfirmActionModal from "./ConfirmActionModal";
-import { Archive, MailPlus, Unplug } from "lucide-react";
+import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
+import {
+  Archive,
+  MailPlus,
+  Search,
+  SearchX,
+  Unplug,
+} from "lucide-react";
 import MemberCardModal from "./MemberCardModal";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+
+import { StatusBadge } from "@/components/ui/status-badge";
+import { TableActionButton } from "@/components/ui/table-action-button";
 
 type Member = {
   id: string;
@@ -74,21 +93,20 @@ function ArchiveMemberButton({
 
   return (
     <>
-      <button
+      <TableActionButton
         type="button"
+        icon={<Archive />}
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 font-medium text-slate-500 transition hover:text-slate-700 hover:underline"
       >
-        <Archive className="h-3.5 w-3.5" />
         Archive
-      </button>
+      </TableActionButton>
 
       <ConfirmActionModal
         open={open}
         title="Archive member?"
         description={`${memberName} will be removed from the active members list, but their profile, attendance, contributions, and other historical records will be preserved.`}
         confirmLabel="Archive"
-        loadingLabel="Archiving..."
+        variant="danger"
         loading={loading}
         onConfirm={handleArchive}
         onClose={() => {
@@ -229,166 +247,208 @@ export default function MembersTable({
 
   return (
     <>
-      <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-end">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
-          <input
+          <Input
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search members..."
-            className="w-full rounded-xl border bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
+            className="pl-9"
           />
         </div>
 
-        <select
-          value={sortBy}
-          onChange={(event) => setSortBy(event.target.value)}
-          className="rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8]"
-        >
-          <option value="newest">Newest</option>
-          <option value="oldest">Oldest</option>
-          <option value="name_asc">Name A–Z</option>
-          <option value="name_desc">Name Z–A</option>
-          <option value="active_first">Active First</option>
-          <option value="inactive_first">Inactive First</option>
-        </select>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
+          <Select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value)}
+            className="lg:w-36"
+            aria-label="Sort members"
+          >
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="name_asc">Name A–Z</option>
+            <option value="name_desc">Name Z–A</option>
+            <option value="active_first">Active First</option>
+            <option value="inactive_first">Inactive First</option>
+          </Select>
 
-        <select
-          value={memberStatusFilter}
-          onChange={(event) => setMemberStatusFilter(event.target.value)}
-          className="rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8]"
-        >
-          <option value="all">All Member Statuses</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+          <Select
+            value={memberStatusFilter}
+            onChange={(event) =>
+              setMemberStatusFilter(event.target.value)
+            }
+            className="lg:w-44"
+            aria-label="Filter by member status"
+          >
+            <option value="all">All Member Statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </Select>
 
-        <select
-          value={accountStatusFilter}
-          onChange={(event) => setAccountStatusFilter(event.target.value)}
-          className="rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8]"
-        >
-          <option value="all">All Account Statuses</option>
-          <option value="connected">Connected</option>
-          <option value="invited">Invited</option>
-          <option value="no_account">No Account</option>
-        </select>
+          <Select
+            value={accountStatusFilter}
+            onChange={(event) =>
+              setAccountStatusFilter(event.target.value)
+            }
+            className="lg:w-44"
+            aria-label="Filter by account status"
+          >
+            <option value="all">All Account Statuses</option>
+            <option value="connected">Connected</option>
+            <option value="invited">Invited</option>
+            <option value="no_account">No Account</option>
+          </Select>
 
-        <select
-          value={profileStatusFilter}
-          onChange={(event) => setProfileStatusFilter(event.target.value)}
-          className="rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8]"
-        >
-          <option value="all">All Profile Statuses</option>
-          <option value="completed">Completed</option>
-          <option value="incomplete">Incomplete</option>
-        </select>
+          <Select
+            value={profileStatusFilter}
+            onChange={(event) =>
+              setProfileStatusFilter(event.target.value)
+            }
+            className="lg:w-44"
+            aria-label="Filter by profile status"
+          >
+            <option value="all">All Profile Statuses</option>
+            <option value="completed">Completed</option>
+            <option value="incomplete">Incomplete</option>
+          </Select>
+        </div>
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border bg-white shadow-sm">
-        <table className="w-full min-w-[850px] text-sm">
-          <thead className="border-b bg-[#F8FAFD] text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="px-5 py-4">Name</th>
-              <th className="px-5 py-4">Email</th>
-              <th className="px-5 py-4">Member Status</th>
-              <th className="px-5 py-4">Account Status</th>
-              <th className="px-5 py-4">Profile Status</th>
-              {canManage && (
-                <th className="px-5 py-4">Actions</th>
-              )}
-            </tr>
-          </thead>
+        {filteredMembers.length === 0 ? (
+          <EmptyState
+            icon={<SearchX className="h-5 w-5" />}
+            title="No members found"
+            description={
+              search ||
+                memberStatusFilter !== "all" ||
+                accountStatusFilter !== "all" ||
+                profileStatusFilter !== "all"
+                ? "No members match your current search or filters. Try adjusting them."
+                : "There are no members to display yet."
+            }
+          />
+        ) : (
+          <Table className="min-w-[850px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Member Status</TableHead>
+                <TableHead>Account Status</TableHead>
+                <TableHead>Profile Status</TableHead>
 
-          <tbody className="divide-y">
-            {paginatedMembers.map((member) => {
-              const fullName = [
-                member.first_name,
-                member.middle_name,
-                member.last_name,
-              ]
-                .filter(Boolean)
-                .join(" ");
+                {canManage && (
+                  <TableHead>Actions</TableHead>
+                )}
+              </TableRow>
+            </TableHeader>
 
-              return (
-                <tr key={member.id}>
-                  <td className="px-5 py-4">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedMember(member)}
-                      className="font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline"
-                    >
-                      {fullName}
-                    </button>
-                  </td>
+            <TableBody>
+              {paginatedMembers.map((member) => {
+                const fullName = [
+                  member.first_name,
+                  member.middle_name,
+                  member.last_name,
+                ]
+                  .filter(Boolean)
+                  .join(" ");
 
-                  <td className="px-5 py-4">
-                    {member.email ?? "—"}
-                  </td>
+                return (
+                  <TableRow key={member.id}>
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMember(member)}
+                        className="font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline dark:text-slate-100 dark:hover:text-[#8DB5F0]"
+                      >
+                        {fullName}
+                      </button>
+                    </TableCell>
 
-                  <td className="px-5 py-4">
-                    <StatusBadge
-                      type="member"
-                      value={member.member_status}
-                    />
-                  </td>
+                    <TableCell>
+                      {member.email ?? "—"}
+                    </TableCell>
 
-                  <td className="px-5 py-4">
-                    <StatusBadge
-                      type="account"
-                      value={member.account_status}
-                    />
-                  </td>
+                    <TableCell>
+                      <StatusBadge
+                        variant={
+                          member.member_status === "active"
+                            ? "success"
+                            : "muted"
+                        }
+                      >
+                        {member.member_status === "active"
+                          ? "Active"
+                          : "Inactive"}
+                      </StatusBadge>
+                    </TableCell>
 
-                  <td className="px-5 py-4">
-                    <StatusBadge
-                      type="profile"
-                      value={member.profile_status}
-                    />
-                  </td>
-                  {canManage && (
-                    <td className="px-5 py-4">
-                      <div className="flex flex-col items-start gap-2">
-                        {member.account_status === "no_account" ? (
-                          <Link
-                            href={`/portal/members/invite?memberId=${member.id}`}
-                            className="inline-flex items-center gap-1.5 font-medium text-[#5D94E8] transition hover:text-[#4B82D6] hover:underline"
-                          >
-                            <MailPlus className="h-3.5 w-3.5" />
-                            Connect Email
-                          </Link>
-                        ) : (
-                          <DisconnectMemberButton
+                    <TableCell>
+                      <StatusBadge
+                        variant={
+                          member.account_status === "connected"
+                            ? "success"
+                            : member.account_status === "invited"
+                              ? "warning"
+                              : "muted"
+                        }
+                      >
+                        {member.account_status === "connected"
+                          ? "Connected"
+                          : member.account_status === "invited"
+                            ? "Invited"
+                            : "No Account"}
+                      </StatusBadge>
+                    </TableCell>
+
+                    <TableCell>
+                      <StatusBadge
+                        variant={
+                          member.profile_status === "completed"
+                            ? "info"
+                            : "danger"
+                        }
+                      >
+                        {member.profile_status === "completed"
+                          ? "Completed"
+                          : "Incomplete"}
+                      </StatusBadge>
+                    </TableCell>
+
+                    {canManage && (
+                      <TableCell>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                          {member.account_status === "no_account" ? (
+                            <TableActionButton
+                              href={`/portal/members/invite?memberId=${member.id}`}
+                              icon={<MailPlus />}
+                            >
+                              Connect Email
+                            </TableActionButton>
+                          ) : (
+                            <DisconnectMemberButton
+                              memberId={member.id}
+                              memberName={`${member.first_name} ${member.last_name}`}
+                            />
+                          )}
+
+                          <ArchiveMemberButton
                             memberId={member.id}
                             memberName={`${member.first_name} ${member.last_name}`}
                           />
-                        )}
-
-                        <ArchiveMemberButton
-                          memberId={member.id}
-                          memberName={`${member.first_name} ${member.last_name}`}
-                        />
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-
-            {!filteredMembers.length && (
-              <tr>
-                <td
-                  colSpan={canManage ? 6 : 5}
-                  className="px-5 py-10 text-center text-sm text-muted-foreground"
-                >
-                  No members found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </div>
       {selectedMember && (
         <MemberCardModal
@@ -398,7 +458,7 @@ export default function MembersTable({
       )}
       {filteredMembers.length > 0 && (
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing{" "}
             {(currentPage - 1) * itemsPerPage + 1}
             {"–"}
@@ -410,35 +470,37 @@ export default function MembersTable({
           </p>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() =>
                 setCurrentPage((page) =>
                   Math.max(1, page - 1),
                 )
               }
               disabled={currentPage === 1}
-              className="rounded-xl border bg-white px-3 py-2 text-sm font-medium text-[#203264] transition hover:bg-[#EEF3FB] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Previous
-            </button>
+            </Button>
 
-            <span className="px-2 text-sm text-muted-foreground">
+            <span className="px-2 text-sm text-slate-500 dark:text-slate-400">
               Page {currentPage} of {totalPages}
             </span>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() =>
                 setCurrentPage((page) =>
                   Math.min(totalPages, page + 1),
                 )
               }
               disabled={currentPage === totalPages}
-              className="rounded-xl border bg-white px-3 py-2 text-sm font-medium text-[#203264] transition hover:bg-[#EEF3FB] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -469,79 +531,27 @@ function DisconnectMemberButton({
 
   return (
     <>
-      <button
+      <TableActionButton
         type="button"
+        variant="danger"
+        icon={<Unplug />}
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 font-medium text-red-600 transition hover:text-red-700 hover:underline"
       >
-        <Unplug className="h-3.5 w-3.5" />
         Disconnect
-      </button>
+      </TableActionButton>
 
       <ConfirmActionModal
         open={open}
         title="Disconnect member?"
         description={`${memberName} will no longer be linked to their current login account. Their member profile and records will remain in the system.`}
         confirmLabel="Disconnect"
-        loadingLabel="Disconnecting..."
+        variant="danger"
         loading={loading}
-        destructive
         onConfirm={handleDisconnect}
         onClose={() => {
           if (!loading) setOpen(false);
         }}
       />
     </>
-  );
-}
-function StatusBadge({
-  type,
-  value,
-}: {
-  type: "member" | "account" | "profile";
-  value: string;
-}) {
-  let styles = "bg-gray-100 text-gray-700";
-  let label = value.replaceAll("_", " ");
-
-  if (type === "member") {
-    if (value === "active") {
-      styles = "bg-green-100 text-green-700";
-      label = "Active";
-    } else if (value === "inactive") {
-      styles = "bg-slate-100 text-slate-600";
-      label = "Inactive";
-    }
-  }
-
-  if (type === "account") {
-    if (value === "connected") {
-      styles = "bg-green-100 text-green-700";
-      label = "Connected";
-    } else if (value === "invited") {
-      styles = "bg-amber-100 text-amber-700";
-      label = "Invited";
-    } else if (value === "no_account") {
-      styles = "bg-slate-100 text-slate-600";
-      label = "No Account";
-    }
-  }
-
-  if (type === "profile") {
-    if (value === "completed") {
-      styles = "bg-blue-100 text-blue-700";
-      label = "Completed";
-    } else if (value === "incomplete") {
-      styles = "bg-rose-100 text-rose-700";
-      label = "Incomplete";
-    }
-  }
-
-  return (
-    <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${styles}`}
-    >
-      {label}
-    </span>
   );
 }

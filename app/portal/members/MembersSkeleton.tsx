@@ -1,76 +1,57 @@
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageContainer } from "@/components/ui/page-container";
+
 export default function MembersSkeleton() {
   return (
-    <main className="space-y-6 animate-pulse">
-      {/* PAGE HEADER */}
-      <div>
-        <div className="h-4 w-24 rounded bg-slate-200" />
-        <div className="mt-3 h-9 w-40 rounded bg-slate-200" />
-        <div className="mt-3 h-4 w-72 max-w-full rounded bg-slate-200" />
+    <PageContainer>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-4 w-[420px] max-w-full" />
       </div>
 
-      {/* KPI CARDS */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div
+          <Skeleton
             key={index}
-            className="rounded-2xl border bg-white p-5 shadow-sm"
-          >
-            <div className="h-4 w-24 rounded bg-slate-200" />
-            <div className="mt-4 h-8 w-16 rounded bg-slate-200" />
-          </div>
+            className="h-28 rounded-2xl"
+          />
         ))}
       </div>
 
-      {/* TABLE */}
-      <div className="overflow-hidden rounded-3xl border bg-white shadow-sm">
-        {/* TABLE HEADER / TOOLBAR */}
-        <div className="border-b p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="h-6 w-32 rounded bg-slate-200" />
-              <div className="mt-2 h-4 w-48 rounded bg-slate-100" />
-            </div>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row">
+          <Skeleton className="h-10 flex-1" />
 
-            <div className="h-11 w-full rounded-xl bg-slate-100 sm:w-64" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
+            <Skeleton className="h-10 w-full lg:w-36" />
+            <Skeleton className="h-10 w-full lg:w-40" />
+            <Skeleton className="h-10 w-full lg:w-40" />
+            <Skeleton className="h-10 w-full lg:w-40" />
           </div>
         </div>
 
-        {/* COLUMN HEADERS */}
-        <div className="hidden grid-cols-5 gap-4 border-b bg-slate-50 px-5 py-4 md:grid">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div
+        <div className="space-y-2">
+          <Skeleton className="h-11 w-full rounded-xl" />
+
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton
               key={index}
-              className="h-4 w-20 rounded bg-slate-200"
+              className="h-16 w-full rounded-xl"
             />
           ))}
         </div>
 
-        {/* ROWS */}
-        <div className="divide-y">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="grid gap-4 px-5 py-4 md:grid-cols-5 md:items-center"
-            >
-              <div>
-                <div className="h-4 w-36 rounded bg-slate-200" />
-                <div className="mt-2 h-3 w-24 rounded bg-slate-100" />
-              </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Skeleton className="h-4 w-44" />
 
-              <div className="h-4 w-28 rounded bg-slate-200" />
-
-              <div className="h-6 w-20 rounded-full bg-slate-100" />
-
-              <div className="h-6 w-24 rounded-full bg-slate-100" />
-
-              <div className="space-y-2">
-                <div className="h-4 w-24 rounded bg-slate-200" />
-                <div className="h-4 w-20 rounded bg-slate-100" />
-              </div>
-            </div>
-          ))}
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-9 w-16" />
+          </div>
         </div>
       </div>
-    </main>
+    </PageContainer>
   );
 }
