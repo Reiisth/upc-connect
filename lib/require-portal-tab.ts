@@ -85,10 +85,12 @@ export async function requirePortalTab(tab: PortalTab) {
         } => branch !== null,
       );
   }
-
+  const branchIds = branches.map((branch) => branch.id);
   return {
     user,
     roles,
     branches,
+    branchIds,
+    isSystemAdmin,
   };
 }

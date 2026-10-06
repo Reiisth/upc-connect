@@ -19,10 +19,11 @@ export default function PortalMembersPage() {
 }
 
 async function MembersPageContent() {
-  const { roles, branches } = await requirePortalTab("members");
-  const isSystemAdmin = roles.includes("system_admin");
-
-  const branchIds = branches.map((branch) => branch.id);
+  const {
+    roles,
+    branchIds,
+    isSystemAdmin,
+  } = await requirePortalTab("members");
   const memberAccess = getMemberAccess(roles);
   const canManageMembers = memberAccess === "manage";
 
