@@ -6,6 +6,9 @@ import { useState, useTransition } from "react";
 
 import { updateStaffBranchAccess } from "../actions";
 
+import { Button } from "@/components/ui/button";
+import { FormActions } from "@/components/ui/form-actions";
+
 type Branch = {
   id: string;
   name: string;
@@ -64,7 +67,7 @@ export default function BranchAccessForm({
           return (
             <label
               key={branch.id}
-              className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-[#5D94E8]"
+              className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-[#5D94E8] dark:border-slate-700 dark:bg-slate-900"
             >
               <input
                 type="checkbox"
@@ -73,13 +76,13 @@ export default function BranchAccessForm({
                 className="h-4 w-4 accent-[#203264]"
               />
 
-              <div>
-                <p className="font-medium text-slate-800">
+              <div className="min-w-0">
+                <p className="font-medium text-slate-800 dark:text-slate-100">
                   {branch.name}
                 </p>
 
                 {branch.code && (
-                  <p className="text-xs text-slate-500">
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                     {branch.code}
                   </p>
                 )}
@@ -89,23 +92,23 @@ export default function BranchAccessForm({
         })}
       </div>
 
-      <div className="flex justify-end gap-3 border-t pt-5">
-        <Link
-          href="/portal/administration/staff-branch-access"
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-        >
-          Cancel
-        </Link>
+      <FormActions>
+        <Button variant="outline" asChild>
+          <Link href="/portal/administration/staff-branch-access">
+            Cancel
+          </Link>
+        </Button>
 
-        <button
+        <Button
           type="button"
           onClick={handleSave}
           disabled={isPending}
-          className="rounded-xl bg-gradient-to-r from-[#5D94E8] to-[#203264] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isPending ? "Saving..." : "Save Branch Access"}
-        </button>
-      </div>
+          {isPending
+            ? "Saving..."
+            : "Save Branch Access"}
+        </Button>
+      </FormActions>
     </div>
   );
 }

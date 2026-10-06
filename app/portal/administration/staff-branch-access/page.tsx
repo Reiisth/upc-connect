@@ -1,8 +1,22 @@
 import { Suspense } from "react";
+import { UsersRound } from "lucide-react";
 
 import { requirePortalTab } from "@/lib/require-portal-tab";
 import { createAdminClient } from "@/lib/supabase/admin";
-import Link from "next/link";
+
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { TableActionButton } from "@/components/ui/table-action-button";
 
 export default function StaffBranchAccessPage() {
   return (
@@ -17,11 +31,12 @@ async function StaffBranchAccessContent() {
 
   if (!roles.includes("system_admin")) {
     return (
-      <div className="rounded-2xl border bg-white p-6">
-        <p className="text-sm text-slate-500">
-          You do not have permission to manage staff branch access.
-        </p>
-      </div>
+      <PageContainer>
+        <EmptyState
+          title="Access denied"
+          description="You do not have permission to manage staff branch access."
+        />
+      </PageContainer>
     );
   }
 
@@ -98,31 +113,34 @@ async function StaffBranchAccessContent() {
       ) ?? [];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-prompt text-2xl font-semibold text-[#203264]">
-          Staff Branch Access
-        </h1>
+    <PageContainer>
+      <PageHeader
+        backHref="/portal/administration"
+        backLabel="Back to Administration"
+        eyebrow="Access Management"
+        eyebrowIcon={<UsersRound className="h-4 w-4" />}
+        title="Staff Branch Access"
+        description="Assign staff accounts to one or more church branches."
+      />
 
-        <p className="mt-1 text-sm text-slate-500">
-          Assign staff accounts to one or more church branches.
-        </p>
-      </div>
+      {staffUsers.length === 0 ? (
+        <EmptyState
+          icon={<UsersRound className="h-5 w-5" />}
+          title="No staff accounts found"
+          description="Staff accounts will appear here once roles are assigned."
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Staff</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Assigned Branches</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
 
-      <div className="overflow-hidden rounded-2xl border bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-600">
-            <tr>
-              <th className="px-4 py-3 font-medium">Staff</th>
-              <th className="px-4 py-3 font-medium">Role</th>
-              <th className="px-4 py-3 font-medium">
-                Assigned Branches
-              </th>
-              <th className="px-4 py-3 font-medium">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y">
+          <TableBody>
             {staffUsers.map((staffMember) => {
               const assignedBranchIds = new Set(
                 (assignments ?? [])
@@ -141,54 +159,69 @@ async function StaffBranchAccessContent() {
                   assignedBranchIds.has(branch.id),
                 );
 
+              const isSystemAdmin =
+                staffMember.roles.includes("system_admin");
+
               return (
-                <tr key={staffMember.id}>
-                  <td className="px-4 py-4 font-medium text-slate-800">
-                    {staffMember.display_name ?? "Unnamed Staff"}
-                  </td>
+                <TableRow key={staffMember.id}>
+                  <TableCell>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">
+                      {staffMember.display_name ?? "Unnamed Staff"}
+                    </p>
+                  </TableCell>
 
-                  <td className="px-4 py-4 text-slate-600">
+                  <TableCell>
                     {staffMember.roles.join(", ")}
-                  </td>
+                  </TableCell>
 
-                  <td className="px-4 py-4 text-slate-600">
-                    {staffMember.roles.includes("system_admin")
+                  <TableCell>
+                    {isSystemAdmin
                       ? "All branches"
                       : assignedBranches.length > 0
                         ? assignedBranches
-                          .map((branch) => branch.name)
-                          .join(", ")
+                            .map((branch) => branch.name)
+                            .join(", ")
                         : "No branches assigned"}
-                  </td>
-                  <td className="px-4 py-4">
-                    {staffMember.roles.includes("system_admin") ? (
-                      <span className="text-sm text-slate-400">
-                        All branches
+                  </TableCell>
+
+                  <TableCell>
+                    {isSystemAdmin ? (
+                      <span className="text-sm text-slate-400 dark:text-slate-500">
+                        Automatic access
                       </span>
                     ) : (
-                      <Link
+                      <TableActionButton
                         href={`/portal/administration/staff-branch-access/${staffMember.id}`}
-                        className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                       >
                         Manage
-                      </Link>
+                      </TableActionButton>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      )}
+    </PageContainer>
   );
 }
 
 function StaffBranchAccessLoading() {
   return (
-    <div className="space-y-4">
-      <div className="h-8 w-56 animate-pulse rounded-lg bg-slate-200" />
-      <div className="h-64 animate-pulse rounded-2xl bg-slate-100" />
-    </div>
+    <PageContainer>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-9 w-56" />
+        <Skeleton className="h-4 w-96 max-w-full" />
+      </div>
+
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+      </div>
+    </PageContainer>
   );
 }

@@ -1,9 +1,16 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { UsersRound } from "lucide-react";
 
 import BranchAccessForm from "./BranchAccessForm";
 import { requirePortalTab } from "@/lib/require-portal-tab";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+import { EmptyState } from "@/components/ui/empty-state";
+import { FormSection } from "@/components/ui/form-section";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type PageProps = {
   params: Promise<{
@@ -26,18 +33,16 @@ async function ManageStaffBranchAccessContent({
 }: PageProps) {
   const { userId } = await params;
 
-  const { roles } = await requirePortalTab(
-    "administration",
-  );
+  const { roles } = await requirePortalTab("administration");
 
   if (!roles.includes("system_admin")) {
     return (
-      <div className="rounded-2xl border bg-white p-6">
-        <p className="text-sm text-slate-500">
-          You do not have permission to manage staff branch
-          access.
-        </p>
-      </div>
+      <PageContainer>
+        <EmptyState
+          title="Access denied"
+          description="You do not have permission to manage staff branch access."
+        />
+      </PageContainer>
     );
   }
 
@@ -99,8 +104,7 @@ async function ManageStaffBranchAccessContent({
       return role?.name ? [role.name] : [];
     }) ?? [];
 
-  const isSystemAdmin =
-    roleNames.includes("system_admin");
+  const isSystemAdmin = roleNames.includes("system_admin");
 
   const initialBranchIds =
     assignments?.map(
@@ -108,24 +112,31 @@ async function ManageStaffBranchAccessContent({
     ) ?? [];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="font-prompt text-2xl font-semibold text-[#203264]">
-          Manage Branch Access
-        </h1>
+    <PageContainer>
+      <PageHeader
+        backHref="/portal/administration/staff-branch-access"
+        backLabel="Back to Staff Branch Access"
+        eyebrow="Access Management"
+        eyebrowIcon={<UsersRound className="h-4 w-4" />}
+        title="Manage Branch Access"
+        description={
+          profile.display_name
+            ? `Manage branch assignments for ${profile.display_name}.`
+            : "Manage branch assignments for this staff account."
+        }
+      />
 
-        <p className="mt-1 text-sm text-slate-500">
-          {profile.display_name ?? "Unnamed Staff"}
-          {roleNames.length > 0 &&
-            ` — ${roleNames.join(", ")}`}
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <FormSection
+        title="Branch Assignments"
+        description={
+          roleNames.length > 0
+            ? `Roles: ${roleNames.join(", ")}`
+            : undefined
+        }
+      >
         {isSystemAdmin ? (
-          <div className="rounded-xl bg-[#EEF3FB] p-4 text-sm text-[#203264]">
-            System administrators automatically have access
-            to all active branches.
+          <div className="rounded-xl bg-[#EEF3FB] p-4 text-sm text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+            System administrators automatically have access to all active branches.
           </div>
         ) : (
           <BranchAccessForm
@@ -134,16 +145,21 @@ async function ManageStaffBranchAccessContent({
             initialBranchIds={initialBranchIds}
           />
         )}
-      </div>
-    </div>
+      </FormSection>
+    </PageContainer>
   );
 }
 
 function PageLoading() {
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <div className="h-8 w-56 animate-pulse rounded-lg bg-slate-200" />
-      <div className="h-72 animate-pulse rounded-2xl bg-slate-100" />
-    </div>
+    <PageContainer>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-4 w-96 max-w-full" />
+      </div>
+
+      <Skeleton className="h-72 rounded-2xl" />
+    </PageContainer>
   );
 }

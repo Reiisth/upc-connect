@@ -1,8 +1,19 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { Building2 } from "lucide-react";
 
 import { createBranch } from "../actions";
 import { requirePortalTab } from "@/lib/require-portal-tab";
+
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FormActions } from "@/components/ui/form-actions";
+import { FormField } from "@/components/ui/form-field";
+import { FormSection } from "@/components/ui/form-section";
+import { Input } from "@/components/ui/input";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NewBranchPage() {
   return (
@@ -17,175 +28,149 @@ async function NewBranchContent() {
 
   if (!roles.includes("system_admin")) {
     return (
-      <div className="rounded-2xl border bg-white p-6">
-        <p className="text-sm text-slate-500">
-          You do not have permission to create church branches.
-        </p>
-      </div>
+      <PageContainer>
+        <EmptyState
+          title="Access denied"
+          description="You do not have permission to create church branches."
+        />
+      </PageContainer>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="font-prompt text-2xl font-semibold text-[#203264]">
-          Create Church Branch
-        </h1>
+    <PageContainer>
+      <PageHeader
+        backHref="/portal/administration/branches"
+        backLabel="Back to Church Branches"
+        eyebrow="Branch Management"
+        eyebrowIcon={<Building2 className="h-4 w-4" />}
+        title="Create Church Branch"
+        description="Add a new church branch to UPC Connect."
+      />
 
-        <p className="mt-1 text-sm text-slate-500">
-          Add a new church branch to UPC Connect.
-        </p>
-      </div>
-
-      <form
-        action={createBranch}
-        className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 text-slate-900"
-      >
-        <div className="grid gap-5 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <label
+      <form action={createBranch}>
+        <FormSection
+          title="Branch Information"
+          description="Enter the branch name, code, and location details."
+        >
+          <div className="grid gap-5 md:grid-cols-2">
+            <FormField
+              label="Branch Name"
               htmlFor="name"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Branch Name
-            </label>
-
-            <input
-              id="name"
-              name="name"
-              type="text"
               required
-              placeholder="e.g. UPC Batangas Main"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#5D94E8]"
-            />
-          </div>
+              className="md:col-span-2"
+            >
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                required
+                placeholder="e.g. UPC Batangas Main"
+              />
+            </FormField>
 
-          <div>
-            <label
+            <FormField
+              label="Branch Code"
               htmlFor="code"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Branch Code
-            </label>
-
-            <input
-              id="code"
-              name="code"
-              type="text"
               required
-              placeholder="e.g. MAIN"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm uppercase text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#5D94E8]"
-            />
-          </div>
+              description="Use a short unique code such as MAIN or LEMERY."
+            >
+              <Input
+                id="code"
+                name="code"
+                type="text"
+                required
+                placeholder="e.g. MAIN"
+                className="uppercase"
+              />
+            </FormField>
 
-          <div>
-            <label
+            <FormField
+              label="Country"
               htmlFor="country"
-              className="mb-2 block text-sm font-medium text-slate-700"
             >
-              Country
-            </label>
+              <Input
+                id="country"
+                name="country"
+                type="text"
+                defaultValue="Philippines"
+              />
+            </FormField>
 
-            <input
-              id="country"
-              name="country"
-              type="text"
-              defaultValue="Philippines"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#5D94E8]"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label
+            <FormField
+              label="Street Address"
               htmlFor="street_address"
-              className="mb-2 block text-sm font-medium text-slate-700"
+              className="md:col-span-2"
             >
-              Street Address
-            </label>
+              <Input
+                id="street_address"
+                name="street_address"
+                type="text"
+                placeholder="Street / Sitio / Purok"
+              />
+            </FormField>
 
-            <input
-              id="street_address"
-              name="street_address"
-              type="text"
-              placeholder="Street / Sitio / Purok"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#5D94E8]"
-            />
-          </div>
-
-          <div>
-            <label
+            <FormField
+              label="Barangay"
               htmlFor="barangay"
-              className="mb-2 block text-sm font-medium text-slate-700"
             >
-              Barangay
-            </label>
+              <Input
+                id="barangay"
+                name="barangay"
+                type="text"
+              />
+            </FormField>
 
-            <input
-              id="barangay"
-              name="barangay"
-              type="text"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#5D94E8]"
-            />
-          </div>
-
-          <div>
-            <label
+            <FormField
+              label="City / Municipality"
               htmlFor="city"
-              className="mb-2 block text-sm font-medium text-slate-700"
             >
-              City / Municipality
-            </label>
+              <Input
+                id="city"
+                name="city"
+                type="text"
+              />
+            </FormField>
 
-            <input
-              id="city"
-              name="city"
-              type="text"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#5D94E8]"
-            />
-          </div>
-
-          <div>
-            <label
+            <FormField
+              label="Province"
               htmlFor="province"
-              className="mb-2 block text-sm font-medium text-slate-700"
             >
-              Province
-            </label>
-
-            <input
-              id="province"
-              name="province"
-              type="text"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#5D94E8]"
-            />
+              <Input
+                id="province"
+                name="province"
+                type="text"
+              />
+            </FormField>
           </div>
-        </div>
 
-        <div className="flex items-center justify-end gap-3 border-t pt-5">
-          <Link
-            href="/portal/administration/branches"
-            className="rounded-xl border px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-          >
-            Cancel
-          </Link>
+          <FormActions>
+            <Button variant="outline" asChild>
+              <Link href="/portal/administration/branches">
+                Cancel
+              </Link>
+            </Button>
 
-          <button
-            type="submit"
-            className="rounded-xl bg-gradient-to-r from-[#5D94E8] to-[#203264] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
-          >
-            Create Branch
-          </button>
-        </div>
+            <Button type="submit">
+              Create Branch
+            </Button>
+          </FormActions>
+        </FormSection>
       </form>
-    </div>
+    </PageContainer>
   );
 }
 
 function NewBranchLoading() {
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <div className="h-8 w-56 animate-pulse rounded-lg bg-slate-200" />
-      <div className="h-96 animate-pulse rounded-2xl bg-slate-100" />
-    </div>
+    <PageContainer>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-4 w-80 max-w-full" />
+      </div>
+
+      <Skeleton className="h-[430px] rounded-2xl" />
+    </PageContainer>
   );
 }
