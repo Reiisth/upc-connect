@@ -47,10 +47,6 @@
     @apply bg-background text-foreground;
     font-family: var(--font-radio-canada), sans-serif;
   }
-
-  h1 {
-    font-family: var(--font-prompt), sans-serif;
-  }
 }
 
 @layer utilities {

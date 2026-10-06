@@ -28,17 +28,21 @@ type TableActionButtonProps = ButtonProps | LinkProps;
 
 const variantClasses: Record<TableActionVariant, string> = {
   default:
-    "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
+    "text-slate-600 hover:text-[#203264] dark:text-slate-300 dark:hover:text-white",
 
   danger:
-    "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300",
+    "text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300",
 
   success:
-    "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300",
+    "text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
 };
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5D94E8] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex items-center gap-1.5 text-sm font-medium transition " +
+  "underline-offset-4 hover:underline " +
+  "focus-visible:outline-none focus-visible:underline " +
+  "active:scale-95 disabled:pointer-events-none disabled:opacity-50 " +
+  "[&_svg]:h-3.5 [&_svg]:w-3.5";
 
 function isLinkProps(
   props: TableActionButtonProps,

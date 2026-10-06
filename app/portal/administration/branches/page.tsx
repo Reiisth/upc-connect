@@ -1,8 +1,33 @@
+import Link from "next/link";
 import { Suspense } from "react";
+import {
+  Building2,
+  Pencil,
+  Plus,
+  Power,
+  PowerOff,
+} from "lucide-react";
+
 import { requirePortalTab } from "@/lib/require-portal-tab";
 import { createAdminClient } from "@/lib/supabase/admin";
-import Link from "next/link";
-import { Plus, Pencil } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { TableActionButton } from "@/components/ui/table-action-button";
+import { TableActionSubmit } from "@/components/ui/table-action-submit";
+
 import { setBranchActive } from "./actions";
 
 export default function BranchesPage() {
@@ -18,11 +43,12 @@ async function BranchesContent() {
 
   if (!roles.includes("system_admin")) {
     return (
-      <div className="rounded-2xl border bg-white p-6">
-        <p className="text-sm text-slate-500">
-          You do not have permission to manage church branches.
-        </p>
-      </div>
+      <PageContainer>
+        <EmptyState
+          title="Access denied"
+          description="You do not have permission to manage church branches."
+        />
+      </PageContainer>
     );
   }
 
@@ -49,41 +75,52 @@ async function BranchesContent() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="font-prompt text-2xl font-semibold text-[#203264]">
-            Church Branches
-          </h1>
+    <PageContainer>
+      <PageHeader
+        backHref="/portal/administration"
+        backLabel="Back to Administration"
+        eyebrow="Branch Management"
+        eyebrowIcon={<Building2 className="h-4 w-4" />}
+        title="Church Branches"
+        description="Create, edit, and manage the church branches available in UPC Connect."
+        action={
+          <Button asChild>
+            <Link href="/portal/administration/branches/new">
+              <Plus />
+              Add Branch
+            </Link>
+          </Button>
+        }
+      />
 
-          <p className="mt-1 text-sm text-slate-500">
-            Manage the church branches available in UPC Connect.
-          </p>
-        </div>
+      {!branches || branches.length === 0 ? (
+        <EmptyState
+          icon={<Building2 className="h-5 w-5" />}
+          title="No church branches yet"
+          description="Create your first church branch to start organizing members and staff by location."
+          action={
+            <Button asChild>
+              <Link href="/portal/administration/branches/new">
+                <Plus />
+                Add Branch
+              </Link>
+            </Button>
+          }
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Branch</TableHead>
+              <TableHead>Code</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
 
-        <Link
-          href="/portal/administration/branches/new"
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#5D94E8] to-[#203264] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          Add Branch
-        </Link>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-600">
-            <tr>
-              <th className="px-4 py-3 font-medium">Branch</th>
-              <th className="px-4 py-3 font-medium">Code</th>
-              <th className="px-4 py-3 font-medium">Location</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y">
-            {(branches ?? []).map((branch) => {
+          <TableBody>
+            {branches.map((branch) => {
               const location = [
                 branch.barangay,
                 branch.city,
@@ -94,39 +131,51 @@ async function BranchesContent() {
                 .join(", ");
 
               return (
-                <tr key={branch.id}>
-                  <td className="px-4 py-4 font-medium text-slate-800">
-                    {branch.name}
-                  </td>
+                <TableRow key={branch.id}>
+                  <TableCell>
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-slate-100">
+                        {branch.name}
+                      </p>
 
-                  <td className="px-4 py-4 text-slate-600">
+                      {branch.street_address && (
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          {branch.street_address}
+                        </p>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  <TableCell>
                     {branch.code ?? "—"}
-                  </td>
+                  </TableCell>
 
-                  <td className="px-4 py-4 text-slate-600">
+                  <TableCell>
                     {location || "—"}
-                  </td>
+                  </TableCell>
 
-                  <td className="px-4 py-4">
-                    <span
-                      className={
+                  <TableCell>
+                    <StatusBadge
+                      variant={
                         branch.is_active
-                          ? "rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700"
-                          : "rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500"
+                          ? "success"
+                          : "muted"
                       }
                     >
-                      {branch.is_active ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
+                      {branch.is_active
+                        ? "Active"
+                        : "Inactive"}
+                    </StatusBadge>
+                  </TableCell>
+
+                  <TableCell>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Link
+                      <TableActionButton
                         href={`/portal/administration/branches/${branch.id}/edit`}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        icon={<Pencil />}
                       >
-                        <Pencil className="h-4 w-4" />
                         Edit
-                      </Link>
+                      </TableActionButton>
 
                       <form
                         action={setBranchActive.bind(
@@ -135,34 +184,44 @@ async function BranchesContent() {
                           !branch.is_active,
                         )}
                       >
-                        <button
-                          type="submit"
-                          className={
+                        <TableActionSubmit
+                          variant={branch.is_active ? "danger" : "success"}
+                          pendingLabel={
                             branch.is_active
-                              ? "rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100"
-                              : "rounded-xl border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition hover:bg-green-100"
+                              ? "Deactivating..."
+                              : "Activating..."
                           }
+                          icon={branch.is_active ? <PowerOff /> : <Power />}
                         >
                           {branch.is_active ? "Deactivate" : "Activate"}
-                        </button>
+                        </TableActionSubmit>
                       </form>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      )}
+    </PageContainer>
   );
 }
 
 function BranchesLoading() {
   return (
-    <div className="space-y-4">
-      <div className="h-8 w-48 animate-pulse rounded-lg bg-slate-200" />
-      <div className="h-64 animate-pulse rounded-2xl bg-slate-100" />
-    </div>
+    <PageContainer>
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-80 max-w-full" />
+      </div>
+
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+      </div>
+    </PageContainer>
   );
 }
