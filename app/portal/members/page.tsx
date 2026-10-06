@@ -19,13 +19,16 @@ export default function PortalMembersPage() {
 }
 
 async function MembersPageContent() {
-  const { roles } = await requirePortalTab("members");
+  const { roles, branches } = await requirePortalTab("members");
+  const isSystemAdmin = roles.includes("system_admin");
+
+  const branchIds = branches.map((branch) => branch.id);
   const memberAccess = getMemberAccess(roles);
   const canManageMembers = memberAccess === "manage";
 
   const admin = createAdminClient();
 
-  const { data: members, error } = await admin
+  let membersQuery = admin
     .from("members")
     .select(`
     id,
@@ -57,8 +60,26 @@ async function MembersPageContent() {
       name
     )
   `)
-    .eq("is_archived", false)
-    .order("created_at", { ascending: false });
+    .eq("is_archived", false);
+
+  if (!isSystemAdmin) {
+    if (branchIds.length === 0) {
+      return (
+        <div className="rounded-2xl border bg-white p-6">
+          <p className="text-sm text-slate-500">
+            You are not assigned to any church branch.
+          </p>
+        </div>
+      );
+    }
+
+    membersQuery = membersQuery.in("church_branch_id", branchIds);
+  }
+
+  const { data: members, error } = await membersQuery.order(
+    "created_at",
+    { ascending: false },
+  );
 
   if (error) {
     throw new Error(error.message);
