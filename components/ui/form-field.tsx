@@ -9,6 +9,7 @@ type FormFieldProps = {
   description?: string;
   error?: string;
   className?: string;
+  style?: React.CSSProperties;
   children: React.ReactNode;
 };
 
@@ -19,10 +20,14 @@ export function FormField({
   description,
   error,
   className,
+  style,
   children,
 }: FormFieldProps) {
   return (
-    <div className={cn("space-y-2", className)}>
+    <div
+      className={cn("space-y-2", className)}
+      style={style}
+    >
       <label
         htmlFor={htmlFor}
         className="block text-sm font-medium text-slate-700 dark:text-slate-200"
@@ -30,7 +35,10 @@ export function FormField({
         {label}
 
         {required && (
-          <span className="ml-1 text-red-500" aria-hidden="true">
+          <span
+            className="ml-1 text-red-500"
+            aria-hidden="true"
+          >
             *
           </span>
         )}

@@ -1,7 +1,15 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { UserRound } from "lucide-react";
+
 import { createClient } from "@/lib/supabase/server";
-import MemberProfileForm from "../../../components/MemberProfileForm";
 import { getMemberFieldDefinitions } from "@/lib/member-fields";
+
+import MemberProfileForm from "../../../components/MemberProfileForm";
+
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type PageProps = {
   params: Promise<{
@@ -9,7 +17,17 @@ type PageProps = {
   }>;
 };
 
-export default async function EditMemberProfilePage({
+export default function EditMemberProfilePage(
+  props: PageProps,
+) {
+  return (
+    <Suspense fallback={<EditProfileLoading />}>
+      <EditMemberProfileContent {...props} />
+    </Suspense>
+  );
+}
+
+async function EditMemberProfileContent({
   params,
 }: PageProps) {
   const { memberId } = await params;
@@ -245,24 +263,15 @@ export default async function EditMemberProfilePage({
   );
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
-      <div className="mb-8">
-        <p className="text-sm font-medium text-[#5D94E8]">
-          Profile
-        </p>
-
-        <h1 className="mt-1 font-body text-3xl font-semibold text-[#203264]">
-          Edit Profile
-        </h1>
-
-        <p className="mt-2 text-sm text-slate-600 sm:text-base">
-          Update the profile information for{" "}
-          <span className="font-medium text-[#203264]">
-            {member.first_name} {member.last_name}
-          </span>
-          .
-        </p>
-      </div>
+    <PageContainer className="max-w-5xl">
+      <PageHeader
+        backHref={`/portal/profile/${memberId}`}
+        backLabel="Back to Profile"
+        eyebrow="Profile Management"
+        eyebrowIcon={<UserRound className="h-4 w-4" />}
+        title="Edit Profile"
+        description={`Update the profile information for ${member.first_name} ${member.last_name}.`}
+      />
 
       <MemberProfileForm
         member={member}
@@ -273,6 +282,24 @@ export default async function EditMemberProfilePage({
         customFieldValues={customFieldValueMap}
         action={updateProfile}
       />
-    </div>
+    </PageContainer>
+  );
+}
+
+function EditProfileLoading() {
+  return (
+    <PageContainer className="max-w-5xl">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-9 w-44" />
+        <Skeleton className="h-4 w-96 max-w-full" />
+      </div>
+
+      <div className="space-y-5">
+        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" />
+      </div>
+    </PageContainer>
   );
 }

@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { useFormStatus } from "react-dom";
+import { FormSection } from "@/components/ui/form-section";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 type Branch = {
   id: string;
@@ -151,18 +156,6 @@ export default function MemberProfileForm({
 
   const isNCR = selectedRegion?.regionNumber === 13;
 
-  const getInputClass = (field: string) =>
-    fieldErrors[field]
-      ? `${inputClass} border-red-500 ring-2 ring-red-100 animate-shake`
-      : inputClass;
-
-  const RequiredMessage = ({ field }: { field: string }) =>
-    fieldErrors[field] ? (
-      <p className="mt-1 text-sm text-red-600">
-        This field is required.
-      </p>
-    ) : null;
-
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -300,12 +293,6 @@ export default function MemberProfileForm({
     return calculatedAge;
   }, [birthDate]);
 
-  const inputClass =
-    "w-full rounded-xl border bg-white px-4 py-3 outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10";
-
-  const labelClass =
-    "mb-2 block text-sm font-medium text-[#203264]";
-
   return (
     <form
       ref={formRef}
@@ -313,33 +300,32 @@ export default function MemberProfileForm({
       noValidate
       className="space-y-8"
     >
-      <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
-        <h2 className="font-body text-xl font-semibold text-[#203264]">
-          Personal Information
-        </h2>
-
-        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+      <FormSection
+        title="Personal Information"
+        description="Update your personal and contact information."
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
           {isFieldVisible("first_name") && (
-            <div
+            <FormField
+              label={getFieldLabel("first_name", "First Name")}
+              htmlFor="first_name"
+              required={isFieldRequired("first_name")}
+              error={
+                fieldErrors.first_name
+                  ? "This field is required."
+                  : undefined
+              }
               style={{
                 order: getFieldOrder("first_name"),
               }}
             >
-              <label htmlFor="first_name" className={labelClass}>
-                {getFieldLabel("first_name", "First Name")}
-                {isFieldRequired("first_name") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
+              <Input
                 id="first_name"
                 name="first_name"
                 value={firstName}
-                placeholder={getFieldPlaceholder(
-                  "first_name",
-                  "Enter first name",
-                )}
+                placeholder={
+                  getFieldPlaceholder("first_name") ?? undefined
+                }
                 required={isFieldRequired("first_name")}
                 onChange={(event) => {
                   setFirstName(event.target.value);
@@ -349,34 +335,36 @@ export default function MemberProfileForm({
                     first_name: false,
                   }));
                 }}
-                className={getInputClass("first_name")}
+                className={
+                  fieldErrors.first_name
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               />
-
-              <RequiredMessage field="first_name" />
-            </div>
+            </FormField>
           )}
 
           {isFieldVisible("middle_name") && (
-            <div
+            <FormField
+              label={getFieldLabel("middle_name", "Middle Name")}
+              htmlFor="middle_name"
+              required={isFieldRequired("middle_name")}
+              error={
+                fieldErrors.middle_name
+                  ? "This field is required."
+                  : undefined
+              }
               style={{
                 order: getFieldOrder("middle_name"),
               }}
             >
-              <label htmlFor="middle_name" className={labelClass}>
-                {getFieldLabel("middle_name", "Middle Name")}
-                {isFieldRequired("middle_name") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
+              <Input
                 id="middle_name"
                 name="middle_name"
                 defaultValue={member.middle_name ?? ""}
-                placeholder={getFieldPlaceholder(
-                  "middle_name",
-                  "Enter middle name",
-                )}
+                placeholder={
+                  getFieldPlaceholder("middle_name") ?? undefined
+                }
                 required={isFieldRequired("middle_name")}
                 onChange={() => {
                   setFieldErrors((current) => ({
@@ -384,34 +372,36 @@ export default function MemberProfileForm({
                     middle_name: false,
                   }));
                 }}
-                className={getInputClass("middle_name")}
+                className={
+                  fieldErrors.middle_name
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               />
-
-              <RequiredMessage field="middle_name" />
-            </div>
+            </FormField>
           )}
 
           {isFieldVisible("last_name") && (
-            <div
+            <FormField
+              label={getFieldLabel("last_name", "Last Name")}
+              htmlFor="last_name"
+              required={isFieldRequired("last_name")}
+              error={
+                fieldErrors.last_name
+                  ? "This field is required."
+                  : undefined
+              }
               style={{
                 order: getFieldOrder("last_name"),
               }}
             >
-              <label htmlFor="last_name" className={labelClass}>
-                {getFieldLabel("last_name", "Last Name")}
-                {isFieldRequired("last_name") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
+              <Input
                 id="last_name"
                 name="last_name"
                 value={lastName}
-                placeholder={getFieldPlaceholder(
-                  "last_name",
-                  "Enter last name",
-                )}
+                placeholder={
+                  getFieldPlaceholder("last_name") ?? undefined
+                }
                 required={isFieldRequired("last_name")}
                 onChange={(event) => {
                   setLastName(event.target.value);
@@ -421,34 +411,36 @@ export default function MemberProfileForm({
                     last_name: false,
                   }));
                 }}
-                className={getInputClass("last_name")}
+                className={
+                  fieldErrors.last_name
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               />
-
-              <RequiredMessage field="last_name" />
-            </div>
+            </FormField>
           )}
 
           {isFieldVisible("nickname") && (
-            <div
+            <FormField
+              label={getFieldLabel("nickname", "Nickname")}
+              htmlFor="nickname"
+              required={isFieldRequired("nickname")}
+              error={
+                fieldErrors.nickname
+                  ? "This field is required."
+                  : undefined
+              }
               style={{
                 order: getFieldOrder("nickname"),
               }}
             >
-              <label htmlFor="nickname" className={labelClass}>
-                {getFieldLabel("nickname", "Nickname")}
-                {isFieldRequired("nickname") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
+              <Input
                 id="nickname"
                 name="nickname"
                 defaultValue={member.nickname ?? ""}
-                placeholder={getFieldPlaceholder(
-                  "nickname",
-                  "Enter nickname",
-                )}
+                placeholder={
+                  getFieldPlaceholder("nickname") ?? undefined
+                }
                 required={isFieldRequired("nickname")}
                 onChange={() => {
                   setFieldErrors((current) => ({
@@ -456,78 +448,90 @@ export default function MemberProfileForm({
                     nickname: false,
                   }));
                 }}
-                className={getInputClass("nickname")}
+                className={
+                  fieldErrors.nickname
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               />
-
-              <RequiredMessage field="nickname" />
-            </div>
+            </FormField>
           )}
 
           {isFieldVisible("birth_date") && (
-            <div
-              style={{
-                order: getFieldOrder("birth_date"),
-              }}
-            >
-              <label htmlFor="birth_date" className={labelClass}>
-                {getFieldLabel("birth_date", "Birthday")}
-                {isFieldRequired("birth_date") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
-                id="birth_date"
-                name="birth_date"
-                type="date"
-                value={birthDate}
-                max={today}
+            <>
+              <FormField
+                label={getFieldLabel("birth_date", "Birthday")}
+                htmlFor="birth_date"
                 required={isFieldRequired("birth_date")}
-                onClick={(event) => {
-                  event.currentTarget.showPicker?.();
+                error={
+                  fieldErrors.birth_date
+                    ? "This field is required."
+                    : undefined
+                }
+                style={{
+                  order: getFieldOrder("birth_date"),
                 }}
-                onChange={(event) => {
-                  setBirthDate(event.target.value);
+              >
+                <Input
+                  id="birth_date"
+                  name="birth_date"
+                  type="date"
+                  value={birthDate}
+                  max={today}
+                  required={isFieldRequired("birth_date")}
+                  onClick={(event) => {
+                    event.currentTarget.showPicker?.();
+                  }}
+                  onChange={(event) => {
+                    setBirthDate(event.target.value);
 
-                  setFieldErrors((current) => ({
-                    ...current,
-                    birth_date: false,
-                  }));
+                    setFieldErrors((current) => ({
+                      ...current,
+                      birth_date: false,
+                    }));
+                  }}
+                  className={
+                    fieldErrors.birth_date
+                      ? "border-red-500 focus-visible:ring-red-200"
+                      : undefined
+                  }
+                />
+              </FormField>
+
+              <FormField
+                label="Age"
+                htmlFor="age"
+                description="Calculated automatically from birthday."
+                style={{
+                  order: getFieldOrder("birth_date", 1),
                 }}
-                className={getInputClass("birth_date")}
-              />
-
-              <RequiredMessage field="birth_date" />
-            </div>
+              >
+                <Input
+                  id="age"
+                  value={age ?? ""}
+                  placeholder="Calculated from birthday"
+                  disabled
+                  readOnly
+                />
+              </FormField>
+            </>
           )}
 
-          <div
-            style={{
-              order: getFieldOrder("birth_date", 1),
-            }}
-          >
-            <label className={labelClass}>Age</label>
-            <input
-              value={age ?? "Calculated from birthday"}
-              disabled
-              className={`${inputClass} bg-muted`}
-            />
-          </div>
-
           {isFieldVisible("gender") && (
-            <div
+            <FormField
+              label={getFieldLabel("gender", "Gender")}
+              htmlFor="gender"
+              required={isFieldRequired("gender")}
+              error={
+                fieldErrors.gender
+                  ? "This field is required."
+                  : undefined
+              }
               style={{
                 order: getFieldOrder("gender"),
               }}
             >
-              <label htmlFor="gender" className={labelClass}>
-                {getFieldLabel("gender", "Gender")}
-                {isFieldRequired("gender") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <select
+              <Select
                 id="gender"
                 name="gender"
                 defaultValue={member.gender ?? ""}
@@ -538,40 +542,38 @@ export default function MemberProfileForm({
                     gender: false,
                   }));
                 }}
-                className={getInputClass("gender")}
+                className={
+                  fieldErrors.gender
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               >
-                <option value="">
-                  {getFieldPlaceholder("gender", "Select gender")}
-                </option>
+                <option value="">Select gender</option>
 
                 {getFieldOptions("gender").map((option) => (
-                  <option
-                    key={option}
-                    value={option.toLowerCase()}
-                  >
+                  <option key={option} value={option.toLowerCase()}>
                     {option}
                   </option>
                 ))}
-              </select>
-
-              <RequiredMessage field="gender" />
-            </div>
+              </Select>
+            </FormField>
           )}
 
           {isFieldVisible("civil_status") && (
-            <div
+            <FormField
+              label={getFieldLabel("civil_status", "Civil Status")}
+              htmlFor="civil_status"
+              required={isFieldRequired("civil_status")}
+              error={
+                fieldErrors.civil_status
+                  ? "This field is required."
+                  : undefined
+              }
               style={{
                 order: getFieldOrder("civil_status"),
               }}
             >
-              <label htmlFor="civil_status" className={labelClass}>
-                {getFieldLabel("civil_status", "Civil Status")}
-                {isFieldRequired("civil_status") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <select
+              <Select
                 id="civil_status"
                 name="civil_status"
                 value={civilStatus}
@@ -584,43 +586,38 @@ export default function MemberProfileForm({
                     civil_status: false,
                   }));
                 }}
-                className={getInputClass("civil_status")}
+                className={
+                  fieldErrors.civil_status
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               >
-                <option value="">
-                  {getFieldPlaceholder(
-                    "civil_status",
-                    "Select civil status",
-                  )}
-                </option>
+                <option value="">Select civil status</option>
 
                 {getFieldOptions("civil_status").map((option) => (
-                  <option
-                    key={option}
-                    value={option.toLowerCase()}
-                  >
+                  <option key={option} value={option.toLowerCase()}>
                     {option}
                   </option>
                 ))}
-              </select>
-
-              <RequiredMessage field="civil_status" />
-            </div>
+              </Select>
+            </FormField>
           )}
 
           {isFieldVisible("zone") && (
-            <div
+            <FormField
+              label={getFieldLabel("zone", "Zone")}
+              htmlFor="zone"
+              required={isFieldRequired("zone")}
+              error={
+                fieldErrors.zone
+                  ? "This field is required."
+                  : undefined
+              }
               style={{
                 order: getFieldOrder("zone"),
               }}
             >
-              <label htmlFor="zone" className={labelClass}>
-                {getFieldLabel("zone", "Zone")}
-                {isFieldRequired("zone") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <select
+              <Select
                 id="zone"
                 name="zone"
                 defaultValue={member.zone ?? ""}
@@ -631,47 +628,45 @@ export default function MemberProfileForm({
                     zone: false,
                   }));
                 }}
-                className={getInputClass("zone")}
+                className={
+                  fieldErrors.zone
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               >
-                <option value="">
-                  {getFieldPlaceholder("zone", "Select zone")}
-                </option>
+                <option value="">Select zone</option>
 
                 {getFieldOptions("zone").map((option) => (
-                  <option
-                    key={option}
-                    value={option}
-                  >
+                  <option key={option} value={option}>
                     Zone {option}
                   </option>
                 ))}
-              </select>
-
-              <RequiredMessage field="zone" />
-            </div>
+              </Select>
+            </FormField>
           )}
 
           {isFieldVisible("phone_number") && (
-            <div
+            <FormField
+              label={getFieldLabel("phone_number", "Phone Number")}
+              htmlFor="phone_number"
+              required={isFieldRequired("phone_number")}
+              error={
+                fieldErrors.phone_number
+                  ? "Enter a valid phone number, including country code when needed."
+                  : undefined
+              }
               style={{
                 order: getFieldOrder("phone_number"),
               }}
             >
-              <label htmlFor="phone_number" className={labelClass}>
-                {getFieldLabel("phone_number", "Mobile Number")}
-                {isFieldRequired("phone_number") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
+              <Input
                 id="phone_number"
                 name="phone_number"
+                type="tel"
                 defaultValue={member.phone_number ?? ""}
-                placeholder={getFieldPlaceholder(
-                  "phone_number",
-                  "Enter mobile number",
-                )}
+                placeholder={
+                  getFieldPlaceholder("phone_number") ?? undefined
+                }
                 required={isFieldRequired("phone_number")}
                 onChange={() => {
                   setFieldErrors((current) => ({
@@ -679,69 +674,57 @@ export default function MemberProfileForm({
                     phone_number: false,
                   }));
                 }}
-                className={getInputClass("phone_number")}
+                className={
+                  fieldErrors.phone_number
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               />
-
-              {fieldErrors.phone_number && (
-                <p className="mt-1 text-sm text-red-600">
-                  Enter a valid phone number, including country code when needed.
-                </p>
-              )}
-            </div>
+            </FormField>
           )}
 
           {isFieldVisible("email") && (
-            <div
+            <FormField
+              label={getFieldLabel("email", "Email")}
+              htmlFor="email"
+              description="Email is managed through the connected account."
               style={{
                 order: getFieldOrder("email"),
               }}
             >
-              <label htmlFor="email" className={labelClass}>
-                {getFieldLabel("email", "Email")}
-                {isFieldRequired("email") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
+              <Input
                 id="email"
-                name="email"
                 type="email"
                 value={member.email ?? accountEmail}
                 readOnly
-                required={isFieldRequired("email")}
-                placeholder={getFieldPlaceholder(
-                  "email",
-                  "Enter email address",
-                )}
-                className={`${getInputClass("email")} bg-muted cursor-not-allowed`}
+                disabled
               />
-
-              <RequiredMessage field="email" />
-            </div>
+            </FormField>
           )}
         </div>
-      </section>
+      </FormSection>
 
-      <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
-        <h2 className="font-body text-xl font-semibold text-[#203264]">
-          Address
-        </h2>
-
-        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+      <FormSection
+        title="Address"
+        description="Update your current residential address."
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
           {isFieldVisible("country") && (
-            <div style={{
-              order: getFieldOrder("country"),
-            }}
-              className="sm:col-span-2">
-              <label htmlFor="country" className={labelClass}>
-                {getFieldLabel("country", "Country")}
-                {isFieldRequired("country") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
+            <FormField
+              label={getFieldLabel("country", "Country")}
+              htmlFor="country"
+              required={isFieldRequired("country")}
+              error={
+                fieldErrors.country
+                  ? "This field is required."
+                  : undefined
+              }
+              className="sm:col-span-2"
+              style={{
+                order: getFieldOrder("country"),
+              }}
+            >
+              <Input
                 id="country"
                 name="country"
                 list="countries"
@@ -767,10 +750,12 @@ export default function MemberProfileForm({
                     barangay: false,
                   }));
                 }}
-                className={getInputClass("country")}
+                className={
+                  fieldErrors.country
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               />
-
-              <RequiredMessage field="country" />
 
               <datalist id="countries">
                 <option value="Philippines" />
@@ -781,26 +766,25 @@ export default function MemberProfileForm({
                 <option value="Singapore" />
                 <option value="United Kingdom" />
               </datalist>
-            </div>
+            </FormField>
           )}
 
           {isFieldVisible("street_address") && (
-            <div
+            <FormField
+              label={getFieldLabel("street_address", "Street Address")}
+              htmlFor="street_address"
+              required={isFieldRequired("street_address")}
+              error={
+                fieldErrors.street_address
+                  ? "This field is required."
+                  : undefined
+              }
+              className="sm:col-span-2"
               style={{
                 order: getFieldOrder("street_address"),
               }}
-              className="sm:col-span-2">
-              <label htmlFor="street_address" className={labelClass}>
-                {getFieldLabel(
-                  "street_address",
-                  "Street Address",
-                )}
-                {isFieldRequired("street_address") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
+            >
+              <Input
                 id="street_address"
                 name="street_address"
                 defaultValue={member.street_address ?? ""}
@@ -815,28 +799,33 @@ export default function MemberProfileForm({
                     street_address: false,
                   }));
                 }}
-                className={getInputClass("street_address")}
+                className={
+                  fieldErrors.street_address
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               />
-
-              <RequiredMessage field="street_address" />
-            </div>
+            </FormField>
           )}
 
           {country === "Philippines" ? (
             <>
               {country === "Philippines" && isFieldVisible("region") && (
-                <div style={{
-                  order: getFieldOrder("region"),
-                }}
-                  className="sm:col-span-2">
-                  <label htmlFor="region" className={labelClass}>
-                    {getFieldLabel("region", "Region")}
-                    {isFieldRequired("region") && (
-                      <span className="ml-1 text-red-500">*</span>
-                    )}
-                  </label>
-
-                  <select
+                <FormField
+                  label={getFieldLabel("region", "Region")}
+                  htmlFor="region"
+                  required={isFieldRequired("region")}
+                  error={
+                    fieldErrors.region
+                      ? "This field is required."
+                      : undefined
+                  }
+                  className="sm:col-span-2"
+                  style={{
+                    order: getFieldOrder("region"),
+                  }}
+                >
+                  <Select
                     id="region"
                     name="region"
                     value={region}
@@ -857,7 +846,11 @@ export default function MemberProfileForm({
                         barangay: false,
                       }));
                     }}
-                    className={getInputClass("region")}
+                    className={
+                      fieldErrors.region
+                        ? "border-red-500 focus-visible:ring-red-200"
+                        : undefined
+                    }
                   >
                     <option value="">
                       {getFieldPlaceholder("region", "Select region")}
@@ -871,27 +864,28 @@ export default function MemberProfileForm({
                         {regionOption.name}
                       </option>
                     ))}
-                  </select>
-
-                  <RequiredMessage field="region" />
-                </div>
+                  </Select>
+                </FormField>
               )}
 
               {country === "Philippines" &&
                 !isNCR &&
                 isFieldVisible("province") && (
-                  <div style={{
-                    order: getFieldOrder("province"),
-                  }}
-                    className="sm:col-span-2">
-                    <label htmlFor="province" className={labelClass}>
-                      {getFieldLabel("province", "Province")}
-                      {isFieldRequired("province") && (
-                        <span className="ml-1 text-red-500">*</span>
-                      )}
-                    </label>
-
-                    <input
+                  <FormField
+                    label={getFieldLabel("province", "Province")}
+                    htmlFor="province"
+                    required={isFieldRequired("province")}
+                    error={
+                      fieldErrors.province
+                        ? "This field is required."
+                        : undefined
+                    }
+                    className="sm:col-span-2"
+                    style={{
+                      order: getFieldOrder("province"),
+                    }}
+                  >
+                    <Input
                       id="province"
                       name="province"
                       type="text"
@@ -909,26 +903,31 @@ export default function MemberProfileForm({
                           province: false,
                         }));
                       }}
-                      className={getInputClass("province")}
+                      className={
+                        fieldErrors.province
+                          ? "border-red-500 focus-visible:ring-red-200"
+                          : undefined
+                      }
                     />
-
-                    <RequiredMessage field="province" />
-                  </div>
+                  </FormField>
                 )}
 
               {isFieldVisible("city") && (
-                <div style={{
-                  order: getFieldOrder("city"),
-                }}
-                  className="sm:col-span-2">
-                  <label htmlFor="city" className={labelClass}>
-                    {getFieldLabel("city", "City / Municipality")}
-                    {isFieldRequired("city") && (
-                      <span className="ml-1 text-red-500">*</span>
-                    )}
-                  </label>
-
-                  <input
+                <FormField
+                  label={getFieldLabel("city", "City / Municipality")}
+                  htmlFor="city"
+                  required={isFieldRequired("city")}
+                  error={
+                    fieldErrors.city
+                      ? "This field is required."
+                      : undefined
+                  }
+                  className="sm:col-span-2"
+                  style={{
+                    order: getFieldOrder("city"),
+                  }}
+                >
+                  <Input
                     id="city"
                     name="city"
                     type="text"
@@ -946,27 +945,31 @@ export default function MemberProfileForm({
                         city: false,
                       }));
                     }}
-                    className={getInputClass("city")}
+                    className={
+                      fieldErrors.city
+                        ? "border-red-500 focus-visible:ring-red-200"
+                        : undefined
+                    }
                   />
-
-                  <RequiredMessage field="city" />
-                </div>
+                </FormField>
               )}
 
               {isFieldVisible("barangay") && (
-                <div
+                <FormField
+                  label={getFieldLabel("barangay", "Barangay")}
+                  htmlFor="barangay"
+                  required={isFieldRequired("barangay")}
+                  error={
+                    fieldErrors.barangay
+                      ? "This field is required."
+                      : undefined
+                  }
+                  className="sm:col-span-2"
                   style={{
                     order: getFieldOrder("barangay"),
                   }}
-                  className="sm:col-span-2">
-                  <label htmlFor="barangay" className={labelClass}>
-                    {getFieldLabel("barangay", "Barangay")}
-                    {isFieldRequired("barangay") && (
-                      <span className="ml-1 text-red-500">*</span>
-                    )}
-                  </label>
-
-                  <input
+                >
+                  <Input
                     id="barangay"
                     name="barangay"
                     type="text"
@@ -984,28 +987,35 @@ export default function MemberProfileForm({
                         barangay: false,
                       }));
                     }}
-                    className={getInputClass("barangay")}
+                    className={
+                      fieldErrors.barangay
+                        ? "border-red-500 focus-visible:ring-red-200"
+                        : undefined
+                    }
                   />
-
-                  <RequiredMessage field="barangay" />
-                </div>
+                </FormField>
               )}
             </>
           ) : (
             <>
               {isFieldVisible("province") && (
-                <div>
-                  <label htmlFor="province" className={labelClass}>
-                    {getFieldLabel(
-                      "province",
-                      "State / Province / Region",
-                    )}
-                    {isFieldRequired("province") && (
-                      <span className="ml-1 text-red-500">*</span>
-                    )}
-                  </label>
-
-                  <input
+                <FormField
+                  label={getFieldLabel(
+                    "province",
+                    "State / Province / Region",
+                  )}
+                  htmlFor="province"
+                  required={isFieldRequired("province")}
+                  error={
+                    fieldErrors.province
+                      ? "This field is required."
+                      : undefined
+                  }
+                  style={{
+                    order: getFieldOrder("province"),
+                  }}
+                >
+                  <Input
                     id="province"
                     name="province"
                     value={province}
@@ -1026,25 +1036,30 @@ export default function MemberProfileForm({
                         barangay: false,
                       }));
                     }}
-                    className={getInputClass("province")}
+                    className={
+                      fieldErrors.province
+                        ? "border-red-500 focus-visible:ring-red-200"
+                        : undefined
+                    }
                   />
-
-                  <RequiredMessage field="province" />
-                </div>
+                </FormField>
               )}
 
               {isFieldVisible("city") && (
-                <div style={{
-                  order: getFieldOrder("city"),
-                }}>
-                  <label htmlFor="city" className={labelClass}>
-                    {getFieldLabel("city", "City")}
-                    {isFieldRequired("city") && (
-                      <span className="ml-1 text-red-500">*</span>
-                    )}
-                  </label>
-
-                  <input
+                <FormField
+                  label={getFieldLabel("city", "City")}
+                  htmlFor="city"
+                  required={isFieldRequired("city")}
+                  error={
+                    fieldErrors.city
+                      ? "This field is required."
+                      : undefined
+                  }
+                  style={{
+                    order: getFieldOrder("city"),
+                  }}
+                >
+                  <Input
                     id="city"
                     name="city"
                     value={city}
@@ -1063,28 +1078,34 @@ export default function MemberProfileForm({
                         barangay: false,
                       }));
                     }}
-                    className={getInputClass("city")}
+                    className={
+                      fieldErrors.city
+                        ? "border-red-500 focus-visible:ring-red-200"
+                        : undefined
+                    }
                   />
-
-                  <RequiredMessage field="city" />
-                </div>
+                </FormField>
               )}
 
               {isFieldVisible("barangay") && (
-                <div style={{
-                  order: getFieldOrder("barangay"),
-                }} className="sm:col-span-2">
-                  <label htmlFor="barangay" className={labelClass}>
-                    {getFieldLabel(
-                      "barangay",
-                      "Local Area / District",
-                    )}
-                    {isFieldRequired("barangay") && (
-                      <span className="ml-1 text-red-500">*</span>
-                    )}
-                  </label>
-
-                  <input
+                <FormField
+                  label={getFieldLabel(
+                    "barangay",
+                    "Local Area / District",
+                  )}
+                  htmlFor="barangay"
+                  required={isFieldRequired("barangay")}
+                  error={
+                    fieldErrors.barangay
+                      ? "This field is required."
+                      : undefined
+                  }
+                  className="sm:col-span-2"
+                  style={{
+                    order: getFieldOrder("barangay"),
+                  }}
+                >
+                  <Input
                     id="barangay"
                     name="barangay"
                     value={barangay}
@@ -1101,36 +1122,43 @@ export default function MemberProfileForm({
                         barangay: false,
                       }));
                     }}
-                    className={getInputClass("barangay")}
+                    className={
+                      fieldErrors.barangay
+                        ? "border-red-500 focus-visible:ring-red-200"
+                        : undefined
+                    }
                   />
-
-                  <RequiredMessage field="barangay" />
-                </div>
+                </FormField>
               )}
             </>
           )}
         </div>
-      </section>
+      </FormSection>
 
-      <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
-        <h2 className="font-body text-xl font-semibold text-[#203264]">
-          Church Information
-        </h2>
+      <FormSection
+        title="Church Information"
+        description="Update your church membership and ministry information."
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
 
-        <div className="mt-6 grid gap-5 sm:grid-cols-2">
           {isFieldVisible("church_branch_id") && (
-            <div
+            <FormField
+              label={getFieldLabel(
+                "church_branch_id",
+                "Church Branch",
+              )}
+              htmlFor="church_branch_id"
+              required={isFieldRequired("church_branch_id")}
+              error={
+                fieldErrors.church_branch_id
+                  ? "This field is required."
+                  : undefined
+              }
               style={{
                 order: getFieldOrder("church_branch_id"),
-              }}>
-              <label htmlFor="church_branch_id" className={labelClass}>
-                {getFieldLabel("church_branch_id", "Church Branch")}
-                {isFieldRequired("church_branch_id") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <select
+              }}
+            >
+              <Select
                 id="church_branch_id"
                 name="church_branch_id"
                 defaultValue={member.church_branch_id ?? ""}
@@ -1141,7 +1169,11 @@ export default function MemberProfileForm({
                     church_branch_id: false,
                   }));
                 }}
-                className={getInputClass("church_branch_id")}
+                className={
+                  fieldErrors.church_branch_id
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               >
                 <option value="">
                   {getFieldPlaceholder(
@@ -1155,24 +1187,28 @@ export default function MemberProfileForm({
                     {branch.name}
                   </option>
                 ))}
-              </select>
-
-              <RequiredMessage field="church_branch_id" />
-            </div>
+              </Select>
+            </FormField>
           )}
 
           {isFieldVisible("department_id") && (
-            <div style={{
-              order: getFieldOrder("department_id"),
-            }}>
-              <label htmlFor="department_id" className={labelClass}>
-                {getFieldLabel("department_id", "Department")}
-                {isFieldRequired("department_id") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <select
+            <FormField
+              label={getFieldLabel(
+                "department_id",
+                "Department",
+              )}
+              htmlFor="department_id"
+              required={isFieldRequired("department_id")}
+              error={
+                fieldErrors.department_id
+                  ? "This field is required."
+                  : undefined
+              }
+              style={{
+                order: getFieldOrder("department_id"),
+              }}
+            >
+              <Select
                 id="department_id"
                 name="department_id"
                 defaultValue={member.department_id ?? ""}
@@ -1183,7 +1219,11 @@ export default function MemberProfileForm({
                     department_id: false,
                   }));
                 }}
-                className={getInputClass("department_id")}
+                className={
+                  fieldErrors.department_id
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               >
                 <option value="">
                   {getFieldPlaceholder(
@@ -1200,25 +1240,28 @@ export default function MemberProfileForm({
                     {department.name}
                   </option>
                 ))}
-              </select>
-
-              <RequiredMessage field="department_id" />
-            </div>
+              </Select>
+            </FormField>
           )}
 
           {isFieldVisible("position") && (
-            <div
+            <FormField
+              label={getFieldLabel(
+                "position",
+                "Position",
+              )}
+              htmlFor="position"
+              required={isFieldRequired("position")}
+              error={
+                fieldErrors.position
+                  ? "This field is required."
+                  : undefined
+              }
               style={{
                 order: getFieldOrder("position"),
-              }}>
-              <label htmlFor="position" className={labelClass}>
-                {getFieldLabel("position", "Position")}
-                {isFieldRequired("position") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
+              }}
+            >
+              <Input
                 id="position"
                 name="position"
                 defaultValue={member.position ?? ""}
@@ -1233,28 +1276,33 @@ export default function MemberProfileForm({
                     position: false,
                   }));
                 }}
-                className={getInputClass("position")}
+                className={
+                  fieldErrors.position
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               />
-
-              <RequiredMessage field="position" />
-            </div>
+            </FormField>
           )}
 
           {isFieldVisible("first_attendance_date") && (
-            <div style={{
-              order: getFieldOrder("first_attendance_date"),
-            }}>
-              <label htmlFor="first_attendance_date" className={labelClass}>
-                {getFieldLabel(
-                  "first_attendance_date",
-                  "First Date of Attendance",
-                )}
-                {isFieldRequired("first_attendance_date") && (
-                  <span className="ml-1 text-red-500">*</span>
-                )}
-              </label>
-
-              <input
+            <FormField
+              label={getFieldLabel(
+                "first_attendance_date",
+                "First Date of Attendance",
+              )}
+              htmlFor="first_attendance_date"
+              required={isFieldRequired("first_attendance_date")}
+              error={
+                fieldErrors.first_attendance_date
+                  ? "This field is required."
+                  : undefined
+              }
+              style={{
+                order: getFieldOrder("first_attendance_date"),
+              }}
+            >
+              <Input
                 id="first_attendance_date"
                 name="first_attendance_date"
                 type="date"
@@ -1270,33 +1318,34 @@ export default function MemberProfileForm({
                     first_attendance_date: false,
                   }));
                 }}
-                className={getInputClass("first_attendance_date")}
+                className={
+                  fieldErrors.first_attendance_date
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : undefined
+                }
               />
-
-              <RequiredMessage field="first_attendance_date" />
-            </div>
+            </FormField>
           )}
 
           {["married", "widowed"].includes(civilStatus) &&
             isFieldVisible("wedding_anniversary") && (
-              <div style={{
-                order: getFieldOrder("wedding_anniversary"),
-              }}>
-                <label
-                  htmlFor="wedding_anniversary"
-                  className={labelClass}
-                >
-                  {getFieldLabel(
-                    "wedding_anniversary",
-                    "Wedding Anniversary",
-                  )}
-
-                  {isFieldRequired("wedding_anniversary") && (
-                    <span className="ml-1 text-red-500">*</span>
-                  )}
-                </label>
-
-                <input
+              <FormField
+                label={getFieldLabel(
+                  "wedding_anniversary",
+                  "Wedding Anniversary",
+                )}
+                htmlFor="wedding_anniversary"
+                required={isFieldRequired("wedding_anniversary")}
+                error={
+                  fieldErrors.wedding_anniversary
+                    ? "This field is required."
+                    : undefined
+                }
+                style={{
+                  order: getFieldOrder("wedding_anniversary"),
+                }}
+              >
+                <Input
                   id="wedding_anniversary"
                   name="wedding_anniversary"
                   type="date"
@@ -1311,49 +1360,44 @@ export default function MemberProfileForm({
                       wedding_anniversary: false,
                     }));
                   }}
-                  className={getInputClass("wedding_anniversary")}
+                  className={
+                    fieldErrors.wedding_anniversary
+                      ? "border-red-500 focus-visible:ring-red-200"
+                      : undefined
+                  }
                 />
-
-                <RequiredMessage field="wedding_anniversary" />
-              </div>
+              </FormField>
             )}
         </div>
-      </section>
+      </FormSection>
 
       {customFields.length > 0 && (
-        <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
-          <h2 className="font-body text-xl font-semibold text-[#203264]">
-            Additional Information
-          </h2>
-
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+        <FormSection
+          title="Additional Information"
+          description="Additional information configured for member profiles."
+        >
+          <div className="grid gap-5 sm:grid-cols-2">
             {customFields.map((field) => {
               const fieldName = `custom_field_${field.id}`;
 
-              const label = (
-                <>
-                  {field.label}
-
-                  {field.is_required && (
-                    <span className="ml-1 text-red-500">*</span>
-                  )}
-                </>
-              );
+              const error = fieldErrors[fieldName]
+                ? "This field is required."
+                : undefined;
 
               if (field.field_type === "textarea") {
                 return (
-                  <div
+                  <FormField
                     key={field.id}
+                    label={field.label}
+                    htmlFor={fieldName}
+                    required={field.is_required}
+                    error={error}
                     className="sm:col-span-2"
+                    style={{
+                      order: field.sort_order,
+                    }}
                   >
-                    <label
-                      htmlFor={fieldName}
-                      className={labelClass}
-                    >
-                      {label}
-                    </label>
-
-                    <textarea
+                    <Textarea
                       id={fieldName}
                       name={fieldName}
                       rows={4}
@@ -1370,11 +1414,13 @@ export default function MemberProfileForm({
                           [fieldName]: false,
                         }));
                       }}
-                      className={getInputClass(fieldName)}
+                      className={
+                        fieldErrors[fieldName]
+                          ? "border-red-500 focus-visible:ring-red-200"
+                          : undefined
+                      }
                     />
-
-                    <RequiredMessage field={fieldName} />
-                  </div>
+                  </FormField>
                 );
               }
 
@@ -1413,15 +1459,17 @@ export default function MemberProfileForm({
                 }
 
                 return (
-                  <div key={field.id}>
-                    <label
-                      htmlFor={fieldName}
-                      className={labelClass}
-                    >
-                      {label}
-                    </label>
-
-                    <select
+                  <FormField
+                    key={field.id}
+                    label={field.label}
+                    htmlFor={fieldName}
+                    required={field.is_required}
+                    error={error}
+                    style={{
+                      order: field.sort_order,
+                    }}
+                  >
+                    <Select
                       id={fieldName}
                       name={fieldName}
                       defaultValue={
@@ -1436,7 +1484,11 @@ export default function MemberProfileForm({
                           [fieldName]: false,
                         }));
                       }}
-                      className={getInputClass(fieldName)}
+                      className={
+                        fieldErrors[fieldName]
+                          ? "border-red-500 focus-visible:ring-red-200"
+                          : undefined
+                      }
                     >
                       <option value="">
                         {field.placeholder ||
@@ -1451,10 +1503,8 @@ export default function MemberProfileForm({
                           {option.label}
                         </option>
                       ))}
-                    </select>
-
-                    <RequiredMessage field={fieldName} />
-                  </div>
+                    </Select>
+                  </FormField>
                 );
               }
 
@@ -1470,23 +1520,25 @@ export default function MemberProfileForm({
                         : "text";
 
               return (
-                <div key={field.id}>
-                  <label
-                    htmlFor={fieldName}
-                    className={labelClass}
-                  >
-                    {label}
-                  </label>
-
-                  <input
+                <FormField
+                  key={field.id}
+                  label={field.label}
+                  htmlFor={fieldName}
+                  required={field.is_required}
+                  error={error}
+                  style={{
+                    order: field.sort_order,
+                  }}
+                >
+                  <Input
                     id={fieldName}
                     name={fieldName}
+                    type={htmlType}
                     defaultValue={
                       customFieldValues[field.id] != null
                         ? String(customFieldValues[field.id])
                         : ""
                     }
-                    type={htmlType}
                     required={field.is_required}
                     placeholder={
                       htmlType === "date"
@@ -1499,15 +1551,17 @@ export default function MemberProfileForm({
                         [fieldName]: false,
                       }));
                     }}
-                    className={getInputClass(fieldName)}
+                    className={
+                      fieldErrors[fieldName]
+                        ? "border-red-500 focus-visible:ring-red-200"
+                        : undefined
+                    }
                   />
-
-                  <RequiredMessage field={fieldName} />
-                </div>
+                </FormField>
               );
             })}
           </div>
-        </section>
+        </FormSection>
       )}
 
       <SaveProfileButton />
