@@ -4,6 +4,8 @@ import { requirePortalTab } from "@/lib/require-portal-tab";
 import { createClient } from "@/lib/supabase/server";
 import ProfileSelector from "./ProfileSelector";
 import { IdCardLanyard } from "lucide-react";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
 
 
 export default function ProfilePage() {
@@ -77,23 +79,15 @@ async function ProfileContent() {
       ) ?? [];
 
   return (
-    <main className="space-y-6">
-      <div>
-        <div className="flex items-center gap-2 text-[#5D94E8]">
-          <IdCardLanyard className="h-4 w-4" />
-          Member Profile
-        </div>
-
-        <h1 className="mt-1 font-body text-3xl font-semibold text-[#203264]">
-          My Profile
-        </h1>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          Manage your member information.
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Member Profile"
+        eyebrowIcon={<IdCardLanyard className="h-4 w-4" />}
+        title="My Profile"
+        description="Manage your member information."
+      />
 
       <ProfileSelector members={members} />
-    </main>
+    </PageContainer>
   );
 }

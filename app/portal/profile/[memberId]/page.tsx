@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import ProfileMemberSkeleton from "./ProfileMemberSkeleton";
-import IncompleteProfileSkeleton from "./IncompleteProfileSkeleton";
 import MemberCard from "../../components/MemberCard";
 import EditProfileButton from "./EditProfileButton";
+import { UserRound } from "lucide-react";
+
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
 
 import { createClient } from "@/lib/supabase/server";
 import { getMemberFieldDefinitions } from "@/lib/member-fields";
@@ -13,26 +16,13 @@ type PageProps = {
   params: Promise<{
     memberId: string;
   }>;
-  searchParams: Promise<{
-    status?: string;
-  }>;
 };
 
 export default async function MemberProfilePage({
   params,
-  searchParams,
 }: PageProps) {
-  const { status } = await searchParams;
-
-  const fallback =
-    status === "incomplete" ? (
-      <IncompleteProfileSkeleton />
-    ) : (
-      <ProfileMemberSkeleton />
-    );
-
   return (
-    <Suspense fallback={fallback}>
+    <Suspense fallback={<ProfileMemberSkeleton />}>
       <MemberProfileContent params={params} />
     </Suspense>
   );
@@ -259,24 +249,15 @@ async function MemberProfileContent({
 
   if (member.profile_status !== "completed") {
     return (
-      <div className="mx-auto w-full max-w-5xl">
-        <div className="mb-8">
-          <p className="text-sm font-medium text-[#5D94E8]">
-            Profile
-          </p>
-
-          <h1 className="mt-1 font-body text-3xl font-semibold text-[#203264]">
-            Complete Profile
-          </h1>
-
-          <p className="mt-2 text-sm text-slate-600 sm:text-base">
-            Complete the profile information for{" "}
-            <span className="font-medium text-[#203264]">
-              {member.first_name} {member.last_name}
-            </span>
-            .
-          </p>
-        </div>
+      <PageContainer className="max-w-5xl">
+        <PageHeader
+          backHref="/portal/profile"
+          backLabel="Back to Profiles"
+          eyebrow="Member Profile"
+          eyebrowIcon={<UserRound className="h-4 w-4" />}
+          title="Complete Profile"
+          description={`Complete the profile information for ${member.first_name} ${member.last_name}.`}
+        />
 
         <MemberProfileForm
           member={member}
@@ -287,9 +268,9 @@ async function MemberProfileContent({
           customFieldValues={{}}
           action={updateProfile}
         />
-      </div>
+      </PageContainer>
     );
-  };
+  }
   const memberDepartment = departments.find(
     (department) => department.id === member.department_id,
   );
@@ -299,24 +280,19 @@ async function MemberProfileContent({
   );
 
   return (
-    <div className="mx-auto w-full">
-      <div className="mb-6">
-        <p className="text-sm font-medium text-[#5D94E8]">
-          Profile
-        </p>
-
-        <h1 className="mt-1 font-body text-3xl font-semibold text-[#203264]">
-          Member Profile
-        </h1>
-
-        <p className="mt-2 text-sm text-slate-600 sm:text-base">
-          View your member card and profile information.
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        backHref="/portal/profile"
+        backLabel="Back to Profiles"
+        eyebrow="Member Profile"
+        eyebrowIcon={<UserRound className="h-4 w-4" />}
+        title="Member Profile"
+        description="View your member card and profile information."
+      />
 
       <div className="flex flex-col items-center">
         <MemberCard
-          showBackToProfiles={true}
+          showBackToProfiles={false}
           member={{
             ...member,
             department: memberDepartment
@@ -330,6 +306,6 @@ async function MemberProfileContent({
 
         <EditProfileButton memberId={memberId} />
       </div>
-    </div>
+    </PageContainer>
   );
 }

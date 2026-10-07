@@ -8,6 +8,8 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { FormActions } from "@/components/ui/form-actions";
 
 type Branch = {
   id: string;
@@ -1564,7 +1566,9 @@ export default function MemberProfileForm({
         </FormSection>
       )}
 
-      <SaveProfileButton />
+      <FormActions>
+        <SaveProfileButton />
+      </FormActions>
     </form>
   );
 }
@@ -1573,19 +1577,18 @@ function SaveProfileButton() {
   const { pending } = useFormStatus();
 
   return (
-    <button
+    <Button
       type="submit"
       disabled={pending}
-      className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
     >
       {pending ? (
         <>
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
           Saving changes...
         </>
       ) : (
         "Save Profile"
       )}
-    </button>
+    </Button>
   );
 }

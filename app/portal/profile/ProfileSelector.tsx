@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type Member = {
   id: string;
@@ -33,10 +34,7 @@ export default function ProfileGrid({ members }: ProfileGridProps) {
     setIsNavigating(true);
     setSelectedId(member.id);
 
-    router.push(
-      `/portal/profile/${member.id}?status=${member.profile_status === "completed" ? "completed" : "incomplete"
-      }`,
-    );
+    router.push(`/portal/profile/${member.id}`);
   }
 
   return (
@@ -54,38 +52,50 @@ export default function ProfileGrid({ members }: ProfileGridProps) {
             type="button"
             disabled={isNavigating}
             onClick={() => handleProfileClick(member)}
-            className={`h-full min-h-[150px] w-full rounded-2xl border bg-white p-3 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[190px] sm:p-5 ${isComplete ? "" : "border-amber-200"
-              }`}
+            className={`h-full min-h-[150px] w-full rounded-2xl border bg-white p-4 text-left shadow-sm transition
+    hover:-translate-y-0.5 hover:border-[#5D94E8] hover:shadow-md
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5D94E8] focus-visible:ring-offset-2
+    active:scale-[0.99]
+    disabled:cursor-not-allowed disabled:opacity-60
+    dark:bg-slate-900
+    ${isComplete
+                ? "border-slate-200 dark:border-slate-700"
+                : "border-amber-200 dark:border-amber-800"
+              }
+  `}
           >
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div
                 className={`flex h-14 w-14 items-center justify-center rounded-full text-lg font-semibold sm:h-20 sm:w-20 sm:text-2xl ${isComplete
-                  ? "bg-brand-gradient text-white"
-                  : "bg-amber-100 text-amber-700"
+                    ? "bg-brand-gradient text-white"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
                   }`}
               >
                 {initials}
               </div>
 
-              <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] sm:text-base">
+              <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] dark:text-slate-100 sm:text-base">
                 {member.first_name} {member.last_name}
               </h2>
 
-              <p
-                className={`mt-1 text-xs sm:text-sm ${isComplete
-                  ? "text-green-600"
-                  : "font-medium text-amber-600"
-                  }`}
-              >
-                {isSelected && isNavigating
-                  ? "Loading..."
-                  : isComplete
-                    ? "Profile ready"
-                    : "Complete profile"}
-              </p>
+              <div className="mt-2">
+                {isSelected && isNavigating ? (
+                  <StatusBadge variant="info">
+                    Loading...
+                  </StatusBadge>
+                ) : isComplete ? (
+                  <StatusBadge variant="success">
+                    Profile ready
+                  </StatusBadge>
+                ) : (
+                  <StatusBadge variant="warning">
+                    Complete profile
+                  </StatusBadge>
+                )}
+              </div>
 
               {isSelected && isNavigating && (
-                <span className="mt-3 h-4 w-4 animate-spin rounded-full border-2 border-[#203264] border-t-transparent" />
+                <span className="mt-3 h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
               )}
             </div>
           </button>

@@ -5,6 +5,8 @@ import { Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
+
 export default function EditProfileButton({
   memberId,
 }: {
@@ -18,23 +20,32 @@ export default function EditProfileButton({
   }, [pathname]);
 
   return (
-    <Link
-      href={`/portal/profile/${memberId}/edit`}
-      onClick={() => setLoading(true)}
-      aria-disabled={loading}
-      className="mt-5 inline-flex min-w-[140px] items-center justify-center gap-2 rounded-xl bg-[#5D94E8] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#4B82D6] aria-disabled:pointer-events-none aria-disabled:opacity-70"
+    <Button
+      asChild
+      className="mt-5 min-w-[140px]"
     >
-      {loading ? (
-        <>
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-          Opening...
-        </>
-      ) : (
-        <>
-          <Pencil className="h-4 w-4" />
-          Edit Profile
-        </>
-      )}
-    </Link>
+      <Link
+        href={`/portal/profile/${memberId}/edit`}
+        onClick={() => setLoading(true)}
+        aria-disabled={loading}
+        className={
+          loading
+            ? "pointer-events-none opacity-70"
+            : undefined
+        }
+      >
+        {loading ? (
+          <>
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+            Opening...
+          </>
+        ) : (
+          <>
+            <Pencil />
+            Edit Profile
+          </>
+        )}
+      </Link>
+    </Button>
   );
 }
