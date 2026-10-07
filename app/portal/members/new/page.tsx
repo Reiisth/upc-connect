@@ -1,86 +1,75 @@
 import Link from "next/link";
-import { ArrowLeft, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 
 import CreateMemberButton from "./CreateMemberButton";
 import { createMember } from "../actions";
 
+import { Button } from "@/components/ui/button";
+import { FormActions } from "@/components/ui/form-actions";
+import { FormField } from "@/components/ui/form-field";
+import { FormSection } from "@/components/ui/form-section";
+import { Input } from "@/components/ui/input";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+
 export default function NewMemberPage() {
   return (
-    <main className="mx-auto w-full max-w-2xl">
-      <div>
-        <Link
-          href="/portal/members"
-          className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-[#203264]"
+    <PageContainer className="max-w-3xl">
+      <PageHeader
+        backHref="/portal/members"
+        backLabel="Back to Members"
+        eyebrow="Member Management"
+        eyebrowIcon={<UserPlus className="h-4 w-4" />}
+        title="Create Member"
+        description="Create a basic member record. The member can complete the rest of their profile once their account is connected."
+      />
+
+      <form action={createMember}>
+        <FormSection
+          title="Basic Information"
+          description="Enter the member's basic information to create their record."
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Members
-        </Link>
-
-        <div className="mt-5 flex items-center gap-2 text-[#5D94E8]">
-          <UserPlus className="h-4 w-4" />
-          <p className="text-sm font-medium">Member Management</p>
-        </div>
-
-        <h1 className="mt-1 font-body text-2xl font-semibold text-[#203264] sm:text-3xl">
-          Create Member
-        </h1>
-
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Create a basic member record. The member can complete the rest of
-          their profile once their account is connected.
-        </p>
-      </div>
-
-      <div className="mt-7 rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
-        <form action={createMember} className="space-y-5">
-          <div>
-            <label
+          <div className="grid gap-5 md:grid-cols-2">
+            <FormField
+              label="First Name"
               htmlFor="first_name"
-              className="mb-2 block text-sm font-medium text-[#203264]"
-            >
-              First Name
-            </label>
-
-            <input
-              id="first_name"
-              name="first_name"
               required
-              autoComplete="given-name"
-              placeholder="Enter first name"
-              className="w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
-            />
-          </div>
+            >
+              <Input
+                id="first_name"
+                name="first_name"
+                required
+                autoComplete="given-name"
+                placeholder="Enter first name"
+              />
+            </FormField>
 
-          <div>
-            <label
+            <FormField
+              label="Last Name"
               htmlFor="last_name"
-              className="mb-2 block text-sm font-medium text-[#203264]"
-            >
-              Last Name
-            </label>
-
-            <input
-              id="last_name"
-              name="last_name"
               required
-              autoComplete="family-name"
-              placeholder="Enter last name"
-              className="w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
-            />
+            >
+              <Input
+                id="last_name"
+                name="last_name"
+                required
+                autoComplete="family-name"
+                placeholder="Enter last name"
+              />
+            </FormField>
           </div>
 
-          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-            <Link
-              href="/portal/members"
-              className="flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-medium text-[#203264] transition hover:bg-[#EEF3FB]"
-            >
-              Cancel
-            </Link>
+          <FormActions>
+            <Button variant="outline" asChild>
+              <Link href="/portal/members">
+                Cancel
+              </Link>
+            </Button>
 
             <CreateMemberButton />
-          </div>
-        </form>
-      </div>
-    </main>
+          </FormActions>
+        </FormSection>
+      </form>
+    </PageContainer>
   );
 }
