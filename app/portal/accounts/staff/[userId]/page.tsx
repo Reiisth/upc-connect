@@ -24,6 +24,7 @@ import {
   type StaffRoleOption,
 } from "./StaffAccessManagement";
 import { StaffAccountActions } from "./StaffAccountActions";
+import { StaffDisplayNameEditor } from "./StaffDisplayNameEditor";
 
 type PageProps = {
   params: Promise<{
@@ -231,9 +232,11 @@ async function StaffAccountDetailsContent({
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <InfoItem label="Display Name">
-              {profileData?.display_name || "Unnamed Staff"}
-            </InfoItem>
+            <StaffDisplayNameEditor
+              userId={userId}
+              initialDisplayName={profileData?.display_name ?? null}
+              canEdit={Boolean(profileData)}
+            />
 
             <InfoItem label="Email">{email}</InfoItem>
 

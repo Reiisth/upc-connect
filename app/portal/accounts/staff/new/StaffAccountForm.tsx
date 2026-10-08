@@ -118,6 +118,14 @@ export default function StaffAccountForm({
         return;
       }
 
+      // Clear the client-owned form state before navigation so a cached
+      // client segment cannot restore the previous invitation on revisit.
+      setDisplayName("");
+      setEmail("");
+      setSelectedRoleIds([]);
+      setSelectedBranchIds([]);
+      setError(null);
+
       router.push(`/portal/accounts/staff/${result.userId}`);
       router.refresh();
     });

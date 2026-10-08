@@ -150,27 +150,113 @@ async function ensureProvisionProfile(
   const profile = await loadProvisionProfile(admin, userId);
 
   if (profile) {
-    if (overwriteExisting || !profile.display_name?.trim()) {
-      const { error } = await admin
-        .from("profiles")
-        .update({ display_name: displayName })
-        .eq("id", userId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
+    if (!overwriteExisting && profile.display_name?.trim()) {
+      return;
     }
 
+    await updateProvisionProfileDisplayName(
+      admin,
+      userId,
+      displayName,
+    );
+    await verifyProvisionProfileDisplayName(
+      admin,
+      userId,
+      displayName,
+    );
     return;
   }
 
-  const { error } = await admin.from("profiles").insert({
-    id: userId,
-    display_name: displayName,
-  });
+  if (overwriteExisting) {
+    // An Auth profile trigger may create the row between the invitation and
+    // this write. Upsert makes that race idempotent and ensures the submitted
+    // name wins for a newly invited account.
+    const { error } = await admin
+      .from("profiles")
+      .upsert(
+        {
+          id: userId,
+          display_name: displayName,
+        },
+        { onConflict: "id" },
+      );
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await verifyProvisionProfileDisplayName(
+      admin,
+      userId,
+      displayName,
+    );
+    return;
+  }
+
+  const { error: insertError } = await admin
+    .from("profiles")
+    .insert({
+      id: userId,
+      display_name: displayName,
+    });
+
+  if (!insertError) {
+    await verifyProvisionProfileDisplayName(
+      admin,
+      userId,
+      displayName,
+    );
+    return;
+  }
+
+  // An existing account may have had its profile row created concurrently.
+  // Recover only when the row now exists; preserve a non-empty existing name.
+  const racedProfile = await loadProvisionProfile(admin, userId);
+
+  if (!racedProfile) {
+    throw new Error(insertError.message);
+  }
+
+  if (!racedProfile.display_name?.trim()) {
+    await updateProvisionProfileDisplayName(
+      admin,
+      userId,
+      displayName,
+    );
+    await verifyProvisionProfileDisplayName(
+      admin,
+      userId,
+      displayName,
+    );
+  }
+}
+
+async function updateProvisionProfileDisplayName(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  displayName: string,
+) {
+  const { error } = await admin
+    .from("profiles")
+    .update({ display_name: displayName })
+    .eq("id", userId);
 
   if (error) {
     throw new Error(error.message);
+  }
+}
+
+async function verifyProvisionProfileDisplayName(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  expectedDisplayName: string,
+) {
+  const profile = await loadProvisionProfile(admin, userId);
+
+  if (!profile || profile.display_name !== expectedDisplayName) {
+    throw new Error(
+      "The staff account profile was created, but its display name could not be verified.",
+    );
   }
 }
 
@@ -435,6 +521,54 @@ function revalidateStaffAccess(userId: string) {
   revalidatePath(`/portal/accounts/staff/${userId}`);
   revalidatePath("/portal/accounts/staff");
   revalidatePath("/portal/administration/staff-branch-access");
+}
+
+export async function updateStaffDisplayName(
+  userId: string,
+  displayName: string,
+) {
+  await requirePortalTab("accounts");
+
+  if (typeof userId !== "string" || !userId.trim()) {
+    throw new Error("A staff account is required.");
+  }
+
+  if (typeof displayName !== "string") {
+    throw new Error("Display name is required.");
+  }
+
+  const trimmedDisplayName = displayName.trim();
+
+  if (!trimmedDisplayName) {
+    throw new Error("Display name is required.");
+  }
+
+  if (trimmedDisplayName.length > 200) {
+    throw new Error("Display name must be 200 characters or fewer.");
+  }
+
+  const admin = createAdminClient();
+  await loadStaffAccount(admin, userId);
+  await loadStaffProfile(admin, userId);
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ display_name: trimmedDisplayName })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  await verifyProvisionProfileDisplayName(
+    admin,
+    userId,
+    trimmedDisplayName,
+  );
+
+  revalidateStaffAccess(userId);
+
+  return { success: true };
 }
 
 export async function archiveStaffAccount(userId: string) {
