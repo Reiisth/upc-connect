@@ -2,11 +2,15 @@
 
 import { useMemo, useState } from "react";
 import {
+  Archive,
   ExternalLink,
+  RotateCcw,
   Search,
   SearchX,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
+import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -20,6 +24,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableActionButton } from "@/components/ui/table-action-button";
+
+import {
+  archiveStaffAccount,
+  restoreStaffAccount,
+} from "./actions";
 
 export type StaffAccountStatus =
   | "active"
@@ -86,10 +95,17 @@ export default function StaffAccountsTable({
   accounts,
   branches,
 }: StaffAccountsTableProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [branchFilter, setBranchFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedAccount, setSelectedAccount] = useState<{
+    account: StaffAccount;
+    action: "archive" | "restore";
+  } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const roleOptions = useMemo(
     () =>
@@ -145,6 +161,36 @@ export default function StaffAccountsTable({
     setRoleFilter("all");
     setBranchFilter("all");
     setStatusFilter("all");
+  }
+
+  function selectAccountAction(
+    account: StaffAccount,
+    action: "archive" | "restore",
+  ) {
+    setActionError(null);
+    setSelectedAccount({ account, action });
+  }
+
+  async function handleAccountAction() {
+    if (!selectedAccount) return;
+
+    setActionError(null);
+    setActionLoading(true);
+
+    try {
+      if (selectedAccount.action === "archive") {
+        await archiveStaffAccount(selectedAccount.account.id);
+      } else {
+        await restoreStaffAccount(selectedAccount.account.id);
+      }
+
+      router.refresh();
+      setSelectedAccount(null);
+    } catch (error) {
+      setActionError(getErrorMessage(error));
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   return (
@@ -313,17 +359,99 @@ export default function StaffAccountsTable({
                 </TableCell>
 
                 <TableCell>
-                  <span className="text-sm text-slate-400 dark:text-slate-500">
-                    Read-only
-                  </span>
+                  {account.status === "archived" ? (
+                    <TableActionButton
+                      type="button"
+                      variant="success"
+                      icon={<RotateCcw />}
+                      onClick={() =>
+                        selectAccountAction(account, "restore")
+                      }
+                    >
+                      Restore
+                    </TableActionButton>
+                  ) : account.status === "deleted" ? (
+                    <span className="text-sm text-slate-400 dark:text-slate-500">
+                      Unavailable
+                    </span>
+                  ) : (
+                    <TableActionButton
+                      type="button"
+                      variant="danger"
+                      icon={<Archive />}
+                      onClick={() =>
+                        selectAccountAction(account, "archive")
+                      }
+                    >
+                      Archive
+                    </TableActionButton>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
+
+      <ConfirmActionModal
+        open={selectedAccount !== null}
+        title={
+          selectedAccount?.action === "archive"
+            ? "Archive staff account?"
+            : "Restore staff account?"
+        }
+        description={getActionDescription(
+          selectedAccount,
+          actionError,
+        )}
+        confirmLabel={
+          selectedAccount?.action === "archive"
+            ? "Archive Account"
+            : "Restore Account"
+        }
+        variant={
+          selectedAccount?.action === "archive"
+            ? "danger"
+            : "default"
+        }
+        loading={actionLoading}
+        onConfirm={handleAccountAction}
+        onClose={() => {
+          if (!actionLoading) {
+            setSelectedAccount(null);
+            setActionError(null);
+          }
+        }}
+      />
     </div>
   );
+}
+
+function getActionDescription(
+  selectedAccount: {
+    account: StaffAccount;
+    action: "archive" | "restore";
+  } | null,
+  actionError: string | null,
+) {
+  if (!selectedAccount) return "";
+
+  const { account, action } = selectedAccount;
+  const accountLabel = account.displayName ?? account.email;
+  const description =
+    action === "archive"
+      ? `Archive ${accountLabel}? The Auth account, roles, branch assignments, and historical records will be preserved.`
+      : `Restore ${accountLabel}? The existing roles and branch assignments will be preserved.`;
+
+  return actionError
+    ? `${description} Error: ${actionError}`
+    : description;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error && error.message
+    ? error.message
+    : "The account action could not be completed.";
 }
 
 function formatRole(role: string) {

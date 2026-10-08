@@ -23,6 +23,7 @@ import {
   type StaffAccessBranch,
   type StaffRoleOption,
 } from "./StaffAccessManagement";
+import { StaffAccountActions } from "./StaffAccountActions";
 
 type PageProps = {
   params: Promise<{
@@ -162,6 +163,7 @@ async function StaffAccountDetailsContent({
 
   const user = authData.user;
   const profileData = profile as ProfileRow | null;
+  const isArchived = Boolean(profileData?.archived_at);
   const branches = (branchRows ?? []) as BranchRow[];
   const assignedBranchIds = new Set(
     ((assignments ?? []) as BranchAccessRow[]).map(
@@ -272,6 +274,7 @@ async function StaffAccountDetailsContent({
         branches={managementBranches}
         assignedBranchIds={Array.from(assignedBranchIds)}
         isSystemAdmin={isSystemAdmin}
+        isArchived={isArchived}
       />
 
       <Card>
@@ -281,20 +284,34 @@ async function StaffAccountDetailsContent({
           </h2>
 
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Available account-management navigation is read-only here.
+            Archive or restore this staff account without removing its access records.
           </p>
 
-          {profileData && (
+          {profileData ? (
             <div className="mt-5">
-              <Button asChild variant="outline">
-                <Link
-                  href={`/portal/administration/staff-branch-access/${userId}`}
-                >
-                  <ExternalLink />
-                  Manage Branch Access
-                </Link>
-              </Button>
+              <StaffAccountActions
+                userId={userId}
+                accountLabel={title}
+                isArchived={isArchived}
+              />
+
+              {!isArchived && (
+                <div className="mt-4">
+                  <Button asChild variant="outline">
+                    <Link
+                      href={`/portal/administration/staff-branch-access/${userId}`}
+                    >
+                      <ExternalLink />
+                      Manage Branch Access
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </div>
+          ) : (
+            <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">
+              Account archive and restore actions are unavailable because this account has no profile record.
+            </p>
           )}
         </CardContent>
       </Card>

@@ -36,6 +36,7 @@ type StaffAccessManagementProps = {
   branches: StaffAccessBranch[];
   assignedBranchIds: string[];
   isSystemAdmin: boolean;
+  isArchived: boolean;
 };
 
 type Feedback = {
@@ -51,6 +52,7 @@ export function StaffAccessManagement({
   branches,
   assignedBranchIds,
   isSystemAdmin,
+  isArchived,
 }: StaffAccessManagementProps) {
   const router = useRouter();
   const [selectedRoleIds, setSelectedRoleIds] = useState(
@@ -180,7 +182,9 @@ export function StaffAccessManagement({
               )}
             </div>
 
-            {availableRoles.length > 0 ? (
+            {isArchived ? (
+              <ArchivedAccessNotice description="Role editing is disabled while this account is archived. Restore the account before changing its roles." />
+            ) : availableRoles.length > 0 ? (
               <form
                 onSubmit={(event) => {
                   event.preventDefault();
@@ -293,13 +297,19 @@ export function StaffAccessManagement({
               </div>
             </div>
           ) : branches.length > 0 ? (
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                void handleBranchSave();
-              }}
-              className="space-y-5"
-            >
+            isArchived ? (
+              <ReadOnlyBranchAccess
+                branches={branches}
+                assignedBranchIds={assignedBranchIds}
+              />
+            ) : (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void handleBranchSave();
+                }}
+                className="space-y-5"
+              >
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Current assignments
@@ -406,7 +416,8 @@ export function StaffAccessManagement({
                     : "Save Branch Access"}
                 </Button>
               </FormActions>
-            </form>
+              </form>
+            )
           ) : (
             <EmptyState
               icon={<Building2 className="h-5 w-5" />}
@@ -417,6 +428,79 @@ export function StaffAccessManagement({
         </CardContent>
       </Card>
     </>
+  );
+}
+
+function ArchivedAccessNotice({ description }: { description: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
+      <StatusBadge variant="muted">Archived</StatusBadge>
+
+      <p className="text-sm text-slate-600 dark:text-slate-300">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function ReadOnlyBranchAccess({
+  branches,
+  assignedBranchIds,
+}: {
+  branches: StaffAccessBranch[];
+  assignedBranchIds: string[];
+}) {
+  const assignedBranchIdSet = new Set(assignedBranchIds);
+
+  return (
+    <div className="space-y-5">
+      <ArchivedAccessNotice description="Branch editing is disabled while this account is archived. Existing branch assignments are preserved." />
+
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Branch access
+        </p>
+
+        <div className="mt-2 space-y-3">
+          {branches.map((branch) => {
+            const isAssigned = assignedBranchIdSet.has(branch.id);
+
+            return (
+              <div
+                key={branch.id}
+                className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 dark:border-slate-700"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                    {branch.name}
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {branch.code
+                      ? `Code: ${branch.code}`
+                      : "No branch code"}
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                  <StatusBadge
+                    variant={isAssigned ? "info" : "muted"}
+                  >
+                    {isAssigned ? "Assigned" : "Not assigned"}
+                  </StatusBadge>
+
+                  <StatusBadge
+                    variant={branch.isActive ? "success" : "muted"}
+                  >
+                    {branch.isActive ? "Active" : "Inactive"}
+                  </StatusBadge>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 

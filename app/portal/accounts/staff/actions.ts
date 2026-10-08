@@ -25,9 +25,18 @@ type RoleAssignment = {
   name: string;
 };
 
+type StaffProfile = {
+  id: string;
+  archived_at: string | null;
+};
+
 type StaffAccountContext = {
   roleAssignments: RoleAssignment[];
   staffRoleAssignments: RoleAssignment[];
+  authUser: {
+    id: string;
+    deleted_at: string | null;
+  };
 };
 
 type RoleRecord = {
@@ -106,7 +115,54 @@ async function loadStaffAccount(
   return {
     roleAssignments,
     staffRoleAssignments,
+    authUser: {
+      id: authData.user.id,
+      deleted_at: authData.user.deleted_at ?? null,
+    },
   };
+}
+
+async function loadStaffProfile(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+): Promise<StaffProfile> {
+  const { data, error } = await admin
+    .from("profiles")
+    .select("id, archived_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const profile = data as StaffProfile | null;
+
+  if (!profile) {
+    throw new Error(
+      "The staff account profile could not be found.",
+    );
+  }
+
+  return profile;
+}
+
+function assertStaffAccountIsActive(profile: StaffProfile) {
+  if (profile.archived_at) {
+    throw new Error(
+      "Archived staff accounts are read-only. Restore the account before changing roles or branch access.",
+    );
+  }
+}
+
+function assertAuthAccountIsNotDeleted(
+  target: StaffAccountContext,
+) {
+  if (target.authUser.deleted_at) {
+    throw new Error(
+      "This Auth account has been deleted and cannot be archived or restored.",
+    );
+  }
 }
 
 async function countActiveSystemAdministrators(
@@ -164,6 +220,80 @@ function revalidateStaffAccess(userId: string) {
   revalidatePath("/portal/administration/staff-branch-access");
 }
 
+export async function archiveStaffAccount(userId: string) {
+  const { user: currentUser } = await requirePortalTab("accounts");
+  const admin = createAdminClient();
+  const target = await loadStaffAccount(admin, userId);
+  const profile = await loadStaffProfile(admin, userId);
+
+  assertAuthAccountIsNotDeleted(target);
+
+  if (profile.archived_at) {
+    throw new Error("This staff account is already archived.");
+  }
+
+  const targetIsSystemAdmin = target.staffRoleAssignments.some(
+    (role) => role.name === "system_admin",
+  );
+
+  if (targetIsSystemAdmin) {
+    const activeSystemAdministratorCount =
+      await countActiveSystemAdministrators(admin);
+
+    if (activeSystemAdministratorCount <= 1) {
+      if (currentUser.id === userId) {
+        throw new Error(
+          "You cannot archive your own account because it is the last active system administrator.",
+        );
+      }
+
+      throw new Error(
+        "This account cannot be archived because it is the last active system administrator.",
+      );
+    }
+  }
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidateStaffAccess(userId);
+
+  return { success: true };
+}
+
+export async function restoreStaffAccount(userId: string) {
+  await requirePortalTab("accounts");
+
+  const admin = createAdminClient();
+  const target = await loadStaffAccount(admin, userId);
+  const profile = await loadStaffProfile(admin, userId);
+
+  assertAuthAccountIsNotDeleted(target);
+
+  if (!profile.archived_at) {
+    throw new Error("This staff account is already active.");
+  }
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ archived_at: null })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidateStaffAccess(userId);
+
+  return { success: true };
+}
+
 export async function updateStaffRoles(
   userId: string,
   requestedRoleIds: string[],
@@ -181,6 +311,10 @@ export async function updateStaffRoles(
 
   const admin = createAdminClient();
   const target = await loadStaffAccount(admin, userId);
+  const profile = await loadStaffProfile(admin, userId);
+
+  assertStaffAccountIsActive(profile);
+
   const requestedIds = Array.from(new Set(requestedRoleIds));
 
   const { data: roleRows, error: rolesError } = await admin
@@ -297,6 +431,9 @@ export async function updateStaffBranchAccessFromAccount(
 
   const admin = createAdminClient();
   const target = await loadStaffAccount(admin, userId);
+  const profile = await loadStaffProfile(admin, userId);
+
+  assertStaffAccountIsActive(profile);
 
   if (
     target.staffRoleAssignments.some(
