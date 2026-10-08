@@ -1,28 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import {
-  Building2,
-  ExternalLink,
-  ShieldCheck,
-  UserRoundCog,
-} from "lucide-react";
+import { ExternalLink, UserRoundCog } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
 } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 import { requirePortalTab } from "@/lib/require-portal-tab";
+import { isStaffRole } from "@/lib/staff-roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import type { StaffAccountStatus } from "../StaffAccountsTable";
+import {
+  StaffAccessManagement,
+  type StaffAccessBranch,
+  type StaffRoleOption,
+} from "./StaffAccessManagement";
 
 type PageProps = {
   params: Promise<{
@@ -47,6 +47,16 @@ type BranchAccessRow = {
   church_branch_id: string;
 };
 
+type RoleRow = {
+  id: string;
+  name: string;
+};
+
+type RoleLinkRow = {
+  role_id: string | null;
+  roles: RoleRow | RoleRow[] | null;
+};
+
 export default function StaffAccountDetailsPage(
   props: PageProps,
 ) {
@@ -68,6 +78,7 @@ async function StaffAccountDetailsContent({
   const [
     { data: authData, error: authError },
     { data: roleLinks, error: roleError },
+    { data: availableRoleRows, error: availableRolesError },
     { data: profile, error: profileError },
     { data: branchRows, error: branchError },
     { data: assignments, error: assignmentsError },
@@ -77,12 +88,20 @@ async function StaffAccountDetailsContent({
     admin
       .from("user_roles")
       .select(`
+        role_id,
         roles!inner (
+          id,
           name
         )
       `)
       .eq("user_id", userId)
       .neq("roles.name", "member"),
+
+    admin
+      .from("roles")
+      .select("id, name")
+      .neq("name", "member")
+      .order("name"),
 
     admin
       .from("profiles")
@@ -106,32 +125,36 @@ async function StaffAccountDetailsContent({
   }
 
   if (roleError) throw new Error(roleError.message);
+  if (availableRolesError) {
+    throw new Error(availableRolesError.message);
+  }
   if (profileError) throw new Error(profileError.message);
   if (branchError) throw new Error(branchError.message);
   if (assignmentsError) {
     throw new Error(assignmentsError.message);
   }
 
-  const roleNames = Array.from(
-    new Set(
-      (roleLinks ?? []).flatMap((link) => {
-        const roles = link.roles as
-          | { name: string }
-          | { name: string }[]
-          | null;
+  const roleDetails = Array.from(
+    new Map(
+      ((roleLinks ?? []) as unknown as RoleLinkRow[])
+        .flatMap((link) => {
+          if (!link.roles) return [];
 
-        if (!roles) return [];
+          const roles = Array.isArray(link.roles)
+            ? link.roles
+            : [link.roles];
 
-        const roleList = Array.isArray(roles)
-          ? roles
-          : [roles];
-
-        return roleList
-          .map((role) => role.name)
-          .filter((role) => role !== "member");
-      }),
-    ),
+          return roles
+            .map((role) => ({
+              id: link.role_id ?? role.id,
+              name: role.name,
+            }))
+            .filter((role) => role.name !== "member");
+        })
+        .map((role) => [role.id, role] as const),
+    ).values(),
   );
+  const roleNames = roleDetails.map((role) => role.name);
 
   if (roleNames.length === 0) {
     notFound();
@@ -145,10 +168,24 @@ async function StaffAccountDetailsContent({
       (assignment) => assignment.church_branch_id,
     ),
   );
-  const assignedBranches = branches.filter((branch) =>
-    assignedBranchIds.has(branch.id),
-  );
   const isSystemAdmin = roleNames.includes("system_admin");
+  const availableRoles = ((availableRoleRows ?? []) as RoleRow[])
+    .filter((role) => isStaffRole(role.name))
+    .map<StaffRoleOption>((role) => ({
+      id: role.id,
+      name: role.name,
+    }));
+  const assignedRoleIds = roleDetails
+    .filter((role) => isStaffRole(role.name))
+    .map((role) => role.id);
+  const managementBranches = branches.map<StaffAccessBranch>(
+    (branch) => ({
+      id: branch.id,
+      name: branch.name,
+      code: branch.code,
+      isActive: branch.is_active,
+    }),
+  );
   const status = getAccountStatus({
     archivedAt: profileData?.archived_at ?? null,
     deletedAt: user.deleted_at ?? null,
@@ -227,102 +264,15 @@ async function StaffAccountDetailsContent({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-5 sm:p-6">
-          <div className="mb-5 flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-[#5D94E8]" />
-
-            <div>
-              <h2 className="font-prompt text-lg font-semibold text-[#203264] dark:text-slate-100">
-                Roles
-              </h2>
-
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Assigned non-member roles for this account.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {roleNames.map((role) => (
-              <StatusBadge key={role} variant="info">
-                {formatRole(role)}
-              </StatusBadge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-5 sm:p-6">
-          <div className="mb-5 flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-[#5D94E8]" />
-
-            <div>
-              <h2 className="font-prompt text-lg font-semibold text-[#203264] dark:text-slate-100">
-                Branch Access
-              </h2>
-
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {isSystemAdmin
-                  ? "System administrator access is automatic."
-                  : "Church branches currently assigned to this account."}
-              </p>
-            </div>
-          </div>
-
-          {isSystemAdmin ? (
-            <div className="flex items-start gap-3 rounded-2xl bg-[#EEF3FB] p-4 dark:bg-slate-800">
-              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#203264] dark:text-slate-200" />
-
-              <div>
-                <StatusBadge variant="info">
-                  All active branches
-                </StatusBadge>
-
-                <p className="mt-2 text-sm text-[#203264] dark:text-slate-200">
-                  System administrators automatically have access to every active church branch.
-                </p>
-              </div>
-            </div>
-          ) : assignedBranches.length > 0 ? (
-            <div className="space-y-3">
-              {assignedBranches.map((branch) => (
-                <div
-                  key={branch.id}
-                  className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-slate-100">
-                        {branch.name}
-                      </p>
-
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {branch.code
-                          ? `Code: ${branch.code}`
-                          : "No branch code"}
-                      </p>
-                    </div>
-
-                    <StatusBadge
-                      variant={branch.is_active ? "success" : "muted"}
-                    >
-                      {branch.is_active ? "Active" : "Inactive"}
-                    </StatusBadge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={<Building2 className="h-5 w-5" />}
-              title="No branch access assigned"
-              description="This staff account does not have an explicit church branch assignment."
-            />
-          )}
-        </CardContent>
-      </Card>
+      <StaffAccessManagement
+        userId={userId}
+        availableRoles={availableRoles}
+        assignedRoles={roleDetails}
+        assignedRoleIds={assignedRoleIds}
+        branches={managementBranches}
+        assignedBranchIds={Array.from(assignedBranchIds)}
+        isSystemAdmin={isSystemAdmin}
+      />
 
       <Card>
         <CardContent className="p-5 sm:p-6">
@@ -462,16 +412,6 @@ const statusVariants: Record<
   archived: "muted",
   deleted: "danger",
 };
-
-function formatRole(role: string) {
-  return role
-    .split("_")
-    .map(
-      (word) =>
-        word.charAt(0).toUpperCase() + word.slice(1),
-    )
-    .join(" ");
-}
 
 function formatDate(value: string | null) {
   if (!value) return "—";
