@@ -145,105 +145,29 @@ async function ensureProvisionProfile(
   admin: ReturnType<typeof createAdminClient>,
   userId: string,
   displayName: string,
-  overwriteExisting: boolean,
 ) {
-  const profile = await loadProvisionProfile(admin, userId);
-
-  if (profile) {
-    if (!overwriteExisting && profile.display_name?.trim()) {
-      return;
-    }
-
-    await updateProvisionProfileDisplayName(
-      admin,
-      userId,
-      displayName,
-    );
-    await verifyProvisionProfileDisplayName(
-      admin,
-      userId,
-      displayName,
-    );
-    return;
-  }
-
-  if (overwriteExisting) {
-    // An Auth profile trigger may create the row between the invitation and
-    // this write. Upsert makes that race idempotent and ensures the submitted
-    // name wins for a newly invited account.
-    const { error } = await admin
-      .from("profiles")
-      .upsert(
-        {
-          id: userId,
-          display_name: displayName,
-        },
-        { onConflict: "id" },
-      );
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    await verifyProvisionProfileDisplayName(
-      admin,
-      userId,
-      displayName,
-    );
-    return;
-  }
-
-  const { error: insertError } = await admin
-    .from("profiles")
-    .insert({
-      id: userId,
-      display_name: displayName,
-    });
-
-  if (!insertError) {
-    await verifyProvisionProfileDisplayName(
-      admin,
-      userId,
-      displayName,
-    );
-    return;
-  }
-
-  // An existing account may have had its profile row created concurrently.
-  // Recover only when the row now exists; preserve a non-empty existing name.
-  const racedProfile = await loadProvisionProfile(admin, userId);
-
-  if (!racedProfile) {
-    throw new Error(insertError.message);
-  }
-
-  if (!racedProfile.display_name?.trim()) {
-    await updateProvisionProfileDisplayName(
-      admin,
-      userId,
-      displayName,
-    );
-    await verifyProvisionProfileDisplayName(
-      admin,
-      userId,
-      displayName,
-    );
-  }
-}
-
-async function updateProvisionProfileDisplayName(
-  admin: ReturnType<typeof createAdminClient>,
-  userId: string,
-  displayName: string,
-) {
+  // The administrator's submitted name is the intended account-level label
+  // for both new invitations and existing-account promotions. Upsert also
+  // handles a profile trigger creating the row before this write runs.
   const { error } = await admin
     .from("profiles")
-    .update({ display_name: displayName })
-    .eq("id", userId);
+    .upsert(
+      {
+        id: userId,
+        display_name: displayName,
+      },
+      { onConflict: "id" },
+    );
 
   if (error) {
     throw new Error(error.message);
   }
+
+  await verifyProvisionProfileDisplayName(
+    admin,
+    userId,
+    displayName,
+  );
 }
 
 async function verifyProvisionProfileDisplayName(
@@ -1010,7 +934,6 @@ export async function createStaffAccount(
       admin,
       userId,
       displayName,
-      newlyInvited,
     );
 
     const { error: roleAssignmentError } = await admin
