@@ -3,28 +3,51 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusBadge } from "@/components/ui/status-badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePortalTab } from "@/lib/require-portal-tab";
 
 import AccountsTabs from "../AccountsTabs";
+import StaffAccountsTable, {
+  type StaffAccount,
+  type StaffAccountStatus,
+  type StaffBranch,
+} from "./StaffAccountsTable";
 import {
   KeyRound,
   UserRoundCog,
 } from "lucide-react";
+
+type AuthUser = {
+  id: string;
+  email?: string;
+  created_at: string;
+  last_sign_in_at?: string;
+  email_confirmed_at?: string;
+  invited_at?: string;
+  banned_until?: string;
+  deleted_at?: string;
+};
+
+type ProfileRow = {
+  id: string;
+  display_name: string | null;
+  archived_at: string | null;
+};
+
+type BranchRow = {
+  id: string;
+  name: string;
+  is_active: boolean;
+};
+
+type BranchAccessRow = {
+  user_id: string;
+  church_branch_id: string;
+};
 
 export default function StaffAccountsPage() {
   return (
@@ -39,18 +62,44 @@ async function StaffAccountsContent() {
 
   const admin = createAdminClient();
 
-  const { data: staffRoleLinks, error: roleError } = await admin
-    .from("user_roles")
-    .select(`
-      user_id,
-      roles!inner (
-        name
-      )
-    `)
-    .neq("roles.name", "member");
+  const [
+    { data: staffRoleLinks, error: roleError },
+    { data: profileRows, error: profileError },
+    { data: branchRows, error: branchError },
+    { data: branchAccessRows, error: branchAccessError },
+    authUsers,
+  ] = await Promise.all([
+    admin
+      .from("user_roles")
+      .select(`
+        user_id,
+        roles!inner (
+          name
+        )
+      `)
+      .neq("roles.name", "member"),
 
-  if (roleError) {
-    throw new Error(roleError.message);
+    admin
+      .from("profiles")
+      .select("id, display_name, archived_at"),
+
+    admin
+      .from("church_branches")
+      .select("id, name, is_active")
+      .order("name"),
+
+    admin
+      .from("user_branch_access")
+      .select("user_id, church_branch_id"),
+
+    listAllAuthUsers(admin),
+  ]);
+
+  if (roleError) throw new Error(roleError.message);
+  if (profileError) throw new Error(profileError.message);
+  if (branchError) throw new Error(branchError.message);
+  if (branchAccessError) {
+    throw new Error(branchAccessError.message);
   }
 
   const roleMap = new Map<string, string[]>();
@@ -78,22 +127,69 @@ async function StaffAccountsContent() {
     roleMap.set(link.user_id, existing);
   }
 
-  const { data: authData, error: authError } =
-    await admin.auth.admin.listUsers();
+  const profileMap = new Map<string, ProfileRow>(
+    ((profileRows ?? []) as ProfileRow[]).map((profile) => [
+      profile.id,
+      profile,
+    ]),
+  );
 
-  if (authError) {
-    throw new Error(authError.message);
+  const branches: StaffBranch[] = (
+    (branchRows ?? []) as BranchRow[]
+  ).map((branch) => ({
+    id: branch.id,
+    name: branch.name,
+    isActive: branch.is_active,
+  }));
+
+  const branchMap = new Map(
+    branches.map((branch) => [branch.id, branch]),
+  );
+
+  const branchIdsByUser = new Map<string, Set<string>>();
+
+  for (const assignment of (branchAccessRows ?? []) as BranchAccessRow[]) {
+    const assignedBranchIds =
+      branchIdsByUser.get(assignment.user_id) ?? new Set<string>();
+
+    assignedBranchIds.add(assignment.church_branch_id);
+    branchIdsByUser.set(
+      assignment.user_id,
+      assignedBranchIds,
+    );
   }
 
-  const staffAccounts = authData.users
+  const staffAccounts: StaffAccount[] = authUsers
     .filter((user) => roleMap.has(user.id))
-    .map((user) => ({
-      id: user.id,
-      email: user.email ?? "No email",
-      createdAt: user.created_at,
-      lastSignInAt: user.last_sign_in_at,
-      roles: roleMap.get(user.id) ?? [],
-    }));
+    .map((user) => {
+      const roles = roleMap.get(user.id) ?? [];
+      const profile = profileMap.get(user.id);
+      const branchAccess = Array.from(
+        branchIdsByUser.get(user.id) ?? [],
+      )
+        .map((branchId) => branchMap.get(branchId))
+        .filter(
+          (branch): branch is StaffBranch => Boolean(branch),
+        );
+
+      return {
+        id: user.id,
+        displayName: profile?.display_name ?? null,
+        email: user.email ?? "No email",
+        roles,
+        branchAccess,
+        hasAllBranchAccess: roles.includes("system_admin"),
+        status: getAccountStatus({
+          archivedAt: profile?.archived_at ?? null,
+          deletedAt: user.deleted_at ?? null,
+          bannedUntil: user.banned_until ?? null,
+          invitedAt: user.invited_at ?? null,
+          emailConfirmedAt: user.email_confirmed_at ?? null,
+        }),
+        createdAt: user.created_at,
+        lastSignInAt: user.last_sign_in_at ?? null,
+      };
+    });
 
   const totalAccounts = staffAccounts.length;
 
@@ -147,76 +243,75 @@ async function StaffAccountsContent() {
         </Card>
       </div>
 
-      {staffAccounts.length === 0 ? (
-        <EmptyState
-          icon={<UserRoundCog className="h-5 w-5" />}
-          title="No staff accounts found"
-          description="Staff accounts will appear here once staff roles are assigned."
-        />
-      ) : (
-        <Table className="min-w-[760px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Email</TableHead>
-              <TableHead>Roles</TableHead>
-              <TableHead>Last Sign In</TableHead>
-              <TableHead>Created</TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {staffAccounts.map((account) => (
-              <TableRow key={account.id}>
-                <TableCell>
-                  <span className="font-medium text-[#203264] dark:text-slate-100">
-                    {account.email}
-                  </span>
-                </TableCell>
-
-                <TableCell>
-                  <div className="flex flex-wrap gap-2">
-                    {account.roles.map((role) => (
-                      <StatusBadge key={role} variant="info">
-                        {formatRole(role)}
-                      </StatusBadge>
-                    ))}
-                  </div>
-                </TableCell>
-
-                <TableCell className="text-slate-600 dark:text-slate-400">
-                  {formatDate(account.lastSignInAt)}
-                </TableCell>
-
-                <TableCell className="text-slate-600 dark:text-slate-400">
-                  {formatDate(account.createdAt)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <StaffAccountsTable
+        accounts={staffAccounts}
+        branches={branches}
+      />
     </PageContainer>
   );
 }
 
-function formatRole(role: string) {
-  return role
-    .split("_")
-    .map(
-      (word) =>
-        word.charAt(0).toUpperCase() + word.slice(1),
-    )
-    .join(" ");
+function getAccountStatus({
+  archivedAt,
+  deletedAt,
+  bannedUntil,
+  invitedAt,
+  emailConfirmedAt,
+}: {
+  archivedAt: string | null;
+  deletedAt: string | null;
+  bannedUntil: string | null;
+  invitedAt: string | null;
+  emailConfirmedAt: string | null;
+}): StaffAccountStatus {
+  // Precedence: Deleted > Archived > Banned > Invited > Unconfirmed > Active.
+  if (deletedAt) return "deleted";
+  if (archivedAt) return "archived";
+
+  if (bannedUntil) {
+    const bannedUntilTime = Date.parse(bannedUntil);
+
+    if (
+      Number.isFinite(bannedUntilTime) &&
+      bannedUntilTime > Date.now()
+    ) {
+      return "banned";
+    }
+  }
+
+  if (!emailConfirmedAt && invitedAt) return "invited";
+  if (!emailConfirmedAt) return "unconfirmed";
+
+  return "active";
 }
 
-function formatDate(value: string | null | undefined) {
-  if (!value) return "—";
+async function listAllAuthUsers(
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<AuthUser[]> {
+  const users: AuthUser[] = [];
+  const perPage = 1000;
+  let page = 1;
 
-  return new Date(value).toLocaleDateString("en-PH", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  while (true) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    users.push(...data.users);
+
+    if (data.users.length < perPage) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return users;
 }
 
 function StaffAccountsSkeleton() {
@@ -242,12 +337,16 @@ function StaffAccountsSkeleton() {
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div className="min-w-[760px]">
+        <div className="min-w-[1200px]">
           <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-8 gap-4">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-36" />
               <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-24" />
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-20" />
               <Skeleton className="ml-auto h-4 w-16" />
             </div>
           </div>
@@ -256,8 +355,9 @@ function StaffAccountsSkeleton() {
             {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
-                className="grid grid-cols-4 items-center gap-4 px-4 py-4"
+                className="grid grid-cols-8 items-center gap-4 px-4 py-4"
               >
+                <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-4 w-44" />
 
                 <div className="flex gap-2">
@@ -265,7 +365,14 @@ function StaffAccountsSkeleton() {
                   <Skeleton className="h-6 w-20 rounded-full" />
                 </div>
 
+                <div className="flex gap-2">
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                </div>
+
+                <Skeleton className="h-6 w-20 rounded-full" />
                 <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
                 <Skeleton className="ml-auto h-4 w-24" />
               </div>
             ))}
