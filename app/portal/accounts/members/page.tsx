@@ -1,10 +1,15 @@
-import Link from "next/link";
 import { requirePortalTab } from "@/lib/require-portal-tab";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import MemberAccountsTable from "./MemberAccountsTable";
 import {
   UserRoundCog,
   UsersRound,
-  ExternalLink,
-  UserPlus,
 } from "lucide-react";
 import AccountsTabs from "../AccountsTabs";
 import { Suspense } from "react";
@@ -86,10 +91,21 @@ async function MemberAccountsContent() {
       throw new Error(error.message);
     }
 
+    const { data: profile, error: profileError } = await admin
+      .from("profiles")
+      .select("archived_at")
+      .eq("id", account.userId)
+      .single();
+
+    if (profileError) {
+      throw new Error(profileError.message);
+    }
+
     accounts.push({
       userId: account.userId,
       email: data.user.email ?? "—",
       members: account.members,
+      archivedAt: profile.archived_at,
     });
   }
 
@@ -101,220 +117,114 @@ async function MemberAccountsContent() {
   );
 
   return (
-    <main className="space-y-6">
-      {/* HEADER */}
-      <div>
-        <div className="flex items-center gap-2 text-[#5D94E8]">
-          <UserRoundCog className="h-4 w-4" />
+    <PageContainer>
+      <PageHeader
+        eyebrow="Account Management"
+        eyebrowIcon={<UserRoundCog className="h-4 w-4" />}
+        title="Member Accounts"
+        description="View member accounts, review their linked profiles, and connect additional members to existing accounts."
+      />
 
-          <p className="text-sm font-medium">
-            Account Management
-          </p>
-        </div>
-
-        <h1 className="mt-1 font-body text-2xl font-semibold text-[#203264] sm:text-3xl">
-          Member Accounts
-        </h1>
-
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          View member accounts, review their linked profiles, and connect
-          additional members to existing accounts.
-        </p>
-      </div>
       <AccountsTabs />
 
       {/* SUMMARY */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <UserRoundCog className="h-4 w-4" />
-            <p className="text-xs font-medium">
-              Member Accounts
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <UserRoundCog className="h-4 w-4" />
+
+              <p className="text-xs font-medium uppercase tracking-wide">
+                Member Accounts
+              </p>
+            </div>
+
+            <p className="mt-3 text-3xl font-semibold text-[#203264] dark:text-slate-100">
+              {totalAccounts}
             </p>
-          </div>
+          </CardContent>
+        </Card>
 
-          <p className="mt-2 font-heading text-2xl font-semibold text-[#203264]">
-            {totalAccounts}
-          </p>
-        </div>
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <UsersRound className="h-4 w-4" />
 
-        <div className="rounded-2xl border bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <UsersRound className="h-4 w-4" />
-            <p className="text-xs font-medium">
-              Linked Members
+              <p className="text-xs font-medium uppercase tracking-wide">
+                Linked Members
+              </p>
+            </div>
+
+            <p className="mt-3 text-3xl font-semibold text-[#203264] dark:text-slate-100">
+              {totalLinkedMembers}
             </p>
-          </div>
-
-          <p className="mt-2 font-heading text-2xl font-semibold text-[#203264]">
-            {totalLinkedMembers}
-          </p>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* TABLE */}
-      <div className="overflow-x-auto rounded-2xl border bg-white shadow-sm">
-        <table className="w-full min-w-[760px] text-sm">
-          <thead className="border-b bg-[#F8FAFD] text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="px-5 py-4">
-                Email
-              </th>
-
-              <th className="px-5 py-4">
-                Linked Members
-              </th>
-
-              <th className="px-5 py-4">
-                Count
-              </th>
-
-              <th className="px-5 py-4 text-right">
-                Actions
-              </th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y">
-            {accounts.map((account) => (
-              <tr
-                key={account.userId}
-                className="transition hover:bg-[#F8FAFD]"
-              >
-                <td className="px-5 py-4">
-                  <Link
-                    href={`/staff/admin/accounts/${account.userId}`}
-                    className="font-medium text-[#203264] hover:text-[#5D94E8]"
-                  >
-                    {account.email}
-                  </Link>
-                </td>
-
-                <td className="px-5 py-4">
-                  <div className="flex flex-wrap gap-2">
-                    {account.members.map((member) => (
-                      <span
-                        key={member}
-                        className="rounded-full bg-[#EEF3FB] px-2.5 py-1 text-xs font-medium text-[#203264]"
-                      >
-                        {member}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-
-                <td className="px-5 py-4">
-                  <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
-                    {account.members.length}
-                  </span>
-                </td>
-
-                <td className="px-5 py-4">
-                  <div className="flex items-center justify-end gap-2">
-                    <Link
-                      href={`/portal/accounts/${account.userId}`}
-                      className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium text-[#203264] transition hover:bg-[#EEF3FB]"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      View
-                    </Link>
-
-                    <Link
-                      href={`/portal/members/invite?email=${encodeURIComponent(
-                        account.email,
-                      )}`}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#203264] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#2C447D]"
-                    >
-                      <UserPlus className="h-3.5 w-3.5" />
-                      Link Members
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-            ))}
-
-            {!accounts.length && (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-5 py-12 text-center text-sm text-muted-foreground"
-                >
-                  No member accounts found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </main>
+      <MemberAccountsTable accounts={accounts} />
+    </PageContainer>
   );
 }
 
 function MemberAccountsSkeleton() {
   return (
-    <main className="space-y-6 animate-pulse">
-      {/* PAGE HEADER */}
-      <div>
-        <div className="h-4 w-20 rounded bg-slate-200" />
-        <div className="mt-3 h-9 w-48 rounded bg-slate-200" />
-        <div className="mt-3 h-4 w-80 max-w-full rounded bg-slate-200" />
+    <PageContainer>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-9 w-52" />
+        <Skeleton className="h-4 w-80 max-w-full" />
       </div>
 
-      {/* MEMBER / STAFF SWITCH */}
-      <div className="h-11 w-72 rounded-xl bg-slate-200" />
+      <Skeleton className="h-11 w-72 rounded-xl" />
 
-      {/* SUMMARY CARDS */}
       <div className="grid gap-4 sm:grid-cols-2">
         {Array.from({ length: 2 }).map((_, index) => (
-          <div
-            key={index}
-            className="rounded-2xl border bg-white p-5 shadow-sm"
-          >
-            <div className="h-4 w-28 rounded bg-slate-200" />
-
-            <div className="mt-4 h-8 w-16 rounded bg-slate-200" />
-
-            <div className="mt-3 h-3 w-36 rounded bg-slate-100" />
-          </div>
+          <Card key={index}>
+            <CardContent className="p-5">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="mt-3 h-9 w-16" />
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* TABLE */}
-      <div className="overflow-hidden rounded-3xl border bg-white shadow-sm">
-        {/* TABLE HEADER */}
-        <div className="border-b bg-slate-50 px-5 py-4">
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="h-4 w-20 rounded bg-slate-200" />
-            <div className="h-4 w-24 rounded bg-slate-200" />
-            <div className="h-4 w-20 rounded bg-slate-200" />
-            <div className="h-4 w-16 rounded bg-slate-200" />
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="min-w-[760px]">
+          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <div className="grid grid-cols-4 gap-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="ml-auto h-4 w-16" />
+            </div>
+          </div>
+
+          <div className="divide-y divide-slate-200 dark:divide-slate-700">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-4 items-center gap-4 px-4 py-4"
+              >
+                <Skeleton className="h-4 w-44" />
+
+                <div className="flex gap-2">
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                </div>
+
+                <Skeleton className="h-6 w-8 rounded-full" />
+
+                <div className="flex justify-end gap-3">
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-
-        {/* ROWS */}
-        <div className="divide-y">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="grid gap-4 px-5 py-5 md:grid-cols-4 md:items-center"
-            >
-              <div>
-                <div className="h-4 w-44 rounded bg-slate-200" />
-                <div className="mt-2 h-3 w-24 rounded bg-slate-100" />
-              </div>
-
-              <div className="space-y-2">
-                <div className="h-4 w-32 rounded bg-slate-200" />
-                <div className="h-3 w-24 rounded bg-slate-100" />
-              </div>
-
-              <div className="h-6 w-24 rounded-full bg-slate-100" />
-
-              <div className="h-4 w-20 rounded bg-slate-200" />
-            </div>
-          ))}
-        </div>
       </div>
-    </main>
+    </PageContainer>
   );
 }
