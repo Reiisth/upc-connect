@@ -1,8 +1,10 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +20,7 @@ import StaffAccountsTable, {
 } from "./StaffAccountsTable";
 import {
   KeyRound,
+  UserPlus,
   UserRoundCog,
 } from "lucide-react";
 
@@ -205,6 +208,14 @@ async function StaffAccountsContent() {
         eyebrowIcon={<UserRoundCog className="h-4 w-4" />}
         title="Staff Accounts"
         description="Manage login accounts assigned to staff roles."
+        action={
+          <Button asChild>
+            <Link href="/portal/accounts/staff/new">
+              <UserPlus />
+              New Staff Account
+            </Link>
+          </Button>
+        }
       />
 
       <AccountsTabs />
