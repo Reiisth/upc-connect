@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, SearchX } from "lucide-react";
+import {
+  ExternalLink,
+  Search,
+  SearchX,
+} from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -15,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableActionButton } from "@/components/ui/table-action-button";
 
 export type StaffAccountStatus =
   | "active"
@@ -247,9 +252,12 @@ export default function StaffAccountsTable({
             {filteredAccounts.map((account) => (
               <TableRow key={account.id}>
                 <TableCell>
-                  <span className="font-medium text-[#203264] dark:text-slate-100">
+                  <TableActionButton
+                    href={`/portal/accounts/staff/${account.id}`}
+                    icon={<ExternalLink />}
+                  >
                     {account.displayName ?? "Unnamed Staff"}
-                  </span>
+                  </TableActionButton>
                 </TableCell>
 
                 <TableCell className="whitespace-nowrap">
