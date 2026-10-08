@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { canAccessTab } from "@/lib/portal-access";
+
+type RoleLink = {
+  roles: { name: string } | { name: string }[] | null;
+};
 
 export default function SetPasswordPage() {
   const router = useRouter();
@@ -56,20 +61,66 @@ export default function SetPasswordPage() {
         return;
       }
 
-      const { data: linkedMembers, error: linkedMembersError } =
-        await supabase
-          .from("account_members")
-          .select("member_id")
-          .eq("user_id", user.id)
-          .eq("relationship", "member");
+      const { data: roleLinks, error: rolesError } = await supabase
+        .from("user_roles")
+        .select(`
+          roles (
+            name
+          )
+        `)
+        .eq("user_id", user.id);
 
-      if (linkedMembersError) {
-        setError(linkedMembersError.message);
+      if (rolesError) {
+        setError(
+          "Your password was created, but your portal access could not be determined. Please contact an administrator.",
+        );
         return;
       }
 
-      const memberIds =
-        linkedMembers?.map((link) => link.member_id) ?? [];
+      const roleNames = (roleLinks as RoleLink[] | null | undefined)
+        ?.flatMap((link) => {
+          if (!link.roles) return [];
+
+          const roles = Array.isArray(link.roles)
+            ? link.roles
+            : [link.roles];
+
+          return roles
+            .map((role) => role.name)
+            .filter((role): role is string => Boolean(role));
+        }) ?? [];
+
+      const hasMemberRole = canAccessTab(roleNames, "profile");
+      const hasStaffRole = canAccessTab(roleNames, "dashboard");
+      const hasUsablePortalRole = canAccessTab(roleNames, "account");
+
+      if (!hasUsablePortalRole) {
+        router.replace(
+          "/auth/error?error=Your%20account%20has%20not%20been%20assigned%20a%20portal%20role.",
+        );
+        return;
+      }
+
+      let memberIds: string[] = [];
+
+      if (hasMemberRole) {
+        const { data: linkedMembers, error: linkedMembersError } =
+          await supabase
+            .from("account_members")
+            .select("member_id")
+            .eq("user_id", user.id)
+            .eq("relationship", "member");
+
+        if (linkedMembersError) {
+          setError(
+            "Your password was created, but your linked member accounts could not be verified. Please contact an administrator.",
+          );
+          return;
+        }
+
+        memberIds =
+          linkedMembers?.map((link) => link.member_id) ?? [];
+      }
 
       if (memberIds.length > 0) {
         const { error: updateMembersError } = await supabase
@@ -87,7 +138,16 @@ export default function SetPasswordPage() {
         }
       }
 
-      router.push("/portal/profile");
+      if (hasStaffRole) {
+        router.push("/portal");
+      } else if (hasMemberRole && memberIds.length > 0) {
+        router.push("/portal/profile");
+      } else {
+        // A member role without a linked profile remains role-authorized.
+        // Let the normal portal resolver choose the safest destination.
+        router.push("/portal");
+      }
+
       router.refresh();
     } catch {
       setError(
@@ -119,7 +179,7 @@ export default function SetPasswordPage() {
                 UPC CONNECT
               </p>
               <p className="text-sm text-white/70">
-                Member Portal
+                Unified Portal
               </p>
             </div>
           </div>
@@ -134,8 +194,7 @@ export default function SetPasswordPage() {
             </h1>
 
             <p className="mt-4 max-w-md leading-7 text-white/80">
-              Set a secure password to continue activating your member account
-              and completing your profile.
+              Set a secure password to continue activating your account.
             </p>
           </div>
 
@@ -163,7 +222,7 @@ export default function SetPasswordPage() {
                     UPC CONNECT
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Member Portal
+                    Unified Portal
                   </p>
                 </div>
               </div>
