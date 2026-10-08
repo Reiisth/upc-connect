@@ -176,6 +176,12 @@ export async function inviteMembers(memberIds: string[], email: string) {
     }
   }
 
+  revalidatePath("/portal/accounts/members");
+
+  if (userId) {
+    revalidatePath(`/portal/accounts/${userId}`);
+  }
+
   redirect("/portal/members");
 }
 
@@ -183,6 +189,18 @@ export async function disconnectMember(memberId: string) {
   await requirePortalTab("members");
 
   const admin = createAdminClient();
+
+  const { data: memberLink, error: memberLinkError } = await admin
+    .from("account_members")
+    .select("user_id")
+    .eq("member_id", memberId)
+    .eq("relationship", "member")
+    .limit(1)
+    .maybeSingle();
+
+  if (memberLinkError) {
+    throw new Error(memberLinkError.message);
+  }
 
   const { error: linkError } = await admin
     .from("account_members")
@@ -208,6 +226,12 @@ export async function disconnectMember(memberId: string) {
 
   if (memberError) {
     throw new Error(memberError.message);
+  }
+
+  revalidatePath("/portal/accounts/members");
+
+  if (memberLink?.user_id) {
+    revalidatePath(`/portal/accounts/${memberLink.user_id}`);
   }
 
   redirect("/portal/members");

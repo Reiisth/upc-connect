@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Archive,
   ExternalLink,
@@ -55,6 +55,10 @@ export default function MemberAccountsTable({
 
   const [displayedAccounts, setDisplayedAccounts] = useState(accounts);
   const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    setDisplayedAccounts(accounts);
+  }, [accounts]);
 
   const filteredAccounts = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();

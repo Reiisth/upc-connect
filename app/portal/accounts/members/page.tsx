@@ -32,6 +32,7 @@ async function MemberAccountsContent() {
     .from("account_members")
     .select(`
       user_id,
+      member_id,
       members (
         id,
         first_name,
@@ -58,7 +59,19 @@ async function MemberAccountsContent() {
       ? link.members[0]
       : link.members;
 
-    if (!member) continue;
+    if (!member) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "[Member Accounts] Skipping an account_members row without a related member record.",
+          {
+            userId: link.user_id,
+            memberId: link.member_id,
+          },
+        );
+      }
+
+      continue;
+    }
 
     const fullName = [
       member.first_name,
