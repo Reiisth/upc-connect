@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   UsersRound,
   UserRoundCog,
-  ClipboardCheck,
+  CalendarDays,
   HandCoins,
   Droplets,
   BarChart3,
@@ -32,6 +32,7 @@ const navigationItems: {
   label: string;
   href: string;
   icon: React.ElementType;
+  canView?: (roles: string[]) => boolean;
 }[] = [
     {
       tab: "dashboard",
@@ -53,9 +54,12 @@ const navigationItems: {
     },
     {
       tab: "attendance",
-      label: "Attendance",
-      href: "/portal/attendance",
-      icon: ClipboardCheck,
+      label: "Services",
+      href: "/portal/services",
+      icon: CalendarDays,
+      canView: (roles: string[]) =>
+        roles.includes("system_admin") ||
+        canAccessTab(roles, "attendance"),
     },
     {
       tab: "contributions",
@@ -108,7 +112,9 @@ export default function PortalNavigation({
   const pathname = usePathname();
 
   const visibleItems = navigationItems.filter((item) =>
-    canAccessTab(roles, item.tab),
+    item.canView
+      ? item.canView(roles)
+      : canAccessTab(roles, item.tab),
   );
 
   if (variant === "mobile") {

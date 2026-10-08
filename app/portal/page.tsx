@@ -25,7 +25,7 @@ export default async function PortalPage() {
   }
 
   if (canAccessTab(roles, "attendance")) {
-    redirect("/portal/attendance");
+    redirect("/portal/services");
   }
 
   if (canAccessTab(roles, "contributions")) {
