@@ -1,10 +1,30 @@
 import { Suspense } from "react";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePortalTab } from "@/lib/require-portal-tab";
 
 import AccountsTabs from "../AccountsTabs";
-import { UserRoundCog } from "lucide-react";
+import {
+  KeyRound,
+  UserRoundCog,
+} from "lucide-react";
 
 export default function StaffAccountsPage() {
   return (
@@ -75,99 +95,107 @@ async function StaffAccountsContent() {
       roles: roleMap.get(user.id) ?? [],
     }));
 
+  const totalAccounts = staffAccounts.length;
+
+  const totalRoleAssignments = staffAccounts.reduce(
+    (total, account) => total + account.roles.length,
+    0,
+  );
+
   return (
-    <main className="space-y-6">
-      <div>
-        <div className="flex items-center gap-2 text-[#5D94E8]">
-          <UserRoundCog className="h-4 w-4" />
-
-          <p className="text-sm font-medium">
-            Account Management
-          </p>
-        </div>
-
-        <h1 className="mt-1 font-body text-3xl font-semibold text-[#203264]">
-          Staff Accounts
-        </h1>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          Manage login accounts assigned to staff roles.
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Account Management"
+        eyebrowIcon={<UserRoundCog className="h-4 w-4" />}
+        title="Staff Accounts"
+        description="Manage login accounts assigned to staff roles."
+      />
 
       <AccountsTabs />
 
-      <section className="overflow-hidden rounded-3xl border bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-5 py-4 font-medium">
-                  Email
-                </th>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <UserRoundCog className="h-4 w-4" />
 
-                <th className="px-5 py-4 font-medium">
-                  Roles
-                </th>
+              <p className="text-xs font-medium uppercase tracking-wide">
+                Staff Accounts
+              </p>
+            </div>
 
-                <th className="px-5 py-4 font-medium">
-                  Last Sign In
-                </th>
+            <p className="mt-3 text-3xl font-semibold text-[#203264] dark:text-slate-100">
+              {totalAccounts}
+            </p>
+          </CardContent>
+        </Card>
 
-                <th className="px-5 py-4 font-medium">
-                  Created
-                </th>
-              </tr>
-            </thead>
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <KeyRound className="h-4 w-4" />
 
-            <tbody className="divide-y">
-              {staffAccounts.map((account) => (
-                <tr
-                  key={account.id}
-                  className="transition hover:bg-slate-50/70"
-                >
-                  <td className="px-5 py-4 font-medium text-[#203264]">
+              <p className="text-xs font-medium uppercase tracking-wide">
+                Assigned Roles
+              </p>
+            </div>
+
+            <p className="mt-3 text-3xl font-semibold text-[#203264] dark:text-slate-100">
+              {totalRoleAssignments}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {staffAccounts.length === 0 ? (
+        <EmptyState
+          icon={<UserRoundCog className="h-5 w-5" />}
+          title="No staff accounts found"
+          description="Staff accounts will appear here once staff roles are assigned."
+        />
+      ) : (
+        <Table className="min-w-[760px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Email</TableHead>
+              <TableHead>Roles</TableHead>
+              <TableHead>Last Sign In</TableHead>
+              <TableHead>Created</TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {staffAccounts.map((account) => (
+              <TableRow key={account.id}>
+                <TableCell>
+                  <span className="font-medium text-[#203264] dark:text-slate-100">
                     {account.email}
-                  </td>
+                  </span>
+                </TableCell>
 
-                  <td className="px-5 py-4">
-                    <div className="flex flex-wrap gap-2">
-                      {account.roles.map((role) => (
-                        <span
-                          key={role}
-                          className="rounded-full bg-[#EEF3FB] px-2.5 py-1 text-xs font-medium text-[#203264]"
-                        >
-                          {formatRole(role)}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
+                <TableCell>
+                  <div className="flex flex-wrap gap-2">
+                    {account.roles.map((role) => (
+                      <StatusBadge key={role} variant="info">
+                        {formatRole(role)}
+                      </StatusBadge>
+                    ))}
+                  </div>
+                </TableCell>
 
-                  <td className="px-5 py-4 text-slate-600">
-                    {formatDate(account.lastSignInAt)}
-                  </td>
+                <TableCell className="text-slate-600 dark:text-slate-400">
+                  {formatDate(account.lastSignInAt)}
+                </TableCell>
 
-                  <td className="px-5 py-4 text-slate-600">
-                    {formatDate(account.createdAt)}
-                  </td>
-                </tr>
-              ))}
-
-              {staffAccounts.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-5 py-10 text-center text-sm text-muted-foreground"
-                  >
-                    No staff accounts found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
+                <TableCell className="text-slate-600 dark:text-slate-400">
+                  {formatDate(account.createdAt)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </PageContainer>
   );
 }
 
@@ -193,28 +221,57 @@ function formatDate(value: string | null | undefined) {
 
 function StaffAccountsSkeleton() {
   return (
-    <main className="space-y-6 animate-pulse">
-      <div>
-        <div className="h-4 w-20 rounded bg-slate-200" />
-        <div className="mt-3 h-9 w-44 rounded bg-slate-200" />
-        <div className="mt-3 h-4 w-72 rounded bg-slate-200" />
+    <PageContainer>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-9 w-52" />
+        <Skeleton className="h-4 w-80 max-w-full" />
       </div>
 
-      <div className="h-11 w-72 rounded-xl bg-slate-200" />
+      <Skeleton className="h-11 w-72 rounded-xl" />
 
-      <div className="overflow-hidden rounded-3xl border bg-white shadow-sm">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div
-            key={index}
-            className="grid grid-cols-4 gap-4 border-b px-5 py-5 last:border-b-0"
-          >
-            <div className="h-4 rounded bg-slate-200" />
-            <div className="h-4 rounded bg-slate-200" />
-            <div className="h-4 rounded bg-slate-100" />
-            <div className="h-4 rounded bg-slate-100" />
-          </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <Card key={index}>
+            <CardContent className="p-5">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="mt-3 h-9 w-16" />
+            </CardContent>
+          </Card>
         ))}
       </div>
-    </main>
+
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="min-w-[760px]">
+          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <div className="grid grid-cols-4 gap-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="ml-auto h-4 w-16" />
+            </div>
+          </div>
+
+          <div className="divide-y divide-slate-200 dark:divide-slate-700">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-4 items-center gap-4 px-4 py-4"
+              >
+                <Skeleton className="h-4 w-44" />
+
+                <div className="flex gap-2">
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                </div>
+
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="ml-auto h-4 w-24" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </PageContainer>
   );
 }
