@@ -76,6 +76,9 @@ const navigationItems: {
       label: "Contributions",
       href: "/portal/contributions",
       icon: HandCoins,
+      canView: (roles: string[]) =>
+        roles.includes("system_admin") ||
+        canAccessTab(roles, "contributions"),
     },
     {
       tab: "baptisms",
