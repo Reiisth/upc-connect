@@ -8,6 +8,7 @@ import {
   UsersRound,
   UserRoundCog,
   CalendarDays,
+  ClipboardCheck,
   HandCoins,
   Droplets,
   BarChart3,
@@ -57,6 +58,15 @@ const navigationItems: {
       label: "Services",
       href: "/portal/services",
       icon: CalendarDays,
+      canView: (roles: string[]) =>
+        roles.includes("system_admin") ||
+        canAccessTab(roles, "attendance"),
+    },
+    {
+      tab: "attendance",
+      label: "Attendance",
+      href: "/portal/attendance",
+      icon: ClipboardCheck,
       canView: (roles: string[]) =>
         roles.includes("system_admin") ||
         canAccessTab(roles, "attendance"),
@@ -131,7 +141,7 @@ export default function PortalNavigation({
 
             return (
               <Link
-                key={item.tab}
+                key={item.href}
                 href={item.href}
                 className={`flex min-w-[72px] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-medium transition ${isActive
                   ? "bg-[#EEF3FB] text-[#203264]"
@@ -161,7 +171,7 @@ export default function PortalNavigation({
             pathname.startsWith(`${item.href}/`));
         return (
           <Link
-            key={item.tab}
+            key={item.href}
             href={item.href}
             className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${isActive
               ? "bg-[#EEF3FB] text-[#203264]"
