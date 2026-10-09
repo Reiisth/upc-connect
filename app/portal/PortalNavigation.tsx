@@ -85,6 +85,9 @@ const navigationItems: {
       label: "Baptisms",
       href: "/portal/baptisms",
       icon: Droplets,
+      canView: (roles: string[]) =>
+        roles.includes("system_admin") ||
+        canAccessTab(roles, "baptisms"),
     },
     {
       tab: "reports",
