@@ -6,6 +6,7 @@ import {
   getAccessibleActiveBranches,
   type ServiceAccess,
 } from "../services/access";
+import { normalizeContributionAmount } from "./types";
 import type {
   ContributionBranch,
   ContributionMemberOption,
@@ -54,7 +55,7 @@ export type ContributionEditRecord = {
   serviceId: string | null;
   churchBranchId: string;
   contributionType: ContributionRecord["contributionType"];
-  amount: number;
+  amount: string;
   contributionDate: string;
   paymentMethod: ContributionRecord["paymentMethod"];
   recordedBy: string | null;
@@ -250,7 +251,7 @@ export async function loadContributionRecords(
     churchBranchId: row.church_branch_id,
     branch: branchMap.get(row.church_branch_id) ?? null,
     contributionType: row.contribution_type as ContributionRecord["contributionType"],
-    amount: Number(row.amount),
+    amount: normalizeContributionAmount(row.amount),
     contributionDate: row.contribution_date,
     paymentMethod: row.payment_method as ContributionRecord["paymentMethod"],
     recordedBy: row.recorded_by,
@@ -297,7 +298,7 @@ export async function loadContributionForEdit(
     serviceId: row.service_id,
     churchBranchId: row.church_branch_id,
     contributionType: row.contribution_type as ContributionRecord["contributionType"],
-    amount: Number(row.amount),
+    amount: normalizeContributionAmount(row.amount),
     contributionDate: row.contribution_date,
     paymentMethod: row.payment_method as ContributionRecord["paymentMethod"],
     recordedBy: row.recorded_by,

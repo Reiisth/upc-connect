@@ -11,12 +11,50 @@ import {
 import {
   CONTRIBUTION_TYPES,
   PAYMENT_METHODS,
+  contributionAmountToCents,
+  normalizeContributionAmount,
+  type ContributionActionState,
   type ContributionType,
   type PaymentMethod,
 } from "./types";
 import { requireContributionManager } from "./access";
 
 const contributionsPath = "/portal/contributions";
+
+class ContributionValidationError extends Error {}
+
+const safeBranchAccessErrors = new Set([
+  "A church branch is required.",
+  "You can only use church branches assigned to your account.",
+  "The selected church branch does not exist or is inactive.",
+]);
+
+function getActionErrorMessage(
+  error: unknown,
+  fallback: string,
+) {
+  if (error instanceof ContributionValidationError) {
+    return error.message;
+  }
+
+  if (
+    error instanceof Error &&
+    safeBranchAccessErrors.has(error.message)
+  ) {
+    return error.message;
+  }
+
+  console.error("Contribution action failed", error);
+  return fallback;
+}
+
+function throwDatabaseFailure(
+  context: string,
+  error: unknown,
+): never {
+  console.error(`Contribution database failure: ${context}`, error);
+  throw new Error("Contribution database operation failed.");
+}
 
 function getFormText(formData: FormData, field: string) {
   const value = formData.get(field);
@@ -25,7 +63,9 @@ function getFormText(formData: FormData, field: string) {
 
 function validateDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    throw new Error("Enter a valid contribution date.");
+    throw new ContributionValidationError(
+      "Enter a valid contribution date.",
+    );
   }
 
   const [year, month, day] = value.split("-").map(Number);
@@ -36,7 +76,9 @@ function validateDate(value: string) {
     date.getUTCMonth() !== month - 1 ||
     date.getUTCDate() !== day
   ) {
-    throw new Error("Enter a valid contribution date.");
+    throw new ContributionValidationError(
+      "Enter a valid contribution date.",
+    );
   }
 
   return value;
@@ -44,16 +86,37 @@ function validateDate(value: string) {
 
 function validateAmount(value: string) {
   if (!value) {
-    throw new Error("Contribution amount is required.");
+    throw new ContributionValidationError(
+      "Contribution amount is required.",
+    );
   }
 
-  const amount = Number(value);
+  try {
+    const normalized = normalizeContributionAmount(value);
+    const cents = contributionAmountToCents(normalized);
 
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error("Contribution amount must be greater than zero.");
+    if (cents <= 0) {
+      throw new ContributionValidationError(
+        "Contribution amount must be greater than zero.",
+      );
+    }
+
+    if (cents > 999_999_999_999) {
+      throw new ContributionValidationError(
+        "Contribution amount is too large.",
+      );
+    }
+
+    return normalized;
+  } catch (error) {
+    if (error instanceof ContributionValidationError) {
+      throw error;
+    }
+
+    throw new ContributionValidationError(
+      "Enter a valid amount with no more than two decimal places.",
+    );
   }
-
-  return amount;
 }
 
 function validateContributionForm(formData: FormData) {
@@ -79,19 +142,27 @@ function validateContributionForm(formData: FormData) {
   const notes = getFormText(formData, "notes");
 
   if (!churchBranchId) {
-    throw new Error("A church branch is required.");
+    throw new ContributionValidationError(
+      "A church branch is required.",
+    );
   }
 
   if (!CONTRIBUTION_TYPES.includes(contributionType)) {
-    throw new Error("Select a valid contribution type.");
+    throw new ContributionValidationError(
+      "Select a valid contribution type.",
+    );
   }
 
   if (!PAYMENT_METHODS.includes(paymentMethod)) {
-    throw new Error("Select a valid payment method.");
+    throw new ContributionValidationError(
+      "Select a valid payment method.",
+    );
   }
 
   if (notes.length > 2000) {
-    throw new Error("Notes must be 2,000 characters or fewer.");
+    throw new ContributionValidationError(
+      "Notes must be 2,000 characters or fewer.",
+    );
   }
 
   return {
@@ -110,26 +181,35 @@ async function validateMemberForBranch(
   admin: ReturnType<typeof createAdminClient>,
   memberId: string | null,
   branchId: string,
+  allowedArchivedMemberId: string | null = null,
 ) {
   if (!memberId) return;
 
   const { data, error } = await admin
     .from("members")
-    .select("id, church_branch_id")
+    .select("id, church_branch_id, is_archived")
     .eq("id", memberId)
     .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throwDatabaseFailure("member validation", error);
   }
 
   if (!data) {
-    throw new Error("The selected member could not be found.");
+    throw new ContributionValidationError(
+      "The selected member could not be found.",
+    );
   }
 
   if (data.church_branch_id !== branchId) {
-    throw new Error(
+    throw new ContributionValidationError(
       "The selected member does not belong to the selected branch.",
+    );
+  }
+
+  if (data.is_archived && memberId !== allowedArchivedMemberId) {
+    throw new ContributionValidationError(
+      "Archived members cannot be linked to a new contribution.",
     );
   }
 }
@@ -138,65 +218,91 @@ async function validateServiceForBranch(
   admin: ReturnType<typeof createAdminClient>,
   serviceId: string | null,
   branchId: string,
+  allowedCancelledServiceId: string | null = null,
 ) {
   if (!serviceId) return;
 
   const { data, error } = await admin
     .from("services")
-    .select("id, church_branch_id")
+    .select("id, church_branch_id, status")
     .eq("id", serviceId)
     .eq("church_branch_id", branchId)
     .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throwDatabaseFailure("service validation", error);
   }
 
   if (!data) {
-    throw new Error(
+    throw new ContributionValidationError(
       "The selected service does not belong to the selected branch.",
+    );
+  }
+
+  if (
+    data.status === "cancelled" &&
+    serviceId !== allowedCancelledServiceId
+  ) {
+    throw new ContributionValidationError(
+      "Cancelled services cannot be linked to new contributions.",
     );
   }
 }
 
-export async function createContribution(formData: FormData) {
+export async function createContribution(
+  _previousState: ContributionActionState,
+  formData: FormData,
+): Promise<ContributionActionState> {
   const access = await requireContributionManager();
-  const payload = validateContributionForm(formData);
   const admin = createAdminClient();
+  let contributionId: string | null = null;
 
-  await assertActiveServiceBranch(
-    admin,
-    access,
-    payload.church_branch_id,
-  );
-  await validateMemberForBranch(
-    admin,
-    payload.member_id,
-    payload.church_branch_id,
-  );
-  await validateServiceForBranch(
-    admin,
-    payload.service_id,
-    payload.church_branch_id,
-  );
+  try {
+    const payload = validateContributionForm(formData);
 
-  const { data, error } = await admin
-    .from("financial_contributions")
-    .insert({
-      ...payload,
-      recorded_by: access.user.id,
-    })
-    .select("id")
-    .single();
+    await assertActiveServiceBranch(
+      admin,
+      access,
+      payload.church_branch_id,
+    );
+    await validateMemberForBranch(
+      admin,
+      payload.member_id,
+      payload.church_branch_id,
+    );
+    await validateServiceForBranch(
+      admin,
+      payload.service_id,
+      payload.church_branch_id,
+    );
 
-  if (error) {
-    throw new Error(error.message);
+    const { data, error } = await admin
+      .from("financial_contributions")
+      .insert({
+        ...payload,
+        recorded_by: access.user.id,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      throwDatabaseFailure("creating contribution", error);
+    }
+
+    contributionId = data?.id ?? null;
+  } catch (error) {
+    return {
+      error: getActionErrorMessage(
+        error,
+        "The contribution could not be saved. Please review the form and try again.",
+      ),
+    };
   }
 
   revalidatePath(contributionsPath);
 
-  if (data?.id) {
-    revalidatePath(`${contributionsPath}/${data.id}/edit`);
+  if (contributionId) {
+    revalidatePath(`${contributionsPath}/${contributionId}/edit`);
   }
 
   redirect(contributionsPath);
@@ -204,63 +310,82 @@ export async function createContribution(formData: FormData) {
 
 export async function updateContribution(
   contributionId: string,
+  _previousState: ContributionActionState,
   formData: FormData,
-) {
+): Promise<ContributionActionState> {
   const access = await requireContributionManager();
-
-  if (!contributionId) {
-    throw new Error("A contribution is required.");
-  }
-
-  const payload = validateContributionForm(formData);
   const admin = createAdminClient();
-  const { data: existing, error: existingError } = await admin
-    .from("financial_contributions")
-    .select("id, church_branch_id, recorded_by")
-    .eq("id", contributionId)
-    .maybeSingle();
+  try {
+    if (!contributionId) {
+      throw new ContributionValidationError(
+        "A contribution is required.",
+      );
+    }
 
-  if (existingError) {
-    throw new Error(existingError.message);
-  }
+    const payload = validateContributionForm(formData);
+    const { data: existing, error: existingError } = await admin
+      .from("financial_contributions")
+      .select("id, member_id, service_id, church_branch_id, recorded_by")
+      .eq("id", contributionId)
+      .maybeSingle();
 
-  if (!existing) {
-    throw new Error("The requested contribution could not be found.");
-  }
+    if (existingError) {
+      throwDatabaseFailure("loading contribution", existingError);
+    }
 
-  await assertActiveServiceBranch(
-    admin,
-    access,
-    existing.church_branch_id,
-  );
-  await assertActiveServiceBranch(
-    admin,
-    access,
-    payload.church_branch_id,
-  );
-  await validateMemberForBranch(
-    admin,
-    payload.member_id,
-    payload.church_branch_id,
-  );
-  await validateServiceForBranch(
-    admin,
-    payload.service_id,
-    payload.church_branch_id,
-  );
+    if (!existing) {
+      throw new ContributionValidationError(
+        "The requested contribution could not be found.",
+      );
+    }
 
-  const { error } = await admin
-    .from("financial_contributions")
-    .update({
-      ...payload,
-      // Keep the original recorder for audit history. If legacy data lacks
-      // one, derive it from the authenticated accounting officer.
-      recorded_by: existing.recorded_by ?? access.user.id,
-    })
-    .eq("id", contributionId);
+    await assertActiveServiceBranch(
+      admin,
+      access,
+      existing.church_branch_id,
+    );
+    await assertActiveServiceBranch(
+      admin,
+      access,
+      payload.church_branch_id,
+    );
+    await validateMemberForBranch(
+      admin,
+      payload.member_id,
+      payload.church_branch_id,
+      existing.member_id === payload.member_id
+        ? existing.member_id
+        : null,
+    );
+    await validateServiceForBranch(
+      admin,
+      payload.service_id,
+      payload.church_branch_id,
+      existing.service_id === payload.service_id
+        ? existing.service_id
+        : null,
+    );
 
-  if (error) {
-    throw new Error(error.message);
+    const { error } = await admin
+      .from("financial_contributions")
+      .update({
+        ...payload,
+        // Keep the original recorder for audit history. If legacy data lacks
+        // one, derive it from the authenticated accounting officer.
+        recorded_by: existing.recorded_by ?? access.user.id,
+      })
+      .eq("id", contributionId);
+
+    if (error) {
+      throwDatabaseFailure("updating contribution", error);
+    }
+  } catch (error) {
+    return {
+      error: getActionErrorMessage(
+        error,
+        "The contribution could not be updated. Please review the form and try again.",
+      ),
+    };
   }
 
   revalidatePath(contributionsPath);

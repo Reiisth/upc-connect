@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ import {
   formatPaymentMethod,
   PAYMENT_METHODS,
   type ContributionBranch,
+  initialContributionActionState,
+  type ContributionAction,
   type ContributionFormValues,
   type ContributionMemberOption,
   type ContributionServiceOption,
@@ -27,7 +29,7 @@ type ContributionFormProps = {
   branches: ContributionBranch[];
   members: ContributionMemberOption[];
   services: ContributionServiceOption[];
-  action: (formData: FormData) => void | Promise<void>;
+  action: ContributionAction;
   submitLabel: string;
   values?: ContributionFormValues;
 };
@@ -61,12 +63,40 @@ export function ContributionForm({
   const [serviceId, setServiceId] = useState(
     formValues.serviceId ?? "",
   );
+  const [contributionType, setContributionType] = useState(
+    formValues.contributionType,
+  );
+  const [paymentMethod, setPaymentMethod] = useState(
+    formValues.paymentMethod,
+  );
+  const [amount, setAmount] = useState(formValues.amount);
+  const [contributionDate, setContributionDate] = useState(
+    formValues.contributionDate,
+  );
+  const [notes, setNotes] = useState(formValues.notes ?? "");
+  const [actionState, formAction] = useActionState(
+    action,
+    initialContributionActionState,
+  );
+
+  const existingMemberId = formValues.memberId;
+  const existingServiceId = formValues.serviceId;
 
   const branchMembers = members.filter(
-    (member) => member.churchBranchId === branchId,
+    (member) =>
+      member.churchBranchId === branchId &&
+      (!member.isArchived || member.id === existingMemberId),
   );
   const branchServices = services.filter(
-    (service) => service.churchBranchId === branchId,
+    (service) =>
+      service.churchBranchId === branchId &&
+      (service.status !== "cancelled" ||
+        service.id === existingServiceId),
+  );
+  const existingCancelledService = services.find(
+    (service) =>
+      service.id === existingServiceId &&
+      service.status === "cancelled",
   );
 
   function handleBranchChange(nextBranchId: string) {
@@ -96,7 +126,18 @@ export function ContributionForm({
   }
 
   return (
-    <form action={action} className="space-y-6">
+    <form action={formAction} className="space-y-6">
+      {actionState.error && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-200"
+        >
+          <p className="font-semibold">Unable to save contribution</p>
+          <p className="mt-1">{actionState.error}</p>
+        </div>
+      )}
+
       <FormSection
         title="Contribution Information"
         description="Record a contribution for one of your assigned active church branches. Member and service links are optional."
@@ -149,7 +190,7 @@ export function ContributionForm({
               {branchMembers.map((member) => (
                 <option key={member.id} value={member.id}>
                   {member.fullName}
-                  {member.isArchived ? " (Archived)" : ""}
+                  {member.isArchived ? " (Archived historical link)" : ""}
                 </option>
               ))}
             </Select>
@@ -160,6 +201,13 @@ export function ContributionForm({
             htmlFor="contribution-service"
             description="Optional. The selected service must belong to the same branch."
           >
+            {existingCancelledService && (
+              <p className="mb-2 text-xs text-amber-700 dark:text-amber-300">
+                This contribution retains a historical link to a cancelled
+                service. You may leave it unchanged or select another service.
+              </p>
+            )}
+
             <Select
               id="contribution-service"
               name="service_id"
@@ -185,7 +233,12 @@ export function ContributionForm({
             <Select
               id="contribution-type"
               name="contribution_type"
-              defaultValue={formValues.contributionType}
+              value={contributionType}
+              onChange={(event) =>
+                setContributionType(
+                  event.target.value as ContributionFormValues["contributionType"],
+                )
+              }
               required
             >
               {CONTRIBUTION_TYPES.map((type) => (
@@ -204,7 +257,12 @@ export function ContributionForm({
             <Select
               id="contribution-payment-method"
               name="payment_method"
-              defaultValue={formValues.paymentMethod}
+              value={paymentMethod}
+              onChange={(event) =>
+                setPaymentMethod(
+                  event.target.value as ContributionFormValues["paymentMethod"],
+                )
+              }
               required
             >
               {PAYMENT_METHODS.map((method) => (
@@ -229,7 +287,8 @@ export function ContributionForm({
               step="0.01"
               inputMode="decimal"
               required
-              defaultValue={formValues.amount}
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
               placeholder="0.00"
             />
           </FormField>
@@ -244,7 +303,10 @@ export function ContributionForm({
               name="contribution_date"
               type="date"
               required
-              defaultValue={formValues.contributionDate}
+              value={contributionDate}
+              onChange={(event) =>
+                setContributionDate(event.target.value)
+              }
             />
           </FormField>
 
@@ -259,7 +321,8 @@ export function ContributionForm({
               name="notes"
               rows={5}
               maxLength={2000}
-              defaultValue={formValues.notes ?? ""}
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
               placeholder="Add any helpful notes..."
             />
           </FormField>

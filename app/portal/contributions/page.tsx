@@ -23,7 +23,10 @@ import {
 } from "./access";
 import { loadContributionOptions, loadContributionRecords } from "./data";
 import ContributionsTable from "./ContributionsTable";
-import { getContributionSummary } from "./types";
+import {
+  formatContributionCents,
+  getContributionSummary,
+} from "./types";
 
 export default function ContributionsPage() {
   return (
@@ -72,21 +75,21 @@ async function ContributionsContent() {
 
         <ContributionSummaryCard
           label="Total Amount"
-          value={formatCurrency(summary.totalAmount)}
+          value={formatContributionCents(summary.totalAmountCents)}
           icon={<DollarSign />}
           valueClassName="text-emerald-700 dark:text-emerald-400"
         />
 
         <ContributionSummaryCard
           label="Tithe Total"
-          value={formatCurrency(summary.titheTotal)}
+          value={formatContributionCents(summary.titheTotalCents)}
           icon={<HandCoins />}
           valueClassName="text-[#203264] dark:text-slate-100"
         />
 
         <ContributionSummaryCard
           label="Love Offering Total"
-          value={formatCurrency(summary.loveOfferingTotal)}
+          value={formatContributionCents(summary.loveOfferingTotalCents)}
           icon={<HeartHandshake />}
           valueClassName="text-blue-700 dark:text-blue-400"
         />
@@ -141,14 +144,6 @@ function ContributionSummaryCard({
       </CardContent>
     </Card>
   );
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 2,
-  }).format(value);
 }
 
 function ContributionsLoading() {

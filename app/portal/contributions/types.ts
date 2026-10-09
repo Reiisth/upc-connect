@@ -48,7 +48,7 @@ export type ContributionRecord = {
   churchBranchId: string;
   branch: ContributionBranch | null;
   contributionType: ContributionType;
-  amount: number;
+  amount: string;
   contributionDate: string;
   paymentMethod: PaymentMethod;
   recordedBy: string | null;
@@ -58,9 +58,22 @@ export type ContributionRecord = {
 
 export type ContributionSummary = {
   count: number;
-  totalAmount: number;
-  titheTotal: number;
-  loveOfferingTotal: number;
+  totalAmountCents: number;
+  titheTotalCents: number;
+  loveOfferingTotalCents: number;
+};
+
+export type ContributionActionState = {
+  error: string | null;
+};
+
+export type ContributionAction = (
+  previousState: ContributionActionState,
+  formData: FormData,
+) => Promise<ContributionActionState>;
+
+export const initialContributionActionState: ContributionActionState = {
+  error: null,
 };
 
 export type ContributionFormValues = {
@@ -108,29 +121,78 @@ export function formatMemberName(member: {
     .join(" ") || "Unnamed member";
 }
 
+/**
+ * Convert a numeric(12,2) value to integer cents without accumulating money
+ * using JavaScript floating-point arithmetic.
+ */
+export function contributionAmountToCents(
+  value: string | number,
+) {
+  const text = String(value).trim();
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(text);
+
+  if (!match) {
+    throw new Error("Contribution amount must have at most two decimals.");
+  }
+
+  const cents = Number(
+    `${match[1]}${(match[2] ?? "").padEnd(2, "0")}`,
+  );
+
+  if (!Number.isSafeInteger(cents)) {
+    throw new Error("Contribution amount is too large.");
+  }
+
+  return cents;
+}
+
+export function normalizeContributionAmount(
+  value: string | number,
+) {
+  const cents = contributionAmountToCents(value);
+
+  return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, "0")}`;
+}
+
+export function formatContributionAmount(
+  value: string | number,
+) {
+  return formatContributionCents(contributionAmountToCents(value));
+}
+
+export function formatContributionCents(cents: number) {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
 export function getContributionSummary(
   records: ContributionRecord[],
 ): ContributionSummary {
   return records.reduce<ContributionSummary>(
     (summary, record) => {
+      const amountCents = contributionAmountToCents(record.amount);
+
       summary.count += 1;
-      summary.totalAmount += record.amount;
+      summary.totalAmountCents += amountCents;
 
       if (record.contributionType === "tithe") {
-        summary.titheTotal += record.amount;
+        summary.titheTotalCents += amountCents;
       }
 
       if (record.contributionType === "love_offering") {
-        summary.loveOfferingTotal += record.amount;
+        summary.loveOfferingTotalCents += amountCents;
       }
 
       return summary;
     },
     {
       count: 0,
-      totalAmount: 0,
-      titheTotal: 0,
-      loveOfferingTotal: 0,
+      totalAmountCents: 0,
+      titheTotalCents: 0,
+      loveOfferingTotalCents: 0,
     },
   );
 }

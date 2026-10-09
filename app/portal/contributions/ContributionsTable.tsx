@@ -24,6 +24,7 @@ import { TableActionButton } from "@/components/ui/table-action-button";
 
 import {
   CONTRIBUTION_TYPES,
+  formatContributionAmount,
   formatContributionType,
   formatPaymentMethod,
   PAYMENT_METHODS,
@@ -334,12 +335,8 @@ function compareContributions(
   );
 }
 
-export function formatAmount(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 2,
-  }).format(value);
+export function formatAmount(value: string | number) {
+  return formatContributionAmount(value);
 }
 
 function formatContributionDate(value: string) {
