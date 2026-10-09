@@ -38,24 +38,15 @@ type ScannerState =
   | "error"
   | "unavailable";
 
-type BarcodeDetectorLike = {
-  detect(
-    source: HTMLVideoElement,
-  ): Promise<Array<{ rawValue?: string }>>;
-};
-
-type BarcodeDetectorConstructorLike = new (options?: {
-  formats?: string[];
-}) => BarcodeDetectorLike;
-
-type BarcodeDetectorWindow = Window & {
-  BarcodeDetector?: BarcodeDetectorConstructorLike;
+type ScannerControls = {
+  stop: () => void;
 };
 
 export default function QrAttendanceScanner({
   serviceId,
 }: QrAttendanceScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const scannerControlsRef = useRef<ScannerControls | null>(null);
   const processingRef = useRef(false);
   const cameraReadyRef = useRef(false);
   const resultTimerRef = useRef<number | null>(null);
@@ -124,21 +115,14 @@ export default function QrAttendanceScanner({
 
   useEffect(() => {
     let disposed = false;
-    let stream: MediaStream | null = null;
-    let animationFrame: number | null = null;
 
     cameraReadyRef.current = false;
     setScannerState("starting");
     setCameraMessage(null);
 
-    const stopCamera = () => {
-      if (animationFrame !== null) {
-        window.cancelAnimationFrame(animationFrame);
-        animationFrame = null;
-      }
-
-      stream?.getTracks().forEach((track) => track.stop());
-      stream = null;
+    const stopScanner = () => {
+      scannerControlsRef.current?.stop();
+      scannerControlsRef.current = null;
 
       if (videoRef.current) {
         videoRef.current.pause();
@@ -151,13 +135,13 @@ export default function QrAttendanceScanner({
 
       if (!video) return;
 
-      const Detector = (window as BarcodeDetectorWindow)
-        .BarcodeDetector;
-
-      if (!Detector) {
+      if (
+        !window.isSecureContext &&
+        !isLocalDevelopmentHost(window.location.hostname)
+      ) {
         setScannerState("unavailable");
         setCameraMessage(
-          "Camera QR scanning is not supported in this browser. Use the manual QR value below.",
+          "Camera access requires HTTPS. localhost is normally allowed, but a LAN IP development URL may not be treated as secure by the browser.",
         );
         return;
       }
@@ -170,80 +154,59 @@ export default function QrAttendanceScanner({
         return;
       }
 
-      let detector: BarcodeDetectorLike;
-
       try {
-        detector = new Detector({ formats: ["qr_code"] });
-      } catch {
-        setScannerState("unavailable");
-        setCameraMessage(
-          "This browser cannot initialize QR detection. Use the manual QR value below.",
+        const { BrowserQRCodeReader } = await import(
+          "@zxing/browser"
         );
-        return;
-      }
 
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            facingMode: { ideal: "environment" },
+        if (disposed) {
+          return;
+        }
+
+        // The effect owns the single reader instance. Stopping stale
+        // controls prevents retries or route transitions from leaving two
+        // camera readers active at once.
+        stopScanner();
+
+        const reader = new BrowserQRCodeReader();
+        const controls = await reader.decodeFromConstraints(
+          {
+            audio: false,
+            video: {
+              facingMode: { ideal: "environment" },
+            },
           },
-        });
+          video,
+          (scanResult) => {
+            if (
+              disposed ||
+              processingRef.current ||
+              !scanResult
+            ) {
+              return;
+            }
+
+            void submitQrValueRef.current(scanResult.getText());
+          },
+        );
 
         if (disposed) {
-          stopCamera();
+          controls.stop();
           return;
         }
 
-        video.srcObject = stream;
-        await video.play();
-
-        if (disposed) {
-          stopCamera();
-          return;
-        }
-
+        scannerControlsRef.current = controls;
         cameraReadyRef.current = true;
         setScannerState("ready");
         setCameraMessage(
           "Point the camera at a member attendance QR code.",
         );
-
-        const scanFrame = async () => {
-          if (disposed) return;
-
-          if (
-            !processingRef.current &&
-            video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
-          ) {
-            try {
-              const detections = await detector.detect(video);
-              const rawValue = detections.find(
-                (detection) => Boolean(detection.rawValue),
-              )?.rawValue;
-
-              if (rawValue && !processingRef.current) {
-                void submitQrValueRef.current(rawValue);
-              }
-            } catch {
-              // A transient detection failure should not stop the camera.
-            }
-          }
-
-          if (!disposed) {
-            animationFrame = window.requestAnimationFrame(() => {
-              void scanFrame();
-            });
-          }
-        };
-
-        void scanFrame();
       } catch (error) {
         if (disposed) return;
 
         setScannerState("error");
         setCameraMessage(getCameraErrorMessage(error));
-        stopCamera();
+        stopScanner();
       }
     };
 
@@ -252,7 +215,7 @@ export default function QrAttendanceScanner({
     return () => {
       disposed = true;
       cameraReadyRef.current = false;
-      stopCamera();
+      stopScanner();
     };
   }, [cameraAttempt, serviceId]);
 
@@ -438,9 +401,21 @@ function getCameraErrorMessage(error: unknown) {
     if (error.name === "NotReadableError") {
       return "The camera is already in use or unavailable. Use the manual QR value below.";
     }
+
+    if (error.name === "OverconstrainedError") {
+      return "The preferred rear camera is unavailable. Check camera permissions or use the manual QR value below.";
+    }
   }
 
   return "The camera could not be started. Use the manual QR value below or try again.";
+}
+
+function isLocalDevelopmentHost(hostname: string) {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]"
+  );
 }
 
 function getScannerStatus(state: ScannerState) {
