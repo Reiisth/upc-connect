@@ -43,7 +43,7 @@ type AttendanceViewProps = {
   serviceId: string;
   rows: AttendanceMemberRow[];
   summary: AttendanceSummary;
-  canAdd: boolean;
+  canRecord: boolean;
   canCorrect: boolean;
 };
 
@@ -63,7 +63,7 @@ export default function AttendanceView({
   serviceId,
   rows,
   summary,
-  canAdd,
+  canRecord,
   canCorrect,
 }: AttendanceViewProps) {
   const router = useRouter();
@@ -100,14 +100,17 @@ export default function AttendanceView({
   }, [rows, search, statusFilter]);
 
   const recordableRows = useMemo(
-    () =>
-      canAdd
-        ? rows
-        : rows.filter((row) => row.attendance !== null),
-    [canAdd, rows],
+    () => {
+      if (canRecord && canCorrect) return rows;
+
+      return canRecord
+        ? rows.filter((row) => row.attendance === null)
+        : rows.filter((row) => row.attendance !== null);
+    },
+    [canCorrect, canRecord, rows],
   );
 
-  const canEdit = canAdd || canCorrect;
+  const canEdit = canRecord || canCorrect;
 
   function selectMember(row: AttendanceMemberRow) {
     setSelectedMemberId(row.member.id);
@@ -190,9 +193,11 @@ export default function AttendanceView({
         <FormSection
           title="Manual Attendance"
           description={
-            canAdd
-              ? "Record or update attendance for an active member of this branch. New manual records use the current staff account as the recorder."
-              : "Pastors can correct existing attendance records. New records must be added by an usher."
+            canRecord && canCorrect
+              ? "Record attendance for an active member or correct an existing record. Manual records use the current account as the recorder."
+              : canRecord
+                ? "Record attendance for an active member of this branch. New manual records use the current account as the recorder. Existing records require the attendance.correct permission."
+                : "Correct existing attendance records. New records require the attendance.record permission."
           }
         >
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -311,10 +316,11 @@ export default function AttendanceView({
         />
       )}
 
-      {canCorrect && !canAdd && recordableRows.length === 0 && (
+      {canCorrect && !canRecord && recordableRows.length === 0 && (
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          No existing attendance records are available for correction. An usher
-          must add the first record for a member.
+          No existing attendance records are available for correction. An
+          account with attendance.record must add the first record for a
+          member.
         </p>
       )}
 
@@ -416,15 +422,15 @@ export default function AttendanceView({
                     </TableCell>
 
                     <TableCell>
-                      {row.attendance && (canCorrect || canAdd) ? (
+                      {row.attendance && canCorrect ? (
                         <TableActionButton
                           type="button"
                           onClick={() => selectMember(row)}
                           icon={<Pencil />}
                         >
-                          {canCorrect ? "Correct" : "Update"}
+                          Correct
                         </TableActionButton>
-                      ) : !row.attendance && canAdd ? (
+                      ) : !row.attendance && canRecord ? (
                         <TableActionButton
                           type="button"
                           onClick={() => selectMember(row)}

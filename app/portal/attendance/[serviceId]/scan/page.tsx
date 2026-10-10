@@ -17,9 +17,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 
+import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { requireServicesAccess } from "../../../services/access";
+import { requireAttendancePermission } from "../../access";
 import { loadAccessibleService } from "../../data";
 import {
   canScanServiceStatus,
@@ -45,7 +46,9 @@ export default function QrAttendancePage(
 async function QrAttendanceContent({
   params,
 }: QrAttendancePageProps) {
-  const access = await requireServicesAccess();
+  const access = await requireAttendancePermission(
+    "attendance.record",
+  );
   const { serviceId } = await params;
   const admin = createAdminClient();
   const service = await loadAccessibleService(
@@ -58,8 +61,10 @@ async function QrAttendanceContent({
     notFound();
   }
 
-  const canScan =
-    !access.isSystemAdmin && access.roles.includes("usher");
+  const canScan = hasPermission(
+    access.permissions,
+    "attendance.record",
+  );
   const statusAllowsScanning = canScanServiceStatus(
     service.status,
   );
@@ -172,7 +177,7 @@ function getUnavailableDescription(
   status: string,
 ) {
   if (!canScan) {
-    return "Only ushers can use QR attendance scanning. You can still review this service's attendance records.";
+    return "Your account does not have attendance.record permission. You can still review this service's attendance records.";
   }
 
   if (status === "cancelled") {

@@ -1,11 +1,9 @@
 import "server-only";
 
+import type { BranchScope } from "@/lib/branch-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import {
-  getAccessibleActiveBranches,
-  type ServiceAccess,
-} from "../services/access";
+import { getAccessibleActiveBranches } from "../services/access";
 import type { ServiceBranch, ServiceRecord } from "../services/types";
 import {
   ATTENDANCE_STATUSES,
@@ -68,7 +66,7 @@ function mapService(
 }
 
 export async function loadAccessibleService(
-  access: ServiceAccess,
+  access: BranchScope,
   admin: ReturnType<typeof createAdminClient>,
   serviceId: string,
 ) {

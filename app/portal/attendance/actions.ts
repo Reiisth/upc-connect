@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import {
+  getAttendanceBranchContext,
+  requireAttendancePermission,
+} from "./access";
 import { loadAccessibleService } from "./data";
 import {
   ATTENDANCE_STATUSES,
@@ -11,7 +15,6 @@ import {
   type AttendanceStatus,
   type QrAttendanceResult,
 } from "./types";
-import { requireServicesAccess } from "../services/access";
 
 const attendancePath = "/portal/attendance";
 const memberQrIdPattern =
@@ -129,13 +132,9 @@ export async function recordQrAttendance(
   serviceId: string,
   qrValue: string,
 ): Promise<QrAttendanceResult> {
-  const access = await requireServicesAccess();
-
-  if (access.isSystemAdmin || !access.roles.includes("usher")) {
-    throw new Error(
-      "Only ushers can record attendance with QR scanning.",
-    );
-  }
+  const access = await requireAttendancePermission(
+    "attendance.record",
+  );
 
   if (!serviceId) {
     throw new Error("A service is required before scanning.");
@@ -275,17 +274,7 @@ export async function saveAttendanceRecord(
   serviceId: string,
   formData: FormData,
 ) {
-  const access = await requireServicesAccess();
-
-  if (
-    access.isSystemAdmin ||
-    (!access.roles.includes("usher") &&
-      !access.roles.includes("pastor"))
-  ) {
-    throw new Error(
-      "Your account has view-only access to attendance records.",
-    );
-  }
+  const branchContext = await getAttendanceBranchContext();
 
   if (!serviceId) {
     throw new Error("A service is required.");
@@ -304,7 +293,7 @@ export async function saveAttendanceRecord(
   );
   const admin = createAdminClient();
   const service = await loadAccessibleService(
-    access,
+    branchContext,
     admin,
     serviceId,
   );
@@ -354,6 +343,29 @@ export async function saveAttendanceRecord(
     throw new Error(existingError.message);
   }
 
+  const access = await requireAttendancePermission(
+    existing?.id
+      ? "attendance.correct"
+      : "attendance.record",
+  );
+  const authorizedService = await loadAccessibleService(
+    access,
+    admin,
+    serviceId,
+  );
+
+  if (!authorizedService) {
+    throw new Error(
+      "The selected service was not found or is outside your branch access.",
+    );
+  }
+
+  if (member.church_branch_id !== authorizedService.churchBranchId) {
+    throw new Error(
+      "The selected member does not belong to the service branch.",
+    );
+  }
+
   const payload = {
     attendance_status: attendanceStatus,
     method: "manual",
@@ -368,12 +380,6 @@ export async function saveAttendanceRecord(
       payload,
     );
   } else {
-    if (!access.roles.includes("usher")) {
-      throw new Error(
-        "Pastors can correct existing attendance records but cannot add a new record.",
-      );
-    }
-
     const { error: insertError } = await admin
       .from("attendance_records")
       .insert({
@@ -407,11 +413,14 @@ export async function saveAttendanceRecord(
         );
       }
 
-      await updateAttendanceRecord(
-        admin,
-        concurrent.id,
-        payload,
+      const correctionAccess = await requireAttendancePermission(
+        "attendance.correct",
       );
+
+      await updateAttendanceRecord(admin, concurrent.id, {
+        ...payload,
+        recorded_by: correctionAccess.user.id,
+      });
     }
   }
 

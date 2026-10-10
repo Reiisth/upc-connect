@@ -9,7 +9,7 @@ import {
   PERMISSION_KEYS,
   type PermissionKey,
 } from "@/lib/permissions";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type RelatedRecord<T> = T | T[] | null | undefined;
 
@@ -45,7 +45,10 @@ function permissionLoadError(error: unknown): Error {
 async function loadPermissionsForUser(
   userId: string,
 ): Promise<PermissionKey[]> {
-  const supabase = await createClient();
+  // Permission metadata can be protected by RLS because it is also used by
+  // the authorization policies themselves. Resolve it on the server with
+  // the admin helper after the caller has authenticated the current user.
+  const supabase = createAdminClient();
 
   const { data: roleLinks, error: roleLinksError } = await supabase
     .from("user_roles")
@@ -110,13 +113,17 @@ async function loadPermissionsForUser(
 export async function getCurrentUserPermissions(
   userId?: string,
 ): Promise<PermissionKey[]> {
-  const targetUserId = userId ?? (await getCurrentUser())?.id;
+  const currentUser = await getCurrentUser();
 
-  if (!targetUserId) {
+  if (!currentUser) {
     return [];
   }
 
-  return loadPermissionsForUser(targetUserId);
+  if (userId && userId !== currentUser.id) {
+    return [];
+  }
+
+  return loadPermissionsForUser(currentUser.id);
 }
 
 export type PermissionContext = {

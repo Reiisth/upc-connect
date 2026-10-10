@@ -1,13 +1,16 @@
 import { redirect } from "next/navigation";
 
 import { getCurrentUser, getCurrentUserRoles } from "@/lib/auth";
+import {
+  getUserBranchScope,
+  type BranchScope,
+} from "@/lib/branch-access";
 import { canAccessTab } from "@/lib/portal-access";
 import {
   requirePermission,
   type PermissionContext,
 } from "@/lib/permissions-server";
 import { requirePortalTab } from "@/lib/require-portal-tab";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type ServicePermission =
@@ -23,10 +26,7 @@ export type ServiceAccess = Awaited<
   ReturnType<typeof requirePortalTab>
 >;
 
-export type ServiceBranchScope = {
-  branchIds: string[];
-  isSystemAdmin: boolean;
-};
+export type ServiceBranchScope = BranchScope;
 
 export type PermissionServiceAccess = PermissionContext &
   ServiceBranchScope;
@@ -37,64 +37,6 @@ export type ServiceBranchOption = {
   code: string | null;
   isActive: boolean;
 };
-
-async function getServiceBranchScope(userId: string) {
-  const supabase = await createClient();
-
-  const { data: roleLinks, error: roleError } = await supabase
-    .from("user_roles")
-    .select(`
-      roles!inner (
-        key,
-        is_active
-      )
-    `)
-    .eq("user_id", userId);
-
-  if (roleError) {
-    throw new Error(roleError.message);
-  }
-
-  const isSystemAdmin = (roleLinks ?? []).some((link) => {
-    const role = Array.isArray(link.roles)
-      ? link.roles[0] ?? null
-      : link.roles;
-
-    return role?.is_active === true && role.key === "system_admin";
-  });
-
-  if (isSystemAdmin) {
-    const { data: branches, error: branchError } = await supabase
-      .from("church_branches")
-      .select("id")
-      .eq("is_active", true);
-
-    if (branchError) {
-      throw new Error(branchError.message);
-    }
-
-    return {
-      branchIds: (branches ?? []).map((branch) => branch.id),
-      isSystemAdmin: true,
-    };
-  }
-
-  const { data: assignments, error: assignmentError } = await supabase
-    .from("user_branch_access")
-    .select("church_branch_id")
-    .eq("user_id", userId);
-
-  if (assignmentError) {
-    throw new Error(assignmentError.message);
-  }
-
-  return {
-    branchIds: (assignments ?? []).map(
-      (assignment) => assignment.church_branch_id,
-    ),
-    isSystemAdmin: false,
-  };
-}
 
 /**
  * Legacy role-based access context retained for unmigrated modules that
@@ -124,7 +66,7 @@ export async function requireServicesPermission(
   permission: ServicePermission,
 ): Promise<PermissionServiceAccess> {
   const permissionContext = await requirePermission(permission);
-  const branchScope = await getServiceBranchScope(
+  const branchScope = await getUserBranchScope(
     permissionContext.user.id,
   );
 

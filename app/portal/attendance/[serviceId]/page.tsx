@@ -16,9 +16,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 
+import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { requireServicesAccess } from "../../services/access";
+import { requireAttendancePermission } from "../access";
 import { loadAccessibleService, loadAttendanceRows } from "../data";
 import AttendanceView from "../AttendanceView";
 import {
@@ -45,7 +46,9 @@ export default function AttendanceServicePage(
 async function AttendanceServiceContent({
   params,
 }: AttendanceServicePageProps) {
-  const access = await requireServicesAccess();
+  const access = await requireAttendancePermission(
+    "attendance.view",
+  );
   const { serviceId } = await params;
   const admin = createAdminClient();
   const service = await loadAccessibleService(
@@ -60,13 +63,16 @@ async function AttendanceServiceContent({
 
   const rows = await loadAttendanceRows(admin, service);
   const summary = getAttendanceSummary(rows);
-  const canAdd =
-    !access.isSystemAdmin && access.roles.includes("usher");
-  const canCorrect =
-    !access.isSystemAdmin && access.roles.includes("pastor");
+  const canRecord = hasPermission(
+    access.permissions,
+    "attendance.record",
+  );
+  const canCorrect = hasPermission(
+    access.permissions,
+    "attendance.correct",
+  );
   const canScan =
-    !access.isSystemAdmin &&
-    access.roles.includes("usher") &&
+    canRecord &&
     canScanServiceStatus(service.status);
 
   return (
@@ -148,7 +154,7 @@ async function AttendanceServiceContent({
         serviceId={service.id}
         rows={rows}
         summary={summary}
-        canAdd={canAdd}
+        canRecord={canRecord}
         canCorrect={canCorrect}
       />
     </PageContainer>

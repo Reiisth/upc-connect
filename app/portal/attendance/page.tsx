@@ -14,11 +14,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import {
-  getAccessibleActiveBranches,
-  requireServicesAccess,
-} from "../services/access";
+import { getAccessibleActiveBranches } from "../services/access";
 import AttendanceServicesTable from "./AttendanceServicesTable";
+import { requireAttendancePermission } from "./access";
 import type { ServiceBranch, ServiceRecord } from "../services/types";
 
 type ServiceRow = {
@@ -41,7 +39,9 @@ export default function AttendancePage() {
 }
 
 async function AttendanceContent() {
-  const access = await requireServicesAccess();
+  const access = await requireAttendancePermission(
+    "attendance.view",
+  );
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(
     access,
