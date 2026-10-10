@@ -21,6 +21,7 @@ import {
   type BaptismBranch,
   type BaptismFormValues,
   type BaptismMemberOption,
+  type BaptismType,
 } from "./types";
 
 type BaptismFormProps = {
@@ -28,6 +29,7 @@ type BaptismFormProps = {
   members: BaptismMemberOption[];
   action: BaptismAction;
   submitLabel: string;
+  allowedBaptismTypes?: readonly BaptismType[];
   values?: BaptismFormValues;
 };
 
@@ -46,18 +48,22 @@ export function BaptismForm({
   members,
   action,
   submitLabel,
+  allowedBaptismTypes = BAPTISM_TYPES,
   values,
 }: BaptismFormProps) {
   const formValues = values ?? defaultValues;
+  const initialBaptismType = allowedBaptismTypes.includes(
+    formValues.baptismType,
+  )
+    ? formValues.baptismType
+    : allowedBaptismTypes[0] ?? formValues.baptismType;
   const [branchId, setBranchId] = useState(
     formValues.churchBranchId,
   );
   const [memberId, setMemberId] = useState(
     formValues.memberId,
   );
-  const [baptismType, setBaptismType] = useState(
-    formValues.baptismType,
-  );
+  const [baptismType, setBaptismType] = useState(initialBaptismType);
   const [baptismDate, setBaptismDate] = useState(
     formValues.baptismDate,
   );
@@ -186,25 +192,46 @@ export function BaptismForm({
             label="Baptism Type"
             htmlFor="baptism-type"
             required
-            description="Each member may have one record of each type."
+            description={
+              values
+                ? "Baptism type cannot be changed after the record is created."
+                : "Each member may have one record of each type."
+            }
           >
-            <Select
-              id="baptism-type"
-              name="baptism_type"
-              value={baptismType}
-              onChange={(event) =>
-                setBaptismType(
-                  event.target.value as BaptismFormValues["baptismType"],
-                )
-              }
-              required
-            >
-              {BAPTISM_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {formatBaptismType(type)}
-                </option>
-              ))}
-            </Select>
+            {values ? (
+              <>
+                <input
+                  type="hidden"
+                  name="baptism_type"
+                  value={baptismType}
+                />
+                <div
+                  id="baptism-type"
+                  className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  {formatBaptismType(baptismType)}
+                </div>
+              </>
+            ) : (
+              <Select
+                id="baptism-type"
+                name="baptism_type"
+                value={baptismType}
+                onChange={(event) =>
+                  setBaptismType(
+                    event.target.value as BaptismFormValues["baptismType"],
+                  )
+                }
+                required
+                disabled={allowedBaptismTypes.length === 0}
+              >
+                {allowedBaptismTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {formatBaptismType(type)}
+                  </option>
+                ))}
+              </Select>
+            )}
           </FormField>
 
           <FormField

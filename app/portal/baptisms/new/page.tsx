@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { Droplets } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
@@ -11,8 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import {
-  canManageBaptisms,
-  requireBaptismsAccess,
+  getAllowedBaptismCreateTypes,
+  requireBaptismCreateAccess,
 } from "../access";
 import { createBaptism } from "../actions";
 import { BaptismForm } from "../BaptismForm";
@@ -27,38 +25,13 @@ export default function NewBaptismPage() {
 }
 
 async function NewBaptismContent() {
-  const access = await requireBaptismsAccess();
-
-  if (!canManageBaptisms(access)) {
-    return (
-      <PageContainer>
-        <PageHeader
-          backHref="/portal/baptisms"
-          backLabel="Back to Baptism Records"
-          eyebrow="Spiritual Ministry"
-          eyebrowIcon={<Droplets className="h-4 w-4" />}
-          title="New Baptism Record"
-          description="Record a baptism for an assigned active branch."
-        />
-
-        <EmptyState
-          icon={<Droplets className="h-5 w-5" />}
-          title="View-only access"
-          description="Only spiritual ministry officers can create or edit baptism records."
-          action={
-            <Button asChild variant="outline">
-              <Link href="/portal/baptisms">
-                Back to Baptism Records
-              </Link>
-            </Button>
-          }
-        />
-      </PageContainer>
-    );
-  }
+  const access = await requireBaptismCreateAccess();
 
   const admin = createAdminClient();
   const options = await loadBaptismOptions(access, admin);
+  const allowedBaptismTypes = getAllowedBaptismCreateTypes(
+    access.permissions,
+  );
 
   return (
     <PageContainer>
@@ -81,6 +54,7 @@ async function NewBaptismContent() {
         <BaptismForm
           branches={options.branches}
           members={options.members}
+          allowedBaptismTypes={allowedBaptismTypes}
           action={createBaptism}
           submitLabel="Save Baptism Record"
         />

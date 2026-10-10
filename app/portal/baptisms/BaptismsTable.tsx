@@ -33,7 +33,8 @@ import {
 type BaptismsTableProps = {
   records: BaptismRecord[];
   branches: BaptismBranch[];
-  canManage: boolean;
+  canUpdateWater: boolean;
+  canUpdateHolyGhost: boolean;
 };
 
 const baptismTypeVariants: Record<
@@ -47,7 +48,8 @@ const baptismTypeVariants: Record<
 export default function BaptismsTable({
   records,
   branches,
-  canManage,
+  canUpdateWater,
+  canUpdateHolyGhost,
 }: BaptismsTableProps) {
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
@@ -277,7 +279,9 @@ export default function BaptismsTable({
                 </TableCell>
 
                 <TableCell>
-                  {canManage ? (
+                  {(record.baptismType === "water"
+                    ? canUpdateWater
+                    : canUpdateHolyGhost) ? (
                     <TableActionButton
                       href={`/portal/baptisms/${record.id}/edit`}
                       icon={<Pencil />}

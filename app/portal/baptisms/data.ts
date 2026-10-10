@@ -4,8 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import {
   getAccessibleActiveBranches,
-  type ServiceAccess,
 } from "../services/access";
+import type { BaptismAccess } from "./access";
 import type {
   BaptismBranch,
   BaptismMemberOption,
@@ -54,7 +54,7 @@ export type BaptismEditRecord = {
 };
 
 export async function loadBaptismOptions(
-  access: ServiceAccess,
+  access: BaptismAccess,
   admin: ReturnType<typeof createAdminClient>,
 ) {
   const branches = await getAccessibleActiveBranches(

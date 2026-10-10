@@ -15,10 +15,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  hasAnyPermission,
+  hasPermission,
+} from "@/lib/permissions";
 
 import {
-  canManageBaptisms,
-  requireBaptismsAccess,
+  BAPTISM_CREATE_PERMISSIONS,
+  requireBaptismPermission,
 } from "./access";
 import BaptismsTable from "./BaptismsTable";
 import {
@@ -36,7 +40,7 @@ export default function BaptismsPage() {
 }
 
 async function BaptismsContent() {
-  const access = await requireBaptismsAccess();
+  const access = await requireBaptismPermission("baptisms.view");
   const admin = createAdminClient();
   const options = await loadBaptismOptions(access, admin);
   const records = await loadBaptismRecords(
@@ -44,7 +48,18 @@ async function BaptismsContent() {
     options.branches,
   );
   const summary = getBaptismSummary(records);
-  const canManage = canManageBaptisms(access);
+  const canCreate = hasAnyPermission(
+    access.permissions,
+    BAPTISM_CREATE_PERMISSIONS,
+  );
+  const canUpdateWater = hasPermission(
+    access.permissions,
+    "baptisms.water.update",
+  );
+  const canUpdateHolyGhost = hasPermission(
+    access.permissions,
+    "baptisms.holy_ghost.update",
+  );
 
   return (
     <PageContainer>
@@ -54,7 +69,7 @@ async function BaptismsContent() {
         title="Baptism Records"
         description="Review baptism history and maintain accurate spiritual ministry records."
         action={
-          canManage ? (
+          canCreate ? (
             <Button asChild>
               <Link href="/portal/baptisms/new">
                 <Plus />
@@ -97,7 +112,8 @@ async function BaptismsContent() {
         <BaptismsTable
           records={records}
           branches={options.branches}
-          canManage={canManage}
+          canUpdateWater={canUpdateWater}
+          canUpdateHolyGhost={canUpdateHolyGhost}
         />
       )}
     </PageContainer>

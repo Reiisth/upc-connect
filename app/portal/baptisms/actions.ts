@@ -4,9 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasPermission } from "@/lib/permissions";
 
 import { assertActiveServiceBranch } from "../services/access";
-import { requireBaptismManager } from "./access";
+import {
+  getBaptismCreatePermission,
+  getBaptismUpdatePermission,
+  requireBaptismCreateAccess,
+  requireBaptismUpdateAccess,
+} from "./access";
 import {
   BAPTISM_TYPES,
   formatBaptismType,
@@ -17,6 +23,7 @@ import {
 const baptismsPath = "/portal/baptisms";
 
 class BaptismValidationError extends Error {}
+class BaptismAuthorizationError extends Error {}
 
 const safeBranchAccessErrors = new Set([
   "A church branch is required.",
@@ -29,6 +36,10 @@ function getActionErrorMessage(
   fallback: string,
 ) {
   if (error instanceof BaptismValidationError) {
+    return error.message;
+  }
+
+  if (error instanceof BaptismAuthorizationError) {
     return error.message;
   }
 
@@ -234,12 +245,24 @@ export async function createBaptism(
   _previousState: BaptismActionState,
   formData: FormData,
 ): Promise<BaptismActionState> {
-  const access = await requireBaptismManager();
+  const access = await requireBaptismCreateAccess();
   const admin = createAdminClient();
   let baptismId: string | null = null;
 
   try {
     const payload = validateBaptismForm(formData);
+    const requiredPermission = getBaptismCreatePermission(
+      payload.baptism_type,
+    );
+
+    if (
+      !requiredPermission ||
+      !hasPermission(access.permissions, requiredPermission)
+    ) {
+      throw new BaptismAuthorizationError(
+        "You do not have permission to create this baptism type.",
+      );
+    }
 
     await assertActiveServiceBranch(
       admin,
@@ -294,7 +317,7 @@ export async function updateBaptism(
   _previousState: BaptismActionState,
   formData: FormData,
 ): Promise<BaptismActionState> {
-  const access = await requireBaptismManager();
+  const access = await requireBaptismUpdateAccess();
   const admin = createAdminClient();
 
   try {
@@ -320,6 +343,34 @@ export async function updateBaptism(
     if (!existing) {
       throw new BaptismValidationError(
         "The requested baptism record could not be found.",
+      );
+    }
+
+    const existingPermission = getBaptismUpdatePermission(
+      existing.baptism_type,
+    );
+    const resultingPermission = getBaptismUpdatePermission(
+      payload.baptism_type,
+    );
+
+    if (!existingPermission || !resultingPermission) {
+      throw new BaptismValidationError(
+        "The baptism record has an unsupported baptism type.",
+      );
+    }
+
+    if (
+      !hasPermission(access.permissions, existingPermission) ||
+      !hasPermission(access.permissions, resultingPermission)
+    ) {
+      throw new BaptismAuthorizationError(
+        "You do not have permission to update this baptism type.",
+      );
+    }
+
+    if (payload.baptism_type !== existing.baptism_type) {
+      throw new BaptismValidationError(
+        "Baptism type cannot be changed after the record is created.",
       );
     }
 

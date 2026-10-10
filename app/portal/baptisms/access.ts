@@ -1,58 +1,131 @@
 import { redirect } from "next/navigation";
 
+import { getCurrentUser } from "@/lib/auth";
 import {
-  canAccessTab,
-} from "@/lib/portal-access";
+  hasAnyPermission,
+  hasPermission,
+  type PermissionCollection,
+} from "@/lib/permissions";
 import {
-  getCurrentUser,
-  getCurrentUserRoles,
-} from "@/lib/auth";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+  getCurrentUserPermissions,
+  requirePermission,
+  type PermissionContext,
+} from "@/lib/permissions-server";
+import {
+  getUserBranchScope,
+  type BranchScope,
+} from "@/lib/branch-access";
 
-export type BaptismAccess = Awaited<
-  ReturnType<typeof requirePortalTab>
->;
+import {
+  BAPTISM_TYPES,
+  type BaptismType,
+} from "./types";
 
-/**
- * Spiritual ministry officers and pastors use the baptism tab. System
- * administrators use their existing accounts permission for system-wide,
- * view-only oversight.
- */
-export async function requireBaptismsAccess() {
+export type BaptismPermission =
+  | "baptisms.view"
+  | "baptisms.water.create"
+  | "baptisms.water.update"
+  | "baptisms.holy_ghost.create"
+  | "baptisms.holy_ghost.update";
+
+export const BAPTISM_CREATE_PERMISSIONS = [
+  "baptisms.water.create",
+  "baptisms.holy_ghost.create",
+] as const satisfies readonly BaptismPermission[];
+
+export const BAPTISM_UPDATE_PERMISSIONS = [
+  "baptisms.water.update",
+  "baptisms.holy_ghost.update",
+] as const satisfies readonly BaptismPermission[];
+
+export type BaptismAccess = PermissionContext & BranchScope;
+
+export function getBaptismCreatePermission(
+  baptismType: string,
+): BaptismPermission | null {
+  if (baptismType === "water") {
+    return "baptisms.water.create";
+  }
+
+  if (baptismType === "holy_ghost") {
+    return "baptisms.holy_ghost.create";
+  }
+
+  return null;
+}
+
+export function getBaptismUpdatePermission(
+  baptismType: string,
+): BaptismPermission | null {
+  if (baptismType === "water") {
+    return "baptisms.water.update";
+  }
+
+  if (baptismType === "holy_ghost") {
+    return "baptisms.holy_ghost.update";
+  }
+
+  return null;
+}
+
+export function getAllowedBaptismCreateTypes(
+  permissions: PermissionCollection,
+): BaptismType[] {
+  return BAPTISM_TYPES.filter((baptismType) => {
+    const permission = getBaptismCreatePermission(baptismType);
+    return permission !== null && hasPermission(permissions, permission);
+  });
+}
+
+export async function requireBaptismPermission(
+  permission: BaptismPermission,
+): Promise<BaptismAccess> {
+  const permissionContext = await requirePermission(permission);
+  const branchScope = await getUserBranchScope(
+    permissionContext.user.id,
+  );
+
+  return {
+    ...permissionContext,
+    ...branchScope,
+  };
+}
+
+async function requireAnyBaptismPermission(
+  permissionsToRequire: readonly BaptismPermission[],
+): Promise<BaptismAccess> {
   const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
   }
 
-  const roles = await getCurrentUserRoles(user.id);
+  let permissions;
 
-  if (roles.includes("system_admin")) {
-    return requirePortalTab("accounts");
-  }
-
-  if (!canAccessTab(roles, "baptisms")) {
+  try {
+    permissions = await getCurrentUserPermissions(user.id);
+  } catch (error) {
+    console.error("Failed to load Baptisms permissions.", error);
     redirect("/access-denied");
   }
 
-  return requirePortalTab("baptisms");
-}
-
-export function canManageBaptisms(access: BaptismAccess) {
-  return (
-    !access.isSystemAdmin &&
-    access.roles.includes("spiritual_ministry_officer")
-  );
-}
-
-export async function requireBaptismManager() {
-  const access = await requireBaptismsAccess();
-
-  if (!canManageBaptisms(access)) {
-    throw new Error(
-      "Only spiritual ministry officers can create or edit baptism records. Pastors and system administrators have view-only access.",
-    );
+  if (!hasAnyPermission(permissions, permissionsToRequire)) {
+    redirect("/access-denied");
   }
 
-  return access;
+  const branchScope = await getUserBranchScope(user.id);
+
+  return {
+    user,
+    permissions,
+    ...branchScope,
+  };
+}
+
+export function requireBaptismCreateAccess() {
+  return requireAnyBaptismPermission(BAPTISM_CREATE_PERMISSIONS);
+}
+
+export function requireBaptismUpdateAccess() {
+  return requireAnyBaptismPermission(BAPTISM_UPDATE_PERMISSIONS);
 }

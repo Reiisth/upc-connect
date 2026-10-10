@@ -1,10 +1,7 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Droplets } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,9 +10,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { updateBaptism } from "../../actions";
 import {
-  canManageBaptisms,
-  requireBaptismsAccess,
+  getBaptismUpdatePermission,
+  requireBaptismUpdateAccess,
 } from "../../access";
+import { hasPermission } from "@/lib/permissions";
 import { BaptismForm } from "../../BaptismForm";
 import {
   loadBaptismForEdit,
@@ -41,35 +39,7 @@ export default function EditBaptismPage(
 async function EditBaptismContent({
   params,
 }: EditBaptismPageProps) {
-  const access = await requireBaptismsAccess();
-
-  if (!canManageBaptisms(access)) {
-    return (
-      <PageContainer>
-        <PageHeader
-          backHref="/portal/baptisms"
-          backLabel="Back to Baptism Records"
-          eyebrow="Spiritual Ministry"
-          eyebrowIcon={<Droplets className="h-4 w-4" />}
-          title="Edit Baptism Record"
-          description="Baptism records are read-only for this account."
-        />
-
-        <EmptyState
-          icon={<Droplets className="h-5 w-5" />}
-          title="View-only access"
-          description="Only spiritual ministry officers can create or edit baptism records."
-          action={
-            <Button asChild variant="outline">
-              <Link href="/portal/baptisms">
-                Back to Baptism Records
-              </Link>
-            </Button>
-          }
-        />
-      </PageContainer>
-    );
-  }
+  const access = await requireBaptismUpdateAccess();
 
   const { baptismId } = await params;
   const admin = createAdminClient();
@@ -81,6 +51,17 @@ async function EditBaptismContent({
   );
 
   if (!baptism) {
+    notFound();
+  }
+
+  const updatePermission = getBaptismUpdatePermission(
+    baptism.baptismType,
+  );
+
+  if (
+    !updatePermission ||
+    !hasPermission(access.permissions, updatePermission)
+  ) {
     notFound();
   }
 
@@ -100,6 +81,7 @@ async function EditBaptismContent({
       <BaptismForm
         branches={options.branches}
         members={options.members}
+        allowedBaptismTypes={[baptism.baptismType]}
         action={updateAction}
         submitLabel="Save Changes"
         values={{
