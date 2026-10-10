@@ -1,10 +1,7 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,9 +10,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { updateService } from "../../actions";
 import {
-  canManageServices,
   getAccessibleActiveBranches,
-  requireServicesAccess,
+  requireServicesPermission,
 } from "../../access";
 import { ServiceForm } from "../../ServiceForm";
 import type {
@@ -53,34 +49,8 @@ export default function EditServicePage(
 async function EditServiceContent({
   params,
 }: EditServicePageProps) {
-  const access = await requireServicesAccess();
+  const access = await requireServicesPermission("services.update");
   const { serviceId } = await params;
-
-  if (!canManageServices(access)) {
-    return (
-      <PageContainer>
-        <PageHeader
-          backHref="/portal/services"
-          backLabel="Back to Services"
-          eyebrow="Attendance Operations"
-          eyebrowIcon={<CalendarDays className="h-4 w-4" />}
-          title="Edit Service"
-          description="Update a service schedule for an assigned branch."
-        />
-
-        <EmptyState
-          icon={<CalendarDays className="h-5 w-5" />}
-          title="View-only access"
-          description="Only pastors can create or edit services."
-          action={
-            <Button asChild variant="outline">
-              <Link href="/portal/services">Back to Services</Link>
-            </Button>
-          }
-        />
-      </PageContainer>
-    );
-  }
 
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(

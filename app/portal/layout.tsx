@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { logoutPortal } from "./actions";
 
-import { getCurrentUser, getCurrentUserRoles } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUserPermissions } from "@/lib/permissions-server";
 import PortalNavigation from "./PortalNavigation";
 
 export default function PortalLayout({
@@ -30,7 +31,7 @@ async function PortalShell({
     redirect("/login");
   }
 
-  const roles = await getCurrentUserRoles(user.id);
+  const permissions = await getCurrentUserPermissions(user.id);
 
   return (
     <div className="min-h-screen bg-[#EEF3FB] md:flex">
@@ -57,7 +58,7 @@ async function PortalShell({
         </div>
 
         <PortalNavigation
-          roles={roles}
+          permissions={permissions}
           variant="desktop"
         />
 
@@ -118,7 +119,7 @@ async function PortalShell({
 
       {/* MOBILE NAV */}
       <PortalNavigation
-        roles={roles}
+        permissions={permissions}
         variant="mobile"
       />
     </div>

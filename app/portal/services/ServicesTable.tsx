@@ -35,7 +35,7 @@ import {
 type ServicesTableProps = {
   services: ServiceRecord[];
   branches: ServiceBranch[];
-  canManage: boolean;
+  canEdit: boolean;
 };
 
 const statusVariants: Record<
@@ -51,7 +51,7 @@ const statusVariants: Record<
 export default function ServicesTable({
   services,
   branches,
-  canManage,
+  canEdit,
 }: ServicesTableProps) {
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
@@ -265,7 +265,7 @@ export default function ServicesTable({
                 </TableCell>
 
                 <TableCell>
-                  {canManage ? (
+                  {canEdit ? (
                     <TableActionButton
                       href={`/portal/services/${service.id}/edit`}
                       icon={<Pencil />}

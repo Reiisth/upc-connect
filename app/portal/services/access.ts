@@ -1,18 +1,35 @@
 import { redirect } from "next/navigation";
 
+import { getCurrentUser, getCurrentUserRoles } from "@/lib/auth";
+import { canAccessTab } from "@/lib/portal-access";
 import {
-  canAccessTab,
-} from "@/lib/portal-access";
-import {
-  getCurrentUser,
-  getCurrentUserRoles,
-} from "@/lib/auth";
+  requirePermission,
+  type PermissionContext,
+} from "@/lib/permissions-server";
 import { requirePortalTab } from "@/lib/require-portal-tab";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export type ServicePermission =
+  | "services.view"
+  | "services.create"
+  | "services.update";
+
+/**
+ * Legacy branch context used by Attendance, Contributions, and Baptisms
+ * until those modules are migrated to permissions.
+ */
 export type ServiceAccess = Awaited<
   ReturnType<typeof requirePortalTab>
 >;
+
+export type ServiceBranchScope = {
+  branchIds: string[];
+  isSystemAdmin: boolean;
+};
+
+export type PermissionServiceAccess = PermissionContext &
+  ServiceBranchScope;
 
 export type ServiceBranchOption = {
   id: string;
@@ -21,10 +38,67 @@ export type ServiceBranchOption = {
   isActive: boolean;
 };
 
+async function getServiceBranchScope(userId: string) {
+  const supabase = await createClient();
+
+  const { data: roleLinks, error: roleError } = await supabase
+    .from("user_roles")
+    .select(`
+      roles!inner (
+        key,
+        is_active
+      )
+    `)
+    .eq("user_id", userId);
+
+  if (roleError) {
+    throw new Error(roleError.message);
+  }
+
+  const isSystemAdmin = (roleLinks ?? []).some((link) => {
+    const role = Array.isArray(link.roles)
+      ? link.roles[0] ?? null
+      : link.roles;
+
+    return role?.is_active === true && role.key === "system_admin";
+  });
+
+  if (isSystemAdmin) {
+    const { data: branches, error: branchError } = await supabase
+      .from("church_branches")
+      .select("id")
+      .eq("is_active", true);
+
+    if (branchError) {
+      throw new Error(branchError.message);
+    }
+
+    return {
+      branchIds: (branches ?? []).map((branch) => branch.id),
+      isSystemAdmin: true,
+    };
+  }
+
+  const { data: assignments, error: assignmentError } = await supabase
+    .from("user_branch_access")
+    .select("church_branch_id")
+    .eq("user_id", userId);
+
+  if (assignmentError) {
+    throw new Error(assignmentError.message);
+  }
+
+  return {
+    branchIds: (assignments ?? []).map(
+      (assignment) => assignment.church_branch_id,
+    ),
+    isSystemAdmin: false,
+  };
+}
+
 /**
- * Services use the existing attendance permission for operational users.
- * System administrators use their existing accounts permission for oversight
- * because they are intentionally not granted operational create/edit access.
+ * Legacy role-based access context retained for unmigrated modules that
+ * reuse Services branch-loading helpers.
  */
 export async function requireServicesAccess() {
   const user = await getCurrentUser();
@@ -46,27 +120,22 @@ export async function requireServicesAccess() {
   return requirePortalTab("attendance");
 }
 
-export function canManageServices(access: ServiceAccess) {
-  return (
-    !access.isSystemAdmin &&
-    access.roles.includes("pastor")
+export async function requireServicesPermission(
+  permission: ServicePermission,
+): Promise<PermissionServiceAccess> {
+  const permissionContext = await requirePermission(permission);
+  const branchScope = await getServiceBranchScope(
+    permissionContext.user.id,
   );
-}
 
-export async function requireServiceManager() {
-  const access = await requireServicesAccess();
-
-  if (!canManageServices(access)) {
-    throw new Error(
-      "Only pastors can create or edit services. System administrators and ushers have view-only access.",
-    );
-  }
-
-  return access;
+  return {
+    ...permissionContext,
+    ...branchScope,
+  };
 }
 
 export async function getAccessibleActiveBranches(
-  access: ServiceAccess,
+  access: ServiceBranchScope,
   admin: ReturnType<typeof createAdminClient>,
 ): Promise<ServiceBranchOption[]> {
   if (!access.isSystemAdmin && access.branchIds.length === 0) {
@@ -98,7 +167,7 @@ export async function getAccessibleActiveBranches(
 
 export async function assertActiveServiceBranch(
   admin: ReturnType<typeof createAdminClient>,
-  access: ServiceAccess,
+  access: ServiceBranchScope,
   branchId: string,
 ) {
   if (!branchId) {

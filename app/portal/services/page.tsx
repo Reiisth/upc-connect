@@ -14,12 +14,12 @@ import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import {
-  canManageServices,
   getAccessibleActiveBranches,
-  requireServicesAccess,
+  requireServicesPermission,
 } from "./access";
 import ServicesTable from "./ServicesTable";
 import type { ServiceBranch, ServiceRecord } from "./types";
@@ -44,7 +44,7 @@ export default function ServicesPage() {
 }
 
 async function ServicesContent() {
-  const access = await requireServicesAccess();
+  const access = await requireServicesPermission("services.view");
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(
     access,
@@ -101,7 +101,14 @@ async function ServicesContent() {
   const ongoingCount = services.filter(
     (service) => service.status === "ongoing",
   ).length;
-  const manageServices = canManageServices(access);
+  const canCreate = hasPermission(
+    access.permissions,
+    "services.create",
+  );
+  const canUpdate = hasPermission(
+    access.permissions,
+    "services.update",
+  );
 
   return (
     <PageContainer>
@@ -111,7 +118,7 @@ async function ServicesContent() {
         title="Services"
         description="View branch service schedules and manage upcoming services."
         action={
-          manageServices ? (
+          canCreate ? (
             <Button asChild>
               <Link href="/portal/services/new">
                 <Plus />
@@ -154,7 +161,7 @@ async function ServicesContent() {
         <ServicesTable
           services={services}
           branches={branches}
-          canManage={manageServices}
+          canEdit={canUpdate}
         />
       )}
     </PageContainer>

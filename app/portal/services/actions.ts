@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import {
   assertActiveServiceBranch,
-  requireServiceManager,
+  requireServicesPermission,
 } from "./access";
 import {
   SERVICE_STATUSES,
@@ -99,7 +99,7 @@ function validateServiceForm(formData: FormData) {
 }
 
 export async function createService(formData: FormData) {
-  const access = await requireServiceManager();
+  const access = await requireServicesPermission("services.create");
   const payload = validateServiceForm(formData);
   const admin = createAdminClient();
 
@@ -132,7 +132,7 @@ export async function updateService(
   serviceId: string,
   formData: FormData,
 ) {
-  const access = await requireServiceManager();
+  const access = await requireServicesPermission("services.update");
 
   if (!serviceId) {
     throw new Error("A service is required.");

@@ -10,9 +10,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { createService } from "../actions";
 import {
-  canManageServices,
   getAccessibleActiveBranches,
-  requireServicesAccess,
+  requireServicesPermission,
 } from "../access";
 import { ServiceForm } from "../ServiceForm";
 
@@ -25,28 +24,7 @@ export default function NewServicePage() {
 }
 
 async function NewServiceContent() {
-  const access = await requireServicesAccess();
-
-  if (!canManageServices(access)) {
-    return (
-      <PageContainer>
-        <PageHeader
-          backHref="/portal/services"
-          backLabel="Back to Services"
-          eyebrow="Attendance Operations"
-          eyebrowIcon={<CalendarPlus className="h-4 w-4" />}
-          title="New Service"
-          description="Create a service schedule for an assigned branch."
-        />
-
-        <EmptyState
-          icon={<CalendarPlus className="h-5 w-5" />}
-          title="View-only access"
-          description="Only pastors can create or edit services."
-        />
-      </PageContainer>
-    );
-  }
+  const access = await requireServicesPermission("services.create");
 
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(

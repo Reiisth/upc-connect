@@ -19,118 +19,114 @@ import {
 } from "lucide-react";
 
 import {
-  canAccessTab,
-  type PortalTab,
-} from "@/lib/portal-access";
+  hasAnyPermission,
+  hasPermission,
+  PERMISSION_KEYS,
+  type PermissionKey,
+} from "@/lib/permissions";
 
 type PortalNavigationProps = {
-  roles: string[];
+  permissions: readonly PermissionKey[];
   variant: "desktop" | "mobile";
 };
 
 const navigationItems: {
-  tab: PortalTab;
   label: string;
   href: string;
   icon: React.ElementType;
-  canView?: (roles: string[]) => boolean;
+  requiredPermission?: PermissionKey;
+  canView?: (permissions: readonly PermissionKey[]) => boolean;
 }[] = [
     {
-      tab: "dashboard",
       label: "Dashboard",
       href: "/portal",
       icon: LayoutDashboard,
+      requiredPermission: "dashboard.view",
     },
     {
-      tab: "members",
       label: "Members",
       href: "/portal/members",
       icon: UsersRound,
+      requiredPermission: "members.view",
     },
     {
-      tab: "accounts",
       label: "Accounts",
       href: "/portal/accounts",
       icon: UserRoundCog,
+      requiredPermission: "accounts.view",
     },
     {
-      tab: "attendance",
       label: "Services",
       href: "/portal/services",
       icon: CalendarDays,
-      canView: (roles: string[]) =>
-        roles.includes("system_admin") ||
-        canAccessTab(roles, "attendance"),
+      requiredPermission: "services.view",
     },
     {
-      tab: "attendance",
       label: "Attendance",
       href: "/portal/attendance",
       icon: ClipboardCheck,
-      canView: (roles: string[]) =>
-        roles.includes("system_admin") ||
-        canAccessTab(roles, "attendance"),
+      requiredPermission: "attendance.view",
     },
     {
-      tab: "contributions",
       label: "Contributions",
       href: "/portal/contributions",
       icon: HandCoins,
-      canView: (roles: string[]) =>
-        roles.includes("system_admin") ||
-        canAccessTab(roles, "contributions"),
+      requiredPermission: "contributions.view",
     },
     {
-      tab: "baptisms",
       label: "Baptisms",
       href: "/portal/baptisms",
       icon: Droplets,
-      canView: (roles: string[]) =>
-        roles.includes("system_admin") ||
-        canAccessTab(roles, "baptisms"),
+      requiredPermission: "baptisms.view",
     },
     {
-      tab: "reports",
       label: "Reports",
       href: "/portal/reports",
       icon: BarChart3,
+      requiredPermission: "reports.view",
     },
     {
-      tab: "administration",
       label: "Administration",
       href: "/portal/administration",
       icon: Settings,
+      requiredPermission: "administration.view",
     },
     {
-      tab: "profile",
       label: "Profile",
       href: "/portal/profile",
       icon: IdCardLanyard,
+      requiredPermission: "profile.view",
     },
     {
-      tab: "field_management",
       label: "Field Management",
       href: "/portal/field-management",
       icon: SlidersHorizontal,
+      // Field Management configures system-wide profile fields, so it belongs
+      // to administration rather than member-record editing.
+      requiredPermission: "administration.view",
     },
     {
-      tab: "account",
       label: "My Account",
       href: "/portal/account",
       icon: UserRound,
+      // There is no dedicated self-account permission in the established
+      // catalog. Keep this available to any authenticated portal capability
+      // without falling back to role names.
+      canView: (permissions) =>
+        hasAnyPermission(permissions, PERMISSION_KEYS),
     },
   ];
 
 export default function PortalNavigation({
-  roles,
+  permissions,
   variant,
 }: PortalNavigationProps) {
   const pathname = usePathname();
 
   const visibleItems = navigationItems.filter((item) =>
-    item.canView
-      ? item.canView(roles)
-      : canAccessTab(roles, item.tab),
+    item.requiredPermission
+      ? hasPermission(permissions, item.requiredPermission)
+      : item.canView?.(permissions) ?? false,
   );
 
   if (variant === "mobile") {

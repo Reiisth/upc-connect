@@ -1,7 +1,22 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getCurrentUserRoles } from "@/lib/auth";
-import { canAccessTab } from "@/lib/portal-access";
+import { hasPermission } from "@/lib/permissions";
+import { getCurrentUserPermissions } from "@/lib/permissions-server";
+
+const portalDestinations = [
+  // There is currently no concrete /portal/dashboard route. Dashboard
+  // visibility remains permission-based in PortalNavigation, while this
+  // resolver falls through to the first concrete portal destination.
+  { permission: "members.view", href: "/portal/members" },
+  { permission: "accounts.view", href: "/portal/accounts" },
+  { permission: "services.view", href: "/portal/services" },
+  { permission: "attendance.view", href: "/portal/attendance" },
+  { permission: "contributions.view", href: "/portal/contributions" },
+  { permission: "baptisms.view", href: "/portal/baptisms" },
+  { permission: "reports.view", href: "/portal/reports" },
+  { permission: "administration.view", href: "/portal/administration" },
+  { permission: "profile.view", href: "/portal/profile" },
+] as const;
 
 export default async function PortalPage() {
   const user = await getCurrentUser();
@@ -10,42 +25,12 @@ export default async function PortalPage() {
     redirect("/login");
   }
 
-  const roles = await getCurrentUserRoles(user.id);
+  const permissions = await getCurrentUserPermissions(user.id);
 
-  if (canAccessTab(roles, "dashboard")) {
-    redirect("/portal/dashboard");
-  }
-
-  if (canAccessTab(roles, "members")) {
-    redirect("/portal/members");
-  }
-
-  if (canAccessTab(roles, "accounts")) {
-    redirect("/portal/accounts");
-  }
-
-  if (canAccessTab(roles, "attendance")) {
-    redirect("/portal/attendance");
-  }
-
-  if (canAccessTab(roles, "contributions")) {
-    redirect("/portal/contributions");
-  }
-
-  if (canAccessTab(roles, "baptisms")) {
-    redirect("/portal/baptisms");
-  }
-
-  if (canAccessTab(roles, "reports")) {
-    redirect("/portal/reports");
-  }
-
-  if (canAccessTab(roles, "administration")) {
-    redirect("/portal/administration");
-  }
-
-  if (canAccessTab(roles, "profile")) {
-    redirect("/portal/profile");
+  for (const destination of portalDestinations) {
+    if (hasPermission(permissions, destination.permission)) {
+      redirect(destination.href);
+    }
   }
 
   redirect("/access-denied");
