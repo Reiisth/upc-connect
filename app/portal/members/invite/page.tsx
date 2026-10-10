@@ -3,8 +3,17 @@ import { ArrowLeft, Link2 } from "lucide-react";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteMembers } from "../actions";
+import { requireMembersPermission } from "../access";
+import { getAccessibleActiveBranches } from "../../services/access";
 import InviteMembersForm from "./InviteMembersForm";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+
+type InviteMember = {
+  id: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  account_status: string;
+};
 
 export default async function InviteMembersPage({
   searchParams,
@@ -14,26 +23,40 @@ export default async function InviteMembersPage({
     email?: string;
   }>;
 }) {
-  await requirePortalTab("members");
+  const access = await requireMembersPermission(
+    "members.link_account",
+  );
   const { memberId, email } = await searchParams;
 
   const admin = createAdminClient();
+  const branches = await getAccessibleActiveBranches(
+    access,
+    admin,
+  );
+  const branchIds = branches.map((branch) => branch.id);
 
-  const { data: members, error: membersError } = await admin
-    .from("members")
-    .select(`
+  let members: InviteMember[] = [];
+
+  if (branchIds.length > 0) {
+    const { data, error } = await admin
+      .from("members")
+      .select(`
     id,
     first_name,
     middle_name,
     last_name,
     account_status
   `)
-    .eq("account_status", "no_account")
-    .eq("is_archived", false)
-    .order("last_name");
+      .in("church_branch_id", branchIds)
+      .eq("account_status", "no_account")
+      .eq("is_archived", false)
+      .order("last_name");
 
-  if (membersError) {
-    throw new Error(membersError.message);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    members = data ?? [];
   }
 
   const existingEmails: string[] = [];
@@ -109,7 +132,7 @@ export default async function InviteMembersPage({
       <div className="mt-7 rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
         <InviteMembersForm
           key={`${memberId ?? ""}:${email ?? ""}`}
-          members={members ?? []}
+          members={members}
           existingEmails={existingEmails}
           defaultEmail={email ?? ""}
           defaultMemberId={memberId}

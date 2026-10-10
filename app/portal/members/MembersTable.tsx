@@ -67,7 +67,8 @@ type Member = {
 
 type MembersTableProps = {
   members: Member[];
-  canManage: boolean;
+  canArchive: boolean;
+  canLinkAccount: boolean;
 };
 
 function ArchiveMemberButton({
@@ -119,7 +120,8 @@ function ArchiveMemberButton({
 
 export default function MembersTable({
   members,
-  canManage
+  canArchive,
+  canLinkAccount,
 }: MembersTableProps) {
   const [search, setSearch] = useState("");
   const [memberStatusFilter, setMemberStatusFilter] = useState("all");
@@ -235,6 +237,8 @@ export default function MembersTable({
     currentPage * itemsPerPage,
   );
 
+  const hasActions = canArchive || canLinkAccount;
+
   useEffect(() => {
     setCurrentPage(1);
   }, [
@@ -341,7 +345,7 @@ export default function MembersTable({
                 <TableHead>Account Status</TableHead>
                 <TableHead>Profile Status</TableHead>
 
-                {canManage && (
+                {hasActions && (
                   <TableHead>Actions</TableHead>
                 )}
               </TableRow>
@@ -419,27 +423,31 @@ export default function MembersTable({
                       </StatusBadge>
                     </TableCell>
 
-                    {canManage && (
+                    {hasActions && (
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                          {member.account_status === "no_account" ? (
-                            <TableActionButton
-                              href={`/portal/members/invite?memberId=${member.id}`}
-                              icon={<MailPlus />}
-                            >
-                              Connect Email
-                            </TableActionButton>
-                          ) : (
-                            <DisconnectMemberButton
+                          {canLinkAccount && (
+                            member.account_status === "no_account" ? (
+                              <TableActionButton
+                                href={`/portal/members/invite?memberId=${member.id}`}
+                                icon={<MailPlus />}
+                              >
+                                Connect Email
+                              </TableActionButton>
+                            ) : (
+                              <DisconnectMemberButton
+                                memberId={member.id}
+                                memberName={`${member.first_name} ${member.last_name}`}
+                              />
+                            )
+                          )}
+
+                          {canArchive && (
+                            <ArchiveMemberButton
                               memberId={member.id}
                               memberName={`${member.first_name} ${member.last_name}`}
                             />
                           )}
-
-                          <ArchiveMemberButton
-                            memberId={member.id}
-                            memberName={`${member.first_name} ${member.last_name}`}
-                          />
                         </div>
                       </TableCell>
                     )}

@@ -10,10 +10,10 @@ import {
 
 import MembersSkeleton from "./MembersSkeleton";
 import MembersTable from "./MembersTable";
+import { requireMembersPermission } from "./access";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requirePortalTab } from "@/lib/require-portal-tab";
-import { getMemberAccess } from "@/lib/portal-access";
+import { hasPermission } from "@/lib/permissions";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -30,14 +30,20 @@ export default function PortalMembersPage() {
 }
 
 async function MembersPageContent() {
-  const {
-    roles,
-    branchIds,
-    isSystemAdmin,
-  } = await requirePortalTab("members");
-
-  const memberAccess = getMemberAccess(roles);
-  const canManageMembers = memberAccess === "manage";
+  const access = await requireMembersPermission("members.view");
+  const { branchIds, isSystemAdmin } = access;
+  const canCreate = hasPermission(
+    access.permissions,
+    "members.create",
+  );
+  const canArchive = hasPermission(
+    access.permissions,
+    "members.archive",
+  );
+  const canLinkAccount = hasPermission(
+    access.permissions,
+    "members.link_account",
+  );
 
   const admin = createAdminClient();
 
@@ -152,7 +158,7 @@ async function MembersPageContent() {
         title="Members"
         description="Manage church member records, account connections, and profile completion."
         action={
-          canManageMembers ? (
+          canCreate ? (
             <Button asChild>
               <Link href="/portal/members/new">
                 <Plus />
@@ -194,7 +200,8 @@ async function MembersPageContent() {
 
       <MembersTable
         members={normalizedMembers}
-        canManage={canManageMembers}
+        canArchive={canArchive}
+        canLinkAccount={canLinkAccount}
       />
     </PageContainer>
   );
