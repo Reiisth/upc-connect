@@ -1,14 +1,15 @@
 import { Suspense } from "react";
 import {
   Building2,
+  SlidersHorizontal,
   Settings,
   UsersRound,
 } from "lucide-react";
 
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import { hasPermission } from "@/lib/permissions";
+import { requireAdministrationPermission } from "./access";
 
 import { ClickableCard } from "@/components/ui/clickable-card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,18 +23,18 @@ export default function AdministrationPage() {
 }
 
 async function AdministrationContent() {
-  const { roles } = await requirePortalTab("administration");
+  const { permissions } = await requireAdministrationPermission(
+    "administration.view",
+  );
 
-  if (!roles.includes("system_admin")) {
-    return (
-      <PageContainer>
-        <EmptyState
-          title="Access denied"
-          description="You do not have permission to access administration settings."
-        />
-      </PageContainer>
-    );
-  }
+  const canViewBranches = hasPermission(
+    permissions,
+    "branches.view",
+  );
+  const canManageStaffBranchAccess = hasPermission(
+    permissions,
+    "accounts.manage_branch_access",
+  );
 
   return (
     <PageContainer>
@@ -45,37 +46,59 @@ async function AdministrationContent() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <ClickableCard href="/portal/administration/branches">
+        {canViewBranches && (
+          <ClickableCard href="/portal/administration/branches">
+            <div className="flex items-start gap-4">
+              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+                <Building2 className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h2 className="font-semibold text-[#203264] dark:text-slate-100">
+                  Church Branches
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  View, create, edit, and manage church branches.
+                </p>
+              </div>
+            </div>
+          </ClickableCard>
+        )}
+
+        {canManageStaffBranchAccess && (
+          <ClickableCard href="/portal/administration/staff-branch-access">
+            <div className="flex items-start gap-4">
+              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+                <UsersRound className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h2 className="font-semibold text-[#203264] dark:text-slate-100">
+                  Staff Branch Access
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Assign staff accounts to one or more church branches.
+                </p>
+              </div>
+            </div>
+          </ClickableCard>
+        )}
+
+        <ClickableCard href="/portal/field-management">
           <div className="flex items-start gap-4">
             <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
-              <Building2 className="h-5 w-5" />
+              <SlidersHorizontal className="h-5 w-5" />
             </div>
 
             <div>
               <h2 className="font-semibold text-[#203264] dark:text-slate-100">
-                Church Branches
+                Field Management
               </h2>
 
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Create, edit, activate, and manage church branches.
-              </p>
-            </div>
-          </div>
-        </ClickableCard>
-
-        <ClickableCard href="/portal/administration/staff-branch-access">
-          <div className="flex items-start gap-4">
-            <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
-              <UsersRound className="h-5 w-5" />
-            </div>
-
-            <div>
-              <h2 className="font-semibold text-[#203264] dark:text-slate-100">
-                Staff Branch Access
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Assign staff accounts to one or more church branches.
+                Configure the fields used in member profiles.
               </p>
             </div>
           </div>

@@ -3,10 +3,9 @@ import { Suspense } from "react";
 import { Building2 } from "lucide-react";
 
 import { createBranch } from "../actions";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import { requireAdministrationPermission } from "../../access";
 
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { FormActions } from "@/components/ui/form-actions";
 import { FormField } from "@/components/ui/form-field";
 import { FormSection } from "@/components/ui/form-section";
@@ -24,18 +23,7 @@ export default function NewBranchPage() {
 }
 
 async function NewBranchContent() {
-  const { roles } = await requirePortalTab("administration");
-
-  if (!roles.includes("system_admin")) {
-    return (
-      <PageContainer>
-        <EmptyState
-          title="Access denied"
-          description="You do not have permission to create church branches."
-        />
-      </PageContainer>
-    );
-  }
+  await requireAdministrationPermission("branches.manage");
 
   return (
     <PageContainer>

@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import { UsersRound } from "lucide-react";
 
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import {
+  getAccessibleActiveAccountBranches,
+  requireAccountsPermission,
+} from "@/app/portal/accounts/access";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { EmptyState } from "@/components/ui/empty-state";
@@ -27,24 +30,15 @@ export default function StaffBranchAccessPage() {
 }
 
 async function StaffBranchAccessContent() {
-  const { roles } = await requirePortalTab("administration");
-
-  if (!roles.includes("system_admin")) {
-    return (
-      <PageContainer>
-        <EmptyState
-          title="Access denied"
-          description="You do not have permission to manage staff branch access."
-        />
-      </PageContainer>
-    );
-  }
+  const access = await requireAccountsPermission(
+    "accounts.manage_branch_access",
+  );
 
   const admin = createAdminClient();
 
   const [
     { data: staff, error: staffError },
-    { data: branches, error: branchesError },
+    branches,
     { data: assignments, error: assignmentsError },
   ] = await Promise.all([
     admin
@@ -54,21 +48,13 @@ async function StaffBranchAccessContent() {
         display_name,
         user_roles (
           role:roles (
-            name
+            key,
+            is_active
           )
         )
       `),
 
-    admin
-      .from("church_branches")
-      .select(`
-        id,
-        name,
-        code,
-        is_active
-      `)
-      .eq("is_active", true)
-      .order("name"),
+    getAccessibleActiveAccountBranches(access, admin),
 
     admin
       .from("user_branch_access")
@@ -82,10 +68,6 @@ async function StaffBranchAccessContent() {
     throw new Error(staffError.message);
   }
 
-  if (branchesError) {
-    throw new Error(branchesError.message);
-  }
-
   if (assignmentsError) {
     throw new Error(assignmentsError.message);
   }
@@ -93,19 +75,21 @@ async function StaffBranchAccessContent() {
   const staffUsers =
     staff
       ?.map((profile) => {
-        const roleNames =
+        const roleKeys =
           profile.user_roles?.flatMap((item) => {
             const role = Array.isArray(item.role)
               ? item.role[0] ?? null
               : item.role ?? null;
 
-            return role?.name ? [role.name] : [];
+            return role?.is_active && role.key
+              ? [role.key]
+              : [];
           }) ?? [];
 
         return {
           id: profile.id,
           display_name: profile.display_name,
-          roles: roleNames,
+          roles: roleKeys,
         };
       })
       .filter((profile) =>

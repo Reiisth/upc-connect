@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePortalTab } from "@/lib/require-portal-tab";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdministrationPermission } from "@/app/portal/administration/access";
 
 type FieldUpdate = {
   id: string;
@@ -19,7 +19,7 @@ type FieldUpdate = {
 };
 
 export async function restoreDefaultFieldConfiguration() {
-  await requirePortalTab("field_management");
+  await requireAdministrationPermission("administration.view");
 
   const admin = createAdminClient();
 
@@ -332,7 +332,7 @@ export async function restoreDefaultFieldConfiguration() {
 export async function saveFieldConfiguration(
   fields: FieldUpdate[],
 ) {
-  await requirePortalTab("field_management");
+  await requireAdministrationPermission("administration.view");
 
   const admin = createAdminClient();
 
@@ -411,7 +411,7 @@ export async function saveFieldConfiguration(
 }
 
 export async function deleteCustomField(fieldId: string) {
-  await requirePortalTab("field_management");
+  await requireAdministrationPermission("administration.view");
 
   const admin = createAdminClient();
 

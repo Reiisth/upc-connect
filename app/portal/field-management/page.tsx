@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import { requireAdministrationPermission } from "@/app/portal/administration/access";
 import FieldManagementTable from "./FieldManagementTable";
 
 export default function FieldManagementPage() {
@@ -13,7 +13,7 @@ export default function FieldManagementPage() {
 }
 
 async function FieldManagementContent() {
-  await requirePortalTab("field_management");
+  await requireAdministrationPermission("administration.view");
 
   const admin = createAdminClient();
 

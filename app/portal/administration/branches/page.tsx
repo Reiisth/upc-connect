@@ -8,8 +8,9 @@ import {
   PowerOff,
 } from "lucide-react";
 
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdministrationPermission } from "../access";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -39,18 +40,13 @@ export default function BranchesPage() {
 }
 
 async function BranchesContent() {
-  const { roles } = await requirePortalTab("administration");
-
-  if (!roles.includes("system_admin")) {
-    return (
-      <PageContainer>
-        <EmptyState
-          title="Access denied"
-          description="You do not have permission to manage church branches."
-        />
-      </PageContainer>
-    );
-  }
+  const { permissions } = await requireAdministrationPermission(
+    "branches.view",
+  );
+  const canManageBranches = hasPermission(
+    permissions,
+    "branches.manage",
+  );
 
   const admin = createAdminClient();
 
@@ -83,14 +79,14 @@ async function BranchesContent() {
         eyebrowIcon={<Building2 className="h-4 w-4" />}
         title="Church Branches"
         description="Create, edit, and manage the church branches available in UPC Connect."
-        action={
+        action={canManageBranches ? (
           <Button asChild>
             <Link href="/portal/administration/branches/new">
               <Plus />
               Add Branch
             </Link>
           </Button>
-        }
+        ) : undefined}
       />
 
       {!branches || branches.length === 0 ? (
@@ -98,14 +94,14 @@ async function BranchesContent() {
           icon={<Building2 className="h-5 w-5" />}
           title="No church branches yet"
           description="Create your first church branch to start organizing members and staff by location."
-          action={
+          action={canManageBranches ? (
             <Button asChild>
               <Link href="/portal/administration/branches/new">
                 <Plus />
                 Add Branch
               </Link>
             </Button>
-          }
+          ) : undefined}
         />
       ) : (
         <Table>
@@ -169,34 +165,40 @@ async function BranchesContent() {
                   </TableCell>
 
                   <TableCell>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <TableActionButton
-                        href={`/portal/administration/branches/${branch.id}/edit`}
-                        icon={<Pencil />}
-                      >
-                        Edit
-                      </TableActionButton>
-
-                      <form
-                        action={setBranchActive.bind(
-                          null,
-                          branch.id,
-                          !branch.is_active,
-                        )}
-                      >
-                        <TableActionSubmit
-                          variant={branch.is_active ? "danger" : "success"}
-                          pendingLabel={
-                            branch.is_active
-                              ? "Deactivating..."
-                              : "Activating..."
-                          }
-                          icon={branch.is_active ? <PowerOff /> : <Power />}
+                    {canManageBranches ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <TableActionButton
+                          href={`/portal/administration/branches/${branch.id}/edit`}
+                          icon={<Pencil />}
                         >
-                          {branch.is_active ? "Deactivate" : "Activate"}
-                        </TableActionSubmit>
-                      </form>
-                    </div>
+                          Edit
+                        </TableActionButton>
+
+                        <form
+                          action={setBranchActive.bind(
+                            null,
+                            branch.id,
+                            !branch.is_active,
+                          )}
+                        >
+                          <TableActionSubmit
+                            variant={branch.is_active ? "danger" : "success"}
+                            pendingLabel={
+                              branch.is_active
+                                ? "Deactivating..."
+                                : "Activating..."
+                            }
+                            icon={branch.is_active ? <PowerOff /> : <Power />}
+                          >
+                            {branch.is_active ? "Deactivate" : "Activate"}
+                          </TableActionSubmit>
+                        </form>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                        View only
+                      </span>
+                    )}
                   </TableCell>
                 </TableRow>
               );

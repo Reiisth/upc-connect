@@ -4,11 +4,10 @@ import { notFound } from "next/navigation";
 import { Building2 } from "lucide-react";
 
 import { updateBranch } from "./../../actions";
-import { requirePortalTab } from "@/lib/require-portal-tab";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdministrationPermission } from "@/app/portal/administration/access";
 
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { FormActions } from "@/components/ui/form-actions";
 import { FormField } from "@/components/ui/form-field";
 import { FormSection } from "@/components/ui/form-section";
@@ -38,20 +37,7 @@ async function EditBranchContent({
 }: EditBranchPageProps) {
   const { branchId } = await params;
 
-  const { roles } = await requirePortalTab(
-    "administration",
-  );
-
-  if (!roles.includes("system_admin")) {
-    return (
-      <PageContainer>
-        <EmptyState
-          title="Access denied"
-          description="You do not have permission to edit church branches."
-        />
-      </PageContainer>
-    );
-  }
+  await requireAdministrationPermission("branches.manage");
 
   const admin = createAdminClient();
 

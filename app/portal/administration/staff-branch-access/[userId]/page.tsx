@@ -3,10 +3,12 @@ import { notFound } from "next/navigation";
 import { UsersRound } from "lucide-react";
 
 import BranchAccessForm from "./BranchAccessForm";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import {
+  getAccessibleActiveAccountBranches,
+  requireAccountsPermission,
+} from "@/app/portal/accounts/access";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { EmptyState } from "@/components/ui/empty-state";
 import { FormSection } from "@/components/ui/form-section";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
@@ -33,24 +35,15 @@ async function ManageStaffBranchAccessContent({
 }: PageProps) {
   const { userId } = await params;
 
-  const { roles } = await requirePortalTab("administration");
-
-  if (!roles.includes("system_admin")) {
-    return (
-      <PageContainer>
-        <EmptyState
-          title="Access denied"
-          description="You do not have permission to manage staff branch access."
-        />
-      </PageContainer>
-    );
-  }
+  const access = await requireAccountsPermission(
+    "accounts.manage_branch_access",
+  );
 
   const admin = createAdminClient();
 
   const [
     { data: profile, error: profileError },
-    { data: branches, error: branchesError },
+    branches,
     { data: assignments, error: assignmentsError },
   ] = await Promise.all([
     admin
@@ -60,22 +53,15 @@ async function ManageStaffBranchAccessContent({
         display_name,
         user_roles (
           role:roles (
-            name
+            key,
+            is_active
           )
         )
       `)
       .eq("id", userId)
       .single(),
 
-    admin
-      .from("church_branches")
-      .select(`
-        id,
-        name,
-        code
-      `)
-      .eq("is_active", true)
-      .order("name"),
+    getAccessibleActiveAccountBranches(access, admin),
 
     admin
       .from("user_branch_access")
@@ -87,24 +73,22 @@ async function ManageStaffBranchAccessContent({
     notFound();
   }
 
-  if (branchesError) {
-    throw new Error(branchesError.message);
-  }
-
   if (assignmentsError) {
     throw new Error(assignmentsError.message);
   }
 
-  const roleNames =
+  const roleKeys =
     profile.user_roles?.flatMap((item) => {
       const role = Array.isArray(item.role)
         ? item.role[0] ?? null
         : item.role ?? null;
 
-      return role?.name ? [role.name] : [];
+      return role?.is_active && role.key
+        ? [role.key]
+        : [];
     }) ?? [];
 
-  const isSystemAdmin = roleNames.includes("system_admin");
+  const isSystemAdmin = roleKeys.includes("system_admin");
 
   const initialBranchIds =
     assignments?.map(
@@ -129,8 +113,8 @@ async function ManageStaffBranchAccessContent({
       <FormSection
         title="Branch Assignments"
         description={
-          roleNames.length > 0
-            ? `Roles: ${roleNames.join(", ")}`
+          roleKeys.length > 0
+            ? `Roles: ${roleKeys.join(", ")}`
             : undefined
         }
       >

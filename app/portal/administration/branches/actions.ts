@@ -3,15 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requirePortalTab } from "@/lib/require-portal-tab";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdministrationPermission } from "../access";
 
 export async function createBranch(formData: FormData) {
-  const { roles } = await requirePortalTab("administration");
-
-  if (!roles.includes("system_admin")) {
-    throw new Error("You do not have permission to create church branches.");
-  }
+  await requireAdministrationPermission("branches.manage");
 
   const name = String(formData.get("name") ?? "").trim();
   const code = String(formData.get("code") ?? "")
@@ -79,13 +75,7 @@ export async function setBranchActive(
   branchId: string,
   isActive: boolean,
 ) {
-  const { roles } = await requirePortalTab("administration");
-
-  if (!roles.includes("system_admin")) {
-    throw new Error(
-      "You do not have permission to change branch status.",
-    );
-  }
+  await requireAdministrationPermission("branches.manage");
 
   const admin = createAdminClient();
 
@@ -109,11 +99,7 @@ export async function updateBranch(
   branchId: string,
   formData: FormData,
 ) {
-  const { roles } = await requirePortalTab("administration");
-
-  if (!roles.includes("system_admin")) {
-    throw new Error("You do not have permission to edit church branches.");
-  }
+  await requireAdministrationPermission("branches.manage");
 
   const name = String(formData.get("name") ?? "").trim();
   const code = String(formData.get("code") ?? "")
