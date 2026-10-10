@@ -1,4 +1,3 @@
-import { requirePortalTab } from "@/lib/require-portal-tab";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -15,6 +14,8 @@ import AccountsTabs from "../AccountsTabs";
 import { Suspense } from "react";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasPermission } from "@/lib/permissions";
+import { requireAccountsPermission } from "../access";
 
 export default function MemberAccountsPage() {
   return (
@@ -25,8 +26,8 @@ export default function MemberAccountsPage() {
 }
 
 async function MemberAccountsContent() {
+  const access = await requireAccountsPermission("accounts.view");
   const admin = createAdminClient();
-  await requirePortalTab("accounts");
 
   const { data: links, error } = await admin
     .from("account_members")
@@ -128,6 +129,18 @@ async function MemberAccountsContent() {
     (total, account) => total + account.members.length,
     0,
   );
+  const canArchive = hasPermission(
+    access.permissions,
+    "accounts.archive",
+  );
+  const canRestore = hasPermission(
+    access.permissions,
+    "accounts.restore",
+  );
+  const canLinkAccount = hasPermission(
+    access.permissions,
+    "members.link_account",
+  );
 
   return (
     <PageContainer>
@@ -176,7 +189,12 @@ async function MemberAccountsContent() {
       </div>
 
       {/* TABLE */}
-      <MemberAccountsTable accounts={accounts} />
+      <MemberAccountsTable
+        accounts={accounts}
+        canArchive={canArchive}
+        canRestore={canRestore}
+        canLinkAccount={canLinkAccount}
+      />
     </PageContainer>
   );
 }

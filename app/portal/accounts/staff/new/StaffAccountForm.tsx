@@ -17,7 +17,8 @@ import { createStaffAccount } from "../actions";
 
 export type StaffAccountRoleOption = {
   id: string;
-  name: string;
+  key: string;
+  displayName: string;
 };
 
 export type StaffAccountBranchOption = {
@@ -47,7 +48,7 @@ export default function StaffAccountForm({
     selectedRoleIds.includes(role.id),
   );
   const hasSystemAdmin = selectedRoles.some(
-    (role) => role.name === "system_admin",
+    (role) => role.key === "system_admin",
   );
 
   function toggleId(
@@ -217,7 +218,7 @@ export default function StaffAccountForm({
                     />
 
                     <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
-                      {formatRole(role.name)}
+                      {role.displayName}
                     </span>
                   </span>
 
@@ -353,14 +354,4 @@ export default function StaffAccountForm({
       </FormActions>
     </form>
   );
-}
-
-function formatRole(role: string) {
-  return role
-    .split("_")
-    .map(
-      (word) =>
-        word.charAt(0).toUpperCase() + word.slice(1),
-    )
-    .join(" ");
 }

@@ -2,17 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePortalTab } from "@/lib/require-portal-tab";
-import { isStaffRole } from "@/lib/staff-roles";
 import { createAdminClient } from "@/lib/supabase/admin";
-
 import {
-  updateStaffBranchAccess as persistStaffBranchAccess,
-} from "@/app/portal/administration/staff-branch-access/actions";
+  assertActiveAccountBranchIds,
+  assertSystemAdminChangeSafe,
+  requireAccountsPermission,
+} from "../access";
 
 type RoleRelation = {
   id: string;
-  name: string;
+  key: string;
+  display_name: string | null;
+  is_staff: boolean;
+  is_system: boolean;
+  is_active: boolean;
 };
 
 type RoleLinkRow = {
@@ -22,7 +25,11 @@ type RoleLinkRow = {
 
 type RoleAssignment = {
   id: string;
-  name: string;
+  key: string;
+  displayName: string;
+  isStaff: boolean;
+  isSystem: boolean;
+  isActive: boolean;
 };
 
 type StaffProfile = {
@@ -41,7 +48,11 @@ type StaffAccountContext = {
 
 type RoleRecord = {
   id: string;
-  name: string;
+  key: string;
+  display_name: string | null;
+  is_staff: boolean;
+  is_system: boolean;
+  is_active: boolean;
 };
 
 type AuthUserRecord = {
@@ -77,11 +88,15 @@ function parseRoleAssignments(
     return roles
       .map((role) => ({
         id: link.role_id ?? role.id,
-        name: role.name,
+        key: role.key,
+        displayName: role.display_name?.trim() || role.key,
+        isStaff: role.is_staff,
+        isSystem: role.is_system,
+        isActive: role.is_active,
       }))
       .filter(
         (role): role is RoleAssignment =>
-          Boolean(role.id && role.name),
+          Boolean(role.id && role.key),
       );
   });
 }
@@ -194,7 +209,11 @@ async function loadAllRoleAssignments(
       role_id,
       roles!inner (
         id,
-        name
+        key,
+        display_name,
+        is_staff,
+        is_system,
+        is_active
       )
     `)
     .eq("user_id", userId);
@@ -204,38 +223,6 @@ async function loadAllRoleAssignments(
   }
 
   return parseRoleAssignments((data ?? []) as RoleLinkRow[]);
-}
-
-async function validateActiveBranchIds(
-  admin: ReturnType<typeof createAdminClient>,
-  branchIds: string[],
-) {
-  if (branchIds.length === 0) return;
-
-  const { data, error } = await admin
-    .from("church_branches")
-    .select("id, is_active")
-    .in("id", branchIds);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const branchMap = new Map(
-    (data ?? []).map((branch) => [branch.id, branch]),
-  );
-
-  const invalidBranchIds = branchIds.filter((branchId) => {
-    const branch = branchMap.get(branchId);
-
-    return !branch || !branch.is_active;
-  });
-
-  if (invalidBranchIds.length > 0) {
-    throw new Error(
-      "One or more selected branches do not exist or are inactive.",
-    );
-  }
 }
 
 function isCurrentlyBanned(bannedUntil: string | null | undefined) {
@@ -313,11 +300,14 @@ async function loadStaffAccount(
         role_id,
         roles!inner (
           id,
-          name
+          key,
+          display_name,
+          is_staff,
+          is_system,
+          is_active
         )
       `)
-      .eq("user_id", userId)
-      .neq("roles.name", "member"),
+      .eq("user_id", userId),
   ]);
 
   if (authError || !authData.user) {
@@ -332,7 +322,7 @@ async function loadStaffAccount(
     (roleLinks ?? []) as RoleLinkRow[],
   );
   const staffRoleAssignments = roleAssignments.filter((role) =>
-    isStaffRole(role.name),
+    role.isStaff && role.isActive,
   );
 
   if (staffRoleAssignments.length === 0) {
@@ -392,55 +382,6 @@ function assertAuthAccountIsNotDeleted(
   }
 }
 
-async function countActiveSystemAdministrators(
-  admin: ReturnType<typeof createAdminClient>,
-) {
-  const { data: systemAdminLinks, error: roleError } = await admin
-    .from("user_roles")
-    .select(`
-      user_id,
-      roles!inner (
-        name
-      )
-    `)
-    .eq("roles.name", "system_admin");
-
-  if (roleError) {
-    throw new Error(roleError.message);
-  }
-
-  const userIds = Array.from(
-    new Set(
-      (systemAdminLinks ?? [])
-        .map((link) => link.user_id)
-        .filter((userId): userId is string => Boolean(userId)),
-    ),
-  );
-
-  if (userIds.length === 0) return 0;
-
-  const { data: profiles, error: profileError } = await admin
-    .from("profiles")
-    .select("id, archived_at")
-    .in("id", userIds);
-
-  if (profileError) {
-    throw new Error(profileError.message);
-  }
-
-  const archivedAtByUserId = new Map(
-    (profiles ?? []).map((profile) => [
-      profile.id,
-      profile.archived_at,
-    ]),
-  );
-
-  // Missing profile rows are treated as active so the safeguard fails closed.
-  return userIds.filter(
-    (userId) => !archivedAtByUserId.get(userId),
-  ).length;
-}
-
 function revalidateStaffAccess(userId: string) {
   revalidatePath(`/portal/accounts/staff/${userId}`);
   revalidatePath("/portal/accounts/staff");
@@ -451,7 +392,9 @@ export async function updateStaffDisplayName(
   userId: string,
   displayName: string,
 ) {
-  await requirePortalTab("accounts");
+  await requireAccountsPermission(
+    "accounts.update_display_name",
+  );
 
   if (typeof userId !== "string" || !userId.trim()) {
     throw new Error("A staff account is required.");
@@ -496,7 +439,9 @@ export async function updateStaffDisplayName(
 }
 
 export async function archiveStaffAccount(userId: string) {
-  const { user: currentUser } = await requirePortalTab("accounts");
+  const { user: currentUser } = await requireAccountsPermission(
+    "accounts.archive",
+  );
   const admin = createAdminClient();
   const target = await loadStaffAccount(admin, userId);
   const profile = await loadStaffProfile(admin, userId);
@@ -508,24 +453,16 @@ export async function archiveStaffAccount(userId: string) {
   }
 
   const targetIsSystemAdmin = target.staffRoleAssignments.some(
-    (role) => role.name === "system_admin",
+    (role) => role.key === "system_admin",
   );
 
   if (targetIsSystemAdmin) {
-    const activeSystemAdministratorCount =
-      await countActiveSystemAdministrators(admin);
-
-    if (activeSystemAdministratorCount <= 1) {
-      if (currentUser.id === userId) {
-        throw new Error(
-          "You cannot archive your own account because it is the last active system administrator.",
-        );
-      }
-
-      throw new Error(
-        "This account cannot be archived because it is the last active system administrator.",
-      );
-    }
+    await assertSystemAdminChangeSafe(
+      admin,
+      userId,
+      currentUser.id,
+      "archive",
+    );
   }
 
   const { error } = await admin
@@ -543,7 +480,7 @@ export async function archiveStaffAccount(userId: string) {
 }
 
 export async function restoreStaffAccount(userId: string) {
-  await requirePortalTab("accounts");
+  await requireAccountsPermission("accounts.restore");
 
   const admin = createAdminClient();
   const target = await loadStaffAccount(admin, userId);
@@ -573,7 +510,9 @@ export async function updateStaffRoles(
   userId: string,
   requestedRoleIds: string[],
 ) {
-  const { user: currentUser } = await requirePortalTab("accounts");
+  const { user: currentUser } = await requireAccountsPermission(
+    "accounts.manage_roles",
+  );
 
   if (
     !Array.isArray(requestedRoleIds) ||
@@ -594,9 +533,12 @@ export async function updateStaffRoles(
 
   const { data: roleRows, error: rolesError } = await admin
     .from("roles")
-    .select("id, name")
-    .neq("name", "member")
-    .order("name");
+    .select(
+      "id, key, display_name, is_staff, is_system, is_active",
+    )
+    .eq("is_staff", true)
+    .eq("is_active", true)
+    .order("display_name");
 
   if (rolesError) {
     throw new Error(rolesError.message);
@@ -604,7 +546,7 @@ export async function updateStaffRoles(
 
   const manageableRoles = (
     (roleRows ?? []) as RoleRecord[]
-  ).filter((role) => isStaffRole(role.name));
+  ).filter((role) => role.is_staff && role.is_active);
 
   const roleById = new Map(
     manageableRoles.map((role) => [role.id, role]),
@@ -626,27 +568,19 @@ export async function updateStaffRoles(
     target.staffRoleAssignments.map((role) => role.id),
   );
   const currentHasSystemAdmin = target.staffRoleAssignments.some(
-    (role) => role.name === "system_admin",
+    (role) => role.key === "system_admin",
   );
   const nextHasSystemAdmin = requestedRoles.some(
-    (role) => role.name === "system_admin",
+    (role) => role.key === "system_admin",
   );
 
   if (currentHasSystemAdmin && !nextHasSystemAdmin) {
-    if (currentUser.id === userId) {
-      throw new Error(
-        "You cannot remove your own system administrator access from this page.",
-      );
-    }
-
-    const activeSystemAdministratorCount =
-      await countActiveSystemAdministrators(admin);
-
-    if (activeSystemAdministratorCount <= 1) {
-      throw new Error(
-        "The last active system administrator cannot be removed.",
-      );
-    }
+    await assertSystemAdminChangeSafe(
+      admin,
+      userId,
+      currentUser.id,
+      "remove",
+    );
   }
 
   const requestedRoleIdSet = new Set(requestedIds);
@@ -693,7 +627,9 @@ export async function updateStaffBranchAccessFromAccount(
   userId: string,
   requestedBranchIds: string[],
 ) {
-  await requirePortalTab("accounts");
+  const access = await requireAccountsPermission(
+    "accounts.manage_branch_access",
+  );
 
   if (
     !Array.isArray(requestedBranchIds) ||
@@ -712,7 +648,7 @@ export async function updateStaffBranchAccessFromAccount(
 
   if (
     target.staffRoleAssignments.some(
-      (role) => role.name === "system_admin",
+      (role) => role.key === "system_admin",
     )
   ) {
     throw new Error(
@@ -752,6 +688,31 @@ export async function updateStaffBranchAccessFromAccount(
   const branchMap = new Map(
     (branchRows ?? []).map((branch) => [branch.id, branch]),
   );
+
+  if (!access.isSystemAdmin) {
+    const inaccessibleNewBranches = branchIds.filter(
+      (branchId) =>
+        !access.branchIds.includes(branchId) &&
+        !currentBranchIds.has(branchId),
+    );
+    const inaccessibleRemovedBranches = Array.from(
+      currentBranchIds,
+    ).filter(
+      (branchId) =>
+        !access.branchIds.includes(branchId) &&
+        !branchIds.includes(branchId),
+    );
+
+    if (
+      inaccessibleNewBranches.length > 0 ||
+      inaccessibleRemovedBranches.length > 0
+    ) {
+      throw new Error(
+        "You can only add or remove branch assignments within branches assigned to your account.",
+      );
+    }
+  }
+
   const invalidBranchIds = branchIds.filter((branchId) => {
     const branch = branchMap.get(branchId);
 
@@ -767,9 +728,29 @@ export async function updateStaffBranchAccessFromAccount(
     );
   }
 
-  // Reuse the existing branch-access persistence path after validating the
-  // account and branch selection under the accounts RBAC boundary.
-  await persistStaffBranchAccess(userId, branchIds);
+  const { error: deleteError } = await admin
+    .from("user_branch_access")
+    .delete()
+    .eq("user_id", userId);
+
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  if (branchIds.length > 0) {
+    const { error: insertError } = await admin
+      .from("user_branch_access")
+      .insert(
+        branchIds.map((branchId) => ({
+          user_id: userId,
+          church_branch_id: branchId,
+        })),
+      );
+
+    if (insertError) {
+      throw new Error(insertError.message);
+    }
+  }
 
   revalidateStaffAccess(userId);
 
@@ -779,15 +760,7 @@ export async function updateStaffBranchAccessFromAccount(
 export async function createStaffAccount(
   formData: FormData,
 ): Promise<StaffAccountProvisionResult> {
-  const { roles: currentUserRoles } =
-    await requirePortalTab("accounts");
-
-  if (!currentUserRoles.includes("system_admin")) {
-    return {
-      success: false,
-      error: "Only system administrators can create staff accounts.",
-    };
-  }
+  const access = await requireAccountsPermission("accounts.invite");
 
   let userId: string | null = null;
   let newlyInvited = false;
@@ -829,7 +802,9 @@ export async function createStaffAccount(
 
     const { data: roleRows, error: rolesError } = await admin
       .from("roles")
-      .select("id, name")
+      .select(
+        "id, key, display_name, is_staff, is_system, is_active",
+      )
       .in("id", requestedRoleIds);
 
     if (rolesError) {
@@ -843,7 +818,7 @@ export async function createStaffAccount(
     const invalidRoleIds = requestedRoleIds.filter((roleId) => {
       const role = roleById.get(roleId);
 
-      return !role || !isStaffRole(role.name);
+      return !role || !role.is_staff || !role.is_active;
     });
 
     if (invalidRoleIds.length > 0) {
@@ -888,11 +863,11 @@ export async function createStaffAccount(
       );
     }
 
-    const finalRoleNames = new Set([
-      ...currentRoleAssignments.map((role) => role.name),
-      ...selectedRoles.map((role) => role.name),
+    const finalRoleKeys = new Set([
+      ...currentRoleAssignments.map((role) => role.key),
+      ...selectedRoles.map((role) => role.key),
     ]);
-    const hasSystemAdmin = finalRoleNames.has("system_admin");
+    const hasSystemAdmin = finalRoleKeys.has("system_admin");
 
     if (!hasSystemAdmin && requestedBranchIds.length === 0) {
       throw new Error(
@@ -900,7 +875,11 @@ export async function createStaffAccount(
       );
     }
 
-    await validateActiveBranchIds(admin, requestedBranchIds);
+    await assertActiveAccountBranchIds(
+      admin,
+      access,
+      requestedBranchIds,
+    );
 
     if (!existingUser) {
       const { data, error } =

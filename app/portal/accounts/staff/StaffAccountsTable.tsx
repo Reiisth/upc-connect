@@ -44,11 +44,16 @@ export type StaffBranch = {
   isActive: boolean;
 };
 
+export type StaffRoleSummary = {
+  key: string;
+  displayName: string;
+};
+
 export type StaffAccount = {
   id: string;
   displayName: string | null;
   email: string;
-  roles: string[];
+  roles: StaffRoleSummary[];
   branchAccess: StaffBranch[];
   hasAllBranchAccess: boolean;
   status: StaffAccountStatus;
@@ -59,6 +64,8 @@ export type StaffAccount = {
 type StaffAccountsTableProps = {
   accounts: StaffAccount[];
   branches: StaffBranch[];
+  canArchive: boolean;
+  canRestore: boolean;
 };
 
 const statusLabels: Record<StaffAccountStatus, string> = {
@@ -94,6 +101,8 @@ const statusOptions: StaffAccountStatus[] = [
 export default function StaffAccountsTable({
   accounts,
   branches,
+  canArchive,
+  canRestore,
 }: StaffAccountsTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -110,8 +119,14 @@ export default function StaffAccountsTable({
   const roleOptions = useMemo(
     () =>
       Array.from(
-        new Set(accounts.flatMap((account) => account.roles)),
-      ).sort(),
+        new Map(
+          accounts
+            .flatMap((account) => account.roles)
+            .map((role) => [role.key, role] as const),
+        ).values(),
+      ).sort((left, right) =>
+        left.displayName.localeCompare(right.displayName),
+      ),
     [accounts],
   );
 
@@ -125,7 +140,8 @@ export default function StaffAccountsTable({
         account.email.toLowerCase().includes(normalizedSearch);
 
       const matchesRole =
-        roleFilter === "all" || account.roles.includes(roleFilter);
+        roleFilter === "all" ||
+        account.roles.some((role) => role.key === roleFilter);
 
       const matchesBranch =
         branchFilter === "all" ||
@@ -218,8 +234,8 @@ export default function StaffAccountsTable({
           >
             <option value="all">All roles</option>
             {roleOptions.map((role) => (
-              <option key={role} value={role}>
-                {formatRole(role)}
+              <option key={role.key} value={role.key}>
+                {role.displayName}
               </option>
             ))}
           </Select>
@@ -313,8 +329,8 @@ export default function StaffAccountsTable({
                 <TableCell>
                   <div className="flex flex-wrap gap-2">
                     {account.roles.map((role) => (
-                      <StatusBadge key={role} variant="info">
-                        {formatRole(role)}
+                      <StatusBadge key={role.key} variant="info">
+                        {role.displayName}
                       </StatusBadge>
                     ))}
                   </div>
@@ -359,7 +375,7 @@ export default function StaffAccountsTable({
                 </TableCell>
 
                 <TableCell>
-                  {account.status === "archived" ? (
+                  {account.status === "archived" && canRestore ? (
                     <TableActionButton
                       type="button"
                       variant="success"
@@ -370,7 +386,7 @@ export default function StaffAccountsTable({
                     >
                       Restore
                     </TableActionButton>
-                  ) : account.status === "deleted" ? (
+                  ) : account.status === "deleted" || !canArchive ? (
                     <span className="text-sm text-slate-400 dark:text-slate-500">
                       Unavailable
                     </span>
@@ -452,16 +468,6 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error && error.message
     ? error.message
     : "The account action could not be completed.";
-}
-
-function formatRole(role: string) {
-  return role
-    .split("_")
-    .map(
-      (word) =>
-        word.charAt(0).toUpperCase() + word.slice(1),
-    )
-    .join(" ");
 }
 
 function formatDate(value: string | null) {

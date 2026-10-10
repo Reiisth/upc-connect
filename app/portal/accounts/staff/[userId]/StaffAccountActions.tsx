@@ -16,12 +16,16 @@ type StaffAccountActionsProps = {
   userId: string;
   accountLabel: string;
   isArchived: boolean;
+  canArchive: boolean;
+  canRestore: boolean;
 };
 
 export function StaffAccountActions({
   userId,
   accountLabel,
   isArchived,
+  canArchive,
+  canRestore,
 }: StaffAccountActionsProps) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -29,12 +33,16 @@ export function StaffAccountActions({
   const [actionError, setActionError] = useState<string | null>(null);
 
   const actionName = isArchived ? "restore" : "archive";
+  const canPerformAction = isArchived ? canRestore : canArchive;
   const actionDescription = isArchived
     ? `Restore ${accountLabel}? The account's existing roles and branch assignments will be preserved.`
     : `Archive ${accountLabel}? The Auth account, roles, branch assignments, and historical records will be preserved.`;
 
   async function handleAction() {
     setActionError(null);
+
+    if (!canPerformAction) return;
+
     setActionLoading(true);
 
     try {
@@ -68,14 +76,22 @@ export function StaffAccountActions({
   return (
     <>
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant={isArchived ? "outline" : "destructive"}
-          onClick={openModal}
-        >
-          {isArchived ? <RotateCcw /> : <Archive />}
-          {isArchived ? "Restore Account" : "Archive Account"}
-        </Button>
+        {canPerformAction ? (
+          <Button
+            type="button"
+            variant={isArchived ? "outline" : "destructive"}
+            onClick={openModal}
+          >
+            {isArchived ? <RotateCcw /> : <Archive />}
+            {isArchived ? "Restore Account" : "Archive Account"}
+          </Button>
+        ) : (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {isArchived
+              ? "Restore is unavailable because you do not have the required account permission."
+              : "Archiving is unavailable because you do not have the required account permission."}
+          </p>
+        )}
 
         {actionError && (
           <p

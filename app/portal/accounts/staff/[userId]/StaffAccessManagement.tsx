@@ -18,7 +18,8 @@ import {
 
 export type StaffRoleOption = {
   id: string;
-  name: string;
+  key: string;
+  displayName: string;
 };
 
 export type StaffAccessBranch = {
@@ -26,6 +27,7 @@ export type StaffAccessBranch = {
   name: string;
   code: string | null;
   isActive: boolean;
+  isManageable: boolean;
 };
 
 type StaffAccessManagementProps = {
@@ -37,6 +39,8 @@ type StaffAccessManagementProps = {
   assignedBranchIds: string[];
   isSystemAdmin: boolean;
   isArchived: boolean;
+  canManageRoles: boolean;
+  canManageBranchAccess: boolean;
 };
 
 type Feedback = {
@@ -53,6 +57,8 @@ export function StaffAccessManagement({
   assignedBranchIds,
   isSystemAdmin,
   isArchived,
+  canManageRoles,
+  canManageBranchAccess,
 }: StaffAccessManagementProps) {
   const router = useRouter();
   const [selectedRoleIds, setSelectedRoleIds] = useState(
@@ -171,7 +177,7 @@ export function StaffAccessManagement({
                 <div className="mt-2 flex flex-wrap gap-2">
                   {assignedRoles.map((role) => (
                     <StatusBadge key={role.id} variant="info">
-                      {formatRole(role.name)}
+                      {role.displayName}
                     </StatusBadge>
                   ))}
                 </div>
@@ -184,6 +190,8 @@ export function StaffAccessManagement({
 
             {isArchived ? (
               <ArchivedAccessNotice description="Role editing is disabled while this account is archived. Restore the account before changing its roles." />
+            ) : !canManageRoles ? (
+              <ReadOnlyAccessNotice description="Role editing is unavailable because you do not have the required account permission." />
             ) : availableRoles.length > 0 ? (
               <form
                 onSubmit={(event) => {
@@ -219,11 +227,11 @@ export function StaffAccessManagement({
                                 );
                                 setRoleFeedback(null);
                               }}
-                              aria-label={`Assign ${formatRole(role.name)} role`}
+                              aria-label={`Assign ${role.displayName} role`}
                             />
 
                             <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                              {formatRole(role.name)}
+                              {role.displayName}
                             </span>
                           </span>
 
@@ -301,6 +309,13 @@ export function StaffAccessManagement({
               <ReadOnlyBranchAccess
                 branches={branches}
                 assignedBranchIds={assignedBranchIds}
+                description="Branch editing is disabled while this account is archived. Existing branch assignments are preserved."
+              />
+            ) : !canManageBranchAccess ? (
+              <ReadOnlyBranchAccess
+                branches={branches}
+                assignedBranchIds={assignedBranchIds}
+                description="Branch editing is unavailable because you do not have the required account permission."
               />
             ) : (
               <form
@@ -348,6 +363,7 @@ export function StaffAccessManagement({
                       branch.id,
                     );
                     const isDisabled =
+                      !branch.isManageable ||
                       !branch.isActive && !isExistingAssignment;
 
                     return (
@@ -383,6 +399,9 @@ export function StaffAccessManagement({
                               {branch.code
                                 ? `Code: ${branch.code}`
                                 : "No branch code"}
+                              {!branch.isManageable
+                                ? " · Outside your branch scope"
+                                : ""}
                             </span>
                           </span>
                         </span>
@@ -398,7 +417,7 @@ export function StaffAccessManagement({
                 </div>
 
                 <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                  Active branches can be added or removed. Inactive branches remain visible while assigned and can be removed, but cannot be newly assigned.
+                  Active branches in your branch scope can be added or removed. Existing assignments outside your scope remain preserved and cannot be changed here. Inactive branches remain visible while assigned and cannot be newly assigned.
                 </p>
               </div>
 
@@ -443,18 +462,32 @@ function ArchivedAccessNotice({ description }: { description: string }) {
   );
 }
 
+function ReadOnlyAccessNotice({ description }: { description: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
+      <StatusBadge variant="muted">Read-only</StatusBadge>
+
+      <p className="text-sm text-slate-600 dark:text-slate-300">
+        {description}
+      </p>
+    </div>
+  );
+}
+
 function ReadOnlyBranchAccess({
   branches,
   assignedBranchIds,
+  description,
 }: {
   branches: StaffAccessBranch[];
   assignedBranchIds: string[];
+  description: string;
 }) {
   const assignedBranchIdSet = new Set(assignedBranchIds);
 
   return (
     <div className="space-y-5">
-      <ArchivedAccessNotice description="Branch editing is disabled while this account is archived. Existing branch assignments are preserved." />
+      <ReadOnlyAccessNotice description={description} />
 
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -540,14 +573,4 @@ function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message
     ? error.message
     : fallback;
-}
-
-function formatRole(role: string) {
-  return role
-    .split("_")
-    .map(
-      (word) =>
-        word.charAt(0).toUpperCase() + word.slice(1),
-    )
-    .join(" ");
 }

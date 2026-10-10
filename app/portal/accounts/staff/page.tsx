@@ -10,14 +10,16 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import { hasPermission } from "@/lib/permissions";
 
 import AccountsTabs from "../AccountsTabs";
 import StaffAccountsTable, {
   type StaffAccount,
   type StaffAccountStatus,
   type StaffBranch,
+  type StaffRoleSummary,
 } from "./StaffAccountsTable";
+import { requireAccountsPermission } from "../access";
 import {
   KeyRound,
   UserPlus,
@@ -52,6 +54,13 @@ type BranchAccessRow = {
   church_branch_id: string;
 };
 
+type StaffRoleRow = {
+  key: string;
+  display_name: string | null;
+  is_staff: boolean;
+  is_active: boolean;
+};
+
 export default function StaffAccountsPage() {
   return (
     <Suspense fallback={<StaffAccountsSkeleton />}>
@@ -61,7 +70,7 @@ export default function StaffAccountsPage() {
 }
 
 async function StaffAccountsContent() {
-  await requirePortalTab("accounts");
+  const access = await requireAccountsPermission("accounts.view");
 
   const admin = createAdminClient();
 
@@ -77,10 +86,14 @@ async function StaffAccountsContent() {
       .select(`
         user_id,
         roles!inner (
-          name
+          key,
+          display_name,
+          is_staff,
+          is_active
         )
       `)
-      .neq("roles.name", "member"),
+      .eq("roles.is_staff", true)
+      .eq("roles.is_active", true),
 
     admin
       .from("profiles")
@@ -105,26 +118,33 @@ async function StaffAccountsContent() {
     throw new Error(branchAccessError.message);
   }
 
-  const roleMap = new Map<string, string[]>();
+  const roleMap = new Map<string, StaffRoleSummary[]>();
 
   for (const link of staffRoleLinks ?? []) {
     const roles = link.roles as
-      | { name: string }
-      | { name: string }[]
+      | StaffRoleRow
+      | StaffRoleRow[]
       | null;
 
-    const roleName = !roles
+    const role = !roles
       ? null
       : Array.isArray(roles)
-        ? roles[0]?.name ?? null
-        : roles.name;
+        ? roles[0] ?? null
+        : roles;
 
-    if (!roleName) continue;
+    if (!role || !role.is_staff || !role.is_active || !role.key) {
+      continue;
+    }
+
+    const roleSummary: StaffRoleSummary = {
+      key: role.key,
+      displayName: role.display_name?.trim() || formatRole(role.key),
+    };
 
     const existing = roleMap.get(link.user_id) ?? [];
 
-    if (!existing.includes(roleName)) {
-      existing.push(roleName);
+    if (!existing.some((item) => item.key === roleSummary.key)) {
+      existing.push(roleSummary);
     }
 
     roleMap.set(link.user_id, existing);
@@ -181,7 +201,9 @@ async function StaffAccountsContent() {
         email: user.email ?? "No email",
         roles,
         branchAccess,
-        hasAllBranchAccess: roles.includes("system_admin"),
+        hasAllBranchAccess: roles.some(
+          (role) => role.key === "system_admin",
+        ),
         status: getAccountStatus({
           archivedAt: profile?.archived_at ?? null,
           deletedAt: user.deleted_at ?? null,
@@ -200,6 +222,18 @@ async function StaffAccountsContent() {
     (total, account) => total + account.roles.length,
     0,
   );
+  const canInvite = hasPermission(
+    access.permissions,
+    "accounts.invite",
+  );
+  const canArchive = hasPermission(
+    access.permissions,
+    "accounts.archive",
+  );
+  const canRestore = hasPermission(
+    access.permissions,
+    "accounts.restore",
+  );
 
   return (
     <PageContainer>
@@ -209,12 +243,14 @@ async function StaffAccountsContent() {
         title="Staff Accounts"
         description="Manage login accounts assigned to staff roles."
         action={
-          <Button asChild>
-            <Link href="/portal/accounts/staff/new">
-              <UserPlus />
-              New Staff Account
-            </Link>
-          </Button>
+          canInvite ? (
+            <Button asChild>
+              <Link href="/portal/accounts/staff/new">
+                <UserPlus />
+                New Staff Account
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
 
@@ -257,9 +293,21 @@ async function StaffAccountsContent() {
       <StaffAccountsTable
         accounts={staffAccounts}
         branches={branches}
+        canArchive={canArchive}
+        canRestore={canRestore}
       />
     </PageContainer>
   );
+}
+
+function formatRole(role: string) {
+  return role
+    .split("_")
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join(" ");
 }
 
 function getAccountStatus({

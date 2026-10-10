@@ -15,12 +15,14 @@ type StaffDisplayNameEditorProps = {
   userId: string;
   initialDisplayName: string | null;
   canEdit: boolean;
+  readOnlyReason?: string;
 };
 
 export function StaffDisplayNameEditor({
   userId,
   initialDisplayName,
   canEdit,
+  readOnlyReason,
 }: StaffDisplayNameEditorProps) {
   const router = useRouter();
   const [savedDisplayName, setSavedDisplayName] = useState(
@@ -150,7 +152,8 @@ export function StaffDisplayNameEditor({
 
       {!canEdit && (
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          Display-name editing is unavailable because this account has no profile record.
+          {readOnlyReason ??
+            "Display-name editing is unavailable for this account."}
         </p>
       )}
 

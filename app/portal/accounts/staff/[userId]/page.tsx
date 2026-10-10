@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { ExternalLink, UserRoundCog } from "lucide-react";
+import { UserRoundCog } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,9 +11,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 
-import { requirePortalTab } from "@/lib/require-portal-tab";
-import { isStaffRole } from "@/lib/staff-roles";
+import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAccountsPermission } from "../../access";
 
 import type { StaffAccountStatus } from "../StaffAccountsTable";
 import {
@@ -51,7 +49,11 @@ type BranchAccessRow = {
 
 type RoleRow = {
   id: string;
-  name: string;
+  key: string;
+  display_name: string | null;
+  is_staff: boolean;
+  is_system: boolean;
+  is_active: boolean;
 };
 
 type RoleLinkRow = {
@@ -72,7 +74,7 @@ export default function StaffAccountDetailsPage(
 async function StaffAccountDetailsContent({
   params,
 }: PageProps) {
-  await requirePortalTab("accounts");
+  const access = await requireAccountsPermission("accounts.view");
 
   const { userId } = await params;
   const admin = createAdminClient();
@@ -93,17 +95,25 @@ async function StaffAccountDetailsContent({
         role_id,
         roles!inner (
           id,
-          name
+          key,
+          display_name,
+          is_staff,
+          is_system,
+          is_active
         )
       `)
       .eq("user_id", userId)
-      .neq("roles.name", "member"),
+      .eq("roles.is_staff", true)
+      .eq("roles.is_active", true),
 
     admin
       .from("roles")
-      .select("id, name")
-      .neq("name", "member")
-      .order("name"),
+      .select(
+        "id, key, display_name, is_staff, is_system, is_active",
+      )
+      .eq("is_staff", true)
+      .eq("is_active", true)
+      .order("display_name"),
 
     admin
       .from("profiles")
@@ -149,16 +159,18 @@ async function StaffAccountDetailsContent({
           return roles
             .map((role) => ({
               id: link.role_id ?? role.id,
-              name: role.name,
+              key: role.key,
+              displayName:
+                role.display_name?.trim() || role.key,
             }))
-            .filter((role) => role.name !== "member");
+            .filter((role) => role.key);
         })
         .map((role) => [role.id, role] as const),
     ).values(),
   );
-  const roleNames = roleDetails.map((role) => role.name);
+  const roleKeys = roleDetails.map((role) => role.key);
 
-  if (roleNames.length === 0) {
+  if (roleKeys.length === 0) {
     notFound();
   }
 
@@ -171,23 +183,45 @@ async function StaffAccountDetailsContent({
       (assignment) => assignment.church_branch_id,
     ),
   );
-  const isSystemAdmin = roleNames.includes("system_admin");
+  const isSystemAdmin = roleKeys.includes("system_admin");
   const availableRoles = ((availableRoleRows ?? []) as RoleRow[])
-    .filter((role) => isStaffRole(role.name))
+    .filter((role) => role.is_staff && role.is_active)
     .map<StaffRoleOption>((role) => ({
       id: role.id,
-      name: role.name,
+      key: role.key,
+      displayName:
+        role.display_name?.trim() || role.key,
     }));
-  const assignedRoleIds = roleDetails
-    .filter((role) => isStaffRole(role.name))
-    .map((role) => role.id);
+  const assignedRoleIds = roleDetails.map((role) => role.id);
   const managementBranches = branches.map<StaffAccessBranch>(
     (branch) => ({
       id: branch.id,
       name: branch.name,
       code: branch.code,
       isActive: branch.is_active,
+      isManageable:
+        access.isSystemAdmin || access.branchIds.includes(branch.id),
     }),
+  );
+  const canUpdateDisplayName = hasPermission(
+    access.permissions,
+    "accounts.update_display_name",
+  );
+  const canManageRoles = hasPermission(
+    access.permissions,
+    "accounts.manage_roles",
+  );
+  const canManageBranchAccess = hasPermission(
+    access.permissions,
+    "accounts.manage_branch_access",
+  );
+  const canArchive = hasPermission(
+    access.permissions,
+    "accounts.archive",
+  );
+  const canRestore = hasPermission(
+    access.permissions,
+    "accounts.restore",
   );
   const status = getAccountStatus({
     archivedAt: profileData?.archived_at ?? null,
@@ -235,7 +269,12 @@ async function StaffAccountDetailsContent({
             <StaffDisplayNameEditor
               userId={userId}
               initialDisplayName={profileData?.display_name ?? null}
-              canEdit={Boolean(profileData)}
+              canEdit={Boolean(profileData) && canUpdateDisplayName}
+              readOnlyReason={
+                !profileData
+                  ? "Display-name editing is unavailable because this account has no profile record."
+                  : "Display-name editing is unavailable because you do not have the required account permission."
+              }
             />
 
             <InfoItem label="Email">{email}</InfoItem>
@@ -278,6 +317,8 @@ async function StaffAccountDetailsContent({
         assignedBranchIds={Array.from(assignedBranchIds)}
         isSystemAdmin={isSystemAdmin}
         isArchived={isArchived}
+        canManageRoles={canManageRoles}
+        canManageBranchAccess={canManageBranchAccess}
       />
 
       <Card>
@@ -296,20 +337,9 @@ async function StaffAccountDetailsContent({
                 userId={userId}
                 accountLabel={title}
                 isArchived={isArchived}
+                canArchive={canArchive}
+                canRestore={canRestore}
               />
-
-              {!isArchived && (
-                <div className="mt-4">
-                  <Button asChild variant="outline">
-                    <Link
-                      href={`/portal/administration/staff-branch-access/${userId}`}
-                    >
-                      <ExternalLink />
-                      Manage Branch Access
-                    </Link>
-                  </Button>
-                </div>
-              )}
             </div>
           ) : (
             <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">

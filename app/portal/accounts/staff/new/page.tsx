@@ -7,8 +7,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isStaffRole } from "@/lib/staff-roles";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import {
+  getAccessibleActiveAccountBranches,
+  requireAccountsPermission,
+} from "../../access";
 
 import StaffAccountForm, {
   type StaffAccountBranchOption,
@@ -17,13 +19,10 @@ import StaffAccountForm, {
 
 type RoleRow = {
   id: string;
-  name: string;
-};
-
-type BranchRow = {
-  id: string;
-  name: string;
-  code: string | null;
+  key: string;
+  display_name: string | null;
+  is_staff: boolean;
+  is_active: boolean;
 };
 
 export default function NewStaffAccountPage() {
@@ -35,45 +34,42 @@ export default function NewStaffAccountPage() {
 }
 
 async function NewStaffAccountContent() {
-  await requirePortalTab("accounts");
+  const access = await requireAccountsPermission("accounts.invite");
 
   const admin = createAdminClient();
 
   const [
     { data: roleRows, error: rolesError },
-    { data: branchRows, error: branchesError },
   ] = await Promise.all([
     admin
       .from("roles")
-      .select("id, name")
-      .order("name"),
-    admin
-      .from("church_branches")
-      .select("id, name, code")
+      .select(
+        "id, key, display_name, is_staff, is_active",
+      )
+      .eq("is_staff", true)
       .eq("is_active", true)
-      .order("name"),
+      .order("display_name"),
   ]);
 
   if (rolesError) {
     throw new Error(rolesError.message);
   }
 
-  if (branchesError) {
-    throw new Error(branchesError.message);
-  }
-
   const roles: StaffAccountRoleOption[] = (
     (roleRows ?? []) as RoleRow[]
   )
-    .filter((role) => isStaffRole(role.name))
+    .filter((role) => role.is_staff && role.is_active)
     .map((role) => ({
       id: role.id,
-      name: role.name,
+      key: role.key,
+      displayName: role.display_name?.trim() || formatRole(role.key),
     }));
 
-  const branches: StaffAccountBranchOption[] = (
-    (branchRows ?? []) as BranchRow[]
-  ).map((branch) => ({
+  const branchOptions = await getAccessibleActiveAccountBranches(
+    access,
+    admin,
+  );
+  const branches: StaffAccountBranchOption[] = branchOptions.map((branch) => ({
     id: branch.id,
     name: branch.name,
     code: branch.code,
@@ -101,6 +97,16 @@ async function NewStaffAccountContent() {
       )}
     </PageContainer>
   );
+}
+
+function formatRole(role: string) {
+  return role
+    .split("_")
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join(" ");
 }
 
 function NewStaffAccountLoading() {

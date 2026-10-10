@@ -10,8 +10,9 @@ import {
 import { redirect } from "next/navigation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import { hasPermission } from "@/lib/permissions";
 import { disconnectMember } from "../../members/actions";
+import { requireAccountsPermission } from "../access";
 
 export default function AccountDetailsPage({
   params,
@@ -30,7 +31,11 @@ async function AccountDetailsContent({
 }: {
   params: Promise<{ userId: string }>;
 }) {
-  await requirePortalTab("accounts");
+  const access = await requireAccountsPermission("accounts.view");
+  const canLinkMembers = hasPermission(
+    access.permissions,
+    "members.link_account",
+  );
 
   const { userId } = await params;
 
@@ -126,14 +131,16 @@ async function AccountDetailsContent({
             </div>
           </div>
 
-          <Link
-            href={`/portal/members/invite?email=${encodeURIComponent(
-              authData.user.email ?? "",
-            )}`}
-            className="rounded-xl bg-[#203264] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#2C447D]"
-          >
-            Link Members
-          </Link>
+          {canLinkMembers && (
+            <Link
+              href={`/portal/members/invite?email=${encodeURIComponent(
+                authData.user.email ?? "",
+              )}`}
+              className="rounded-xl bg-[#203264] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#2C447D]"
+            >
+              Link Members
+            </Link>
+          )}
         </div>
 
         {links?.length ? (
@@ -174,20 +181,22 @@ async function AccountDetailsContent({
                     </div>
                   </div>
 
-                  <form
-                    action={async () => {
-                      "use server";
-                      await disconnectMember(member.id);
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                  {canLinkMembers && (
+                    <form
+                      action={async () => {
+                        "use server";
+                        await disconnectMember(member.id);
+                      }}
                     >
-                      <Unlink className="h-3.5 w-3.5" />
-                      Disconnect
-                    </button>
-                  </form>
+                      <button
+                        type="submit"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                      >
+                        <Unlink className="h-3.5 w-3.5" />
+                        Disconnect
+                      </button>
+                    </form>
+                  )}
                 </div>
               );
             })}

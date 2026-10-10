@@ -40,10 +40,16 @@ type Account = {
 
 type MemberAccountsTableProps = {
   accounts: Account[];
+  canArchive: boolean;
+  canRestore: boolean;
+  canLinkAccount: boolean;
 };
 
 export default function MemberAccountsTable({
   accounts,
+  canArchive,
+  canRestore,
+  canLinkAccount,
 }: MemberAccountsTableProps) {
   const [search, setSearch] = useState("");
   const [memberCountFilter, setMemberCountFilter] = useState("all");
@@ -253,7 +259,7 @@ export default function MemberAccountsTable({
 
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    {account.archivedAt ? (
+                    {account.archivedAt && canRestore ? (
                       <TableActionButton
                         type="button"
                         variant="success"
@@ -267,7 +273,7 @@ export default function MemberAccountsTable({
                       >
                         Restore
                       </TableActionButton>
-                    ) : (
+                    ) : !account.archivedAt && canArchive ? (
                       <TableActionButton
                         type="button"
                         variant="danger"
@@ -281,8 +287,8 @@ export default function MemberAccountsTable({
                       >
                         Archive
                       </TableActionButton>
-                    )}
-                    {!account.archivedAt && (
+                    ) : null}
+                    {!account.archivedAt && canLinkAccount && (
                       <TableActionButton
                         href={`/portal/members/invite?email=${encodeURIComponent(
                           account.email,
