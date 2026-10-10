@@ -18,9 +18,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import {
-  canManageContributions,
-  requireContributionsAccess,
+  requireContributionsPermission,
 } from "./access";
+import { hasPermission } from "@/lib/permissions";
 import { loadContributionOptions, loadContributionRecords } from "./data";
 import ContributionsTable from "./ContributionsTable";
 import {
@@ -37,7 +37,9 @@ export default function ContributionsPage() {
 }
 
 async function ContributionsContent() {
-  const access = await requireContributionsAccess();
+  const access = await requireContributionsPermission(
+    "contributions.view",
+  );
   const admin = createAdminClient();
   const options = await loadContributionOptions(access, admin);
   const records = await loadContributionRecords(
@@ -45,7 +47,14 @@ async function ContributionsContent() {
     options.branches,
   );
   const summary = getContributionSummary(records);
-  const canManage = canManageContributions(access);
+  const canCreate = hasPermission(
+    access.permissions,
+    "contributions.create",
+  );
+  const canUpdate = hasPermission(
+    access.permissions,
+    "contributions.update",
+  );
 
   return (
     <PageContainer>
@@ -55,7 +64,7 @@ async function ContributionsContent() {
         title="Contributions"
         description="Review branch contributions and maintain accurate financial records."
         action={
-          canManage ? (
+          canCreate ? (
             <Button asChild>
               <Link href="/portal/contributions/new">
                 <Plus />
@@ -105,7 +114,7 @@ async function ContributionsContent() {
         <ContributionsTable
           records={records}
           branches={options.branches}
-          canManage={canManage}
+          canUpdate={canUpdate}
         />
       )}
     </PageContainer>

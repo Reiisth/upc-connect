@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { HandCoins } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
@@ -10,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { canManageContributions, requireContributionsAccess } from "../access";
+import { requireContributionsPermission } from "../access";
 import { createContribution } from "../actions";
 import { loadContributionOptions } from "../data";
 import { ContributionForm } from "../ContributionForm";
@@ -24,35 +22,9 @@ export default function NewContributionPage() {
 }
 
 async function NewContributionContent() {
-  const access = await requireContributionsAccess();
-
-  if (!canManageContributions(access)) {
-    return (
-      <PageContainer>
-        <PageHeader
-          backHref="/portal/contributions"
-          backLabel="Back to Contributions"
-          eyebrow="Financial Operations"
-          eyebrowIcon={<HandCoins className="h-4 w-4" />}
-          title="New Contribution"
-          description="Record a contribution for an assigned branch."
-        />
-
-        <EmptyState
-          icon={<HandCoins className="h-5 w-5" />}
-          title="View-only access"
-          description="Only accounting officers can create or edit contributions."
-          action={
-            <Button asChild variant="outline">
-              <Link href="/portal/contributions">
-                Back to Contributions
-              </Link>
-            </Button>
-          }
-        />
-      </PageContainer>
-    );
-  }
+  const access = await requireContributionsPermission(
+    "contributions.create",
+  );
 
   const admin = createAdminClient();
   const options = await loadContributionOptions(access, admin);

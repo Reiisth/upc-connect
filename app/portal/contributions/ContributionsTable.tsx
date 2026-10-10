@@ -35,7 +35,7 @@ import {
 type ContributionsTableProps = {
   records: ContributionRecord[];
   branches: ContributionBranch[];
-  canManage: boolean;
+  canUpdate: boolean;
 };
 
 const contributionTypeVariants: Record<
@@ -50,7 +50,7 @@ const contributionTypeVariants: Record<
 export default function ContributionsTable({
   records,
   branches,
-  canManage,
+  canUpdate,
 }: ContributionsTableProps) {
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
@@ -304,7 +304,7 @@ export default function ContributionsTable({
                 </TableCell>
 
                 <TableCell>
-                  {canManage ? (
+                  {canUpdate ? (
                     <TableActionButton
                       href={`/portal/contributions/${record.id}/edit`}
                       icon={<Pencil />}

@@ -1,60 +1,34 @@
-import { redirect } from "next/navigation";
-
 import {
-  canAccessTab,
-} from "@/lib/portal-access";
+  requirePermission,
+  type PermissionContext,
+} from "@/lib/permissions-server";
 import {
-  getCurrentUser,
-  getCurrentUserRoles,
-} from "@/lib/auth";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+  getUserBranchScope,
+  type BranchScope,
+} from "@/lib/branch-access";
 
-export type ContributionAccess = Awaited<
-  ReturnType<typeof requirePortalTab>
->;
+export type ContributionPermission =
+  | "contributions.view"
+  | "contributions.create"
+  | "contributions.update";
+
+export type ContributionAccess = PermissionContext & BranchScope;
 
 /**
- * Contributions use the existing contributions permission for operational
- * users. System administrators use their existing accounts permission for
- * system-wide, view-only oversight.
+ * Require a Contributions permission and resolve branch scope independently.
+ * Permissions decide what the user may do; branch scope decides where they
+ * may do it.
  */
-export async function requireContributionsAccess() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const roles = await getCurrentUserRoles(user.id);
-
-  if (roles.includes("system_admin")) {
-    return requirePortalTab("accounts");
-  }
-
-  if (!canAccessTab(roles, "contributions")) {
-    redirect("/access-denied");
-  }
-
-  return requirePortalTab("contributions");
-}
-
-export function canManageContributions(
-  access: ContributionAccess,
-) {
-  return (
-    !access.isSystemAdmin &&
-    access.roles.includes("accounting_officer")
+export async function requireContributionsPermission(
+  permission: ContributionPermission,
+): Promise<ContributionAccess> {
+  const permissionContext = await requirePermission(permission);
+  const branchScope = await getUserBranchScope(
+    permissionContext.user.id,
   );
-}
 
-export async function requireContributionManager() {
-  const access = await requireContributionsAccess();
-
-  if (!canManageContributions(access)) {
-    throw new Error(
-      "Only accounting officers can create or edit contributions. Pastors and system administrators have view-only access.",
-    );
-  }
-
-  return access;
+  return {
+    ...permissionContext,
+    ...branchScope,
+  };
 }

@@ -1,10 +1,7 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { HandCoins } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,10 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { updateContribution } from "../../actions";
-import {
-  canManageContributions,
-  requireContributionsAccess,
-} from "../../access";
+import { requireContributionsPermission } from "../../access";
 import {
   loadContributionForEdit,
   loadContributionOptions,
@@ -41,35 +35,9 @@ export default function EditContributionPage(
 async function EditContributionContent({
   params,
 }: EditContributionPageProps) {
-  const access = await requireContributionsAccess();
-
-  if (!canManageContributions(access)) {
-    return (
-      <PageContainer>
-        <PageHeader
-          backHref="/portal/contributions"
-          backLabel="Back to Contributions"
-          eyebrow="Financial Operations"
-          eyebrowIcon={<HandCoins className="h-4 w-4" />}
-          title="Edit Contribution"
-          description="Update a contribution record for an assigned branch."
-        />
-
-        <EmptyState
-          icon={<HandCoins className="h-5 w-5" />}
-          title="View-only access"
-          description="Only accounting officers can create or edit contributions."
-          action={
-            <Button asChild variant="outline">
-              <Link href="/portal/contributions">
-                Back to Contributions
-              </Link>
-            </Button>
-          }
-        />
-      </PageContainer>
-    );
-  }
+  const access = await requireContributionsPermission(
+    "contributions.update",
+  );
 
   const { contributionId } = await params;
   const admin = createAdminClient();

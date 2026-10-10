@@ -17,7 +17,7 @@ import {
   type ContributionType,
   type PaymentMethod,
 } from "./types";
-import { requireContributionManager } from "./access";
+import { requireContributionsPermission } from "./access";
 
 const contributionsPath = "/portal/contributions";
 
@@ -253,7 +253,9 @@ export async function createContribution(
   _previousState: ContributionActionState,
   formData: FormData,
 ): Promise<ContributionActionState> {
-  const access = await requireContributionManager();
+  const access = await requireContributionsPermission(
+    "contributions.create",
+  );
   const admin = createAdminClient();
   let contributionId: string | null = null;
 
@@ -313,7 +315,9 @@ export async function updateContribution(
   _previousState: ContributionActionState,
   formData: FormData,
 ): Promise<ContributionActionState> {
-  const access = await requireContributionManager();
+  const access = await requireContributionsPermission(
+    "contributions.update",
+  );
   const admin = createAdminClient();
   try {
     if (!contributionId) {

@@ -4,8 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import {
   getAccessibleActiveBranches,
-  type ServiceAccess,
 } from "../services/access";
+import type { ContributionAccess } from "./access";
 import { normalizeContributionAmount } from "./types";
 import type {
   ContributionBranch,
@@ -63,7 +63,7 @@ export type ContributionEditRecord = {
 };
 
 export async function loadContributionOptions(
-  access: ServiceAccess,
+  access: ContributionAccess,
   admin: ReturnType<typeof createAdminClient>,
 ) {
   const branches = await getAccessibleActiveBranches(
