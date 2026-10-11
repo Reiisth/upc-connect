@@ -22,6 +22,7 @@ import { TableActionButton } from "@/components/ui/table-action-button";
 
 import { requireAdministrationPermission } from "../access";
 import { getRolesOverview } from "./data";
+import { RoleLifecycleActions } from "./RoleLifecycleActions";
 
 export default function RolesPage() {
   return (
@@ -39,6 +40,11 @@ async function RolesContent() {
     "roles.update",
     "roles.manage_permissions",
   ]);
+  const canDeactivate = hasPermission(
+    access.permissions,
+    "roles.deactivate",
+  );
+  const canDelete = hasPermission(access.permissions, "roles.delete");
 
   return (
     <PageContainer>
@@ -122,15 +128,27 @@ async function RolesContent() {
                 <TableCell>{role.assigned_user_count}</TableCell>
 
                 <TableCell>
-                  {canEdit ? (
-                    <TableActionButton href={`/portal/administration/roles/${role.id}`}>
-                      Edit
-                    </TableActionButton>
-                  ) : (
-                    <TableActionButton href={`/portal/administration/roles/${role.id}`}>
-                      View
-                    </TableActionButton>
-                  )}
+                  <div className="flex flex-wrap items-center gap-3">
+                    {canEdit ? (
+                      <TableActionButton href={`/portal/administration/roles/${role.id}`}>
+                        Edit
+                      </TableActionButton>
+                    ) : (
+                      <TableActionButton href={`/portal/administration/roles/${role.id}`}>
+                        View
+                      </TableActionButton>
+                    )}
+
+                    <RoleLifecycleActions
+                      roleId={role.id}
+                      roleKey={role.key}
+                      roleName={role.display_name ?? role.name ?? role.key}
+                      isSystem={role.is_system}
+                      isActive={role.is_active}
+                      canDeactivate={canDeactivate}
+                      canDelete={canDelete}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

@@ -17,6 +17,7 @@ import {
   updateRoleMetadata,
   updateRolePermissions,
 } from "./actions";
+import { RoleLifecycleActions } from "./RoleLifecycleActions";
 import { RolePermissionsSelector } from "./RolePermissionsSelector";
 import type {
   PermissionRecord,
@@ -29,6 +30,8 @@ type RoleDetailEditorProps = {
   currentPermissionIds: string[];
   canUpdate: boolean;
   canManagePermissions: boolean;
+  canDeactivate: boolean;
+  canDelete: boolean;
 };
 
 type Feedback = {
@@ -47,6 +50,8 @@ export default function RoleDetailEditor({
   currentPermissionIds,
   canUpdate,
   canManagePermissions,
+  canDeactivate,
+  canDelete,
 }: RoleDetailEditorProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState(
@@ -85,6 +90,19 @@ export default function RoleDetailEditor({
         .filter((permission) => currentPermissionIds.includes(permission.id))
         .map((permission) => permission.id)
       : [];
+  const hasLifecycleControls =
+    (canDeactivate && !["system_admin", "member"].includes(role.key)) ||
+    (canDelete &&
+      !role.is_system &&
+      ![
+        "system_admin",
+        "member",
+        "pastor",
+        "accounting_officer",
+        "evangelism_officer",
+        "spiritual_ministry_officer",
+        "usher",
+      ].includes(role.key));
 
   function togglePermission(
     permissionId: string,
@@ -212,6 +230,30 @@ export default function RoleDetailEditor({
                 {role.is_active ? "Active" : "Inactive"}
               </StatusBadge>
             </div>
+
+            {hasLifecycleControls && (
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                    Role Lifecycle
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Change whether this role grants permissions or remove an unused custom role.
+                  </p>
+                </div>
+
+                <RoleLifecycleActions
+                  roleId={role.id}
+                  roleKey={role.key}
+                  roleName={role.display_name ?? role.key}
+                  isSystem={role.is_system}
+                  isActive={role.is_active}
+                  canDeactivate={canDeactivate}
+                  canDelete={canDelete}
+                  redirectAfterDelete
+                />
+              </div>
+            )}
 
             {role.is_system && (
               <p className="rounded-xl bg-[#EEF3FB] px-4 py-3 text-sm text-[#203264] dark:bg-slate-800 dark:text-slate-200">

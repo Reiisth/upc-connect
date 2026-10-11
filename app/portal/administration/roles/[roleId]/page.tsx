@@ -42,6 +42,11 @@ async function RoleDetailContent({
     access.permissions,
     "roles.manage_permissions",
   );
+  const canDeactivate = hasPermission(
+    access.permissions,
+    "roles.deactivate",
+  );
+  const canDelete = hasPermission(access.permissions, "roles.delete");
   const roleTitle = detail.role.display_name ?? detail.role.key;
 
   return (
@@ -61,6 +66,8 @@ async function RoleDetailContent({
         currentPermissionIds={detail.currentPermissionIds}
         canUpdate={canUpdate}
         canManagePermissions={canManagePermissions}
+        canDeactivate={canDeactivate}
+        canDelete={canDelete}
       />
     </PageContainer>
   );
