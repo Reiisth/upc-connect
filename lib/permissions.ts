@@ -46,6 +46,9 @@ export const PERMISSION_KEYS = [
   "services.create",
   "services.update",
   "services.view",
+  "weddings.create",
+  "weddings.update",
+  "weddings.view",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
