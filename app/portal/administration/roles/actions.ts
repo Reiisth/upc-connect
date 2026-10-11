@@ -2,10 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import {
-  hasPermission,
-  type PermissionKey,
-} from "@/lib/permissions";
+import { hasPermission } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permissions-server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -26,21 +23,6 @@ const MEMBER_PROTECTED_PERMISSION_KEYS = new Set([
   "profile.update",
 ]);
 
-const RBAC_ADMIN_PERMISSION_KEYS = [
-  "administration.view",
-  "roles.view",
-  "roles.update",
-  "roles.manage_permissions",
-  "roles.assign",
-  "roles.deactivate",
-  "roles.delete",
-] as const satisfies readonly PermissionKey[];
-
-const ALWAYS_ACTIVE_ROLE_KEYS = new Set([
-  "system_admin",
-  "member",
-]);
-
 type RoleMutationRecord = {
   id: string;
   key: string;
@@ -56,16 +38,6 @@ type PermissionMutationRecord = {
   id: string;
   key: string;
   is_active: boolean;
-};
-
-type RolePermissionLink = {
-  role_id: string | null;
-  permission_id: string | null;
-};
-
-type ActiveAccountProfile = {
-  id: string;
-  archived_at: string | null;
 };
 
 function getString(
@@ -260,195 +232,6 @@ async function getRolePermissionIds(
     (data ?? [])
       .map((link) => link.permission_id)
       .filter((permissionId): permissionId is string => Boolean(permissionId)),
-  );
-}
-
-async function getActiveRbacAdministratorRoleIds(
-  admin: ReturnType<typeof createAdminClient>,
-): Promise<Set<string>> {
-  const { data: activeRoles, error: rolesError } = await admin
-    .from("roles")
-    .select("id")
-    .eq("is_active", true);
-
-  if (rolesError) {
-    throw new Error(rolesError.message);
-  }
-
-  const activeRoleIds = (activeRoles ?? [])
-    .map((role) => role.id)
-    .filter((roleId): roleId is string => Boolean(roleId));
-
-  if (activeRoleIds.length === 0) {
-    return new Set();
-  }
-
-  const { data: permissionLinks, error: permissionLinksError } = await admin
-    .from("role_permissions")
-    .select("role_id, permission_id")
-    .in("role_id", activeRoleIds);
-
-  if (permissionLinksError) {
-    throw new Error(permissionLinksError.message);
-  }
-
-  const links = (permissionLinks ?? []) as RolePermissionLink[];
-  const permissionIds = Array.from(
-    new Set(
-      links
-        .map((link) => link.permission_id)
-        .filter((permissionId): permissionId is string => Boolean(permissionId)),
-    ),
-  );
-
-  if (permissionIds.length === 0) {
-    return new Set();
-  }
-
-  const { data: permissions, error: permissionsError } = await admin
-    .from("permissions")
-    .select("id, key, is_active")
-    .in("id", permissionIds);
-
-  if (permissionsError) {
-    throw new Error(permissionsError.message);
-  }
-
-  const activePermissionKeysByRole = new Map<string, Set<string>>();
-  const activePermissionKeysById = new Map(
-    ((permissions ?? []) as PermissionMutationRecord[])
-      .filter((permission) => permission.is_active)
-      .map((permission) => [permission.id, permission.key]),
-  );
-
-  for (const link of links) {
-    if (!link.role_id || !link.permission_id) continue;
-
-    const permissionKey = activePermissionKeysById.get(link.permission_id);
-
-    if (!permissionKey) continue;
-
-    const rolePermissionKeys =
-      activePermissionKeysByRole.get(link.role_id) ?? new Set<string>();
-
-    rolePermissionKeys.add(permissionKey);
-    activePermissionKeysByRole.set(link.role_id, rolePermissionKeys);
-  }
-
-  return new Set(
-    activeRoleIds.filter((roleId) => {
-      const rolePermissionKeys = activePermissionKeysByRole.get(roleId);
-
-      return Boolean(
-        rolePermissionKeys &&
-          RBAC_ADMIN_PERMISSION_KEYS.every((permissionKey) =>
-            rolePermissionKeys.has(permissionKey),
-          ),
-      );
-    }),
-  );
-}
-
-async function assertActiveRbacAdministratorAccountRemains(
-  admin: ReturnType<typeof createAdminClient>,
-  roleIds: Set<string>,
-  operation: "deactivated" | "deleted",
-) {
-  if (roleIds.size === 0) {
-    throw new Error(
-      `This role cannot be ${operation} because no active RBAC administrator role would remain.`,
-    );
-  }
-
-  const { data: userRoleRows, error: userRoleError } = await admin
-    .from("user_roles")
-    .select("user_id, role_id")
-    .in("role_id", Array.from(roleIds));
-
-  if (userRoleError) {
-    throw new Error(userRoleError.message);
-  }
-
-  const assignedUserIds = Array.from(
-    new Set(
-      (userRoleRows ?? [])
-        .map((row) => row.user_id)
-        .filter((userId): userId is string => Boolean(userId)),
-    ),
-  );
-
-  if (assignedUserIds.length === 0) {
-    throw new Error(
-      `This role cannot be ${operation} because no active account would retain RBAC administrator access.`,
-    );
-  }
-
-  const { data: profiles, error: profilesError } = await admin
-    .from("profiles")
-    .select("id, archived_at")
-    .in("id", assignedUserIds);
-
-  if (profilesError) {
-    throw new Error(profilesError.message);
-  }
-
-  const hasActiveAccount = ((profiles ?? []) as ActiveAccountProfile[]).some(
-    (profile) => profile.archived_at === null,
-  );
-
-  if (!hasActiveAccount) {
-    throw new Error(
-      `This role cannot be ${operation} because no active account would retain RBAC administrator access.`,
-    );
-  }
-}
-
-async function assertRoleLifecycleSafe(
-  admin: ReturnType<typeof createAdminClient>,
-  role: RoleMutationRecord,
-  operation: "deactivated" | "deleted",
-) {
-  const activeAdministratorRoleIds =
-    await getActiveRbacAdministratorRoleIds(admin);
-  const roleIsAdministratorCapable = activeAdministratorRoleIds.has(role.id);
-  const remainingRoleIds = new Set(activeAdministratorRoleIds);
-
-  remainingRoleIds.delete(role.id);
-
-  if (remainingRoleIds.size === 0) {
-    throw new Error(
-      `This role cannot be ${operation} because no active RBAC administrator role would remain.`,
-    );
-  }
-
-  if (roleIsAdministratorCapable) {
-    await assertActiveRbacAdministratorAccountRemains(
-      admin,
-      remainingRoleIds,
-      operation,
-    );
-  }
-}
-
-async function getAssignedUserIds(
-  admin: ReturnType<typeof createAdminClient>,
-  roleId: string,
-): Promise<string[]> {
-  const { data, error } = await admin
-    .from("user_roles")
-    .select("user_id")
-    .eq("role_id", roleId);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return Array.from(
-    new Set(
-      (data ?? [])
-        .map((row) => row.user_id)
-        .filter((userId): userId is string => Boolean(userId)),
-    ),
   );
 }
 
@@ -716,6 +499,61 @@ export async function updateRolePermissions(
   return { success: true };
 }
 
+type RoleLifecycleOperation = "activate" | "deactivate" | "delete";
+
+function translateRoleLifecycleError(message: string) {
+  const knownMessages = new Set([
+    "Role not found.",
+    "The system_admin role cannot be deactivated.",
+    "The member role cannot be deactivated.",
+    "System roles cannot be deleted.",
+    "This change would remove the last active RBAC administrator role.",
+    "This change would leave no active account with RBAC administration access.",
+    "Unsupported role lifecycle operation.",
+  ]);
+
+  if (knownMessages.has(message)) {
+    return message;
+  }
+
+  if (/^This role is assigned to \d+ account(s)?\./.test(message)) {
+    return message;
+  }
+
+  return "The role lifecycle change could not be completed. Refresh the page and try again.";
+}
+
+async function executeRoleLifecycleOperation(
+  admin: ReturnType<typeof createAdminClient>,
+  roleId: string,
+  operation: RoleLifecycleOperation,
+) {
+  const { data, error } = await admin.rpc("manage_role_lifecycle", {
+    target_role_id: roleId,
+    operation,
+  });
+
+  if (error) {
+    throw new Error(translateRoleLifecycleError(error.message));
+  }
+
+  if (
+    !data ||
+    typeof data !== "object" ||
+    Array.isArray(data) ||
+    !("success" in data) ||
+    data.success !== true
+  ) {
+    throw new Error(
+      "The role lifecycle change returned an invalid result. Refresh the page and try again.",
+    );
+  }
+
+  revalidateRolePaths(roleId);
+
+  return { success: true, roleId };
+}
+
 export async function setRoleActiveState(
   roleId: string,
   nextIsActive: boolean,
@@ -731,45 +569,12 @@ export async function setRoleActiveState(
   }
 
   const admin = createAdminClient();
-  const role = await loadRole(admin, roleId);
 
-  if (role.is_active === nextIsActive) {
-    throw new Error(
-      nextIsActive
-        ? "This role is already active."
-        : "This role is already inactive.",
-    );
-  }
-
-  if (!nextIsActive && ALWAYS_ACTIVE_ROLE_KEYS.has(role.key)) {
-    throw new Error("System administrator and member roles must remain active.");
-  }
-
-  if (!nextIsActive) {
-    await assertRoleLifecycleSafe(admin, role, "deactivated");
-  }
-
-  const { data, error } = await admin
-    .from("roles")
-    .update({ is_active: nextIsActive })
-    .eq("id", role.id)
-    .eq("is_active", role.is_active)
-    .select("id")
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  if (!data) {
-    throw new Error(
-      "The role changed before this action completed. Refresh the page and try again.",
-    );
-  }
-
-  revalidateRolePaths(role.id);
-
-  return { success: true };
+  return executeRoleLifecycleOperation(
+    admin,
+    roleId.trim(),
+    nextIsActive ? "activate" : "deactivate",
+  );
 }
 
 export async function deleteCustomRole(roleId: string) {
@@ -780,47 +585,6 @@ export async function deleteCustomRole(roleId: string) {
   }
 
   const admin = createAdminClient();
-  const role = await loadRole(admin, roleId);
 
-  if (role.is_system || PROTECTED_ROLE_KEYS.has(role.key)) {
-    throw new Error("System roles cannot be deleted.");
-  }
-
-  const assignedUserIds = await getAssignedUserIds(admin, role.id);
-
-  if (assignedUserIds.length > 0) {
-    throw new Error(
-      `This role is assigned to ${assignedUserIds.length} account${assignedUserIds.length === 1 ? "" : "s"}. Remove those assignments before deleting it.`,
-    );
-  }
-
-  await assertRoleLifecycleSafe(admin, role, "deleted");
-
-  const { data, error } = await admin
-    .from("roles")
-    .delete()
-    .eq("id", role.id)
-    .eq("is_system", false)
-    .select("id")
-    .maybeSingle();
-
-  if (error) {
-    if (error.code === "23503") {
-      throw new Error(
-        "This role is still referenced by another record and cannot be deleted.",
-      );
-    }
-
-    throw new Error(error.message);
-  }
-
-  if (!data) {
-    throw new Error(
-      "The custom role could not be deleted. Refresh the page and try again.",
-    );
-  }
-
-  revalidateRolePaths(role.id);
-
-  return { success: true };
+  return executeRoleLifecycleOperation(admin, roleId.trim(), "delete");
 }
