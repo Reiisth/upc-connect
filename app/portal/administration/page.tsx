@@ -3,6 +3,7 @@ import {
   Building2,
   SlidersHorizontal,
   Settings,
+  ShieldCheck,
   UsersRound,
 } from "lucide-react";
 
@@ -34,6 +35,10 @@ async function AdministrationContent() {
   const canManageStaffBranchAccess = hasPermission(
     permissions,
     "accounts.manage_branch_access",
+  );
+  const canViewRoles = hasPermission(
+    permissions,
+    "roles.view",
   );
 
   return (
@@ -80,6 +85,26 @@ async function AdministrationContent() {
 
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Assign staff accounts to one or more church branches.
+                </p>
+              </div>
+            </div>
+          </ClickableCard>
+        )}
+
+        {canViewRoles && (
+          <ClickableCard href="/portal/administration/roles">
+            <div className="flex items-start gap-4">
+              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h2 className="font-semibold text-[#203264] dark:text-slate-100">
+                  Roles &amp; Permissions
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Review role metadata and manage permission access.
                 </p>
               </div>
             </div>
