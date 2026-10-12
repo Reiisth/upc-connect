@@ -13,6 +13,7 @@ const portalDestinations = [
   { permission: "attendance.view", href: "/portal/attendance" },
   { permission: "contributions.view", href: "/portal/contributions" },
   { permission: "baptisms.view", href: "/portal/baptisms" },
+  { permission: "weddings.view", href: "/portal/weddings" },
   { permission: "reports.view", href: "/portal/reports" },
   { permission: "administration.view", href: "/portal/administration" },
   { permission: "profile.view", href: "/portal/profile" },
