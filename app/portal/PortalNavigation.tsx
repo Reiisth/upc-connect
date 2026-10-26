@@ -11,7 +11,6 @@ import {
   ClipboardCheck,
   HandCoins,
   Droplets,
-  HeartHandshake,
   BarChart3,
   Settings,
   UserRound,
@@ -79,12 +78,6 @@ const navigationItems: {
       href: "/portal/baptisms",
       icon: Droplets,
       requiredPermission: "baptisms.view",
-    },
-    {
-      label: "Weddings",
-      href: "/portal/weddings",
-      icon: HeartHandshake,
-      requiredPermission: "weddings.view",
     },
     {
       label: "Reports",
