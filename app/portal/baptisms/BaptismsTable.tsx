@@ -168,7 +168,7 @@ export default function BaptismsTable({
           <button
             type="button"
             onClick={clearFilters}
-            className="self-start text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline dark:text-slate-400 dark:hover:text-white"
+            className="self-start text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline"
           >
             Clear filters
           </button>
@@ -209,25 +209,25 @@ export default function BaptismsTable({
               <TableRow key={record.id}>
                 <TableCell>
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 rounded-xl bg-[#EEF3FB] p-2 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+                    <div className="mt-0.5 rounded-xl bg-[#EEF3FB] p-2 text-[#203264]">
                       <Droplets className="h-4 w-4" />
                     </div>
 
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-900 dark:text-slate-100">
+                      <p className="font-medium text-slate-900">
                         {record.memberName}
                       </p>
 
                       {(!record.memberIsArchived &&
                         record.memberStatus !== "active") ||
                       record.memberIsArchived ? (
-                        <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                        <p className="mt-1 text-xs text-amber-700">
                           Historical member link
                         </p>
                       ) : null}
 
                       {record.notes && (
-                        <p className="mt-1 max-w-xs truncate text-xs text-slate-500 dark:text-slate-400">
+                        <p className="mt-1 max-w-xs truncate text-xs text-slate-500">
                           {record.notes}
                         </p>
                       )}
@@ -250,12 +250,12 @@ export default function BaptismsTable({
                 <TableCell>
                   {record.branch ? (
                     <div>
-                      <p className="font-medium text-slate-800 dark:text-slate-200">
+                      <p className="font-medium text-slate-800">
                         {record.branch.name}
                       </p>
 
                       {record.branch.code && (
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        <p className="mt-1 text-xs text-slate-500">
                           {record.branch.code}
                         </p>
                       )}
@@ -289,7 +289,7 @@ export default function BaptismsTable({
                       Edit
                     </TableActionButton>
                   ) : (
-                    <span className="text-sm text-slate-400 dark:text-slate-500">
+                    <span className="text-sm text-slate-400">
                       View only
                     </span>
                   )}

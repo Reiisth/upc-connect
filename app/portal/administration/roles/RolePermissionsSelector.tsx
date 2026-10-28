@@ -71,7 +71,7 @@ export function RolePermissionsSelector({
 
   if (permissions.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+      <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
         No active permissions are available.
       </div>
     );
@@ -82,11 +82,11 @@ export function RolePermissionsSelector({
       {Array.from(groups.entries()).map(([groupKey, groupPermissions]) => (
         <div key={groupKey}>
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="font-prompt text-sm font-semibold text-[#203264] dark:text-slate-100">
+            <h3 className="font-prompt text-sm font-semibold text-[#203264]">
               {getGroupLabel(groupKey)}
             </h3>
 
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-slate-500">
               {groupPermissions.length} permission{groupPermissions.length === 1 ? "" : "s"}
             </span>
           </div>
@@ -103,8 +103,8 @@ export function RolePermissionsSelector({
                   className={`flex items-start gap-3 rounded-2xl border p-4 transition ${
                     disabled || isUnavailable
                       ? "cursor-not-allowed opacity-70"
-                      : "cursor-pointer hover:border-[#5D94E8] dark:hover:border-[#8DB5F0]"
-                  } border-slate-200 dark:border-slate-700`}
+                      : "cursor-pointer hover:border-[#5D94E8]"
+                  } border-slate-200`}
                 >
                   <Checkbox
                     checked={selected}
@@ -116,7 +116,7 @@ export function RolePermissionsSelector({
 
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                      <span className="text-sm font-medium text-slate-800">
                         {getPermissionLabel(permission)}
                       </span>
 
@@ -129,12 +129,12 @@ export function RolePermissionsSelector({
                       )}
                     </span>
 
-                    <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                    <span className="mt-1 block text-xs text-slate-500">
                       {permission.key}
                     </span>
 
                     {permission.description && (
-                      <span className="mt-2 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      <span className="mt-2 block text-xs leading-5 text-slate-500">
                         {permission.description}
                       </span>
                     )}

@@ -14,7 +14,7 @@ export default function ProfileSkeleton() {
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
-            className="h-full min-h-[150px] w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:min-h-[190px]"
+            className="h-full min-h-[150px] w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:min-h-[190px]"
           >
             <div className="flex h-full flex-col items-center justify-center text-center">
               <Skeleton className="h-14 w-14 rounded-full sm:h-20 sm:w-20" />

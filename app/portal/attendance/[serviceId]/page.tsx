@@ -112,7 +112,7 @@ async function AttendanceServiceContent({
                 <>
                   <span>{service.branch.name}</span>
                   {service.branch.code && (
-                    <span className="mt-1 block text-xs font-normal text-slate-500 dark:text-slate-400">
+                    <span className="mt-1 block text-xs font-normal text-slate-500">
                       {service.branch.code}
                     </span>
                   )}
@@ -138,11 +138,11 @@ async function AttendanceServiceContent({
           </div>
 
           {service.notes && (
-            <div className="mt-5 border-t border-slate-200 pt-5 dark:border-slate-700">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <div className="mt-5 border-t border-slate-200 pt-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Notes
               </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">
+              <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">
                 {service.notes}
               </p>
             </div>
@@ -170,10 +170,10 @@ function ServiceDetail({
 }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <div className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+      <div className="mt-2 text-sm font-medium text-slate-900">
         {children}
       </div>
     </div>

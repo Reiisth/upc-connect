@@ -9,6 +9,8 @@ import {
   UserRoundCog,
   CalendarDays,
   ClipboardCheck,
+  Activity,
+  ClipboardPen,
   HandCoins,
   Droplets,
   BarChart3,
@@ -66,6 +68,18 @@ const navigationItems: {
       href: "/portal/attendance",
       icon: ClipboardCheck,
       requiredPermission: "attendance.view",
+    },
+    {
+      label: "Inactivity Monitoring",
+      href: "/portal/inactivity",
+      icon: Activity,
+      requiredPermission: "inactivity.view",
+    },
+    {
+      label: "Follow-ups",
+      href: "/portal/follow-ups",
+      icon: ClipboardPen,
+      requiredPermission: "follow_ups.view",
     },
     {
       label: "Contributions",

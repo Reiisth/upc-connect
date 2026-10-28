@@ -91,14 +91,14 @@ async function BaptismsContent() {
           label="Water Baptisms"
           value={summary.waterCount}
           icon={<Waves />}
-          valueClassName="text-blue-700 dark:text-blue-400"
+          valueClassName="text-blue-700"
         />
 
         <BaptismSummaryCard
           label="Holy Ghost Baptisms"
           value={summary.holyGhostCount}
           icon={<HeartHandshake />}
-          valueClassName="text-emerald-700 dark:text-emerald-400"
+          valueClassName="text-emerald-700"
         />
       </div>
 
@@ -124,7 +124,7 @@ function BaptismSummaryCard({
   label,
   value,
   icon,
-  valueClassName = "text-[#203264] dark:text-slate-100",
+  valueClassName = "text-[#203264]",
 }: {
   label: string;
   value: number;
@@ -136,7 +136,7 @@ function BaptismSummaryCard({
       <CardContent className="p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               {label}
             </p>
 
@@ -145,7 +145,7 @@ function BaptismSummaryCard({
             </p>
           </div>
 
-          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] dark:bg-slate-800 dark:text-slate-200 [&_svg]:h-5 [&_svg]:w-5">
+          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
             {icon}
           </div>
         </div>

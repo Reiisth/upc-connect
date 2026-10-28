@@ -185,7 +185,7 @@ export default function MemberAccountsTable({
           <button
             type="button"
             onClick={clearFilters}
-            className="text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline dark:text-slate-400 dark:hover:text-white"
+            className="text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline"
           >
             Clear filters
           </button>

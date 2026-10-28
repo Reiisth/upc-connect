@@ -180,21 +180,21 @@ async function MembersPageContent() {
           label="Active Members"
           value={activeMembers}
           icon={<UserCheck />}
-          valueClassName="text-emerald-700 dark:text-emerald-400"
+          valueClassName="text-emerald-700"
         />
 
         <MemberStatCard
           label="Connected"
           value={connectedMembers}
           icon={<CircleCheckBig />}
-          valueClassName="text-green-700 dark:text-green-400"
+          valueClassName="text-green-700"
         />
 
         <MemberStatCard
           label="Incomplete"
           value={incompleteProfiles}
           icon={<CircleUserRound />}
-          valueClassName="text-amber-700 dark:text-amber-400"
+          valueClassName="text-amber-700"
         />
       </div>
 
@@ -218,13 +218,13 @@ function MemberStatCard({
   label,
   value,
   icon,
-  valueClassName = "text-[#203264] dark:text-slate-100",
+  valueClassName = "text-[#203264]",
 }: MemberStatCardProps) {
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          <p className="text-xs font-medium text-slate-500">
             {label}
           </p>
 
@@ -235,7 +235,7 @@ function MemberStatCard({
           </p>
         </div>
 
-        <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] dark:bg-slate-800 dark:text-slate-200 [&_svg]:h-4 [&_svg]:w-4">
+        <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] [&_svg]:h-4 [&_svg]:w-4">
           {icon}
         </div>
       </div>

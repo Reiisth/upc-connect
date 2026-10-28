@@ -46,10 +46,10 @@ async function NewRoleContent() {
         canManagePermissions={canManagePermissions}
       />
 
-      <p className="text-sm text-slate-500 dark:text-slate-400">
+      <p className="text-sm text-slate-500">
         <Link
           href="/portal/administration/roles"
-          className="font-medium text-[#203264] underline-offset-4 hover:underline dark:text-[#8DB5F0]"
+          className="font-medium text-[#203264] underline-offset-4 hover:underline"
         >
           Return to the roles list
         </Link>

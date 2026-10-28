@@ -18,22 +18,22 @@ type StatusBadgeProps = {
 
 const variantClasses: Record<StatusBadgeVariant, string> = {
   default:
-    "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    "bg-slate-100 text-slate-700",
 
   success:
-    "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300",
+    "bg-green-50 text-green-700",
 
   warning:
-    "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+    "bg-amber-50 text-amber-700",
 
   danger:
-    "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300",
+    "bg-red-50 text-red-700",
 
   info:
-    "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
+    "bg-blue-50 text-blue-700",
 
   muted:
-    "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+    "bg-slate-100 text-slate-500",
 };
 
 export function StatusBadge({

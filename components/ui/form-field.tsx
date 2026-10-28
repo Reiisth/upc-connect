@@ -30,7 +30,7 @@ export function FormField({
     >
       <label
         htmlFor={htmlFor}
-        className="block text-sm font-medium text-slate-700 dark:text-slate-200"
+        className="block text-sm font-medium text-slate-700"
       >
         {label}
 
@@ -47,11 +47,11 @@ export function FormField({
       {children}
 
       {error ? (
-        <p className="text-sm text-red-600 dark:text-red-400">
+        <p className="text-sm text-red-600">
           {error}
         </p>
       ) : description ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-slate-500">
           {description}
         </p>
       ) : null}

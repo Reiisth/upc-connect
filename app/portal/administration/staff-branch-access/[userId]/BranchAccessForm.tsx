@@ -67,7 +67,7 @@ export default function BranchAccessForm({
           return (
             <label
               key={branch.id}
-              className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-[#5D94E8] dark:border-slate-700 dark:bg-slate-900"
+              className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-[#5D94E8]"
             >
               <input
                 type="checkbox"
@@ -77,12 +77,12 @@ export default function BranchAccessForm({
               />
 
               <div className="min-w-0">
-                <p className="font-medium text-slate-800 dark:text-slate-100">
+                <p className="font-medium text-slate-800">
                   {branch.name}
                 </p>
 
                 {branch.code && (
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-0.5 text-xs text-slate-500">
                     {branch.code}
                   </p>
                 )}

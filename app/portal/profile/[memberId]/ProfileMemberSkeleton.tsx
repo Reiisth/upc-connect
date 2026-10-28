@@ -11,7 +11,7 @@ export default function ProfileMemberSkeleton() {
       </div>
 
       <div className="space-y-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <Skeleton className="h-6 w-44" />
 
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -24,7 +24,7 @@ export default function ProfileMemberSkeleton() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <Skeleton className="h-6 w-36" />
 
           <div className="mt-5 grid gap-5 sm:grid-cols-2">

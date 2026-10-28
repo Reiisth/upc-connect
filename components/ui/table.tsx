@@ -6,7 +6,7 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+  <div className="w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
     <table
       ref={ref}
       className={cn("w-full text-sm", className)}
@@ -23,7 +23,7 @@ const TableHeader = React.forwardRef<
   <thead
     ref={ref}
     className={cn(
-      "bg-slate-50 text-left text-slate-600 dark:bg-slate-800/70 dark:text-slate-300",
+      "bg-slate-50 text-left text-slate-600",
       className,
     )}
     {...props}
@@ -38,7 +38,7 @@ const TableBody = React.forwardRef<
   <tbody
     ref={ref}
     className={cn(
-      "divide-y divide-slate-200 dark:divide-slate-700",
+      "divide-y divide-slate-200",
       className,
     )}
     {...props}
@@ -53,7 +53,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "transition hover:bg-slate-50/70 dark:hover:bg-slate-800/50",
+      "transition hover:bg-slate-50/70",
       className,
     )}
     {...props}
@@ -68,7 +68,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400",
+      "whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500",
       className,
     )}
     {...props}
@@ -83,7 +83,7 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      "px-4 py-4 align-middle text-slate-700 dark:text-slate-300",
+      "px-4 py-4 align-middle text-slate-700",
       className,
     )}
     {...props}
@@ -98,7 +98,7 @@ const TableCaption = React.forwardRef<
   <caption
     ref={ref}
     className={cn(
-      "mt-4 text-sm text-slate-500 dark:text-slate-400",
+      "mt-4 text-sm text-slate-500",
       className,
     )}
     {...props}

@@ -149,7 +149,7 @@ async function StaffBranchAccessContent() {
               return (
                 <TableRow key={staffMember.id}>
                   <TableCell>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">
+                    <p className="font-medium text-slate-900">
                       {staffMember.display_name ?? "Unnamed Staff"}
                     </p>
                   </TableCell>
@@ -170,7 +170,7 @@ async function StaffBranchAccessContent() {
 
                   <TableCell>
                     {isSystemAdmin ? (
-                      <span className="text-sm text-slate-400 dark:text-slate-500">
+                      <span className="text-sm text-slate-400">
                         Automatic access
                       </span>
                     ) : (

@@ -157,11 +157,11 @@ export function StaffAccessManagement({
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#5D94E8]" />
 
             <div>
-              <h2 className="font-prompt text-lg font-semibold text-[#203264] dark:text-slate-100">
+              <h2 className="font-prompt text-lg font-semibold text-[#203264]">
                 Role Access
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-slate-500">
                 Manage the staff roles assigned to this account.
               </p>
             </div>
@@ -169,7 +169,7 @@ export function StaffAccessManagement({
 
           <div className="space-y-5">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 Current non-member roles
               </p>
 
@@ -182,7 +182,7 @@ export function StaffAccessManagement({
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-2 text-sm text-slate-500">
                   No non-member roles are assigned.
                 </p>
               )}
@@ -201,7 +201,7 @@ export function StaffAccessManagement({
                 className="space-y-5"
               >
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     Staff roles available to manage
                   </p>
 
@@ -214,7 +214,7 @@ export function StaffAccessManagement({
                       return (
                         <label
                           key={role.id}
-                          className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 transition hover:border-[#5D94E8] dark:border-slate-700 dark:hover:border-[#8DB5F0]"
+                          className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 transition hover:border-[#5D94E8]"
                         >
                           <span className="flex items-center gap-3">
                             <Checkbox
@@ -230,7 +230,7 @@ export function StaffAccessManagement({
                               aria-label={`Assign ${role.displayName} role`}
                             />
 
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                            <span className="text-sm font-medium text-slate-800">
                               {role.displayName}
                             </span>
                           </span>
@@ -245,7 +245,7 @@ export function StaffAccessManagement({
                     })}
                   </div>
 
-                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-3 text-xs text-slate-500">
                     Other non-member role assignments are preserved and are not editable here.
                   </p>
                 </div>
@@ -280,26 +280,26 @@ export function StaffAccessManagement({
             <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-[#5D94E8]" />
 
             <div>
-              <h2 className="font-prompt text-lg font-semibold text-[#203264] dark:text-slate-100">
+              <h2 className="font-prompt text-lg font-semibold text-[#203264]">
                 Branch Access
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-slate-500">
                 Manage the church branches this account can access.
               </p>
             </div>
           </div>
 
           {isSystemAdmin ? (
-            <div className="flex items-start gap-3 rounded-2xl bg-[#EEF3FB] p-4 dark:bg-slate-800">
-              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#203264] dark:text-slate-200" />
+            <div className="flex items-start gap-3 rounded-2xl bg-[#EEF3FB] p-4">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#203264]" />
 
               <div>
                 <StatusBadge variant="info">
                   All active branches
                 </StatusBadge>
 
-                <p className="mt-2 text-sm text-[#203264] dark:text-slate-200">
+                <p className="mt-2 text-sm text-[#203264]">
                   System administrators automatically have access to every active church branch. Manual branch controls are unavailable for this account.
                 </p>
               </div>
@@ -326,7 +326,7 @@ export function StaffAccessManagement({
                 className="space-y-5"
               >
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                   Current assignments
                 </p>
 
@@ -343,14 +343,14 @@ export function StaffAccessManagement({
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-sm text-slate-500">
                     No explicit branch assignments are currently set.
                   </p>
                 )}
               </div>
 
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                   Branches available to manage
                 </p>
 
@@ -369,10 +369,10 @@ export function StaffAccessManagement({
                     return (
                       <label
                         key={branch.id}
-                        className={`flex items-center justify-between gap-3 rounded-2xl border p-3 transition dark:border-slate-700 ${
+                        className={`flex items-center justify-between gap-3 rounded-2xl border p-3 transition ${
                           isDisabled
-                            ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60 dark:bg-slate-900"
-                            : "cursor-pointer border-slate-200 hover:border-[#5D94E8] dark:hover:border-[#8DB5F0]"
+                            ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60"
+                            : "cursor-pointer border-slate-200 hover:border-[#5D94E8]"
                         }`}
                       >
                         <span className="flex min-w-0 items-center gap-3">
@@ -391,11 +391,11 @@ export function StaffAccessManagement({
                           />
 
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                            <span className="block truncate text-sm font-medium text-slate-800">
                               {branch.name}
                             </span>
 
-                            <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                            <span className="mt-1 block text-xs text-slate-500">
                               {branch.code
                                 ? `Code: ${branch.code}`
                                 : "No branch code"}
@@ -416,7 +416,7 @@ export function StaffAccessManagement({
                   })}
                 </div>
 
-                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-3 text-xs text-slate-500">
                   Active branches in your branch scope can be added or removed. Existing assignments outside your scope remain preserved and cannot be changed here. Inactive branches remain visible while assigned and cannot be newly assigned.
                 </p>
               </div>
@@ -452,10 +452,10 @@ export function StaffAccessManagement({
 
 function ArchivedAccessNotice({ description }: { description: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
+    <div className="flex items-start gap-3 rounded-2xl bg-slate-100 p-4">
       <StatusBadge variant="muted">Archived</StatusBadge>
 
-      <p className="text-sm text-slate-600 dark:text-slate-300">
+      <p className="text-sm text-slate-600">
         {description}
       </p>
     </div>
@@ -464,10 +464,10 @@ function ArchivedAccessNotice({ description }: { description: string }) {
 
 function ReadOnlyAccessNotice({ description }: { description: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
+    <div className="flex items-start gap-3 rounded-2xl bg-slate-100 p-4">
       <StatusBadge variant="muted">Read-only</StatusBadge>
 
-      <p className="text-sm text-slate-600 dark:text-slate-300">
+      <p className="text-sm text-slate-600">
         {description}
       </p>
     </div>
@@ -490,7 +490,7 @@ function ReadOnlyBranchAccess({
       <ReadOnlyAccessNotice description={description} />
 
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
           Branch access
         </p>
 
@@ -501,14 +501,14 @@ function ReadOnlyBranchAccess({
             return (
               <div
                 key={branch.id}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 dark:border-slate-700"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                  <p className="truncate text-sm font-medium text-slate-800">
                     {branch.name}
                   </p>
 
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-xs text-slate-500">
                     {branch.code
                       ? `Code: ${branch.code}`
                       : "No branch code"}
@@ -545,8 +545,8 @@ function FeedbackMessage({ feedback }: { feedback: Feedback }) {
       role={feedback.type === "error" ? "alert" : "status"}
       className={
         feedback.type === "error"
-          ? "rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
-          : "rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950/40 dark:text-green-300"
+          ? "rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700"
+          : "rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700"
       }
     >
       {feedback.message}

@@ -33,7 +33,7 @@ export function PageHeader({
       {backHref && (
         <Link
           href={backHref}
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-[#203264] dark:text-slate-400 dark:hover:text-slate-100"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-[#203264]"
         >
           <ArrowLeft className="h-4 w-4" />
           {backLabel}
@@ -49,12 +49,12 @@ export function PageHeader({
             </div>
           )}
 
-          <h1 className="font-radio-canada text-3xl font-semibold tracking-tight text-[#203264] dark:text-slate-100">
+          <h1 className="font-radio-canada text-3xl font-semibold tracking-tight text-[#203264]">
             {title}
           </h1>
 
           {description && (
-            <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-2 max-w-2xl text-sm text-slate-500">
               {description}
             </p>
           )}

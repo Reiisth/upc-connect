@@ -21,7 +21,6 @@ export function ClickableCard({
         "block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition",
         "hover:-translate-y-0.5 hover:border-[#5D94E8] hover:shadow-md",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5D94E8] focus-visible:ring-offset-2",
-        "dark:border-slate-700 dark:bg-slate-900 dark:hover:border-[#5D94E8]",
         className,
       )}
     >

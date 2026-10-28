@@ -285,7 +285,7 @@ export default function QrAttendanceScanner({
         </div>
 
         {cameraMessage && (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500">
             {cameraMessage}
           </p>
         )}
@@ -306,7 +306,7 @@ export default function QrAttendanceScanner({
         {result?.outcome === "recorded" && (
           <div
             role="status"
-            className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
+            className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
           >
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
@@ -321,7 +321,7 @@ export default function QrAttendanceScanner({
         {result?.outcome === "duplicate" && (
           <div
             role="status"
-            className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+            className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
           >
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
@@ -343,7 +343,7 @@ export default function QrAttendanceScanner({
         {errorMessage && (
           <div
             role="alert"
-            className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+            className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
           >
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
             <p>{errorMessage}</p>
@@ -352,7 +352,7 @@ export default function QrAttendanceScanner({
 
         <form
           onSubmit={handleManualSubmit}
-          className="border-t border-slate-200 pt-5 dark:border-slate-700"
+          className="border-t border-slate-200 pt-5"
         >
           <FormField
             label="Manual QR Value"

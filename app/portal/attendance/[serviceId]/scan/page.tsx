@@ -96,7 +96,7 @@ async function QrAttendanceContent({
                 <>
                   <span>{service.branch.name}</span>
                   {service.branch.code && (
-                    <span className="mt-1 block text-xs font-normal text-slate-500 dark:text-slate-400">
+                    <span className="mt-1 block text-xs font-normal text-slate-500">
                       {service.branch.code}
                     </span>
                   )}
@@ -155,10 +155,10 @@ function ServiceDetail({
 }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <div className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+      <div className="mt-2 text-sm font-medium text-slate-900">
         {children}
       </div>
     </div>

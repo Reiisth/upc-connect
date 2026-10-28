@@ -135,17 +135,17 @@ export default function RoleCreateForm({
           </FormField>
         </div>
 
-        <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+        <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
           <Checkbox
             checked={isStaff}
             onCheckedChange={(checked) => setIsStaff(checked === true)}
             disabled={isPending}
           />
           <span>
-            <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">
+            <span className="block text-sm font-medium text-slate-800">
               Staff role
             </span>
-            <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">
+            <span className="mt-1 block text-sm text-slate-500">
               Staff roles can be assigned to staff accounts through the existing Accounts workflow.
             </span>
           </span>
@@ -168,7 +168,7 @@ export default function RoleCreateForm({
             onToggle={handlePermissionToggle}
           />
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
             No initial permissions will be assigned because your account does not have roles.manage_permissions.
           </div>
         )}
@@ -177,7 +177,7 @@ export default function RoleCreateForm({
       {error && (
         <p
           role="alert"
-          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
+          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
         >
           {error}
         </p>

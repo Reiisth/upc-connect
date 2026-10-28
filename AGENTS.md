@@ -82,7 +82,7 @@ Design rules:
 - Page titles use Radio Canada.
 - Brand gradient: #5D94E8 → #203264
 - Background: #EEF3FB
-- Support dark mode.
+- Use light mode only, regardless of system or saved theme preferences.
 - Main portal pages do not show a back button.
 - Nested pages use PageHeader back navigation.
 - Table headers are uppercase.

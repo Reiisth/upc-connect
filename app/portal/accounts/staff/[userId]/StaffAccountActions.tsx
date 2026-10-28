@@ -86,7 +86,7 @@ export function StaffAccountActions({
             {isArchived ? "Restore Account" : "Archive Account"}
           </Button>
         ) : (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500">
             {isArchived
               ? "Restore is unavailable because you do not have the required account permission."
               : "Archiving is unavailable because you do not have the required account permission."}
@@ -96,7 +96,7 @@ export function StaffAccountActions({
         {actionError && (
           <p
             role="alert"
-            className="basis-full rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
+            className="basis-full rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700"
           >
             {actionError}
           </p>

@@ -259,7 +259,7 @@ async function StaffAccountsContent() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardContent className="p-5">
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2 text-slate-500">
               <UserRoundCog className="h-4 w-4" />
 
               <p className="text-xs font-medium uppercase tracking-wide">
@@ -267,7 +267,7 @@ async function StaffAccountsContent() {
               </p>
             </div>
 
-            <p className="mt-3 text-3xl font-semibold text-[#203264] dark:text-slate-100">
+            <p className="mt-3 text-3xl font-semibold text-[#203264]">
               {totalAccounts}
             </p>
           </CardContent>
@@ -275,7 +275,7 @@ async function StaffAccountsContent() {
 
         <Card>
           <CardContent className="p-5">
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2 text-slate-500">
               <KeyRound className="h-4 w-4" />
 
               <p className="text-xs font-medium uppercase tracking-wide">
@@ -283,7 +283,7 @@ async function StaffAccountsContent() {
               </p>
             </div>
 
-            <p className="mt-3 text-3xl font-semibold text-[#203264] dark:text-slate-100">
+            <p className="mt-3 text-3xl font-semibold text-[#203264]">
               {totalRoleAssignments}
             </p>
           </CardContent>
@@ -395,9 +395,9 @@ function StaffAccountsSkeleton() {
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="min-w-[1200px]">
-          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+          <div className="border-b border-slate-200 px-4 py-3">
             <div className="grid grid-cols-8 gap-4">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-4 w-36" />
@@ -410,7 +410,7 @@ function StaffAccountsSkeleton() {
             </div>
           </div>
 
-          <div className="divide-y divide-slate-200 dark:divide-slate-700">
+          <div className="divide-y divide-slate-200">
             {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}

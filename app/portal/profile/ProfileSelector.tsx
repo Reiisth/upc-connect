@@ -57,10 +57,9 @@ export default function ProfileGrid({ members }: ProfileGridProps) {
     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5D94E8] focus-visible:ring-offset-2
     active:scale-[0.99]
     disabled:cursor-not-allowed disabled:opacity-60
-    dark:bg-slate-900
     ${isComplete
-                ? "border-slate-200 dark:border-slate-700"
-                : "border-amber-200 dark:border-amber-800"
+                ? "border-slate-200"
+                : "border-amber-200"
               }
   `}
           >
@@ -68,13 +67,13 @@ export default function ProfileGrid({ members }: ProfileGridProps) {
               <div
                 className={`flex h-14 w-14 items-center justify-center rounded-full text-lg font-semibold sm:h-20 sm:w-20 sm:text-2xl ${isComplete
                     ? "bg-brand-gradient text-white"
-                    : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
+                    : "bg-amber-100 text-amber-700"
                   }`}
               >
                 {initials}
               </div>
 
-              <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] dark:text-slate-100 sm:text-base">
+              <h2 className="mt-3 line-clamp-1 text-sm font-semibold text-[#203264] sm:text-base">
                 {member.first_name} {member.last_name}
               </h2>
 

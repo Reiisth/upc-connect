@@ -119,7 +119,7 @@ async function ManageStaffBranchAccessContent({
         }
       >
         {isSystemAdmin ? (
-          <div className="rounded-xl bg-[#EEF3FB] p-4 text-sm text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+          <div className="rounded-xl bg-[#EEF3FB] p-4 text-sm text-[#203264]">
             System administrators automatically have access to all active branches.
           </div>
         ) : (

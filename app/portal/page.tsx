@@ -11,6 +11,8 @@ const portalDestinations = [
   { permission: "accounts.view", href: "/portal/accounts" },
   { permission: "services.view", href: "/portal/services" },
   { permission: "attendance.view", href: "/portal/attendance" },
+  { permission: "inactivity.view", href: "/portal/inactivity" },
+  { permission: "follow_ups.view", href: "/portal/follow-ups" },
   { permission: "contributions.view", href: "/portal/contributions" },
   { permission: "baptisms.view", href: "/portal/baptisms" },
   { permission: "reports.view", href: "/portal/reports" },

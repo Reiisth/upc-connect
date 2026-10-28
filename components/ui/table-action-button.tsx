@@ -28,13 +28,13 @@ type TableActionButtonProps = ButtonProps | LinkProps;
 
 const variantClasses: Record<TableActionVariant, string> = {
   default:
-    "text-slate-600 hover:text-[#203264] dark:text-slate-300 dark:hover:text-white",
+    "text-slate-600 hover:text-[#203264]",
 
   danger:
-    "text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300",
+    "text-red-600 hover:text-red-700",
 
   success:
-    "text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
+    "text-green-600 hover:text-green-700",
 };
 
 const baseClasses =

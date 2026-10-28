@@ -91,7 +91,7 @@ export function StaffDisplayNameEditor({
   return (
     <div className="sm:col-span-2 lg:col-span-3">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
           Display Name
         </p>
 
@@ -145,13 +145,13 @@ export function StaffDisplayNameEditor({
           </FormActions>
         </form>
       ) : (
-        <p className="mt-1 text-sm text-slate-800 dark:text-slate-200">
+        <p className="mt-1 text-sm text-slate-800">
           {savedDisplayName.trim() || "Unnamed Staff"}
         </p>
       )}
 
       {!canEdit && (
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-slate-500">
           {readOnlyReason ??
             "Display-name editing is unavailable for this account."}
         </p>
@@ -160,7 +160,7 @@ export function StaffDisplayNameEditor({
       {message && !isEditing && (
         <p
           role="status"
-          className="mt-2 text-sm text-emerald-700 dark:text-emerald-300"
+          className="mt-2 text-sm text-emerald-700"
         >
           {message}
         </p>

@@ -131,7 +131,7 @@ export function ContributionForm({
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-200"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
           <p className="font-semibold">Unable to save contribution</p>
           <p className="mt-1">{actionState.error}</p>
@@ -202,7 +202,7 @@ export function ContributionForm({
             description="Optional. The selected service must belong to the same branch."
           >
             {existingCancelledService && (
-              <p className="mb-2 text-xs text-amber-700 dark:text-amber-300">
+              <p className="mb-2 text-xs text-amber-700">
                 This contribution retains a historical link to a cancelled
                 service. You may leave it unchanged or select another service.
               </p>

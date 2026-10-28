@@ -232,12 +232,12 @@ export default function RoleDetailEditor({
             </div>
 
             {hasLifecycleControls && (
-              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                  <p className="text-sm font-medium text-slate-800">
                     Role Lifecycle
                   </p>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-sm text-slate-500">
                     Change whether this role grants permissions or remove an unused custom role.
                   </p>
                 </div>
@@ -256,23 +256,23 @@ export default function RoleDetailEditor({
             )}
 
             {role.is_system && (
-              <p className="rounded-xl bg-[#EEF3FB] px-4 py-3 text-sm text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+              <p className="rounded-xl bg-[#EEF3FB] px-4 py-3 text-sm text-[#203264]">
                 This built-in role keeps its system classification and key. Its staff classification cannot be changed here.
               </p>
             )}
 
             {!role.is_system && (
-              <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+              <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
                 <Checkbox
                   checked={isStaff}
                   onCheckedChange={(checked) => setIsStaff(checked === true)}
                   disabled={!canUpdate || isPending}
                 />
                 <span>
-                  <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                  <span className="block text-sm font-medium text-slate-800">
                     Staff role
                   </span>
-                  <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">
+                  <span className="mt-1 block text-sm text-slate-500">
                     Staff roles are available to the existing Accounts role-assignment workflow.
                   </span>
                 </span>
@@ -304,13 +304,13 @@ export default function RoleDetailEditor({
 
         <CardContent className="space-y-5">
           {role.key === "system_admin" && (
-            <p className="rounded-xl bg-[#EEF3FB] px-4 py-3 text-sm text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+            <p className="rounded-xl bg-[#EEF3FB] px-4 py-3 text-sm text-[#203264]">
               Existing system administrator permissions cannot be removed in this phase. Additional active permissions may be assigned.
             </p>
           )}
 
           {role.key === "member" && (
-            <p className="rounded-xl bg-[#EEF3FB] px-4 py-3 text-sm text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+            <p className="rounded-xl bg-[#EEF3FB] px-4 py-3 text-sm text-[#203264]">
               The member role must retain profile.view and profile.update.
             </p>
           )}
@@ -340,7 +340,7 @@ export default function RoleDetailEditor({
           )}
 
           {!canManagePermissions && (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-slate-500">
               You have view-only access. roles.manage_permissions is required to change mappings.
             </p>
           )}
@@ -363,8 +363,8 @@ function FeedbackMessage({ feedback }: { feedback: Feedback }) {
     <p
       role="status"
       className={feedback.type === "error"
-        ? "rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
-        : "rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700 dark:bg-green-950/40 dark:text-green-300"}
+        ? "rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
+        : "rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700"}
     >
       {feedback.message}
     </p>

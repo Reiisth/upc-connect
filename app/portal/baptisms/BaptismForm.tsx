@@ -109,7 +109,7 @@ export function BaptismForm({
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-200"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
           <p className="font-semibold">Unable to save baptism record</p>
           <p className="mt-1">{actionState.error}</p>
@@ -159,7 +159,7 @@ export function BaptismForm({
             description="Only active members are available for new records."
           >
             {existingHistoricalMember && (
-              <p className="mb-2 text-xs text-amber-700 dark:text-amber-300">
+              <p className="mb-2 text-xs text-amber-700">
                 This record preserves a historical link to an inactive or
                 archived member. You may leave the member unchanged.
               </p>
@@ -207,7 +207,7 @@ export function BaptismForm({
                 />
                 <div
                   id="baptism-type"
-                  className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700"
                 >
                   {formatBaptismType(baptismType)}
                 </div>

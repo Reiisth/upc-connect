@@ -367,7 +367,7 @@ export default function MembersTable({
                       <button
                         type="button"
                         onClick={() => setSelectedMember(member)}
-                        className="font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline dark:text-slate-100 dark:hover:text-[#8DB5F0]"
+                        className="font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline"
                       >
                         {fullName}
                       </button>
@@ -466,7 +466,7 @@ export default function MembersTable({
       )}
       {filteredMembers.length > 0 && (
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500">
             Showing{" "}
             {(currentPage - 1) * itemsPerPage + 1}
             {"–"}
@@ -492,7 +492,7 @@ export default function MembersTable({
               Previous
             </Button>
 
-            <span className="px-2 text-sm text-slate-500 dark:text-slate-400">
+            <span className="px-2 text-sm text-slate-500">
               Page {currentPage} of {totalPages}
             </span>
 

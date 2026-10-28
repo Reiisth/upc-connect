@@ -140,14 +140,14 @@ async function ServicesContent() {
           label="Scheduled"
           value={scheduledCount}
           icon={<Clock3 />}
-          valueClassName="text-amber-700 dark:text-amber-400"
+          valueClassName="text-amber-700"
         />
 
         <ServiceSummaryCard
           label="Ongoing"
           value={ongoingCount}
           icon={<CheckCircle2 />}
-          valueClassName="text-emerald-700 dark:text-emerald-400"
+          valueClassName="text-emerald-700"
         />
       </div>
 
@@ -172,7 +172,7 @@ function ServiceSummaryCard({
   label,
   value,
   icon,
-  valueClassName = "text-[#203264] dark:text-slate-100",
+  valueClassName = "text-[#203264]",
 }: {
   label: string;
   value: number;
@@ -184,7 +184,7 @@ function ServiceSummaryCard({
       <CardContent className="p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               {label}
             </p>
 
@@ -193,7 +193,7 @@ function ServiceSummaryCard({
             </p>
           </div>
 
-          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] dark:bg-slate-800 dark:text-slate-200 [&_svg]:h-5 [&_svg]:w-5">
+          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
             {icon}
           </div>
         </div>

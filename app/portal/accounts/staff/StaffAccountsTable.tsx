@@ -273,7 +273,7 @@ export default function StaffAccountsTable({
             <button
               type="button"
               onClick={clearFilters}
-              className="text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline dark:text-slate-400 dark:hover:text-white"
+              className="text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline"
             >
               Clear filters
             </button>
@@ -366,11 +366,11 @@ export default function StaffAccountsTable({
                   </StatusBadge>
                 </TableCell>
 
-                <TableCell className="whitespace-nowrap text-slate-600 dark:text-slate-400">
+                <TableCell className="whitespace-nowrap text-slate-600">
                   {formatDate(account.lastSignInAt)}
                 </TableCell>
 
-                <TableCell className="whitespace-nowrap text-slate-600 dark:text-slate-400">
+                <TableCell className="whitespace-nowrap text-slate-600">
                   {formatDate(account.createdAt)}
                 </TableCell>
 
@@ -387,7 +387,7 @@ export default function StaffAccountsTable({
                       Restore
                     </TableActionButton>
                   ) : account.status === "deleted" || !canArchive ? (
-                    <span className="text-sm text-slate-400 dark:text-slate-500">
+                    <span className="text-sm text-slate-400">
                       Unavailable
                     </span>
                   ) : (

@@ -255,11 +255,11 @@ async function StaffAccountDetailsContent({
             <UserRoundCog className="h-5 w-5 text-[#5D94E8]" />
 
             <div>
-              <h2 className="font-prompt text-lg font-semibold text-[#203264] dark:text-slate-100">
+              <h2 className="font-prompt text-lg font-semibold text-[#203264]">
                 Account Information
               </h2>
 
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-slate-500">
                 Read-only authentication and account details.
               </p>
             </div>
@@ -323,11 +323,11 @@ async function StaffAccountDetailsContent({
 
       <Card>
         <CardContent className="p-5 sm:p-6">
-          <h2 className="font-prompt text-lg font-semibold text-[#203264] dark:text-slate-100">
+          <h2 className="font-prompt text-lg font-semibold text-[#203264]">
             Account Actions
           </h2>
 
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-2 text-sm text-slate-500">
             Archive or restore this staff account without removing its access records.
           </p>
 
@@ -342,7 +342,7 @@ async function StaffAccountDetailsContent({
               />
             </div>
           ) : (
-            <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-5 text-sm text-slate-500">
               Account archive and restore actions are unavailable because this account has no profile record.
             </p>
           )}
@@ -361,11 +361,11 @@ function InfoItem({
 }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
         {label}
       </p>
 
-      <div className="mt-1 text-sm text-slate-800 dark:text-slate-200">
+      <div className="mt-1 text-sm text-slate-800">
         {children}
       </div>
     </div>

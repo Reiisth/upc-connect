@@ -54,16 +54,16 @@ async function AdministrationContent() {
         {canViewBranches && (
           <ClickableCard href="/portal/administration/branches">
             <div className="flex items-start gap-4">
-              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
                 <Building2 className="h-5 w-5" />
               </div>
 
               <div>
-                <h2 className="font-semibold text-[#203264] dark:text-slate-100">
+                <h2 className="font-semibold text-[#203264]">
                   Church Branches
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-sm text-slate-500">
                   View, create, edit, and manage church branches.
                 </p>
               </div>
@@ -74,16 +74,16 @@ async function AdministrationContent() {
         {canManageStaffBranchAccess && (
           <ClickableCard href="/portal/administration/staff-branch-access">
             <div className="flex items-start gap-4">
-              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
                 <UsersRound className="h-5 w-5" />
               </div>
 
               <div>
-                <h2 className="font-semibold text-[#203264] dark:text-slate-100">
+                <h2 className="font-semibold text-[#203264]">
                   Staff Branch Access
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-sm text-slate-500">
                   Assign staff accounts to one or more church branches.
                 </p>
               </div>
@@ -94,16 +94,16 @@ async function AdministrationContent() {
         {canViewRoles && (
           <ClickableCard href="/portal/administration/roles">
             <div className="flex items-start gap-4">
-              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
                 <ShieldCheck className="h-5 w-5" />
               </div>
 
               <div>
-                <h2 className="font-semibold text-[#203264] dark:text-slate-100">
+                <h2 className="font-semibold text-[#203264]">
                   Roles &amp; Permissions
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-sm text-slate-500">
                   Review role metadata and manage permission access.
                 </p>
               </div>
@@ -113,16 +113,16 @@ async function AdministrationContent() {
 
         <ClickableCard href="/portal/field-management">
           <div className="flex items-start gap-4">
-            <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+            <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
               <SlidersHorizontal className="h-5 w-5" />
             </div>
 
             <div>
-              <h2 className="font-semibold text-[#203264] dark:text-slate-100">
+              <h2 className="font-semibold text-[#203264]">
                 Field Management
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-slate-500">
                 Configure the fields used in member profiles.
               </p>
             </div>

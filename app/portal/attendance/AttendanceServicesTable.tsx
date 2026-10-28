@@ -178,7 +178,7 @@ export default function AttendanceServicesTable({
             <button
               type="button"
               onClick={clearFilters}
-              className="text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline dark:text-slate-400 dark:hover:text-white"
+              className="text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline"
             >
               Clear filters
             </button>
@@ -215,17 +215,17 @@ export default function AttendanceServicesTable({
               <TableRow key={service.id}>
                 <TableCell>
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 rounded-xl bg-[#EEF3FB] p-2 text-[#203264] dark:bg-slate-800 dark:text-slate-200">
+                    <div className="mt-0.5 rounded-xl bg-[#EEF3FB] p-2 text-[#203264]">
                       <ClipboardCheck className="h-4 w-4" />
                     </div>
 
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-900 dark:text-slate-100">
+                      <p className="font-medium text-slate-900">
                         {service.name}
                       </p>
 
                       {service.notes && (
-                        <p className="mt-1 max-w-xs truncate text-xs text-slate-500 dark:text-slate-400">
+                        <p className="mt-1 max-w-xs truncate text-xs text-slate-500">
                           {service.notes}
                         </p>
                       )}
@@ -240,12 +240,12 @@ export default function AttendanceServicesTable({
                 <TableCell>
                   {service.branch ? (
                     <div>
-                      <p className="font-medium text-slate-800 dark:text-slate-200">
+                      <p className="font-medium text-slate-800">
                         {service.branch.name}
                       </p>
 
                       {service.branch.code && (
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        <p className="mt-1 text-xs text-slate-500">
                           {service.branch.code}
                         </p>
                       )}

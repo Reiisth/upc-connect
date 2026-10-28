@@ -202,7 +202,7 @@ export default function StaffAccountForm({
                 <label
                   key={role.id}
                   htmlFor={`role-${role.id}`}
-                  className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 transition hover:border-[#5D94E8] dark:border-slate-700 dark:hover:border-[#8DB5F0]"
+                  className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 transition hover:border-[#5D94E8]"
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <Checkbox
@@ -217,7 +217,7 @@ export default function StaffAccountForm({
                       }}
                     />
 
-                    <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                    <span className="truncate text-sm font-medium text-slate-800">
                       {role.displayName}
                     </span>
                   </span>
@@ -232,13 +232,13 @@ export default function StaffAccountForm({
         </FormField>
 
         {hasSystemAdmin && (
-          <div className="flex items-start gap-3 rounded-2xl bg-[#EEF3FB] p-4 dark:bg-slate-800">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#203264] dark:text-slate-200" />
+          <div className="flex items-start gap-3 rounded-2xl bg-[#EEF3FB] p-4">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#203264]" />
             <div>
               <StatusBadge variant="info">
                 System administrator selected
               </StatusBadge>
-              <p className="mt-2 text-sm text-[#203264] dark:text-slate-200">
+              <p className="mt-2 text-sm text-[#203264]">
                 This account will automatically have access to all active church branches. Explicit branch assignments are not required.
               </p>
             </div>
@@ -251,11 +251,11 @@ export default function StaffAccountForm({
         description="Assign active branches for staff who do not have system administrator access."
       >
         {hasSystemAdmin ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4">
             <Building2 className="h-5 w-5 shrink-0 text-[#5D94E8]" />
             <div>
               <StatusBadge variant="info">All active branches</StatusBadge>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              <p className="mt-2 text-sm text-slate-600">
                 Existing explicit branch rows are preserved, but system administrator access is evaluated across every active branch.
               </p>
             </div>
@@ -274,7 +274,7 @@ export default function StaffAccountForm({
                   <label
                     key={branch.id}
                     htmlFor={`branch-${branch.id}`}
-                    className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 transition hover:border-[#5D94E8] dark:border-slate-700 dark:hover:border-[#8DB5F0]"
+                    className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 transition hover:border-[#5D94E8]"
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <Checkbox
@@ -294,10 +294,10 @@ export default function StaffAccountForm({
                       />
 
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                        <span className="block truncate text-sm font-medium text-slate-800">
                           {branch.name}
                         </span>
-                        <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                        <span className="mt-1 block text-xs text-slate-500">
                           {branch.code
                             ? `Code: ${branch.code}`
                             : "No branch code"}
@@ -314,11 +314,11 @@ export default function StaffAccountForm({
             </div>
           </FormField>
         ) : (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <StatusBadge variant="warning">
               No active branches available
             </StatusBadge>
-            <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
+            <p className="mt-2 text-sm text-amber-800">
               Create an active branch before assigning a non-system-admin staff account.
             </p>
           </div>
@@ -328,7 +328,7 @@ export default function StaffAccountForm({
       {error && (
         <p
           role="alert"
-          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
+          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
         >
           {error}
         </p>

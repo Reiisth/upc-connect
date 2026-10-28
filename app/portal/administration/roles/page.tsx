@@ -90,11 +90,11 @@ async function RolesContent() {
               <TableRow key={role.id}>
                 <TableCell>
                   <div className="min-w-[180px]">
-                    <p className="font-medium text-slate-900 dark:text-slate-100">
+                    <p className="font-medium text-slate-900">
                       {role.display_name ?? role.name ?? role.key}
                     </p>
                     {role.description && (
-                      <p className="mt-1 max-w-sm text-xs text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 max-w-sm text-xs text-slate-500">
                         {role.description}
                       </p>
                     )}
@@ -102,7 +102,7 @@ async function RolesContent() {
                 </TableCell>
 
                 <TableCell>
-                  <code className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  <code className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700">
                     {role.key}
                   </code>
                 </TableCell>

@@ -130,12 +130,12 @@ async function BranchesContent() {
                 <TableRow key={branch.id}>
                   <TableCell>
                     <div>
-                      <p className="font-medium text-slate-900 dark:text-slate-100">
+                      <p className="font-medium text-slate-900">
                         {branch.name}
                       </p>
 
                       {branch.street_address && (
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        <p className="mt-1 text-xs text-slate-500">
                           {branch.street_address}
                         </p>
                       )}
@@ -195,7 +195,7 @@ async function BranchesContent() {
                         </form>
                       </div>
                     ) : (
-                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                      <span className="text-sm text-slate-500">
                         View only
                       </span>
                     )}

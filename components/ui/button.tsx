@@ -13,19 +13,19 @@ const buttonVariants = cva(
           "bg-gradient-to-r from-[#5D94E8] to-[#203264] text-white shadow-sm hover:opacity-90",
 
         destructive:
-          "border border-red-200 bg-red-50 text-red-700 shadow-sm hover:bg-red-100 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60",
+          "border border-red-200 bg-red-50 text-red-700 shadow-sm hover:bg-red-100",
 
         outline:
-          "border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
+          "border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50",
 
         secondary:
-          "border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
+          "border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50",
 
         ghost:
-          "bg-transparent text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+          "bg-transparent text-slate-600 hover:bg-slate-100",
 
         link:
-          "text-[#203264] underline-offset-4 hover:underline dark:text-[#8DB5F0]",
+          "text-[#203264] underline-offset-4 hover:underline",
       },
 
       size: {

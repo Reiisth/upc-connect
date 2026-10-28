@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Prompt, Radio_Canada } from "next/font/google";
-import { ThemeProvider } from "next-themes";
 
 import "./globals.css";
 
@@ -33,18 +32,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body
         className={`${prompt.variable} ${radioCanada.variable} antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );

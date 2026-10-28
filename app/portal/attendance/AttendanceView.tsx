@@ -164,28 +164,28 @@ export default function AttendanceView({
           label="Present"
           value={summary.present}
           icon={<CheckCircle2 />}
-          valueClassName="text-emerald-700 dark:text-emerald-400"
+          valueClassName="text-emerald-700"
         />
 
         <AttendanceSummaryCard
           label="Late"
           value={summary.late}
           icon={<Clock3 />}
-          valueClassName="text-amber-700 dark:text-amber-400"
+          valueClassName="text-amber-700"
         />
 
         <AttendanceSummaryCard
           label="Excused"
           value={summary.excused}
           icon={<CheckCircle2 />}
-          valueClassName="text-blue-700 dark:text-blue-400"
+          valueClassName="text-blue-700"
         />
 
         <AttendanceSummaryCard
           label="Absent (inferred)"
           value={summary.absent}
           icon={<SearchX />}
-          valueClassName="text-slate-600 dark:text-slate-300"
+          valueClassName="text-slate-600"
         />
       </div>
 
@@ -275,7 +275,7 @@ export default function AttendanceView({
             {errorMessage && (
               <p
                 role="alert"
-                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
               >
                 {errorMessage}
               </p>
@@ -284,14 +284,14 @@ export default function AttendanceView({
             {successMessage && (
               <p
                 role="status"
-                className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
+                className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
               >
                 {successMessage}
               </p>
             )}
 
             <FormActions>
-              <span className="mr-auto text-sm text-slate-500 dark:text-slate-400">
+              <span className="mr-auto text-sm text-slate-500">
                 Method: Manual
               </span>
 
@@ -317,7 +317,7 @@ export default function AttendanceView({
       )}
 
       {canCorrect && !canRecord && recordableRows.length === 0 && (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-slate-500">
           No existing attendance records are available for correction. An
           account with attendance.record must add the first record for a
           member.
@@ -389,7 +389,7 @@ export default function AttendanceView({
                 return (
                   <TableRow key={row.member.id}>
                     <TableCell>
-                      <p className="font-medium text-slate-900 dark:text-slate-100">
+                      <p className="font-medium text-slate-900">
                         {formatMemberName(row.member)}
                       </p>
                     </TableCell>
@@ -439,7 +439,7 @@ export default function AttendanceView({
                           Record
                         </TableActionButton>
                       ) : (
-                        <span className="text-sm text-slate-400 dark:text-slate-500">
+                        <span className="text-sm text-slate-400">
                           View only
                         </span>
                       )}
@@ -459,7 +459,7 @@ function AttendanceSummaryCard({
   label,
   value,
   icon,
-  valueClassName = "text-[#203264] dark:text-slate-100",
+  valueClassName = "text-[#203264]",
 }: {
   label: string;
   value: number;
@@ -471,7 +471,7 @@ function AttendanceSummaryCard({
       <CardContent className="p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               {label}
             </p>
 
@@ -480,7 +480,7 @@ function AttendanceSummaryCard({
             </p>
           </div>
 
-          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] dark:bg-slate-800 dark:text-slate-200 [&_svg]:h-5 [&_svg]:w-5">
+          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
             {icon}
           </div>
         </div>
