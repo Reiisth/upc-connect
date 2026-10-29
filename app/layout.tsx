@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Prompt, Radio_Canada } from "next/font/google";
+import localFont from "next/font/local";
 
 import "./globals.css";
 
@@ -13,16 +13,22 @@ export const metadata: Metadata = {
   description: "Integrated church management system for UPC Batangas",
 };
 
-const prompt = Prompt({
+const prompt = localFont({
+  src: [
+    { path: "../public/fonts/prompt/Prompt-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/prompt/Prompt-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/prompt/Prompt-SemiBold.woff2", weight: "600", style: "normal" },
+    { path: "../public/fonts/prompt/Prompt-Bold.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-prompt",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-const radioCanada = Radio_Canada({
+const radioCanada = localFont({
+  src: "../public/fonts/radio-canada/RadioCanada-Variable.woff2",
+  weight: "300 700",
+  style: "normal",
   variable: "--font-radio-canada",
-  subsets: ["latin"],
   display: "swap",
 });
 
