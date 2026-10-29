@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { requirePermission } from "@/lib/permissions-server";
 import { getUserBranchScope } from "@/lib/branch-access";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -18,7 +19,29 @@ async function allRows<T>(page: (from: number, to: number) => Page<T>): Promise<
   }
 }
 
-/** No module-specific permission gates: Reports permission and scope are validated by the sole public entry point. */
+/** Shared only within a server render; both public reads require Reports permission. */
+const getAnalyticsContext = cache(async () => {
+  const access = await requirePermission("reports.view");
+  try {
+    const scope = await getUserBranchScope(access.user.id);
+    const admin = createAdminClient();
+    const ids = [...new Set(scope.branchIds)];
+    const rows = ids.length ? await allRows((from, to) => admin.from("church_branches")
+      .select("id, name, code, is_active, inactivity_threshold_weeks").in("id", ids).order("id").range(from, to)) : [];
+    const branches: AnalyticsBranch[] = rows.map((row) => ({ id: row.id, name: row.name, code: row.code,
+      isActive: row.is_active, inactivityThresholdWeeks: row.inactivity_threshold_weeks }));
+    return { admin, branches, branchIds: ids };
+  } catch (error) {
+    console.error("Analytics branch access failed", error);
+    throw new Error("Unable to load reporting branch access. Please try again.");
+  }
+});
+
+export async function getAnalyticsBranchOptions(): Promise<readonly AnalyticsBranch[]> {
+  return (await getAnalyticsContext()).branches;
+}
+
+/** No module-specific permission gates: Reports permission and scope are validated by the public entry points. */
 async function loadInactivityInputs(admin: ReturnType<typeof createAdminClient>, branches: readonly AnalyticsBranch[], today: string): Promise<MemberInactivitySummary[]> {
   const ids = branches.filter((branch) => branch.isActive).map((branch) => branch.id);
   if (!ids.length) return [];
@@ -44,20 +67,15 @@ async function loadInactivityInputs(admin: ReturnType<typeof createAdminClient>,
 }
 
 export async function getAnalyticsOverview(request: AnalyticsRequest = {}): Promise<AnalyticsOverview> {
-  const access = await requirePermission("reports.view");
-  const scope = await getUserBranchScope(access.user.id);
+  const context = await getAnalyticsContext();
   const asOfDate = analyticsToday(new Date());
   const range = resolveAnalyticsDateRange(request.range, asOfDate);
   const grouping = request.grouping ?? "week";
   validateAnalyticsGrouping(grouping);
-  if (request.branchId !== undefined && !scope.branchIds.includes(request.branchId)) throw new Error("The selected reporting branch is outside your access.");
-  const ids = request.branchId ? [request.branchId] : [...new Set(scope.branchIds)];
+  if (request.branchId !== undefined && !context.branchIds.includes(request.branchId)) throw new Error("The selected reporting branch is outside your access.");
   try {
-    const admin = createAdminClient();
-    const branchRows = ids.length ? await allRows((from, to) => admin.from("church_branches")
-      .select("id, name, code, is_active, inactivity_threshold_weeks").in("id", ids).order("id").range(from, to)) : [];
-    const branches: AnalyticsBranch[] = branchRows.map((row) => ({ id: row.id, name: row.name, code: row.code,
-      isActive: row.is_active, inactivityThresholdWeeks: row.inactivity_threshold_weeks }));
+    const { admin } = context;
+    const branches = request.branchId ? context.branches.filter((branch) => branch.id === request.branchId) : context.branches;
     if (request.branchId && !branches.length) throw new Error("Reporting branch no longer exists.");
     if (!branches.length) return assembleAnalytics({ aggregates: emptyAnalyticsAggregates(), branches, inactivity: [], range, grouping, asOfDate });
     const [{ data, error }, inactivity] = await Promise.all([

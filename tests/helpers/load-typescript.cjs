@@ -19,6 +19,7 @@ exports.loadTypeScript = function loadTypeScript(entry, stubs = {}) {
     }).outputText;
     vm.runInNewContext(code, {
       module, exports: module.exports, process, console, URLSearchParams,
+      AbortController, setTimeout, clearTimeout,
       require(name) {
         if (Object.hasOwn(stubs, name)) return stubs[name];
         if (!name.startsWith('.') && !name.startsWith('@/')) return require(name);

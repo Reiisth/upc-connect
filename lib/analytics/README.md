@@ -14,13 +14,18 @@ const overview = await getAnalyticsOverview({
 
 ## Access and deployment
 
-The sole public server entry requires the authenticated current account's
+The public server reads require the authenticated current account's
 `reports.view`, then resolves existing `getUserBranchScope`. It never uses
 operational role names or treats Reports permission as global branch access.
 No source-module permissions are additionally required. As a result Reports
 permission intentionally grants access to aggregate financial and operational
 data within the permitted scope. No individual names, contact details, notes,
 performer accounts or raw source records are returned.
+
+`getAnalyticsBranchOptions()` returns only accessible branch descriptors for the
+Reports selector. It shares a React request-scoped context with the overview,
+so one server render reuses authorization, scope and branch metadata. No access
+context is cached across requests.
 
 Apply `20261029090000_add_reports_analytics.sql` before using the entry point.
 It creates the read-only, `STABLE SECURITY INVOKER` aggregation RPC
