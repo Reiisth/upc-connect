@@ -54,6 +54,7 @@ export default function ReportsDashboard({ overview: data }: { overview: Analyti
 
     <nav aria-label="Report sections" className="flex flex-wrap gap-2">{[
       ["membership", "Membership"], ["attendance", "Attendance"], ["weekly", "Weekly Participation"], ["inactivity", "Inactivity"], ["follow-ups", "Follow-ups"], ["contributions", "Contributions"], ["baptisms", "Baptisms"], ...(multiple ? [["branches", "Branch Comparison"]] : []),
+      ["ai-decision-support", "AI Decision Support"],
     ].map(([id, label]) => <a key={id} href={`#${id}`} className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-[#365FA6] transition hover:border-blue-300 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2">{label}</a>)}</nav>
 
     <Section id="membership" title="Membership" description="Current member counts and records added during the selected period. Record creation is not a guaranteed official membership start date.">

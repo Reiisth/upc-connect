@@ -10,10 +10,13 @@ import { Select } from "@/components/ui/select";
 import type { AnalyticsBranch } from "@/lib/analytics/types";
 import { REPORT_PRESETS, type ReportFilterValues } from "./filters";
 
-export default function ReportFilters({ branches, values }: { branches: readonly AnalyticsBranch[]; values: ReportFilterValues }) {
+export default function ReportFilters({ branches, values, onFiltersChange }: {
+  branches: readonly AnalyticsBranch[]; values: ReportFilterValues; onFiltersChange?: () => void;
+}) {
   const [preset, setPreset] = useState(values.preset);
   return <Card><CardContent className="p-5">
-    <form action="/portal/reports" method="get" className="grid min-w-0 items-end gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Report filters">
+    <form action="/portal/reports" method="get" onChange={onFiltersChange} onSubmit={onFiltersChange}
+      className="grid min-w-0 items-end gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Report filters">
       <FormField label="Branch" htmlFor="report-branch" className="min-w-0">
         <Select id="report-branch" name="branch" defaultValue={values.branch}>
           <option value="">All Accessible Branches</option>

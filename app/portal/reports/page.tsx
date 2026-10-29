@@ -9,8 +9,8 @@ import { analyticsToday } from "@/lib/analytics/date-range";
 import { getAnalyticsBranchOptions, getAnalyticsOverview } from "@/lib/analytics/server";
 import type { AnalyticsOverview } from "@/lib/analytics/types";
 import { parseReportFilters, reportFilterUrl, type ReportSearchParams } from "./filters";
-import ReportFilters from "./ReportFilters";
 import ReportsDashboard from "./ReportsDashboard";
+import ReportsView from "./ReportsView";
 import ReportsLoading from "./loading";
 
 type PageProps = { searchParams: Promise<ReportSearchParams> };
@@ -33,7 +33,11 @@ async function ReportsContent({ searchParams }: PageProps) {
   return <PageContainer className="min-w-0">
     <PageHeader eyebrow="Insights" eyebrowIcon={<ChartNoAxesCombined className="h-4 w-4" />} title="Reports & Analytics"
       description="Membership, attendance, member care, and giving across your accessible branches." />
-    <ReportFilters key={reportFilterUrl(parsed.values)} branches={branches} values={parsed.values} />
+    <ReportsView key={reportFilterUrl(parsed.values)} branches={branches} values={parsed.values}
+      insightFilters={overview && parsed.request ? {
+        ...(parsed.request.branchId ? { branchId: parsed.request.branchId } : {}),
+        range: { preset: "custom", from: overview.range.from, to: overview.range.to }, grouping: overview.grouping,
+      } : null}>
     {parsed.error ? <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
       <p className="font-semibold">Check your report filters</p><p className="mt-1">{parsed.error}</p>
     </div> : loadFailed ? <div role="alert" className="rounded-2xl border border-red-200 bg-white p-6">
@@ -42,5 +46,6 @@ async function ReportsContent({ searchParams }: PageProps) {
       <Button asChild variant="outline" className="mt-4"><a href={reportFilterUrl(parsed.values)}>Try again</a></Button>
     </div> : !branches.length ? <EmptyState title="No branch access" description="Your account has no accessible branches for reporting." /> :
       overview && <ReportsDashboard overview={overview} />}
+    </ReportsView>
   </PageContainer>;
 }

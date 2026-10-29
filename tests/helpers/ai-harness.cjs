@@ -64,7 +64,7 @@ async function withGeminiEnv(overrides, work) {
 }
 
 function aiServerHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)], isSystemAdmin = false,
-  rpcFailure = false, branchFailure = false, aggregates = emptyAnalyticsAggregates(), providerFailure = false, response } = {}) {
+  rpcFailure = false, branchFailure = false, aggregates = emptyAnalyticsAggregates(), providerFailure = false, response, providerWork } = {}) {
   const calls = { permissions: [], scope: [], reads: [], rpc: [], provider: [], sdk: 0 };
   const db = { church_branches: branchOptions.map((row) => ({ id: row.id, name: row.name, code: row.code, is_active: row.isActive, inactivity_threshold_weeks: row.inactivityThresholdWeeks })), members: [] };
   class Query {
@@ -93,11 +93,13 @@ function aiServerHarness({ permissions = ['reports.view'], scopeIds = [id(1), id
   const navigation = { unstable_rethrow: (error) => { if (error?.digest === 'NEXT_REDIRECT') throw error; }, redirect: (url) => { throw new Error(`redirect:${url}`); } };
   const provider = { requestGeminiDecisionSupport: async (input) => {
     calls.provider.push(input);
+    if (providerWork) return providerWork(input);
     if (providerFailure) throw new Error('PRIVATE_PROVIDER_ERROR test-placeholder-key-not-real FULL_PROMPT');
     return response ?? JSON.stringify({ executiveSummary: 'The supplied report has limited activity.', keyFindings: [], recommendations: [], limitations: ['Advisory interpretation only; human review is required.'] });
   } };
   const api = loadTypeScript('lib/ai/server.ts', { ...serverOnly, '@/lib/permissions-server': permissionBoundary,
-    '@/lib/analytics/server': analytics, './provider': provider, 'next/navigation': navigation });
+    '@/lib/analytics/server': analytics, './provider': provider, 'next/navigation': navigation,
+    '@/lib/analytics/date-range': { ...dates, analyticsToday: () => today } });
   function loadReportsPage() {
     return loadTypeScript('app/portal/reports/page.tsx', { ...serverOnly,
       '@/lib/analytics/server': analytics, '@/lib/analytics/date-range': { ...dates, analyticsToday: () => today },

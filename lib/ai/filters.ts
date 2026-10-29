@@ -8,10 +8,12 @@ export function validateDecisionSupportFilters(value: unknown = {}): AnalyticsRe
   const parsed = decisionSupportFiltersSchema.safeParse(value);
   if (!parsed.success) throw new DecisionSupportError("INVALID_FILTERS");
   try {
-    resolveAnalyticsDateRange(parsed.data.range, analyticsToday(new Date()));
-    validateAnalyticsGrouping(parsed.data.grouping ?? "week");
+    const range = resolveAnalyticsDateRange(parsed.data.range, analyticsToday(new Date()));
+    const grouping = parsed.data.grouping ?? "week";
+    validateAnalyticsGrouping(grouping);
+    // Equivalent presets/custom dates share a cooldown and cannot drift during the request.
+    return { ...parsed.data, range: { preset: "custom", from: range.from, to: range.to }, grouping };
   } catch {
     throw new DecisionSupportError("INVALID_FILTERS");
   }
-  return parsed.data;
 }

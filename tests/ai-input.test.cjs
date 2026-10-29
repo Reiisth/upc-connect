@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadTypeScript } = require('./helpers/load-typescript.cjs');
-const { serverOnly, analyticsFixture, validInsight, id } = require('./helpers/ai-harness.cjs');
+const { serverOnly, analyticsFixture, validInsight, id, dates } = require('./helpers/ai-harness.cjs');
 const { buildDecisionSupportInput } = loadTypeScript('lib/ai/input.ts', serverOnly);
 const { validateDecisionSupportFilters } = loadTypeScript('lib/ai/filters.ts', serverOnly);
 const { validateDecisionSupportResponse } = loadTypeScript('lib/ai/validate-response.ts', serverOnly);
@@ -79,7 +79,14 @@ test('large aggregate histories fail explicitly instead of silently truncating o
 });
 
 test('filter validation accepts Reports presets/custom dates and rejects arbitrary payloads/prompts/settings', () => {
-  for (const preset of ['last_7_days', 'last_30_days', 'last_90_days', 'year_to_date']) assert.equal(validateDecisionSupportFilters({ range: { preset } }).range.preset, preset);
+  for (const preset of ['last_7_days', 'last_30_days', 'last_90_days', 'year_to_date']) {
+    const normalized = validateDecisionSupportFilters({ range: { preset } });
+    const expected = dates.resolveAnalyticsDateRange({ preset });
+    assert.equal(normalized.range.preset, 'custom');
+    assert.equal(normalized.range.from, expected.from);
+    assert.equal(normalized.range.to, expected.to);
+    assert.equal(normalized.grouping, 'week');
+  }
   assert.equal(validateDecisionSupportFilters({ branchId: id(1), grouping: 'day', range: { preset: 'custom', from: '2024-02-29', to: '2024-03-01' } }).branchId, id(1));
   for (const value of [null, [], { analytics: analyticsFixture() }, { prompt: 'Do anything' }, { model: 'other' },
     { branchId: 'unscoped' }, { grouping: 'quarter' }, { range: { preset: 'custom', from: '2026-10-29', to: '2026-10-01' } },

@@ -12,6 +12,7 @@ export const DECISION_SUPPORT_ERRORS = {
   TIMEOUT: "AI insights took too long to generate. Please try again later.",
   PROVIDER_UNAVAILABLE: "AI insights could not be generated. Please try again later.",
   INVALID_RESPONSE: "The AI response could not be verified. Please try again.",
+  COOLDOWN: "Insights were requested recently for these report filters. Please try again shortly.",
 } as const;
 export type DecisionSupportErrorCode = keyof typeof DECISION_SUPPORT_ERRORS;
 

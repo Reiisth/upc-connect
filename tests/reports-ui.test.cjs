@@ -166,6 +166,7 @@ function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)]
     './date-range': { ...dates, analyticsToday: () => today },
   });
   const Page = loadTypeScript('app/portal/reports/page.tsx', { ...withLinks,
+    './actions': { generateReportInsights: () => assert.fail('Normal Reports rendering must not request AI insights') },
     '@/lib/analytics/server': api,
     '@/lib/analytics/date-range': { ...dates, analyticsToday: () => today },
     'next/navigation': { redirect: (url) => { throw new Error(`redirect:${url}`); } },
@@ -174,7 +175,10 @@ function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)]
     const element = Page({ searchParams: Promise.resolve(params) });
     assert.equal(element.type, React.Suspense);
     const content = element.props.children;
-    return renderToStaticMarkup(await content.type(content.props));
+    const page = await content.type(content.props);
+    const view = React.Children.toArray(page.props.children).at(-1);
+    calls.insightFilters = view.props.insightFilters;
+    return renderToStaticMarkup(page);
   }
   return { calls, api, html };
 }
@@ -188,6 +192,7 @@ test('reports.view is required and a custom Reports-only account can use the act
   const custom = pageHarness();
   const html = await custom.html();
   assert.ok(html.includes('Reports &amp; Analytics'));
+  assert.ok(html.includes('AI Decision Support') && html.includes('Generate AI Insights'));
   assert.ok(custom.calls.permission.every((key) => key === 'reports.view'));
   assert.equal(custom.calls.rpc.length, 1, 'One analytics request supplies every chart');
 });
@@ -204,6 +209,11 @@ test('selected and all-branch requests use only scope IDs; system administrator 
   assert.deepEqual(Array.from(h.calls.rpc[0].args.p_branch_ids), [id(1)]);
   assert.equal(h.calls.rpc[0].args.p_from, '2026-10-23');
   assert.equal(h.calls.rpc[0].args.p_grouping, 'day');
+  assert.equal(h.calls.insightFilters.branchId, id(1));
+  assert.equal(h.calls.insightFilters.range.preset, 'custom', 'Generation freezes the dates actually shown by Reports');
+  assert.equal(h.calls.insightFilters.range.from, h.calls.rpc[0].args.p_from);
+  assert.equal(h.calls.insightFilters.range.to, h.calls.rpc[0].args.p_to);
+  assert.equal(h.calls.insightFilters.grouping, 'day');
   assert.ok(html.includes('Branch 2'), 'Selector retains all accessible options when one branch is selected');
   assert.ok(!html.includes('Branch Comparison'));
   const rejected = pageHarness();
@@ -247,7 +257,7 @@ test('GET filters restore applied values, stack on mobile and enable date contro
   assert.ok(dashboardHtml.includes('aria-label="Report sections"'));
   const loading = loadTypeScript('app/portal/reports/loading.tsx').default;
   assert.ok(renderToStaticMarkup(React.createElement(loading)).includes('Loading reports'));
-  for (const file of ['page.tsx', 'ReportsDashboard.tsx', 'ReportChart.tsx', 'ReportFilters.tsx', 'loading.tsx', 'error.tsx']) {
+  for (const file of ['page.tsx', 'ReportsDashboard.tsx', 'ReportChart.tsx', 'ReportFilters.tsx', 'ReportsView.tsx', 'DecisionSupportSection.tsx', 'loading.tsx', 'error.tsx']) {
     const source = readFileSync(`app/portal/reports/${file}`, 'utf8');
     assert.ok(!source.includes('dark:'));
     assert.ok(!source.includes('system_admin') && !source.includes('pastor'), 'UI must not authorize by role name');
