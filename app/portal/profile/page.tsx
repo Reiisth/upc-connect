@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import ProfileSkeleton from "./ProfileSkeleton";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import { requirePermission } from "@/lib/permissions-server";
 import { createClient } from "@/lib/supabase/server";
 import ProfileSelector from "./ProfileSelector";
 import { IdCardLanyard } from "lucide-react";
@@ -17,16 +17,9 @@ export default function ProfilePage() {
 }
 
 async function ProfileContent() {
-  await requirePortalTab("profile");
+  const { user } = await requirePermission("profile.view");
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return null;
-  }
 
   const { data: links, error } = await supabase
     .from("account_members")

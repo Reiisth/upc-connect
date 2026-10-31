@@ -1,10 +1,9 @@
 import Image from "next/image";
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { logoutPortal } from "./actions";
 
-import { getCurrentUser } from "@/lib/auth";
+import { requireActiveAccount } from "@/lib/auth";
 import { getCurrentUserPermissions } from "@/lib/permissions-server";
 import PortalNavigation from "./PortalNavigation";
 
@@ -25,11 +24,7 @@ async function PortalShell({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const { user } = await requireActiveAccount();
 
   const permissions = await getCurrentUserPermissions(user.id);
 

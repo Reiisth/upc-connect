@@ -125,7 +125,7 @@ test('navigation and default routing use follow_ups.view rather than role names'
     assert.ok(!renderToStaticMarkup(React.createElement(Navigation, { permissions: ['follow_ups.create'], variant })).includes('Follow-ups'));
   }
   const Page = h.load('app/portal/page.tsx', {
-    '@/lib/auth': { getCurrentUser: async () => h.access.user },
+    '@/lib/auth': { requireActiveAccount: async () => ({ user: h.access.user }) },
     '@/lib/permissions-server': { getCurrentUserPermissions: async () => ['follow_ups.view'] },
   }).default;
   await assert.rejects(Page(), /redirect:\/portal\/follow-ups/);

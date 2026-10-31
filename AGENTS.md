@@ -32,9 +32,17 @@ Role access must be enforced using the existing RBAC helpers.
 
 Use:
 
-- `requirePortalTab()` for protected portal pages
+- `requirePermission()` for protected portal pages and server actions
+- `requireActiveAccount()` for authenticated self-service without a module permission
 - existing Supabase server/client/admin helpers
 - existing RLS policies
+
+Portal access requires authentication, an existing `profiles` row with
+`archived_at IS NULL`, and active assigned roles/permissions as applicable.
+Use the centralized server checks in `lib/auth.ts` and `lib/permissions-server.ts`.
+Profile reads/writes additionally require linked `account_members` ownership;
+role names and client capability flags must not authorize access. Legacy
+`requirePortalTab()` is retained only for remaining legacy callers.
 
 Do not reintroduce the old `/staff` architecture.
 

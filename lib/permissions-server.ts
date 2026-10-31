@@ -2,7 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/lib/auth";
+import { getActiveAccount, getCurrentUser, requireActiveAccount } from "@/lib/auth";
 import {
   hasPermission,
   isPermissionKey,
@@ -113,7 +113,7 @@ async function loadPermissionsForUser(
 export async function getCurrentUserPermissions(
   userId?: string,
 ): Promise<PermissionKey[]> {
-  const currentUser = await getCurrentUser();
+  const currentUser = (await getActiveAccount())?.user;
 
   if (!currentUser) {
     return [];
@@ -134,11 +134,7 @@ export type PermissionContext = {
 export async function requirePermission(
   permission: PermissionKey,
 ): Promise<PermissionContext> {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const { user } = await requireActiveAccount();
 
   let permissions: PermissionKey[];
 

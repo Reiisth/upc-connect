@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { requireActiveAccount } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { getCurrentUserPermissions } from "@/lib/permissions-server";
 
@@ -21,11 +21,7 @@ const portalDestinations = [
 ] as const;
 
 export default async function PortalPage() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const { user } = await requireActiveAccount();
 
   const permissions = await getCurrentUserPermissions(user.id);
 

@@ -8,7 +8,8 @@ import { UserRound } from "lucide-react";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireOwnedProfile } from "../access";
+import { hasPermission } from "@/lib/permissions";
 import { getMemberFieldDefinitions } from "@/lib/member-fields";
 import MemberProfileForm from "../../components/MemberProfileForm";
 
@@ -34,27 +35,7 @@ async function MemberProfileContent({
   params: Promise<{ memberId: string }>;
 }) {
   const { memberId } = await params;
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: link } = await supabase
-    .from("account_members")
-    .select("member_id")
-    .eq("user_id", user.id)
-    .eq("member_id", memberId)
-    .eq("relationship", "member")
-    .maybeSingle();
-
-  if (!link) {
-    redirect("/auth/error?error=Member profile not linked to this account");
-  }
+  const { user, supabase, permissions } = await requireOwnedProfile(memberId, "profile.view");
 
   const { data: member, error: memberError } = await supabase
     .from("members")
@@ -89,27 +70,7 @@ async function MemberProfileContent({
   async function updateProfile(formData: FormData) {
     "use server";
 
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      redirect("/login");
-    }
-
-    const { data: link } = await supabase
-      .from("account_members")
-      .select("member_id")
-      .eq("user_id", user.id)
-      .eq("member_id", memberId)
-      .eq("relationship", "member")
-      .maybeSingle();
-
-    if (!link) {
-      redirect("/auth/error?error=Member profile not linked to this account");
-    }
+    const { supabase } = await requireOwnedProfile(memberId, "profile.update");
 
     const zoneValue = String(formData.get("zone") ?? "").trim();
 
@@ -247,7 +208,7 @@ async function MemberProfileContent({
     redirect("/portal/profile");
   }
 
-  if (member.profile_status !== "completed") {
+  if (member.profile_status !== "completed" && hasPermission(permissions, "profile.update")) {
     return (
       <PageContainer className="max-w-5xl">
         <PageHeader
@@ -304,7 +265,7 @@ async function MemberProfileContent({
           }}
         />
 
-        <EditProfileButton memberId={memberId} />
+        {hasPermission(permissions, "profile.update") && <EditProfileButton memberId={memberId} />}
       </div>
     </PageContainer>
   );

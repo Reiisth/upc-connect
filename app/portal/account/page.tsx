@@ -1,8 +1,5 @@
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
-
-import { createClient } from "@/lib/supabase/server";
-import { requirePortalTab } from "@/lib/require-portal-tab";
+import { requireActiveAccount } from "@/lib/auth";
 import ChangePasswordForm from "./ChangePasswordForm";
 
 export default function AccountPage() {
@@ -14,17 +11,7 @@ export default function AccountPage() {
 }
 
 async function AccountContent() {
-  await requirePortalTab("account");
-
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const { user } = await requireActiveAccount();
 
   return (
     <main className="space-y-6">
@@ -67,7 +54,7 @@ async function AccountContent() {
           Change your password to keep your account secure.
         </p>
 
-        <ChangePasswordForm email={user.email ?? ""} />
+        <ChangePasswordForm />
       </section>
     </main>
   );

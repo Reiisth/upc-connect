@@ -3,14 +3,9 @@
 import { useState } from "react";
 import { Eye, EyeOff, LockKeyhole } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/client";
+import { changeOwnPassword } from "./actions";
 
-export default function ChangePasswordForm({
-  email,
-}: {
-  email: string;
-}) {
-  const supabase = createClient();
+export default function ChangePasswordForm() {
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -59,25 +54,9 @@ export default function ChangePasswordForm({
     setLoading(true);
 
     try {
-      // Verify the user's current password first.
-      const { error: signInError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password: currentPassword,
-        });
-
-      if (signInError) {
-        setError("Current password is incorrect.");
-        return;
-      }
-
-      const { error: updateError } =
-        await supabase.auth.updateUser({
-          password: newPassword,
-        });
-
-      if (updateError) {
-        setError(updateError.message);
+      const result = await changeOwnPassword(currentPassword, newPassword);
+      if (result.error) {
+        setError(result.error);
         return;
       }
 

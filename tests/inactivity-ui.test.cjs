@@ -130,7 +130,7 @@ test('navigation and default portal routing use inactivity.view without operatio
   }
   const Portal = loadTypeScript('app/portal/page.tsx', {
     'next/navigation': { redirect: (url) => { throw new Error(`redirect:${url}`); } },
-    '@/lib/auth': { getCurrentUser: async () => ({ id: 'custom-role-user' }) },
+    '@/lib/auth': { requireActiveAccount: async () => ({ user: { id: 'custom-role-user' } }) },
     '@/lib/permissions-server': { getCurrentUserPermissions: async () => ['inactivity.view'] },
   }).default;
   await assert.rejects(Portal(), /redirect:\/portal\/inactivity/);

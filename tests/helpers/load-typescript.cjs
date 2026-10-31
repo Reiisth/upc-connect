@@ -18,7 +18,7 @@ exports.loadTypeScript = function loadTypeScript(entry, stubs = {}) {
       },
     }).outputText;
     vm.runInNewContext(code, {
-      module, exports: module.exports, process, console, URLSearchParams,
+      module, exports: module.exports, process, console, URL, URLSearchParams,
       AbortController, setTimeout, clearTimeout,
       require(name) {
         if (Object.hasOwn(stubs, name)) return stubs[name];

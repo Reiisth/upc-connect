@@ -1,8 +1,11 @@
+import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isStaffRole, type StaffRole } from "@/lib/staff-roles";
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async function getCurrentUser() {
   const supabase = await createClient();
 
   const {
@@ -15,13 +18,35 @@ export async function getCurrentUser() {
   }
 
   return user;
+});
+
+// React cache shares this read within one server request only. Never persist
+// account state across requests: archive/restore must affect the next request.
+export const getActiveAccount = cache(async function getActiveAccount() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const { data: profile, error } = await createAdminClient()
+    .from("profiles")
+    .select("id, archived_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error || !profile || profile.archived_at !== null) return null;
+  return { user, profile };
+});
+
+export async function requireActiveAccount() {
+  if (!await getCurrentUser()) redirect("/login");
+  const account = await getActiveAccount();
+  if (!account) redirect("/access-denied");
+  return account;
 }
 
 export async function getCurrentUserRoles(userId?: string) {
-  const targetUserId =
-    userId ?? (await getCurrentUser())?.id;
-
-  if (!targetUserId) return [];
+  const account = await getActiveAccount();
+  if (!account || (userId && userId !== account.user.id)) return [];
+  const targetUserId = account.user.id;
 
   const supabase = await createClient();
 
@@ -29,7 +54,8 @@ export async function getCurrentUserRoles(userId?: string) {
     .from("user_roles")
     .select(`
       roles (
-        name
+        name,
+        is_active
       )
     `)
     .eq("user_id", targetUserId);
@@ -42,15 +68,14 @@ export async function getCurrentUserRoles(userId?: string) {
     data
       ?.map((item) => {
         const roles = item.roles as
-          | { name: string }
-          | { name: string }[]
+          | { name: string; is_active: boolean }
+          | { name: string; is_active: boolean }[]
           | null;
 
         if (!roles) return null;
 
-        return Array.isArray(roles)
-          ? roles[0]?.name ?? null
-          : roles.name;
+        const role = Array.isArray(roles) ? roles[0] : roles;
+        return role?.is_active === true ? role.name : null;
       })
       .filter((role): role is string => Boolean(role)) ?? []
   );

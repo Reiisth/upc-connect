@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { UserRound } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireOwnedProfile } from "../../access";
 import { getMemberFieldDefinitions } from "@/lib/member-fields";
 
 import MemberProfileForm from "../../../components/MemberProfileForm";
@@ -32,27 +32,7 @@ async function EditMemberProfileContent({
 }: PageProps) {
   const { memberId } = await params;
 
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: link } = await supabase
-    .from("account_members")
-    .select("member_id")
-    .eq("user_id", user.id)
-    .eq("member_id", memberId)
-    .eq("relationship", "member")
-    .maybeSingle();
-
-  if (!link) {
-    redirect("/auth/error?error=Member profile not linked to this account");
-  }
+  const { user, supabase } = await requireOwnedProfile(memberId, "profile.update");
 
   const { data: member, error: memberError } = await supabase
     .from("members")
@@ -79,29 +59,7 @@ async function EditMemberProfileContent({
   async function updateProfile(formData: FormData) {
     "use server";
 
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      redirect("/login");
-    }
-
-    const { data: link } = await supabase
-      .from("account_members")
-      .select("member_id")
-      .eq("user_id", user.id)
-      .eq("member_id", memberId)
-      .eq("relationship", "member")
-      .maybeSingle();
-
-    if (!link) {
-      redirect(
-        "/auth/error?error=Member profile not linked to this account",
-      );
-    }
+    const { supabase } = await requireOwnedProfile(memberId, "profile.update");
 
     const zoneValue = String(formData.get("zone") ?? "").trim();
 
