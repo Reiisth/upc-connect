@@ -14,6 +14,7 @@ import AccountsTabs from "../AccountsTabs";
 import { Suspense } from "react";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAuthUsersByIds } from "../auth-users";
 import { hasPermission } from "@/lib/permissions";
 import { getAccountTargetScopes } from "../target-scope";
 import { requireAccountsPermission } from "../access";
@@ -100,35 +101,30 @@ async function MemberAccountsContent() {
     }
   }
 
-  const accounts = [];
+  const accountIds = [...accountMap.keys()];
+  const [authUsers, profileResult] = await Promise.all([
+    getAuthUsersByIds(admin, accountIds),
+    accountIds.length
+      ? admin.from("profiles").select("id, archived_at").in("id", accountIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (profileResult.error) throw new Error(profileResult.error.message);
+  const profiles = new Map(
+    (profileResult.data ?? []).map((profile) => [profile.id, profile]),
+  );
 
-  for (const account of accountMap.values()) {
-    const { data, error } = await admin.auth.admin.getUserById(
-      account.userId,
-    );
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const { data: profile, error: profileError } = await admin
-      .from("profiles")
-      .select("archived_at")
-      .eq("id", account.userId)
-      .single();
-
-    if (profileError) {
-      throw new Error(profileError.message);
-    }
-
-    accounts.push({
+  const accounts = [...accountMap.values()].map((account) => {
+    const user = authUsers.get(account.userId);
+    const profile = profiles.get(account.userId);
+    if (!user || !profile) throw new Error("Unable to load account.");
+    return {
       userId: account.userId,
-      email: data.user.email ?? "—",
+      email: user.email ?? "—",
       members: account.members,
       archivedAt: profile.archived_at,
       canChangeAccount: targets.get(account.userId)?.canChangeAccount ?? false,
-    });
-  }
+    };
+  });
 
   const totalAccounts = accounts.length;
 

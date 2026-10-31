@@ -13,6 +13,7 @@ import MembersTable from "./MembersTable";
 import { requireMembersPermission } from "./access";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/read-all-pages";
 import { hasPermission } from "@/lib/permissions";
 
 import { Button } from "@/components/ui/button";
@@ -107,14 +108,11 @@ async function MembersPageContent() {
     );
   }
 
-  const { data: members, error } =
-    await membersQuery.order("created_at", {
+  const members = await readAllPages((from, to) =>
+    membersQuery.order("created_at", {
       ascending: false,
-    });
-
-  if (error) {
-    throw new Error(error.message);
-  }
+    }).order("id").range(from, to),
+  );
 
   const totalMembers = members?.length ?? 0;
 

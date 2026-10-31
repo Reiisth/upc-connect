@@ -20,23 +20,13 @@ import StaffAccountsTable, {
   type StaffRoleSummary,
 } from "./StaffAccountsTable";
 import { getAccountTargetScopes } from "../target-scope";
+import { getAuthUsersByIds } from "../auth-users";
 import { requireAccountsPermission } from "../access";
 import {
   KeyRound,
   UserPlus,
   UserRoundCog,
 } from "lucide-react";
-
-type AuthUser = {
-  id: string;
-  email?: string;
-  created_at: string;
-  last_sign_in_at?: string;
-  email_confirmed_at?: string;
-  invited_at?: string;
-  banned_until?: string;
-  deleted_at?: string;
-};
 
 type ProfileRow = {
   id: string;
@@ -110,11 +100,7 @@ async function StaffAccountsContent() {
       .from("user_branch_access")
       .select("user_id, church_branch_id").in("user_id", visibleIds),
 
-    Promise.all(visibleIds.map(async (id) => {
-      const { data, error } = await admin.auth.admin.getUserById(id);
-      if (error || !data.user) throw new Error("Unable to load account.");
-      return data.user as AuthUser;
-    })),
+    getAuthUsersByIds(admin, visibleIds),
   ]);
 
   if (roleError) throw new Error(roleError.message);
@@ -188,7 +174,7 @@ async function StaffAccountsContent() {
     );
   }
 
-  const staffAccounts: StaffAccount[] = authUsers
+  const staffAccounts: StaffAccount[] = [...authUsers.values()]
     .filter((user) => roleMap.has(user.id))
     .map((user) => {
       const roles = roleMap.get(user.id) ?? [];

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/read-all-pages";
 
 import {
   getAccessibleActiveBranches,
@@ -70,7 +71,7 @@ export async function loadBaptismOptions(
     };
   }
 
-  const { data, error } = await admin
+  const members = await readAllPages((from, to) => admin
     .from("members")
     .select(
       "id, first_name, middle_name, last_name, member_status, is_archived, church_branch_id",
@@ -78,13 +79,7 @@ export async function loadBaptismOptions(
     .in("church_branch_id", branchIds)
     .eq("is_archived", false).eq("member_status", "active")
     .order("last_name")
-    .order("first_name");
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const members = (data ?? []) as MemberRow[];
+    .order("first_name").order("id").range(from, to)) as MemberRow[];
 
   return {
     branches: branches.map((branch) => ({
@@ -113,19 +108,14 @@ export async function loadBaptismRecords(
     return [] as BaptismRecord[];
   }
 
-  const { data, error } = await admin
+  const rows = await readAllPages((from, to) => admin
     .from("baptism_records")
     .select(
       "id, member_id, baptism_type, baptism_date, church_branch_id, officiated_by, location, recorded_by, notes",
     )
     .in("church_branch_id", branchIds)
-    .order("baptism_date", { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const rows = (data ?? []) as BaptismRow[];
+    .order("baptism_date", { ascending: false }).order("id")
+    .range(from, to)) as BaptismRow[];
   const memberIds = Array.from(
     new Set(rows.map((row) => row.member_id).filter(Boolean)),
   );

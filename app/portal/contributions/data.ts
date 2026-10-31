@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/read-all-pages";
 
 import {
   getAccessibleActiveBranches,
@@ -80,8 +81,8 @@ export async function loadContributionOptions(
     };
   }
 
-  const [memberResult, serviceResult] = await Promise.all([
-    admin
+  const [members, services] = await Promise.all([
+    readAllPages((from, to) => admin
       .from("members")
       .select(
         "id, first_name, middle_name, last_name, church_branch_id, is_archived",
@@ -89,27 +90,16 @@ export async function loadContributionOptions(
       .in("church_branch_id", branchIds)
       .eq("is_archived", false)
       .order("last_name")
-      .order("first_name"),
-    admin
+      .order("first_name").range(from, to)),
+    readAllPages((from, to) => admin
       .from("services")
       .select(
         "id, name, service_date, church_branch_id, status",
       )
       .in("church_branch_id", branchIds)
       .order("service_date", { ascending: false })
-      .order("name"),
+      .order("name").range(from, to)),
   ]);
-
-  if (memberResult.error) {
-    throw new Error(memberResult.error.message);
-  }
-
-  if (serviceResult.error) {
-    throw new Error(serviceResult.error.message);
-  }
-
-  const members = (memberResult.data ?? []) as MemberRow[];
-  const services = (serviceResult.data ?? []) as ServiceRow[];
 
   return {
     branches: branches.map((branch) => ({
@@ -144,19 +134,14 @@ export async function loadContributionRecords(
     return [] as ContributionRecord[];
   }
 
-  const { data, error } = await admin
+  const rows = await readAllPages((from, to) => admin
     .from("financial_contributions")
     .select(
       "id, member_id, service_id, church_branch_id, contribution_type, amount, contribution_date, payment_method, recorded_by, notes",
     )
     .in("church_branch_id", branchIds)
-    .order("contribution_date", { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const rows = (data ?? []) as ContributionRow[];
+    .order("contribution_date", { ascending: false }).order("id")
+    .range(from, to)) as ContributionRow[];
   const memberIds = Array.from(
     new Set(
       rows

@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/read-all-pages";
 
 import {
   getAccessibleActiveBranches,
@@ -55,20 +56,15 @@ async function ServicesContent() {
   let rows: ServiceRow[] = [];
 
   if (branchIds.length > 0) {
-    const { data, error } = await admin
+    rows = await readAllPages((from, to) => admin
       .from("services")
       .select(
         "id, name, service_type, service_date, start_time, status, church_branch_id, notes",
       )
       .in("church_branch_id", branchIds)
       .order("service_date", { ascending: false })
-      .order("start_time", { ascending: false });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    rows = (data ?? []) as ServiceRow[];
+      .order("start_time", { ascending: false }).order("id")
+      .range(from, to)) as ServiceRow[];
   }
 
   const branchMap = new Map(

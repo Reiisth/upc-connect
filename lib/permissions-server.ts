@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { getActiveAccount, getCurrentUser, requireActiveAccount } from "@/lib/auth";
@@ -42,7 +43,7 @@ function permissionLoadError(error: unknown): Error {
   return new Error("Unable to verify account permissions.");
 }
 
-async function loadPermissionsForUser(
+const loadPermissionsForUser = cache(async function loadPermissionsForUser(
   userId: string,
 ): Promise<PermissionKey[]> {
   // Permission metadata can be protected by RLS because it is also used by
@@ -108,7 +109,7 @@ async function loadPermissionsForUser(
 
   // Return the keys in catalog order instead of depending on join row order.
   return PERMISSION_KEYS.filter((key) => effectiveKeys.has(key));
-}
+});
 
 export async function getCurrentUserPermissions(
   userId?: string,
