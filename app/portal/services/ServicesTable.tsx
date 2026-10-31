@@ -4,6 +4,7 @@ import { serviceTimestamp } from "@/lib/manila-time";
 
 import {
   CalendarClock,
+  ClipboardCheck,
   Pencil,
   Search,
   SearchX,
@@ -38,6 +39,7 @@ type ServicesTableProps = {
   services: ServiceRecord[];
   branches: ServiceBranch[];
   canEdit: boolean;
+  canManageAttendance: boolean;
 };
 
 const statusVariants: Record<
@@ -54,6 +56,7 @@ export default function ServicesTable({
   services,
   branches,
   canEdit,
+  canManageAttendance,
 }: ServicesTableProps) {
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
@@ -267,14 +270,17 @@ export default function ServicesTable({
                 </TableCell>
 
                 <TableCell>
-                  {canEdit ? (
-                    <TableActionButton
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {canEdit && <TableActionButton
                       href={`/portal/services/${service.id}/edit`}
                       icon={<Pencil />}
-                    >
-                      Edit
-                    </TableActionButton>
-                  ) : (
+                    >Edit</TableActionButton>}
+                    {canManageAttendance && <TableActionButton
+                      href={`/portal/attendance/${service.id}`}
+                      icon={<ClipboardCheck />}
+                    >Manage Attendance</TableActionButton>}
+                  </div>
+                  {!canEdit && !canManageAttendance && (
                     <span className="text-sm text-slate-400">
                       View only
                     </span>

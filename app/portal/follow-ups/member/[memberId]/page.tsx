@@ -40,7 +40,10 @@ async function MemberFollowUpContent({ params, searchParams }: Props) {
   return <PageContainer>
     <PageHeader backHref="/portal/follow-ups" backLabel="Back to Follow-ups" title={`${member.name} — Follow-up History`}
       description="Recorded staff actions, newest first. History stays with its original branch after a member transfers."
-      action={canCreate ? <Button asChild><Link href={`/portal/follow-ups/new?memberId=${member.id}&branchId=${member.branchId}`}><Plus />Record Follow-up</Link></Button> : undefined} />
+      action={<>
+        {hasPermission(access.permissions, "members.view") && member.branchId && access.branchIds.includes(member.branchId) && <Button asChild variant="outline"><Link href={`/portal/members/${member.id}`}>Open Member</Link></Button>}
+        {canCreate ? <Button asChild><Link href={`/portal/follow-ups/new?memberId=${member.id}&branchId=${member.branchId}`}><Plus />Record Follow-up</Link></Button> : undefined}
+      </>} />
     {(await searchParams).saved === "1" && <p role="status" className="text-sm text-emerald-700">Follow-up saved successfully.</p>}
     <Card><CardContent className="space-y-3 p-5">
       <p className="text-sm text-slate-600">Current branch: {currentBranch?.name ?? "Outside your branch access"}{member.isArchived ? " · Archived member" : ""}</p>

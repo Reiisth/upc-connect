@@ -14,11 +14,16 @@ export default function MemberPage(props: { params: Promise<{ memberId: string }
 async function Content({ params }: { params: Promise<{ memberId: string }> }) {
   const { memberId } = await params;
   const { member, access, admin } = await requireStaffMember(memberId, "members.view");
+  const can = (permission: typeof access.permissions[number]) => access.permissions.includes(permission);
   const [{ data: branch }, { data: department }] = await Promise.all([
     member.church_branch_id ? admin.from("church_branches").select("name").eq("id", member.church_branch_id).maybeSingle() : Promise.resolve({ data: null }),
     member.department_id ? admin.from("departments").select("name").eq("id", member.department_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
-  const can = (permission: typeof access.permissions[number]) => access.permissions.includes(permission);
+  const accountLink = member.account_status === "connected" && can("accounts.view")
+    ? await admin.from("account_members").select("user_id")
+      .eq("member_id", memberId).eq("relationship", "member").maybeSingle()
+    : { data: null, error: null };
+  if (accountLink.error) throw new Error(accountLink.error.message);
   return <PageContainer>
     <PageHeader title={[member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" ")}
       description="Staff member record. Church information and personal self-service have separate editing permissions."
@@ -41,6 +46,8 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
       <p>Address: {[member.street_address, member.barangay, member.city, member.province, member.country].filter(Boolean).join(", ") || "Not provided"}</p>
       {!member.is_archived && member.account_status === "no_account" && can("members.link_account") &&
         <Button asChild><Link href={`/portal/members/invite?memberId=${memberId}`}>Connect / Invite Account</Link></Button>}
+      {member.account_status === "connected" && can("accounts.view") && accountLink.data?.user_id &&
+        <Button asChild><Link href={`/portal/accounts/${accountLink.data.user_id}`}>Manage Account</Link></Button>}
     </CardContent></Card>
     <div className="flex flex-wrap gap-3">
       {can("follow_ups.view") && <Button asChild variant="outline"><Link href={`/portal/follow-ups/member/${memberId}`}>Follow-up History</Link></Button>}

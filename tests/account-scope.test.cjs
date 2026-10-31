@@ -93,7 +93,15 @@ function harness({ permissions = allPermissions, isSystemAdmin = false, branchId
     'server-only': {}, 'next/navigation': { redirect, notFound: () => redirect('/not-found'), unstable_rethrow: (error) => { if (error.redirect) throw error; } },
     'next/cache': { revalidatePath() {} },
     'next/link': { __esModule: true, default: () => null },
-    '@/lib/permissions-server': { requirePermission: async (permission) => { if (!permissions.includes(permission)) redirect('/access-denied'); return { user: access.user, permissions }; } },
+    '@/lib/auth': { requireActiveAccount: async () => ({ user: access.user }) },
+    '@/lib/permissions': {
+      hasAnyPermission: (values, keys) => keys.some((key) => values.includes(key)),
+      hasPermission: (values, key) => values.includes(key),
+    },
+    '@/lib/permissions-server': {
+      requirePermission: async (permission) => { if (!permissions.includes(permission)) redirect('/access-denied'); return { user: access.user, permissions }; },
+      getCurrentUserPermissions: async (userId) => userId === access.user.id ? permissions : [],
+    },
     '@/lib/branch-access': { getUserBranchScope: async () => ({ branchIds, isSystemAdmin }) },
     '@/lib/supabase/admin': { createAdminClient: () => admin },
   };
@@ -268,9 +276,19 @@ test('canonical member linking still requires its permission and validates targe
 
 test('legacy Administration pages share target restrictions and staff metadata classification', async () => {
   const h = harness();
-  await assert.rejects(h.content('app/portal/administration/staff-branch-access/[userId]/page.tsx', 'foreign-staff'), denied);
-  const tree = JSON.stringify(await h.content('app/portal/administration/staff-branch-access/page.tsx'));
-  assert.ok(!tree.includes('foreign-staff')); assert.ok(!tree.includes('local-member display'));
+  const legacyDetail = h.load('app/portal/administration/staff-branch-access/[userId]/page.tsx').default({
+    params: Promise.resolve({ userId: 'foreign-staff' }),
+  });
+  await assert.rejects(legacyDetail.props.children.type(legacyDetail.props.children.props), /redirect:\/portal\/accounts\/staff\/foreign-staff/);
+  assert.throws(() => h.load('app/portal/administration/staff-branch-access/page.tsx').default(), /redirect:\/portal\/accounts\/staff/);
+  await assert.rejects(h.content('app/portal/accounts/staff/[userId]/page.tsx', 'foreign-staff'), denied);
+  const branchOnly = harness({ permissions: ['accounts.manage_branch_access'] });
+  const list = JSON.stringify(await branchOnly.content('app/portal/accounts/staff/page.tsx'));
+  assert.ok(list.includes('local-staff display'));
+  assert.ok(!list.includes('foreign-staff display'));
+  const detail = JSON.stringify(await branchOnly.content('app/portal/accounts/staff/[userId]/page.tsx', 'local-staff'));
+  assert.ok(detail.includes('"canManageBranchAccess":true'));
+  assert.ok(!detail.includes('"canManageRoles":true'));
 });
 
 test('missing permission hides invitation editors and filtered roles never expose system_admin to delegated actors', async () => {

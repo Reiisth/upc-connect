@@ -158,6 +158,7 @@ async function ServicesContent() {
           services={services}
           branches={branches}
           canEdit={canUpdate}
+          canManageAttendance={hasPermission(access.permissions, "attendance.view")}
         />
       )}
     </PageContainer>

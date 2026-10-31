@@ -74,10 +74,10 @@ async function ProfileContent() {
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="Member Profile"
+        eyebrow="Personal"
         eyebrowIcon={<IdCardLanyard className="h-4 w-4" />}
-        title="My Profile"
-        description="Manage your member information."
+        title="My Profiles"
+        description="Manage the member profiles linked to your account."
       />
 
       <ProfileSelector members={members} />

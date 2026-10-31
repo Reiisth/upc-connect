@@ -21,7 +21,7 @@ import StaffAccountsTable, {
 } from "./StaffAccountsTable";
 import { getAccountTargetScopes } from "../target-scope";
 import { getAuthUsersByIds } from "../auth-users";
-import { requireAccountsPermission } from "../access";
+import { requireStaffAccountAccess } from "../access";
 import {
   KeyRound,
   UserPlus,
@@ -61,7 +61,7 @@ export default function StaffAccountsPage() {
 }
 
 async function StaffAccountsContent() {
-  const access = await requireAccountsPermission("accounts.view");
+  const access = await requireStaffAccountAccess();
 
   const admin = createAdminClient();
   const targets = await getAccountTargetScopes(access, admin);
@@ -247,7 +247,7 @@ async function StaffAccountsContent() {
         }
       />
 
-      <AccountsTabs />
+      <AccountsTabs permissions={access.permissions} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>

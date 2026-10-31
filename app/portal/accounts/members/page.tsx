@@ -154,7 +154,7 @@ async function MemberAccountsContent() {
         description="View member accounts, review their linked profiles, and connect additional members to existing accounts."
       />
 
-      <AccountsTabs />
+      <AccountsTabs permissions={access.permissions} />
 
       {/* SUMMARY */}
       <div className="grid gap-4 sm:grid-cols-2">

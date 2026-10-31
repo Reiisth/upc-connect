@@ -79,8 +79,8 @@ async function AttendanceServiceContent({
   return (
     <PageContainer>
       <PageHeader
-        backHref="/portal/attendance"
-        backLabel="Back to Attendance"
+        backHref={hasPermission(access.permissions, "services.view") ? "/portal/services" : "/portal/attendance"}
+        backLabel={hasPermission(access.permissions, "services.view") ? "Back to Services" : "Back to Attendance"}
         eyebrow="Attendance"
         eyebrowIcon={<ClipboardCheck className="h-4 w-4" />}
         title={service.name}

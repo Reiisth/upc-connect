@@ -1,152 +1,16 @@
-import { requireAccountTarget } from "@/app/portal/accounts/target-scope";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
-import { UsersRound } from "lucide-react";
 
-import BranchAccessForm from "./BranchAccessForm";
-import {
-  getAccessibleActiveAccountBranches,
-  requireAccountsPermission,
-} from "@/app/portal/accounts/access";
-import { createAdminClient } from "@/lib/supabase/admin";
-
-import { FormSection } from "@/components/ui/form-section";
-import { PageContainer } from "@/components/ui/page-container";
-import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
-
-type PageProps = {
-  params: Promise<{
-    userId: string;
-  }>;
-};
-
-export default function ManageStaffBranchAccessPage(
-  props: PageProps,
-) {
-  return (
-    <Suspense fallback={<PageLoading />}>
-      <ManageStaffBranchAccessContent {...props} />
-    </Suspense>
-  );
-}
-
-async function ManageStaffBranchAccessContent({
+/** Preserve legacy deep links and let the canonical account page authorize the target. */
+export default function LegacyStaffBranchAccessPage({
   params,
-}: PageProps) {
-  const { userId } = await params;
-
-  const access = await requireAccountsPermission(
-    "accounts.manage_branch_access",
-  );
-
-  const admin = createAdminClient();
-  await requireAccountTarget(access, admin, userId, "branches");
-
-  const [
-    { data: profile, error: profileError },
-    branches,
-    { data: assignments, error: assignmentsError },
-  ] = await Promise.all([
-    admin
-      .from("profiles")
-      .select(`
-        id,
-        display_name,
-        user_roles (
-          role:roles (
-            key,
-            is_active,
-            is_staff
-          )
-        )
-      `)
-      .eq("id", userId)
-      .single(),
-
-    getAccessibleActiveAccountBranches(access, admin),
-
-    admin
-      .from("user_branch_access")
-      .select("church_branch_id")
-      .eq("user_id", userId),
-  ]);
-
-  if (profileError || !profile) {
-    notFound();
-  }
-
-  if (assignmentsError) {
-    throw new Error(assignmentsError.message);
-  }
-
-  const roleKeys =
-    profile.user_roles?.flatMap((item) => {
-      const role = Array.isArray(item.role)
-        ? item.role[0] ?? null
-        : item.role ?? null;
-
-      return role?.is_active && role.is_staff && role.key
-        ? [role.key]
-        : [];
-    }) ?? [];
-
-  const isSystemAdmin = roleKeys.includes("system_admin");
-
-  const initialBranchIds =
-    assignments?.filter((row) => access.isSystemAdmin || access.branchIds.includes(row.church_branch_id)).map(
-      (assignment) => assignment.church_branch_id,
-    ) ?? [];
-
-  return (
-    <PageContainer>
-      <PageHeader
-        backHref="/portal/administration/staff-branch-access"
-        backLabel="Back to Staff Branch Access"
-        eyebrow="Access Management"
-        eyebrowIcon={<UsersRound className="h-4 w-4" />}
-        title="Manage Branch Access"
-        description={
-          profile.display_name
-            ? `Manage branch assignments for ${profile.display_name}.`
-            : "Manage branch assignments for this staff account."
-        }
-      />
-
-      <FormSection
-        title="Branch Assignments"
-        description={
-          roleKeys.length > 0
-            ? `Roles: ${roleKeys.join(", ")}`
-            : undefined
-        }
-      >
-        {isSystemAdmin ? (
-          <div className="rounded-xl bg-[#EEF3FB] p-4 text-sm text-[#203264]">
-            System administrators automatically have access to all active branches.
-          </div>
-        ) : (
-          <BranchAccessForm
-            userId={userId}
-            branches={branches ?? []}
-            initialBranchIds={initialBranchIds}
-          />
-        )}
-      </FormSection>
-    </PageContainer>
-  );
+}: {
+  params: Promise<{ userId: string }>;
+}) {
+  return <Suspense fallback={null}><LegacyRedirect params={params} /></Suspense>;
 }
 
-function PageLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <Skeleton className="h-72 rounded-2xl" />
-    </PageContainer>
-  );
+async function LegacyRedirect({ params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = await params;
+  return redirect(`/portal/accounts/staff/${encodeURIComponent(userId)}`);
 }

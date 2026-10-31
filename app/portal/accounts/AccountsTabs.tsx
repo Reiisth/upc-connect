@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShieldCheck, Users } from "lucide-react";
+import { hasPermission } from "@/lib/permissions";
+import type { PermissionKey } from "@/lib/permissions";
 
 const tabs = [
   {
@@ -17,12 +19,13 @@ const tabs = [
   },
 ];
 
-export default function AccountsTabs() {
+export default function AccountsTabs({ permissions }: { permissions: readonly PermissionKey[] }) {
   const pathname = usePathname();
+  const visibleTabs = tabs.filter((tab) => tab.href !== "/portal/accounts/members" || hasPermission(permissions, "accounts.view"));
 
   return (
     <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-      {tabs.map((tab) => {
+      {visibleTabs.map((tab) => {
         const Icon = tab.icon;
 
         const active =

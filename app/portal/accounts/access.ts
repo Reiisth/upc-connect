@@ -1,6 +1,10 @@
 import "server-only";
 
+import { redirect } from "next/navigation";
+import { requireActiveAccount } from "@/lib/auth";
+import { hasAnyPermission } from "@/lib/permissions";
 import {
+  getCurrentUserPermissions,
   requirePermission,
   type PermissionContext,
 } from "@/lib/permissions-server";
@@ -40,6 +44,17 @@ export async function requireAccountsPermission(
     ...permissionContext,
     ...branchScope,
   };
+}
+
+/** Staff account directory is reachable for either viewing accounts or managing staff branches. */
+export async function requireStaffAccountAccess(): Promise<AccountAccess> {
+  const { user } = await requireActiveAccount();
+  const permissions = await getCurrentUserPermissions(user.id);
+  if (!hasAnyPermission(permissions, ["accounts.view", "accounts.manage_branch_access"])) {
+    redirect("/access-denied");
+  }
+  const branchScope = await getUserBranchScope(user.id);
+  return { user, permissions, ...branchScope };
 }
 
 export async function getAccessibleActiveAccountBranches(

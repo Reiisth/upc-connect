@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import { hasPermission } from "@/lib/permissions";
-import { requireAdministrationPermission } from "./access";
+import { getAdministrationHubPermissions } from "./access";
 
 import { ClickableCard } from "@/components/ui/clickable-card";
 import { PageContainer } from "@/components/ui/page-container";
@@ -24,9 +24,7 @@ export default function AdministrationPage() {
 }
 
 async function AdministrationContent() {
-  const { permissions } = await requireAdministrationPermission(
-    "administration.view",
-  );
+  const permissions = await getAdministrationHubPermissions();
 
   const canViewBranches = hasPermission(
     permissions,
@@ -55,7 +53,7 @@ async function AdministrationContent() {
           <ClickableCard href="/portal/administration/branches">
             <div className="flex items-start gap-4">
               <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
-                <Building2 className="h-5 w-5" />
+                <SlidersHorizontal className="h-5 w-5" />
               </div>
 
               <div>
@@ -72,7 +70,7 @@ async function AdministrationContent() {
         )}
 
         {canManageStaffBranchAccess && (
-          <ClickableCard href="/portal/administration/staff-branch-access">
+        <ClickableCard href="/portal/accounts/staff">
             <div className="flex items-start gap-4">
               <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
                 <UsersRound className="h-5 w-5" />
@@ -84,7 +82,7 @@ async function AdministrationContent() {
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  Assign staff accounts to one or more church branches.
+                  Manage staff branch assignments in Accounts.
                 </p>
               </div>
             </div>
@@ -111,23 +109,21 @@ async function AdministrationContent() {
           </ClickableCard>
         )}
 
-        <ClickableCard href="/portal/field-management">
-          <div className="flex items-start gap-4">
-            <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
-              <SlidersHorizontal className="h-5 w-5" />
+        {hasPermission(permissions, "administration.view") && (
+          <ClickableCard href="/portal/field-management">
+            <div className="flex items-start gap-4">
+              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-[#203264]">Profile Fields</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Configure the fields used in member profiles.
+                </p>
+              </div>
             </div>
-
-            <div>
-              <h2 className="font-semibold text-[#203264]">
-                Field Management
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Configure the fields used in member profiles.
-              </p>
-            </div>
-          </div>
-        </ClickableCard>
+          </ClickableCard>
+        )}
       </div>
     </PageContainer>
   );

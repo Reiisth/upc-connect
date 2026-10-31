@@ -14,7 +14,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isGrantableStaffRole, requireAccountTarget } from "../../target-scope";
-import { requireAccountsPermission } from "../../access";
+import { requireStaffAccountAccess } from "../../access";
 
 import type { StaffAccountStatus } from "../StaffAccountsTable";
 import {
@@ -75,7 +75,7 @@ export default function StaffAccountDetailsPage(
 async function StaffAccountDetailsContent({
   params,
 }: PageProps) {
-  const access = await requireAccountsPermission("accounts.view");
+  const access = await requireStaffAccountAccess();
 
   const { userId } = await params;
   const admin = createAdminClient();

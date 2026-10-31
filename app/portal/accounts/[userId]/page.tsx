@@ -169,9 +169,13 @@ async function AccountDetailsContent({
                   className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6"
                 >
                   <div>
-                    <p className="font-medium text-[#203264]">
-                      {fullName}
-                    </p>
+                    {hasPermission(access.permissions, "members.view") ? (
+                      <Link href={`/portal/members/${member.id}`} className="font-medium text-[#203264] hover:underline">
+                        {fullName}
+                      </Link>
+                    ) : (
+                      <p className="font-medium text-[#203264]">{fullName}</p>
+                    )}
 
                     <div className="mt-2 flex flex-wrap gap-2">
                       <StatusBadge

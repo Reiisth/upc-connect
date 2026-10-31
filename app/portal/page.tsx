@@ -1,34 +1,40 @@
 import { redirect } from "next/navigation";
 import { requireActiveAccount } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasAnyPermission, hasPermission } from "@/lib/permissions";
 import { getCurrentUserPermissions } from "@/lib/permissions-server";
 
-const portalDestinations = [
-  // There is currently no concrete /portal/dashboard route. Dashboard
-  // visibility remains permission-based in PortalNavigation, while this
-  // resolver falls through to the first concrete portal destination.
-  { permission: "members.view", href: "/portal/members" },
-  { permission: "accounts.view", href: "/portal/accounts" },
-  { permission: "services.view", href: "/portal/services" },
-  { permission: "attendance.view", href: "/portal/attendance" },
-  { permission: "inactivity.view", href: "/portal/inactivity" },
-  { permission: "follow_ups.view", href: "/portal/follow-ups" },
-  { permission: "contributions.view", href: "/portal/contributions" },
-  { permission: "baptisms.view", href: "/portal/baptisms" },
-  { permission: "reports.view", href: "/portal/reports" },
-  { permission: "administration.view", href: "/portal/administration" },
-  { permission: "profile.view", href: "/portal/profile" },
+const workspaceDestinations = [
+  ["members.view", "/portal/members"],
+  ["services.view", "/portal/services"],
+  ["attendance.view", "/portal/attendance"],
+  ["inactivity.view", "/portal/inactivity"],
+  ["follow_ups.view", "/portal/follow-ups"],
+  ["contributions.view", "/portal/contributions"],
+  ["baptisms.view", "/portal/baptisms"],
 ] as const;
 
 export default async function PortalPage() {
   const { user } = await requireActiveAccount();
-
   const permissions = await getCurrentUserPermissions(user.id);
 
-  for (const destination of portalDestinations) {
-    if (hasPermission(permissions, destination.permission)) {
-      redirect(destination.href);
-    }
+  if (hasPermission(permissions, "reports.view")) {
+    redirect("/portal/reports");
+  }
+
+  for (const [permission, href] of workspaceDestinations) {
+    if (hasPermission(permissions, permission)) redirect(href);
+  }
+
+  if (hasAnyPermission(permissions, ["accounts.view", "accounts.manage_branch_access"])) {
+    redirect(hasPermission(permissions, "accounts.view") ? "/portal/accounts" : "/portal/accounts/staff");
+  }
+
+  if (hasAnyPermission(permissions, ["administration.view", "branches.view", "roles.view"])) {
+    redirect("/portal/administration");
+  }
+
+  if (hasPermission(permissions, "profile.view")) {
+    redirect("/portal/profile");
   }
 
   redirect("/access-denied");

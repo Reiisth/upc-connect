@@ -48,7 +48,7 @@ async function FieldManagementContent() {
         </p>
 
         <h1 className="mt-1 font-body text-3xl font-semibold text-[#203264]">
-          Field Management
+          Profile Fields
         </h1>
 
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
