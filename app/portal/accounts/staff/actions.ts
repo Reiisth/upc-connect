@@ -1,8 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasPermission } from "@/lib/permissions";
+import { isGrantableStaffRole, requireAccountTarget } from "../target-scope";
 import {
   assertActiveAccountBranchIds,
   assertSystemAdminChangeSafe,
@@ -277,7 +280,7 @@ function getProvisionError(
 
   if (!newlyInvited) return message;
 
-  return `The invitation was created, but staff access could not be fully provisioned: ${message} You can retry this email without creating another Auth account.`;
+  return `The invitation was created, but staff access could not be fully provisioned: ${message} A system administrator may need to complete recovery for this email; do not create a duplicate account.`;
 }
 
 async function loadStaffAccount(
@@ -392,7 +395,7 @@ export async function updateStaffDisplayName(
   userId: string,
   displayName: string,
 ) {
-  await requireAccountsPermission(
+  const access = await requireAccountsPermission(
     "accounts.update_display_name",
   );
 
@@ -415,6 +418,7 @@ export async function updateStaffDisplayName(
   }
 
   const admin = createAdminClient();
+  await requireAccountTarget(access, admin, userId);
   await loadStaffAccount(admin, userId);
   await loadStaffProfile(admin, userId);
 
@@ -439,10 +443,11 @@ export async function updateStaffDisplayName(
 }
 
 export async function archiveStaffAccount(userId: string) {
-  const { user: currentUser } = await requireAccountsPermission(
+  const access = await requireAccountsPermission(
     "accounts.archive",
   );
   const admin = createAdminClient();
+  await requireAccountTarget(access, admin, userId);
   const target = await loadStaffAccount(admin, userId);
   const profile = await loadStaffProfile(admin, userId);
 
@@ -460,7 +465,7 @@ export async function archiveStaffAccount(userId: string) {
     await assertSystemAdminChangeSafe(
       admin,
       userId,
-      currentUser.id,
+      access.user.id,
       "archive",
     );
   }
@@ -480,9 +485,10 @@ export async function archiveStaffAccount(userId: string) {
 }
 
 export async function restoreStaffAccount(userId: string) {
-  await requireAccountsPermission("accounts.restore");
+  const access = await requireAccountsPermission("accounts.restore");
 
   const admin = createAdminClient();
+  await requireAccountTarget(access, admin, userId);
   const target = await loadStaffAccount(admin, userId);
   const profile = await loadStaffProfile(admin, userId);
 
@@ -510,7 +516,7 @@ export async function updateStaffRoles(
   userId: string,
   requestedRoleIds: string[],
 ) {
-  const { user: currentUser } = await requireAccountsPermission(
+  const access = await requireAccountsPermission(
     "accounts.manage_roles",
   );
 
@@ -524,6 +530,7 @@ export async function updateStaffRoles(
   }
 
   const admin = createAdminClient();
+  await requireAccountTarget(access, admin, userId);
   const target = await loadStaffAccount(admin, userId);
   const profile = await loadStaffProfile(admin, userId);
 
@@ -546,7 +553,7 @@ export async function updateStaffRoles(
 
   const manageableRoles = (
     (roleRows ?? []) as RoleRecord[]
-  ).filter((role) => role.is_staff && role.is_active);
+  ).filter((role) => isGrantableStaffRole(access, role));
 
   const roleById = new Map(
     manageableRoles.map((role) => [role.id, role]),
@@ -578,7 +585,7 @@ export async function updateStaffRoles(
     await assertSystemAdminChangeSafe(
       admin,
       userId,
-      currentUser.id,
+      access.user.id,
       "remove",
     );
   }
@@ -641,6 +648,7 @@ export async function updateStaffBranchAccessFromAccount(
   }
 
   const admin = createAdminClient();
+  await requireAccountTarget(access, admin, userId, "branches");
   const target = await loadStaffAccount(admin, userId);
   const profile = await loadStaffProfile(admin, userId);
 
@@ -695,21 +703,8 @@ export async function updateStaffBranchAccessFromAccount(
         !access.branchIds.includes(branchId) &&
         !currentBranchIds.has(branchId),
     );
-    const inaccessibleRemovedBranches = Array.from(
-      currentBranchIds,
-    ).filter(
-      (branchId) =>
-        !access.branchIds.includes(branchId) &&
-        !branchIds.includes(branchId),
-    );
-
-    if (
-      inaccessibleNewBranches.length > 0 ||
-      inaccessibleRemovedBranches.length > 0
-    ) {
-      throw new Error(
-        "You can only add or remove branch assignments within branches assigned to your account.",
-      );
+    if (inaccessibleNewBranches.length > 0) {
+      throw new Error("You can only assign branches within your account scope.");
     }
   }
 
@@ -728,28 +723,22 @@ export async function updateStaffBranchAccessFromAccount(
     );
   }
 
-  const { error: deleteError } = await admin
-    .from("user_branch_access")
-    .delete()
-    .eq("user_id", userId);
-
-  if (deleteError) {
-    throw new Error(deleteError.message);
+  const removedIds = Array.from(currentBranchIds).filter((id) =>
+    (access.isSystemAdmin || access.branchIds.includes(id)) && !branchIds.includes(id),
+  );
+  const addedIds = branchIds.filter((id) => !currentBranchIds.has(id));
+  // Add first; a failed removal never temporarily revokes hidden assignments.
+  if (addedIds.length) {
+    const { error } = await admin.from("user_branch_access").upsert(
+      addedIds.map((id) => ({ user_id: userId, church_branch_id: id })),
+      { onConflict: "user_id,church_branch_id", ignoreDuplicates: true },
+    );
+    if (error) throw new Error(error.message);
   }
-
-  if (branchIds.length > 0) {
-    const { error: insertError } = await admin
-      .from("user_branch_access")
-      .insert(
-        branchIds.map((branchId) => ({
-          user_id: userId,
-          church_branch_id: branchId,
-        })),
-      );
-
-    if (insertError) {
-      throw new Error(insertError.message);
-    }
+  if (removedIds.length) {
+    const { error } = await admin.from("user_branch_access").delete()
+      .eq("user_id", userId).in("church_branch_id", removedIds);
+    if (error) throw new Error(error.message);
   }
 
   revalidateStaffAccess(userId);
@@ -794,8 +783,11 @@ export async function createStaffAccount(
       throw new Error("Enter a valid email address.");
     }
 
-    if (requestedRoleIds.length === 0) {
-      throw new Error("Select at least one staff role.");
+    if (requestedRoleIds.length && !hasPermission(access.permissions, "accounts.manage_roles")) {
+      throw new Error("Role assignment requires accounts.manage_roles.");
+    }
+    if (requestedBranchIds.length && !hasPermission(access.permissions, "accounts.manage_branch_access")) {
+      throw new Error("Branch assignment requires accounts.manage_branch_access.");
     }
 
     const admin = createAdminClient();
@@ -818,7 +810,7 @@ export async function createStaffAccount(
     const invalidRoleIds = requestedRoleIds.filter((roleId) => {
       const role = roleById.get(roleId);
 
-      return !role || !role.is_staff || !role.is_active;
+      return !role || !isGrantableStaffRole(access, role);
     });
 
     if (invalidRoleIds.length > 0) {
@@ -836,6 +828,8 @@ export async function createStaffAccount(
 
     if (existingUser) {
       userId = existingUser.id;
+      await requireAccountTarget(access, admin, userId,
+        requestedRoleIds.length ? "change" : "branches");
 
       if (existingUser.deleted_at) {
         throw new Error(
@@ -851,7 +845,7 @@ export async function createStaffAccount(
 
       const profile = await loadProvisionProfile(admin, userId);
 
-      if (profile?.archived_at) {
+      if (!profile || profile.archived_at) {
         throw new Error(
           "This account is archived. Restore it before granting staff access.",
         );
@@ -863,16 +857,22 @@ export async function createStaffAccount(
       );
     }
 
-    const finalRoleKeys = new Set([
-      ...currentRoleAssignments.map((role) => role.key),
-      ...selectedRoles.map((role) => role.key),
-    ]);
-    const hasSystemAdmin = finalRoleKeys.has("system_admin");
-
+    const hasSystemAdmin = [...currentRoleAssignments.filter((role) => role.isActive), ...selectedRoles]
+      .some((role) => role.key === "system_admin");
+    const hasStaffRole = currentRoleAssignments.some((role) => role.isActive && role.isStaff) || selectedRoles.length > 0;
+    if (!hasStaffRole) throw new Error("Select at least one active staff role with role-assignment permission.");
     if (!hasSystemAdmin && requestedBranchIds.length === 0) {
-      throw new Error(
-        "Select at least one active branch for non-system-admin staff.",
-      );
+      const { data: existingAssignments, error: assignmentError } = existingUser
+        ? await admin.from("user_branch_access").select("church_branch_id").eq("user_id", existingUser.id)
+        : { data: [], error: null };
+      if (assignmentError) throw new Error("Unable to verify existing staff branches.");
+      const { data: activeBranches, error: branchError } = await admin.from("church_branches")
+        .select("id").eq("is_active", true)
+        .in("id", (existingAssignments ?? []).map((row) => row.church_branch_id));
+      if (branchError) throw new Error("Unable to verify existing staff branches.");
+      if (!activeBranches?.length) {
+        throw new Error("Select at least one active branch for non-system-admin staff.");
+      }
     }
 
     await assertActiveAccountBranchIds(
@@ -909,28 +909,9 @@ export async function createStaffAccount(
 
     provisioningStarted = true;
 
-    await ensureProvisionProfile(
-      admin,
-      userId,
-      displayName,
-    );
-
-    const { error: roleAssignmentError } = await admin
-      .from("user_roles")
-      .upsert(
-        selectedRoles.map((role) => ({
-          user_id: userId,
-          role_id: role.id,
-        })),
-        {
-          onConflict: "user_id,role_id",
-          ignoreDuplicates: true,
-        },
-      );
-
-    if (roleAssignmentError) {
-      throw new Error(roleAssignmentError.message);
-    }
+    // Promotion preserves an existing account's label. Renaming has its own
+    // permission and action; inviting must not implicitly rename the account.
+    if (newlyInvited) await ensureProvisionProfile(admin, userId, displayName);
 
     if (!hasSystemAdmin && requestedBranchIds.length > 0) {
       const { error: branchAssignmentError } = await admin
@@ -951,6 +932,25 @@ export async function createStaffAccount(
       }
     }
 
+    if (selectedRoles.length > 0) {
+      const { error: roleAssignmentError } = await admin
+        .from("user_roles")
+        .upsert(
+          selectedRoles.map((role) => ({
+            user_id: userId,
+            role_id: role.id,
+          })),
+          {
+            onConflict: "user_id,role_id",
+            ignoreDuplicates: true,
+          },
+        );
+
+      if (roleAssignmentError) {
+        throw new Error(roleAssignmentError.message);
+      }
+    }
+
     revalidateStaffAccess(userId);
 
     return {
@@ -959,6 +959,7 @@ export async function createStaffAccount(
       created: newlyInvited,
     };
   } catch (error) {
+    unstable_rethrow(error);
     if (userId && provisioningStarted) {
       revalidateStaffAccess(userId);
     }

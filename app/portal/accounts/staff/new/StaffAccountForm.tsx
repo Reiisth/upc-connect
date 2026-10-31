@@ -28,6 +28,8 @@ export type StaffAccountBranchOption = {
 };
 
 type StaffAccountFormProps = {
+  canManageRoles: boolean;
+  canManageBranches: boolean;
   roles: StaffAccountRoleOption[];
   branches: StaffAccountBranchOption[];
 };
@@ -35,6 +37,8 @@ type StaffAccountFormProps = {
 export default function StaffAccountForm({
   roles,
   branches,
+  canManageRoles,
+  canManageBranches,
 }: StaffAccountFormProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
@@ -79,18 +83,6 @@ export default function StaffAccountForm({
 
     if (!normalizedEmail) {
       setError("Email is required.");
-      return;
-    }
-
-    if (selectedRoleIds.length === 0) {
-      setError("Select at least one staff role.");
-      return;
-    }
-
-    if (!hasSystemAdmin && selectedBranchIds.length === 0) {
-      setError(
-        "Select at least one active branch for non-system-admin staff.",
-      );
       return;
     }
 
@@ -185,7 +177,7 @@ export default function StaffAccountForm({
         </div>
       </FormSection>
 
-      <FormSection
+      {canManageRoles ? <FormSection
         title="Staff Roles"
         description="Select one or more non-member staff roles. Existing roles are preserved when an account is promoted."
       >
@@ -244,9 +236,9 @@ export default function StaffAccountForm({
             </div>
           </div>
         )}
-      </FormSection>
+      </FormSection> : <p className="text-sm text-slate-500">Assigning roles requires role-management permission. Existing staff roles are preserved.</p>}
 
-      <FormSection
+      {canManageBranches ? <FormSection
         title="Branch Access"
         description="Assign active branches for staff who do not have system administrator access."
       >
@@ -323,7 +315,9 @@ export default function StaffAccountForm({
             </p>
           </div>
         )}
-      </FormSection>
+      </FormSection> : <p className="text-sm text-slate-500">Assigning branches requires branch-access permission. Existing assignments are preserved.</p>}
+
+      <p className="text-sm text-slate-500">New staff accounts require an active staff role and a branch unless system administrator access is selected. Existing accounts retain their display name, roles and other branch assignments.</p>
 
       {error && (
         <p
@@ -342,9 +336,7 @@ export default function StaffAccountForm({
         <Button
           type="submit"
           disabled={
-            isPending ||
-            roles.length === 0 ||
-            (!hasSystemAdmin && selectedBranchIds.length === 0)
+            isPending
           }
         >
           {isPending

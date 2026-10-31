@@ -32,6 +32,7 @@ import {
 import { TableActionButton } from "@/components/ui/table-action-button";
 
 type Account = {
+  canChangeAccount: boolean;
   userId: string;
   email: string;
   members: string[];
@@ -259,7 +260,7 @@ export default function MemberAccountsTable({
 
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    {account.archivedAt && canRestore ? (
+                    {account.archivedAt && canRestore && account.canChangeAccount ? (
                       <TableActionButton
                         type="button"
                         variant="success"
@@ -273,7 +274,7 @@ export default function MemberAccountsTable({
                       >
                         Restore
                       </TableActionButton>
-                    ) : !account.archivedAt && canArchive ? (
+                    ) : !account.archivedAt && canArchive && account.canChangeAccount ? (
                       <TableActionButton
                         type="button"
                         variant="danger"

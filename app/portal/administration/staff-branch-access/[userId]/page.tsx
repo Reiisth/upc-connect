@@ -1,3 +1,4 @@
+import { requireAccountTarget } from "@/app/portal/accounts/target-scope";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { UsersRound } from "lucide-react";
@@ -40,6 +41,7 @@ async function ManageStaffBranchAccessContent({
   );
 
   const admin = createAdminClient();
+  await requireAccountTarget(access, admin, userId, "branches");
 
   const [
     { data: profile, error: profileError },
@@ -54,7 +56,8 @@ async function ManageStaffBranchAccessContent({
         user_roles (
           role:roles (
             key,
-            is_active
+            is_active,
+            is_staff
           )
         )
       `)
@@ -83,7 +86,7 @@ async function ManageStaffBranchAccessContent({
         ? item.role[0] ?? null
         : item.role ?? null;
 
-      return role?.is_active && role.key
+      return role?.is_active && role.is_staff && role.key
         ? [role.key]
         : [];
     }) ?? [];
@@ -91,7 +94,7 @@ async function ManageStaffBranchAccessContent({
   const isSystemAdmin = roleKeys.includes("system_admin");
 
   const initialBranchIds =
-    assignments?.map(
+    assignments?.filter((row) => access.isSystemAdmin || access.branchIds.includes(row.church_branch_id)).map(
       (assignment) => assignment.church_branch_id,
     ) ?? [];
 

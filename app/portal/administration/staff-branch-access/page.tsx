@@ -1,3 +1,4 @@
+import { getAccountTargetScopes } from "@/app/portal/accounts/target-scope";
 import { Suspense } from "react";
 import { UsersRound } from "lucide-react";
 
@@ -35,6 +36,8 @@ async function StaffBranchAccessContent() {
   );
 
   const admin = createAdminClient();
+  const targets = await getAccountTargetScopes(access, admin);
+  const visibleIds = [...targets.values()].filter((target) => target.canViewStaff).map((target) => target.userId);
 
   const [
     { data: staff, error: staffError },
@@ -49,10 +52,11 @@ async function StaffBranchAccessContent() {
         user_roles (
           role:roles (
             key,
-            is_active
+            is_active,
+            is_staff
           )
         )
-      `),
+      `).in("id", visibleIds),
 
     getAccessibleActiveAccountBranches(access, admin),
 
@@ -61,7 +65,7 @@ async function StaffBranchAccessContent() {
       .select(`
         user_id,
         church_branch_id
-      `),
+      `).in("user_id", visibleIds),
   ]);
 
   if (staffError) {
@@ -81,7 +85,7 @@ async function StaffBranchAccessContent() {
               ? item.role[0] ?? null
               : item.role ?? null;
 
-            return role?.is_active && role.key
+            return role?.is_active && role.is_staff && role.key
               ? [role.key]
               : [];
           }) ?? [];
@@ -93,7 +97,7 @@ async function StaffBranchAccessContent() {
         };
       })
       .filter((profile) =>
-        profile.roles.some((role) => role !== "member"),
+        profile.roles.length > 0,
       ) ?? [];
 
   return (

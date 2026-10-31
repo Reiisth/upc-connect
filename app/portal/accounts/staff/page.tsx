@@ -19,6 +19,7 @@ import StaffAccountsTable, {
   type StaffBranch,
   type StaffRoleSummary,
 } from "./StaffAccountsTable";
+import { getAccountTargetScopes } from "../target-scope";
 import { requireAccountsPermission } from "../access";
 import {
   KeyRound,
@@ -73,6 +74,11 @@ async function StaffAccountsContent() {
   const access = await requireAccountsPermission("accounts.view");
 
   const admin = createAdminClient();
+  const targets = await getAccountTargetScopes(access, admin);
+  const visibleIds = [...targets.values()].filter((target) => target.canViewStaff).map((target) => target.userId);
+
+  let branchQuery = admin.from("church_branches").select("id, name, code, is_active").order("name");
+  if (!access.isSystemAdmin) branchQuery = branchQuery.in("id", access.branchIds);
 
   const [
     { data: staffRoleLinks, error: roleError },
@@ -93,22 +99,22 @@ async function StaffAccountsContent() {
         )
       `)
       .eq("roles.is_staff", true)
-      .eq("roles.is_active", true),
+      .eq("roles.is_active", true).in("user_id", visibleIds),
 
     admin
       .from("profiles")
-      .select("id, display_name, archived_at"),
+      .select("id, display_name, archived_at").in("id", visibleIds),
 
-    admin
-      .from("church_branches")
-      .select("id, name, is_active")
-      .order("name"),
-
+    branchQuery,
     admin
       .from("user_branch_access")
-      .select("user_id, church_branch_id"),
+      .select("user_id, church_branch_id").in("user_id", visibleIds),
 
-    listAllAuthUsers(admin),
+    Promise.all(visibleIds.map(async (id) => {
+      const { data, error } = await admin.auth.admin.getUserById(id);
+      if (error || !data.user) throw new Error("Unable to load account.");
+      return data.user as AuthUser;
+    })),
   ]);
 
   if (roleError) throw new Error(roleError.message);
@@ -197,6 +203,7 @@ async function StaffAccountsContent() {
 
       return {
         id: user.id,
+        canChangeAccount: targets.get(user.id)?.canChangeAccount ?? false,
         displayName: profile?.display_name ?? null,
         email: user.email ?? "No email",
         roles,
@@ -342,35 +349,6 @@ function getAccountStatus({
   if (!emailConfirmedAt) return "unconfirmed";
 
   return "active";
-}
-
-async function listAllAuthUsers(
-  admin: ReturnType<typeof createAdminClient>,
-): Promise<AuthUser[]> {
-  const users: AuthUser[] = [];
-  const perPage = 1000;
-  let page = 1;
-
-  while (true) {
-    const { data, error } = await admin.auth.admin.listUsers({
-      page,
-      perPage,
-    });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    users.push(...data.users);
-
-    if (data.users.length < perPage) {
-      break;
-    }
-
-    page += 1;
-  }
-
-  return users;
 }
 
 function StaffAccountsSkeleton() {

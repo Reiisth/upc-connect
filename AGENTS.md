@@ -114,6 +114,13 @@ Do not hard-delete accounts by default.
 
 Prefer archiving where historical relationships must be preserved.
 
+Account administration requires both an action permission and server-verified
+target scope using `app/portal/accounts/target-scope.ts`. Non-system-admin actors
+see only overlapping member/staff relationships; account-wide mutations require
+full target coverage. Local branch edits preserve assignments outside actor
+scope. Invitations do not imply role/branch assignment permissions, and only an
+active system administrator may grant/remove the system_admin role.
+
 ## Multi-branch
 
 The system supports multiple church branches.

@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasPermission } from "@/lib/permissions";
 import { disconnectMember } from "../../members/actions";
+import { requireAccountTarget } from "../target-scope";
 import { requireAccountsPermission } from "../access";
 
 export default function AccountDetailsPage({
@@ -40,6 +41,7 @@ async function AccountDetailsContent({
   const { userId } = await params;
 
   const admin = createAdminClient();
+  await requireAccountTarget(access, admin, userId, "members");
 
   const { data: authData, error: authError } =
     await admin.auth.admin.getUserById(userId);
@@ -48,21 +50,24 @@ async function AccountDetailsContent({
     redirect("/portal/accounts");
   }
 
-  const { data: links, error: linksError } = await admin
+  let linksQuery = admin
     .from("account_members")
     .select(`
       member_id,
-      members (
+      members!inner (
         id,
         first_name,
         middle_name,
         last_name,
         account_status,
-        profile_status
+        profile_status,
+        church_branch_id
       )
     `)
     .eq("user_id", userId)
     .eq("relationship", "member");
+  if (!access.isSystemAdmin) linksQuery = linksQuery.in("members.church_branch_id", access.branchIds);
+  const { data: links, error: linksError } = await linksQuery;
 
   if (linksError) {
     throw new Error(linksError.message);
@@ -146,7 +151,7 @@ async function AccountDetailsContent({
         {links?.length ? (
           <div className="divide-y">
             {links.map((link) => {
-              const member = link.members?.[0];
+              const member = Array.isArray(link.members) ? link.members[0] : link.members;
 
               if (!member) return null;
 

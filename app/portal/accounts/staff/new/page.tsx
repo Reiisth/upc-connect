@@ -6,6 +6,8 @@ import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { hasPermission } from "@/lib/permissions";
+import { isGrantableStaffRole } from "../../target-scope";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getAccessibleActiveAccountBranches,
@@ -36,6 +38,8 @@ export default function NewStaffAccountPage() {
 async function NewStaffAccountContent() {
   const access = await requireAccountsPermission("accounts.invite");
 
+  const canManageRoles = hasPermission(access.permissions, "accounts.manage_roles");
+  const canManageBranches = hasPermission(access.permissions, "accounts.manage_branch_access");
   const admin = createAdminClient();
 
   const [
@@ -58,17 +62,17 @@ async function NewStaffAccountContent() {
   const roles: StaffAccountRoleOption[] = (
     (roleRows ?? []) as RoleRow[]
   )
-    .filter((role) => role.is_staff && role.is_active)
+    .filter((role) => canManageRoles && isGrantableStaffRole(access, role))
     .map((role) => ({
       id: role.id,
       key: role.key,
       displayName: role.display_name?.trim() || formatRole(role.key),
     }));
 
-  const branchOptions = await getAccessibleActiveAccountBranches(
+  const branchOptions = canManageBranches ? await getAccessibleActiveAccountBranches(
     access,
     admin,
-  );
+  ) : [];
   const branches: StaffAccountBranchOption[] = branchOptions.map((branch) => ({
     id: branch.id,
     name: branch.name,
@@ -86,14 +90,14 @@ async function NewStaffAccountContent() {
         description="Invite a new staff user or grant staff access to an existing account."
       />
 
-      {roles.length === 0 ? (
+      {canManageRoles && roles.length === 0 ? (
         <EmptyState
           icon={<ShieldPlus className="h-5 w-5" />}
           title="No staff roles available"
           description="Add a recognized staff role before creating a staff account."
         />
       ) : (
-        <StaffAccountForm roles={roles} branches={branches} />
+        <StaffAccountForm roles={roles} branches={branches} canManageRoles={canManageRoles} canManageBranches={canManageBranches} />
       )}
     </PageContainer>
   );

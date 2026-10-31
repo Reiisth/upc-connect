@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAccountTarget } from "../target-scope";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   assertSystemAdminChangeSafe,
@@ -8,11 +9,12 @@ import {
 } from "../access";
 
 export async function archiveMemberAccount(userId: string) {
-  const { user: currentUser } = await requireAccountsPermission(
+  const access = await requireAccountsPermission(
     "accounts.archive",
   );
 
   const admin = createAdminClient();
+  await requireAccountTarget(access, admin, userId);
 
   const { data: authData, error: authError } =
     await admin.auth.admin.getUserById(userId);
@@ -42,7 +44,7 @@ export async function archiveMemberAccount(userId: string) {
   await assertSystemAdminChangeSafe(
     admin,
     userId,
-    currentUser.id,
+    access.user.id,
     "archive",
   );
 
@@ -64,9 +66,10 @@ export async function archiveMemberAccount(userId: string) {
 }
 
 export async function restoreMemberAccount(userId: string) {
-  await requireAccountsPermission("accounts.restore");
+  const access = await requireAccountsPermission("accounts.restore");
 
   const admin = createAdminClient();
+  await requireAccountTarget(access, admin, userId);
 
   const { data: authData, error: authError } =
     await admin.auth.admin.getUserById(userId);

@@ -42,5 +42,6 @@ schema history; verify direct database access separately before claiming databas
 wide archive revocation. Phase 1A changes normal portal pages/actions only.
 
 Branch-scope special cases, last-admin safeguards, and system-role protections
-are unchanged. Navigation, operational modules, target-account branch scope and
-grantable-role policy remain for later phases.
+are unchanged. Phase 1B account target scope and grantable-role rules are documented
+in `app/portal/accounts/README.md`. Navigation and operational-module changes
+remain for later phases.

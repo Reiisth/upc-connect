@@ -15,6 +15,7 @@ import { Suspense } from "react";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasPermission } from "@/lib/permissions";
+import { getAccountTargetScopes } from "../target-scope";
 import { requireAccountsPermission } from "../access";
 
 export default function MemberAccountsPage() {
@@ -28,20 +29,25 @@ export default function MemberAccountsPage() {
 async function MemberAccountsContent() {
   const access = await requireAccountsPermission("accounts.view");
   const admin = createAdminClient();
+  const targets = await getAccountTargetScopes(access, admin);
+  const visibleIds = [...targets.values()].filter((target) => target.canViewMembers).map((target) => target.userId);
 
-  const { data: links, error } = await admin
+  let linksQuery = admin
     .from("account_members")
     .select(`
       user_id,
       member_id,
-      members (
+      members!inner (
         id,
         first_name,
         middle_name,
-        last_name
+        last_name,
+        church_branch_id
       )
     `)
-    .eq("relationship", "member");
+    .eq("relationship", "member").in("user_id", visibleIds);
+  if (!access.isSystemAdmin) linksQuery = linksQuery.in("members.church_branch_id", access.branchIds);
+  const { data: links, error } = await linksQuery;
 
   if (error) {
     throw new Error(error.message);
@@ -120,6 +126,7 @@ async function MemberAccountsContent() {
       email: data.user.email ?? "—",
       members: account.members,
       archivedAt: profile.archived_at,
+      canChangeAccount: targets.get(account.userId)?.canChangeAccount ?? false,
     });
   }
 

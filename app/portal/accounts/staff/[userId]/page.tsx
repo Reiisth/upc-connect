@@ -13,6 +13,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 
 import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isGrantableStaffRole, requireAccountTarget } from "../../target-scope";
 import { requireAccountsPermission } from "../../access";
 
 import type { StaffAccountStatus } from "../StaffAccountsTable";
@@ -78,6 +79,10 @@ async function StaffAccountDetailsContent({
 
   const { userId } = await params;
   const admin = createAdminClient();
+  const targetScope = await requireAccountTarget(access, admin, userId, "staff");
+
+  let branchQuery = admin.from("church_branches").select("id, name, code, is_active").order("name");
+  if (!access.isSystemAdmin) branchQuery = branchQuery.in("id", access.branchIds);
 
   const [
     { data: authData, error: authError },
@@ -121,11 +126,7 @@ async function StaffAccountDetailsContent({
       .eq("id", userId)
       .maybeSingle(),
 
-    admin
-      .from("church_branches")
-      .select("id, name, code, is_active")
-      .order("name"),
-
+    branchQuery,
     admin
       .from("user_branch_access")
       .select("church_branch_id")
@@ -179,13 +180,13 @@ async function StaffAccountDetailsContent({
   const isArchived = Boolean(profileData?.archived_at);
   const branches = (branchRows ?? []) as BranchRow[];
   const assignedBranchIds = new Set(
-    ((assignments ?? []) as BranchAccessRow[]).map(
+    ((assignments ?? []) as BranchAccessRow[]).filter((row) => access.isSystemAdmin || access.branchIds.includes(row.church_branch_id)).map(
       (assignment) => assignment.church_branch_id,
     ),
   );
   const isSystemAdmin = roleKeys.includes("system_admin");
   const availableRoles = ((availableRoleRows ?? []) as RoleRow[])
-    .filter((role) => role.is_staff && role.is_active)
+    .filter((role) => isGrantableStaffRole(access, role))
     .map<StaffRoleOption>((role) => ({
       id: role.id,
       key: role.key,
@@ -203,11 +204,11 @@ async function StaffAccountDetailsContent({
         access.isSystemAdmin || access.branchIds.includes(branch.id),
     }),
   );
-  const canUpdateDisplayName = hasPermission(
+  const canUpdateDisplayName = targetScope.canChangeAccount && hasPermission(
     access.permissions,
     "accounts.update_display_name",
   );
-  const canManageRoles = hasPermission(
+  const canManageRoles = targetScope.canChangeAccount && hasPermission(
     access.permissions,
     "accounts.manage_roles",
   );
@@ -215,11 +216,11 @@ async function StaffAccountDetailsContent({
     access.permissions,
     "accounts.manage_branch_access",
   );
-  const canArchive = hasPermission(
+  const canArchive = targetScope.canChangeAccount && hasPermission(
     access.permissions,
     "accounts.archive",
   );
-  const canRestore = hasPermission(
+  const canRestore = targetScope.canChangeAccount && hasPermission(
     access.permissions,
     "accounts.restore",
   );
@@ -248,6 +249,13 @@ async function StaffAccountDetailsContent({
         title={title}
         description="View staff account access and account information."
       />
+
+      {!targetScope.canChangeAccount && (
+        <p className="text-sm text-slate-600">
+          Account-wide changes require access to every linked member and staff
+          branch. You can manage branch assignments within your scope.
+        </p>
+      )}
 
       <Card>
         <CardContent className="p-5 sm:p-6">

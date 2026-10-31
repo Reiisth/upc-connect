@@ -50,6 +50,7 @@ export type StaffRoleSummary = {
 };
 
 export type StaffAccount = {
+  canChangeAccount: boolean;
   id: string;
   displayName: string | null;
   email: string;
@@ -375,7 +376,7 @@ export default function StaffAccountsTable({
                 </TableCell>
 
                 <TableCell>
-                  {account.status === "archived" && canRestore ? (
+                  {account.status === "archived" && canRestore && account.canChangeAccount ? (
                     <TableActionButton
                       type="button"
                       variant="success"
@@ -386,7 +387,7 @@ export default function StaffAccountsTable({
                     >
                       Restore
                     </TableActionButton>
-                  ) : account.status === "deleted" || !canArchive ? (
+                  ) : account.status === "deleted" || !canArchive || !account.canChangeAccount ? (
                     <span className="text-sm text-slate-400">
                       Unavailable
                     </span>
