@@ -4,8 +4,6 @@ import {
   Building2,
   Pencil,
   Plus,
-  Power,
-  PowerOff,
 } from "lucide-react";
 
 import { hasPermission } from "@/lib/permissions";
@@ -27,9 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableActionButton } from "@/components/ui/table-action-button";
-import { TableActionSubmit } from "@/components/ui/table-action-submit";
-
-import { setBranchActive } from "./actions";
+import { BranchLifecycleAction } from "./BranchLifecycleAction";
 
 export default function BranchesPage() {
   return (
@@ -94,14 +90,6 @@ async function BranchesContent() {
           icon={<Building2 className="h-5 w-5" />}
           title="No church branches yet"
           description="Create your first church branch to start organizing members and staff by location."
-          action={canManageBranches ? (
-            <Button asChild>
-              <Link href="/portal/administration/branches/new">
-                <Plus />
-                Add Branch
-              </Link>
-            </Button>
-          ) : undefined}
         />
       ) : (
         <Table>
@@ -174,25 +162,11 @@ async function BranchesContent() {
                           Edit
                         </TableActionButton>
 
-                        <form
-                          action={setBranchActive.bind(
-                            null,
-                            branch.id,
-                            !branch.is_active,
-                          )}
-                        >
-                          <TableActionSubmit
-                            variant={branch.is_active ? "danger" : "success"}
-                            pendingLabel={
-                              branch.is_active
-                                ? "Deactivating..."
-                                : "Activating..."
-                            }
-                            icon={branch.is_active ? <PowerOff /> : <Power />}
-                          >
-                            {branch.is_active ? "Deactivate" : "Activate"}
-                          </TableActionSubmit>
-                        </form>
+                        <BranchLifecycleAction
+                          branchId={branch.id}
+                          branchName={branch.name}
+                          isActive={branch.is_active}
+                        />
                       </div>
                     ) : (
                       <span className="text-sm text-slate-500">

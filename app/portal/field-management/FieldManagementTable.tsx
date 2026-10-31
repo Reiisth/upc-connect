@@ -6,7 +6,7 @@ import {
   saveFieldConfiguration,
   restoreDefaultFieldConfiguration
 } from "./actions";
-import ConfirmActionModal from "../members/ConfirmActionModal";
+import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,

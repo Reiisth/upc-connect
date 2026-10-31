@@ -9,8 +9,10 @@ type ConfirmActionModalProps = {
   title: string;
   description: string;
   confirmLabel?: string;
+  loadingLabel?: string;
   cancelLabel?: string;
   variant?: "default" | "danger";
+  destructive?: boolean;
   loading?: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -21,8 +23,10 @@ export function ConfirmActionModal({
   title,
   description,
   confirmLabel = "Confirm",
+  loadingLabel = "Please wait...",
   cancelLabel = "Cancel",
   variant = "default",
+  destructive,
   loading = false,
   onConfirm,
   onClose,
@@ -71,11 +75,11 @@ export function ConfirmActionModal({
 
           <Button
             type="button"
-            variant={variant === "danger" ? "destructive" : "default"}
+            variant={destructive || variant === "danger" ? "destructive" : "default"}
             onClick={onConfirm}
             disabled={loading}
           >
-            {loading ? "Please wait..." : confirmLabel}
+            {loading ? loadingLabel : confirmLabel}
           </Button>
         </div>
       </div>
