@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { assertServiceTransition } from "./lifecycle";
 
 import {
   assertActiveServiceBranch,
@@ -144,7 +145,7 @@ export async function updateService(
   const { data: currentService, error: currentError } =
     await admin
       .from("services")
-      .select("id, church_branch_id")
+      .select("id, church_branch_id, service_date, status")
       .eq("id", serviceId)
       .maybeSingle();
 
@@ -167,17 +168,45 @@ export async function updateService(
     payload.church_branch_id,
   );
 
-  const { error } = await admin
+  assertServiceTransition(currentService.status as ServiceStatus, payload.status);
+  const branchChanged = currentService.church_branch_id !== payload.church_branch_id;
+  const dateChanged = currentService.service_date !== payload.service_date;
+  if (branchChanged || dateChanged) {
+    const [attendance, contributions] = await Promise.all([
+      admin.from("attendance_records").select("id").eq("service_id", serviceId).limit(1),
+      branchChanged
+        ? admin.from("financial_contributions").select("id").eq("service_id", serviceId).limit(1)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (attendance.error || contributions.error) {
+      throw new Error("Unable to verify the service's historical records.");
+    }
+    if (branchChanged && (attendance.data?.length || contributions.data?.length)) {
+      throw new Error("The service branch cannot change after attendance or linked contributions exist.");
+    }
+    if (dateChanged && attendance.data?.length) {
+      throw new Error("The service date cannot change after attendance exists.");
+    }
+  }
+
+  const { data: updated, error } = await admin
     .from("services")
     .update(payload)
-    .eq("id", serviceId);
+    .eq("id", serviceId)
+    .eq("church_branch_id", currentService.church_branch_id)
+    .eq("service_date", currentService.service_date)
+    .eq("status", currentService.status)
+    .select("id").maybeSingle();
 
   if (error) {
     throw new Error(error.message);
   }
+  if (!updated) throw new Error("The service changed while saving. Refresh and try again.");
 
   revalidatePath(servicesPath);
   revalidatePath(`${servicesPath}/${serviceId}/edit`);
+  revalidatePath("/portal/attendance");
+  revalidatePath(`/portal/attendance/${serviceId}`);
 
   redirect(servicesPath);
 }

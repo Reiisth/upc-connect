@@ -17,6 +17,7 @@ import {
   type ServiceType,
 } from "./types";
 import type { ServiceBranchOption } from "./access";
+import { allowedServiceStatuses } from "./lifecycle";
 
 export type ServiceFormValues = {
   name: string;
@@ -109,7 +110,7 @@ export function ServiceForm({
               required
               defaultValue={formValues.status}
             >
-              {SERVICE_STATUSES.map((status) => (
+              {(values ? allowedServiceStatuses(values.status) : SERVICE_STATUSES).map((status) => (
                 <option key={status} value={status}>
                   {formatServiceStatus(status)}
                 </option>
@@ -134,7 +135,7 @@ export function ServiceForm({
           <FormField
             label="Start Time"
             htmlFor="start-time"
-            description="Optional. Use the local branch time."
+            description="Optional. Use Asia/Manila local time."
           >
             <Input
               id="start-time"
@@ -150,7 +151,7 @@ export function ServiceForm({
             htmlFor="church-branch"
             required
             className="md:col-span-2"
-            description="Only active branches assigned to your account are available."
+            description="Only active branches assigned to your account are available. Branch changes lock after attendance or linked contributions; date changes lock after attendance."
           >
             <Select
               id="church-branch"

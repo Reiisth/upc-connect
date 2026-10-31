@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation";
-
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, requireActiveAccount } from "@/lib/auth";
 import {
   requirePermission,
   type PermissionContext,
@@ -42,11 +40,7 @@ export async function requireAttendancePermission(
  * the exact operation before writing.
  */
 export async function getAttendanceBranchContext(): Promise<AttendanceBranchContext> {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const { user } = await requireActiveAccount();
 
   const branchScope = await getUserBranchScope(user.id);
 

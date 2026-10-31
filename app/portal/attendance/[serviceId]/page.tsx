@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 import { hasPermission } from "@/lib/permissions";
+import { canRecordServiceAttendance, canCorrectServiceAttendance } from "../../services/lifecycle";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { requireAttendancePermission } from "../access";
@@ -63,11 +64,11 @@ async function AttendanceServiceContent({
 
   const rows = await loadAttendanceRows(admin, service);
   const summary = getAttendanceSummary(rows);
-  const canRecord = hasPermission(
+  const canRecord = canRecordServiceAttendance(service.status) && hasPermission(
     access.permissions,
     "attendance.record",
   );
-  const canCorrect = hasPermission(
+  const canCorrect = canCorrectServiceAttendance(service.status) && hasPermission(
     access.permissions,
     "attendance.correct",
   );
@@ -100,8 +101,9 @@ async function AttendanceServiceContent({
         <CardHeader>
           <CardTitle>Service Information</CardTitle>
           <CardDescription>
-            Absence is inferred when an eligible active member has no attendance
-            record for this service.
+            Recorded attendance is preserved after transfers, archive and status
+            changes. Unrecorded rows describe the current eligible roster, not a
+            reconstructed historical absence list.
           </CardDescription>
         </CardHeader>
 
@@ -149,6 +151,14 @@ async function AttendanceServiceContent({
           )}
         </CardContent>
       </Card>
+
+      {service.status === "cancelled" && summary.totalRecorded > 0 && (
+        <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          This cancelled service has recorded attendance. Its history is preserved
+          and read-only; cancelled services are excluded from attendance analytics
+          and inactivity calculations.
+        </p>
+      )}
 
       <AttendanceView
         serviceId={service.id}

@@ -440,6 +440,7 @@ function formatCheckInTime(value: string) {
   if (Number.isNaN(date.getTime())) return value;
 
   return date.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
     dateStyle: "medium",
     timeStyle: "short",
   });

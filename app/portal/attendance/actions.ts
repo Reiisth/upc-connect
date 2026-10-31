@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { parseManilaDateTime, toManilaDateTimeValue } from "@/lib/manila-time";
+import { assertServiceAttendance } from "../services/lifecycle";
 
 import {
   getAttendanceBranchContext,
@@ -11,7 +13,6 @@ import {
 import { loadAccessibleService } from "./data";
 import {
   ATTENDANCE_STATUSES,
-  canScanServiceStatus,
   type AttendanceStatus,
   type QrAttendanceResult,
 } from "./types";
@@ -35,21 +36,7 @@ function parseCheckInTime(
       : new Date().toISOString();
   }
 
-  if (
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(
-      value,
-    )
-  ) {
-    throw new Error("Enter a valid check-in time.");
-  }
-
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    throw new Error("Enter a valid check-in time.");
-  }
-
-  return parsed.toISOString();
+  return parseManilaDateTime(value);
 }
 
 function getAttendanceStatus(formData: FormData) {
@@ -65,6 +52,7 @@ function getAttendanceStatus(formData: FormData) {
 async function updateAttendanceRecord(
   admin: ReturnType<typeof createAdminClient>,
   recordId: string,
+  serviceId: string,
   payload: {
     attendance_status: AttendanceStatus;
     method: string;
@@ -72,14 +60,16 @@ async function updateAttendanceRecord(
     recorded_by: string;
   },
 ) {
-  const { error } = await admin
+  const { data, error } = await admin
     .from("attendance_records")
     .update(payload)
-    .eq("id", recordId);
+    .eq("id", recordId).eq("service_id", serviceId)
+    .select("id").maybeSingle();
 
   if (error) {
     throw new Error(error.message);
   }
+  if (!data) throw new Error("The attendance record changed or was removed. Refresh and try again.");
 }
 
 function parseMemberQrValue(value: string) {
@@ -154,23 +144,7 @@ export async function recordQrAttendance(
     );
   }
 
-  if (!canScanServiceStatus(service.status)) {
-    if (service.status === "cancelled") {
-      throw new Error(
-        "QR attendance is not available for cancelled services.",
-      );
-    }
-
-    if (service.status === "completed") {
-      throw new Error(
-        "QR attendance is closed for completed services.",
-      );
-    }
-
-    throw new Error(
-      "QR attendance is not available for this service status.",
-    );
-  }
+  assertServiceAttendance(service.status, "record");
 
   const { data: member, error: memberError } = await admin
     .from("members")
@@ -304,72 +278,46 @@ export async function saveAttendanceRecord(
     );
   }
 
-  const { data: member, error: memberError } = await admin
-    .from("members")
-    .select(
-      "id, church_branch_id, member_status, is_archived",
-    )
-    .eq("id", memberId)
-    .maybeSingle();
-
-  if (memberError) {
-    throw new Error(memberError.message);
-  }
-
-  if (!member) {
-    throw new Error("The selected member could not be found.");
-  }
-
-  if (member.church_branch_id !== service.churchBranchId) {
-    throw new Error(
-      "The selected member does not belong to the service branch.",
-    );
-  }
-
-  if (member.is_archived || member.member_status !== "active") {
-    throw new Error(
-      "Attendance can only be recorded for active members.",
-    );
-  }
-
   const { data: existing, error: existingError } = await admin
     .from("attendance_records")
-    .select("id")
-    .eq("service_id", serviceId)
-    .eq("member_id", memberId)
-    .maybeSingle();
+    .select("id, check_in_time")
+    .eq("service_id", serviceId).eq("member_id", memberId).maybeSingle();
+  if (existingError) throw new Error(existingError.message);
 
-  if (existingError) {
-    throw new Error(existingError.message);
+  const requestedRecordId = getFormText(formData, "attendance_record_id");
+  if (requestedRecordId && requestedRecordId !== existing?.id) {
+    throw new Error("The selected historical attendance record is no longer available.");
   }
-
+  const operation = existing ? "correct" : "record";
   const access = await requireAttendancePermission(
-    existing?.id
-      ? "attendance.correct"
-      : "attendance.record",
+    existing ? "attendance.correct" : "attendance.record",
   );
-  const authorizedService = await loadAccessibleService(
-    access,
-    admin,
-    serviceId,
-  );
-
+  const authorizedService = await loadAccessibleService(access, admin, serviceId);
   if (!authorizedService) {
-    throw new Error(
-      "The selected service was not found or is outside your branch access.",
-    );
+    throw new Error("The selected service was not found or is outside your branch access.");
   }
+  assertServiceAttendance(authorizedService.status, operation);
 
-  if (member.church_branch_id !== authorizedService.churchBranchId) {
-    throw new Error(
-      "The selected member does not belong to the service branch.",
-    );
+  if (!existing) {
+    const { data: member, error: memberError } = await admin.from("members")
+      .select("id, church_branch_id, member_status, is_archived").eq("id", memberId).maybeSingle();
+    if (memberError) throw new Error(memberError.message);
+    if (!member || member.church_branch_id !== authorizedService.churchBranchId ||
+        member.is_archived || member.member_status !== "active") {
+      throw new Error("New attendance requires an active, non-archived member currently in the service branch.");
+    }
   }
+  // The record's service is the correction scope. Today's member branch,
+  // archive status and stored status do not rewrite that historical fact.
+  const suppliedTime = getFormText(formData, "check_in_time");
+  const preservedTime = existing?.check_in_time && suppliedTime &&
+    toManilaDateTimeValue(existing.check_in_time) === toManilaDateTimeValue(checkInTime ?? "")
+      ? existing.check_in_time : checkInTime;
 
   const payload = {
     attendance_status: attendanceStatus,
     method: "manual",
-    check_in_time: checkInTime,
+    check_in_time: preservedTime,
     recorded_by: access.user.id,
   };
 
@@ -377,6 +325,7 @@ export async function saveAttendanceRecord(
     await updateAttendanceRecord(
       admin,
       existing.id,
+      serviceId,
       payload,
     );
   } else {
@@ -417,7 +366,10 @@ export async function saveAttendanceRecord(
         "attendance.correct",
       );
 
-      await updateAttendanceRecord(admin, concurrent.id, {
+      const correctionService = await loadAccessibleService(correctionAccess, admin, serviceId);
+      if (!correctionService) throw new Error("Service is outside your branch access.");
+      assertServiceAttendance(correctionService.status, "correct");
+      await updateAttendanceRecord(admin, concurrent.id, serviceId, {
         ...payload,
         recorded_by: correctionAccess.user.id,
       });

@@ -31,6 +31,7 @@ import {
 import { TableActionButton } from "@/components/ui/table-action-button";
 
 import { saveAttendanceRecord } from "./actions";
+import { formatManilaTimestamp, toManilaDateTimeValue } from "@/lib/manila-time";
 import {
   formatAttendanceStatus,
   formatMemberName,
@@ -101,11 +102,8 @@ export default function AttendanceView({
 
   const recordableRows = useMemo(
     () => {
-      if (canRecord && canCorrect) return rows;
-
-      return canRecord
-        ? rows.filter((row) => row.attendance === null)
-        : rows.filter((row) => row.attendance !== null);
+      return rows.filter((row) => row.attendance
+        ? canCorrect : canRecord && row.isCurrentlyEligible);
     },
     [canCorrect, canRecord, rows],
   );
@@ -117,7 +115,7 @@ export default function AttendanceView({
     setSelectedStatus(row.attendance?.status ?? "present");
     setCheckInTime(
       row.attendance?.checkInTime
-        ? toLocalDateTimeValue(row.attendance.checkInTime)
+        ? toManilaDateTimeValue(row.attendance.checkInTime)
         : "",
     );
     setErrorMessage(null);
@@ -153,9 +151,9 @@ export default function AttendanceView({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <AttendanceSummaryCard
-          label="Eligible Members"
+          label="Currently Eligible Members"
           value={summary.totalEligible}
           icon={<Search />}
         />
@@ -182,11 +180,12 @@ export default function AttendanceView({
         />
 
         <AttendanceSummaryCard
-          label="Absent (inferred)"
+          label="No Record (Current Roster)"
           value={summary.absent}
           icon={<SearchX />}
           valueClassName="text-slate-600"
         />
+        <AttendanceSummaryCard label="Physical Check-ins" value={summary.totalCheckIns} icon={<CheckCircle2 />} />
       </div>
 
       {canEdit ? (
@@ -201,6 +200,8 @@ export default function AttendanceView({
           }
         >
           <form onSubmit={handleSubmit} className="space-y-5">
+            <input type="hidden" name="attendance_record_id"
+              value={rows.find((row) => row.member.id === selectedMemberId)?.attendance?.id ?? ""} />
             <div className="grid gap-5 md:grid-cols-3">
               <FormField
                 label="Member"
@@ -257,7 +258,7 @@ export default function AttendanceView({
               </FormField>
 
               <FormField
-                label="Check-in Time"
+                label="Check-in Time (Manila)"
                 htmlFor="attendance-check-in"
                 description="Leave blank for excused attendance or to use the current time."
               >
@@ -265,6 +266,7 @@ export default function AttendanceView({
                   id="attendance-check-in"
                   name="check_in_time"
                   type="datetime-local"
+                  step="1"
                   value={checkInTime}
                   onChange={(event) => setCheckInTime(event.target.value)}
                   disabled={isPending}
@@ -351,7 +353,7 @@ export default function AttendanceView({
             <option value="present">Present</option>
             <option value="late">Late</option>
             <option value="excused">Excused</option>
-            <option value="absent">Absent (inferred)</option>
+            <option value="absent">No record (current roster)</option>
           </Select>
         </div>
 
@@ -366,7 +368,7 @@ export default function AttendanceView({
             description={
               search.trim() || statusFilter !== "all"
                 ? "No attendance rows match your current search or status filter."
-                : "There are no active, non-archived members assigned to this service branch."
+                  : "No current eligible members or historical attendance records are available for this service."
             }
           />
         ) : (
@@ -392,19 +394,20 @@ export default function AttendanceView({
                       <p className="font-medium text-slate-900">
                         {formatMemberName(row.member)}
                       </p>
+                      {!row.isCurrentlyEligible && <p className="text-xs text-slate-500">Historical attendee{row.member.isArchived ? " · Archived" : ""}</p>}
                     </TableCell>
 
                     <TableCell>
                       <StatusBadge variant={statusVariants[rowStatus]}>
                         {row.attendance
                           ? formatAttendanceStatus(row.attendance.status)
-                          : "Absent (inferred)"}
+                          : "No record (current roster)"}
                       </StatusBadge>
                     </TableCell>
 
                     <TableCell className="whitespace-nowrap">
                       {row.attendance?.checkInTime
-                        ? formatCheckInTime(row.attendance.checkInTime)
+                        ? formatManilaTimestamp(row.attendance.checkInTime)
                         : "—"}
                     </TableCell>
 
@@ -430,7 +433,7 @@ export default function AttendanceView({
                         >
                           Correct
                         </TableActionButton>
-                      ) : !row.attendance && canRecord ? (
+                      ) : !row.attendance && canRecord && row.isCurrentlyEligible ? (
                         <TableActionButton
                           type="button"
                           onClick={() => selectMember(row)}
@@ -487,27 +490,4 @@ function AttendanceSummaryCard({
       </CardContent>
     </Card>
   );
-}
-
-function toLocalDateTimeValue(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "";
-
-  const pad = (part: number) => String(part).padStart(2, "0");
-
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-    date.getDate(),
-  )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function formatCheckInTime(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleString("en-PH", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 }

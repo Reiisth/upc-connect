@@ -2,6 +2,7 @@ import type {
   ServiceBranch,
   ServiceRecord,
 } from "../services/types";
+import { canRecordServiceAttendance } from "../services/lifecycle";
 
 export const ATTENDANCE_STATUSES = [
   "present",
@@ -43,6 +44,7 @@ export type AttendanceRecord = {
 export type AttendanceMemberRow = {
   member: AttendanceMember;
   attendance: AttendanceRecord | null;
+  isCurrentlyEligible: boolean;
 };
 
 export type AttendanceSummary = {
@@ -51,6 +53,8 @@ export type AttendanceSummary = {
   late: number;
   excused: number;
   absent: number;
+  totalRecorded: number;
+  totalCheckIns: number;
 };
 
 export type AttendanceService = ServiceRecord & {
@@ -75,9 +79,7 @@ export type QrAttendanceResult =
 export function canScanServiceStatus(
   status: string,
 ): status is QrScannableServiceStatus {
-  return QR_SCANNABLE_SERVICE_STATUSES.includes(
-    status as QrScannableServiceStatus,
-  );
+  return canRecordServiceAttendance(status);
 }
 
 export function formatMemberName(member: AttendanceMember) {
@@ -87,7 +89,7 @@ export function formatMemberName(member: AttendanceMember) {
     member.lastName,
   ]
     .filter(Boolean)
-    .join(" ") || "Unnamed member";
+    .join(" ") || `Member ${member.id}`;
 }
 
 export function formatAttendanceStatus(value: string) {
@@ -98,20 +100,24 @@ export function getAttendanceSummary(
   rows: AttendanceMemberRow[],
 ): AttendanceSummary {
   const summary: AttendanceSummary = {
-    totalEligible: rows.length,
+    totalEligible: rows.filter((row) => row.isCurrentlyEligible).length,
     present: 0,
     late: 0,
     excused: 0,
     absent: 0,
+    totalRecorded: 0,
+    totalCheckIns: 0,
   };
 
   for (const row of rows) {
     if (!row.attendance) {
-      summary.absent += 1;
+      if (row.isCurrentlyEligible) summary.absent += 1;
       continue;
     }
 
     summary[row.attendance.status] += 1;
+    summary.totalRecorded += 1;
+    if (row.attendance.status === "present" || row.attendance.status === "late") summary.totalCheckIns += 1;
   }
 
   return summary;

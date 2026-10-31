@@ -1,5 +1,7 @@
 "use client";
 
+import { serviceTimestamp } from "@/lib/manila-time";
+
 import {
   ClipboardCheck,
   Search,
@@ -310,12 +312,7 @@ function compareServices(
 }
 
 function getServiceTimestamp(service: ServiceRecord) {
-  const time = service.startTime || "23:59";
-  const timestamp = new Date(
-    `${service.serviceDate}T${time}`,
-  ).getTime();
-
-  return Number.isFinite(timestamp) ? timestamp : 0;
+  return serviceTimestamp(service.serviceDate, service.startTime);
 }
 
 function formatServiceDate(value: string) {

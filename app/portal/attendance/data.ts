@@ -107,7 +107,7 @@ export async function loadAttendanceRows(
   admin: ReturnType<typeof createAdminClient>,
   service: AttendanceService,
 ) {
-  const { data: memberData, error: memberError } = await admin
+  const memberData = await readAll(admin
     .from("members")
     .select(
       "id, first_name, middle_name, last_name, member_status, is_archived, church_branch_id",
@@ -115,31 +115,27 @@ export async function loadAttendanceRows(
     .eq("church_branch_id", service.churchBranchId)
     .eq("is_archived", false)
     .eq("member_status", "active")
-    .order("last_name")
-    .order("first_name");
-
-  if (memberError) {
-    throw new Error(memberError.message);
-  }
+    .order("id"));
 
   const members = (memberData ?? []) as MemberRow[];
-  const memberIds = members.map((member) => member.id);
-  const attendanceRows: AttendanceRow[] = [];
-
-  if (memberIds.length > 0) {
-    const { data, error } = await admin
-      .from("attendance_records")
-      .select(
-        "id, member_id, attendance_status, check_in_time, method, recorded_by",
-      )
-      .eq("service_id", service.id)
-      .in("member_id", memberIds);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    attendanceRows.push(...((data ?? []) as AttendanceRow[]));
+  const eligibleIds = new Set(members.map((member) => member.id));
+  // The service is already authorized by loadAccessibleService. Its recorded
+  // facts anchor history, independent of today's member roster.
+  const attendanceRows = await readAll(admin.from("attendance_records")
+    .select("id, member_id, attendance_status, check_in_time, method, recorded_by")
+    .eq("service_id", service.id).order("id")) as AttendanceRow[];
+  const historicalIds = [...new Set(attendanceRows.map((row) => row.member_id))]
+    .filter((id) => !eligibleIds.has(id));
+  for (let start = 0; start < historicalIds.length; start += 100) {
+    const historicalMembers = await readAll(admin.from("members")
+      .select("id, first_name, middle_name, last_name, member_status, is_archived, church_branch_id")
+      .in("id", historicalIds.slice(start, start + 100)).order("id"));
+    members.push(...historicalMembers as MemberRow[]);
+  }
+  const knownIds = new Set(members.map((member) => member.id));
+  for (const id of historicalIds) {
+    if (!knownIds.has(id)) members.push({ id, first_name: null, middle_name: null,
+      last_name: null, member_status: null, is_archived: false, church_branch_id: "" });
   }
 
   const recorderIds = Array.from(
@@ -170,7 +166,7 @@ export async function loadAttendanceRows(
 
   for (const row of attendanceRows) {
     if (!ATTENDANCE_STATUSES.includes(row.attendance_status as never)) {
-      continue;
+      throw new Error("A historical attendance record has an unsupported status. Review the source data.");
     }
 
     attendanceByMember.set(row.member_id, {
@@ -200,8 +196,25 @@ export async function loadAttendanceRows(
     return {
       member: attendanceMember,
       attendance: attendanceByMember.get(member.id) ?? null,
+      isCurrentlyEligible: eligibleIds.has(member.id),
     };
   });
 
-  return rows;
+  return rows.sort((a, b) =>
+    `${a.member.lastName ?? ""} ${a.member.firstName ?? ""} ${a.member.id}`.localeCompare(
+      `${b.member.lastName ?? ""} ${b.member.firstName ?? ""} ${b.member.id}`,
+    ),
+  );
+}
+
+// Exhaust each result set so a transport row cap cannot hide recorded history.
+// This does not introduce UI pagination or reconstruct a historical roster.
+async function readAll<T>(query: { range(from: number, to: number): PromiseLike<{ data: T[] | null; error: unknown }> }) {
+  const result: T[] = [];
+  for (let start = 0; ; start += 500) {
+    const { data, error } = await query.range(start, start + 499);
+    if (error) throw new Error("Unable to load service attendance.");
+    result.push(...data ?? []);
+    if ((data?.length ?? 0) < 500) return result;
+  }
 }
