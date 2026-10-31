@@ -113,6 +113,11 @@ requires `profile.update` and linked ownership and only writes personal fields.
 Operational fields cannot be configured into self-service. See
 `docs/MEMBER_PROFILE_LIFECYCLE.md` for the exact ownership boundary.
 
+Historical Contribution/Baptism corrections use the record's stored branch,
+independently of the linked member's current branch/status. Record branches are
+immutable; Baptism member/type are also immutable. Only replacement Contribution
+links use current eligibility. See `docs/HISTORICAL_RECORD_INTEGRITY.md`.
+
 ## Account Management
 
 Member accounts may link to multiple member profiles.

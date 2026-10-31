@@ -76,6 +76,7 @@ export async function loadBaptismOptions(
       "id, first_name, middle_name, last_name, member_status, is_archived, church_branch_id",
     )
     .in("church_branch_id", branchIds)
+    .eq("is_archived", false).eq("member_status", "active")
     .order("last_name")
     .order("first_name");
 
@@ -203,6 +204,13 @@ export async function loadBaptismRecords(
       notes: row.notes,
     } satisfies BaptismRecord;
   });
+}
+
+/** Resolve only the identity linked to an already-authorized historical record. */
+export async function loadBaptismHistoricalMemberName(admin: ReturnType<typeof createAdminClient>, memberId: string) {
+  const { data, error } = await admin.from("members").select("first_name, middle_name, last_name").eq("id", memberId).maybeSingle();
+  if (error) throw new Error("Unable to load the historical baptism member.");
+  return data ? formatMemberName(data) : "Unknown member";
 }
 
 export async function loadBaptismForEdit(

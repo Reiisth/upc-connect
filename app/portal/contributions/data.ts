@@ -87,6 +87,7 @@ export async function loadContributionOptions(
         "id, first_name, middle_name, last_name, church_branch_id, is_archived",
       )
       .in("church_branch_id", branchIds)
+      .eq("is_archived", false)
       .order("last_name")
       .order("first_name"),
     admin
@@ -260,6 +261,32 @@ export async function loadContributionRecords(
       : null,
     notes: row.notes,
   }));
+}
+
+/** Call only after loading the contribution through its stored branch scope. */
+export async function loadContributionEditOptions(
+  access: ContributionAccess,
+  admin: ReturnType<typeof createAdminClient>,
+  contribution: ContributionEditRecord,
+) {
+  const options = await loadContributionOptions({ ...access, isSystemAdmin: false, branchIds: [contribution.churchBranchId] }, admin);
+  // The existing identity is resolved by its recorded ID, not today's roster.
+  // Do not expose the member's new, possibly inaccessible branch assignment.
+  if (contribution.memberId && !options.members.some((member) => member.id === contribution.memberId)) {
+    const { data, error } = await admin.from("members").select("id, first_name, middle_name, last_name, is_archived")
+      .eq("id", contribution.memberId).maybeSingle();
+    if (error) throw new Error("Unable to load the historical contributor.");
+    options.members.push({ id: contribution.memberId, fullName: data ? formatMemberName(data) : "Unknown member",
+      churchBranchId: "", isArchived: data?.is_archived ?? false });
+  }
+  if (contribution.serviceId && !options.services.some((service) => service.id === contribution.serviceId)) {
+    const { data, error } = await admin.from("services").select("id, name, service_date, status")
+      .eq("id", contribution.serviceId).maybeSingle();
+    if (error) throw new Error("Unable to load the historical service.");
+    options.services.push({ id: contribution.serviceId, name: data?.name ?? "Unknown service",
+      serviceDate: data?.service_date ?? "", churchBranchId: "", status: data?.status ?? "unknown" });
+  }
+  return options;
 }
 
 export async function loadContributionForEdit(

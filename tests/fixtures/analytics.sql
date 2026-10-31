@@ -10,7 +10,7 @@ CREATE TABLE members (id uuid PRIMARY KEY, church_branch_id uuid, is_archived bo
 CREATE TABLE services (id uuid PRIMARY KEY, church_branch_id uuid, service_date date, service_type text, status text);
 CREATE TABLE attendance_records (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), service_id uuid, member_id uuid, attendance_status text);
 CREATE TABLE financial_contributions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), church_branch_id uuid, member_id uuid, contribution_date date, amount numeric(12,2), contribution_type text, payment_method text);
-CREATE TABLE baptism_records (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), church_branch_id uuid, baptism_date date, baptism_type text);
+CREATE TABLE baptism_records (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), church_branch_id uuid, member_id uuid, baptism_date date, baptism_type text, UNIQUE(member_id, baptism_type));
 CREATE TABLE member_follow_ups (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), church_branch_id uuid, member_id uuid, follow_up_date date, method text, outcome text, next_follow_up_date date, created_at timestamptz DEFAULT now());
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO service_role;
 
@@ -54,12 +54,12 @@ INSERT INTO financial_contributions(church_branch_id,member_id,contribution_date
   ('00000000-0000-0000-0000-000000000001',null,'2026-09-01',1.00,'other','cash'),
   ('00000000-0000-0000-0000-000000000002',null,'2026-10-12',0.05,'tithe','bank_transfer'),
   ('00000000-0000-0000-0000-000000000003',null,'2026-10-12',999.00,'other','cash');
-INSERT INTO baptism_records(church_branch_id,baptism_date,baptism_type) VALUES
-  ('00000000-0000-0000-0000-000000000001','2026-10-05','water'),
-  ('00000000-0000-0000-0000-000000000001','2026-10-12','holy_ghost'),
-  ('00000000-0000-0000-0000-000000000001',null,'water'),
-  ('00000000-0000-0000-0000-000000000001','2026-09-01','holy_ghost'),
-  ('00000000-0000-0000-0000-000000000002','2026-10-19','water');
+INSERT INTO baptism_records(church_branch_id,member_id,baptism_date,baptism_type) VALUES
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000011','2026-10-05','water'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000011','2026-10-12','holy_ghost'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000014',null,'water'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000012','2026-09-01','holy_ghost'),
+  ('00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000015','2026-10-19','water');
 INSERT INTO member_follow_ups(church_branch_id,member_id,follow_up_date,method,outcome,next_follow_up_date,created_at) VALUES
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000012','2026-10-05','call','needs_follow_up','2026-10-06','2026-10-05T00:00:00Z'),
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000012','2026-10-20','visit','resolved',null,'2026-10-20T00:00:00Z'),

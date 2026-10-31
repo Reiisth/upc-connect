@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Optional Node/PostgreSQL regression suite. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
@@ -68,6 +69,21 @@ test('analytics RPC against disposable PostgreSQL', { skip: !enabled }, async (t
     await t.test('water and Holy Ghost dates are separated; undated records are reported separately', () => {
       assert.deepEqual(overall(report().baptisms), { branchId: null, total: 2, water: 1, holyGhost: 1, undatedRecords: 1 });
       assert.equal(report().baptismTrend.filter((row) => row.branchId === null).reduce((sum, row) => sum + row.total, 0), 2);
+    });
+    await t.test('transfer/archive/status changes preserve historical financial and baptism metrics in each branch', () => {
+      const keys = ['contributions', 'contributionByType', 'contributionByPaymentMethod', 'contributionTrend', 'baptisms', 'baptismTrend'];
+      for (const branchIds of [[a], [b], [a, b]]) {
+        const before = report(branchIds);
+        const after = JSON.parse(sql(`BEGIN;
+          UPDATE members SET church_branch_id='${b}', is_archived=true, member_status='inactive'
+            WHERE id IN ('00000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000014');
+          SELECT get_reports_analytics(ARRAY[${branchIds.map((id) => `'${id}'::uuid`).join(',')}]::uuid[], '2026-10-01', '2026-10-25', 'week', '2026-10-29');
+          ROLLBACK;`));
+        for (const key of keys) {
+          assert.ok(Array.isArray(before[key]), key);
+          assert.deepEqual(after[key].map((row) => JSON.stringify(row)).sort(), before[key].map((row) => JSON.stringify(row)).sort(), key);
+        }
+      }
     });
     await t.test('daily/weekly/monthly buckets and finished/partial weeks preserve calendar meaning', () => {
       assert.equal(overall(report([a], '2026-10-01', '2026-10-25', 'month').attendanceTrend).periodStart, '2026-10-01');

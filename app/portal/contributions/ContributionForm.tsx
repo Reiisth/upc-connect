@@ -84,14 +84,13 @@ export function ContributionForm({
 
   const branchMembers = members.filter(
     (member) =>
-      member.churchBranchId === branchId &&
-      (!member.isArchived || member.id === existingMemberId),
+      member.id === existingMemberId ||
+      member.churchBranchId === branchId && !member.isArchived,
   );
   const branchServices = services.filter(
     (service) =>
-      service.churchBranchId === branchId &&
-      (service.status !== "cancelled" ||
-        service.id === existingServiceId),
+      service.id === existingServiceId ||
+      service.churchBranchId === branchId && service.status !== "cancelled",
   );
   const existingCancelledService = services.find(
     (service) =>
@@ -140,7 +139,7 @@ export function ContributionForm({
 
       <FormSection
         title="Contribution Information"
-        description="Record a contribution for one of your assigned active church branches. Member and service links are optional."
+        description={values ? "The historical branch is fixed. Existing member and service links can be retained; replacements must meet current eligibility rules." : "Record a contribution for one of your assigned active church branches. Member and service links are optional."}
       >
         <div className="grid gap-5 md:grid-cols-2">
           <FormField
@@ -148,8 +147,9 @@ export function ContributionForm({
             htmlFor="contribution-branch"
             required
             className="md:col-span-2"
-            description="Only active branches available to your account are listed."
+            description={values ? "Contribution branch cannot be changed after creation." : "Only active branches available to your account are listed."}
           >
+            {values && <input type="hidden" name="church_branch_id" value={branchId} />}
             <Select
               id="contribution-branch"
               name="church_branch_id"
@@ -158,7 +158,7 @@ export function ContributionForm({
                 handleBranchChange(event.target.value)
               }
               required
-              disabled={branches.length === 0}
+              disabled={Boolean(values) || branches.length === 0}
             >
               <option value="" disabled>
                 Select a church branch
@@ -190,7 +190,7 @@ export function ContributionForm({
               {branchMembers.map((member) => (
                 <option key={member.id} value={member.id}>
                   {member.fullName}
-                  {member.isArchived ? " (Archived historical link)" : ""}
+                  {member.id === existingMemberId ? " (Existing historical link)" : ""}
                 </option>
               ))}
             </Select>

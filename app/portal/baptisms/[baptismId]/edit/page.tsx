@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getHistoricalRecordBranches } from "@/lib/historical-records";
 
 import { updateBaptism } from "../../actions";
 import {
@@ -17,7 +18,7 @@ import { hasPermission } from "@/lib/permissions";
 import { BaptismForm } from "../../BaptismForm";
 import {
   loadBaptismForEdit,
-  loadBaptismOptions,
+  loadBaptismHistoricalMemberName,
 } from "../../data";
 
 type EditBaptismPageProps = {
@@ -43,10 +44,10 @@ async function EditBaptismContent({
 
   const { baptismId } = await params;
   const admin = createAdminClient();
-  const options = await loadBaptismOptions(access, admin);
+  const branches = await getHistoricalRecordBranches(access, admin);
   const baptism = await loadBaptismForEdit(
     admin,
-    options.branches,
+    branches,
     baptismId,
   );
 
@@ -66,6 +67,7 @@ async function EditBaptismContent({
   }
 
   const updateAction = updateBaptism.bind(null, baptism.id);
+  const memberName = await loadBaptismHistoricalMemberName(admin, baptism.memberId);
 
   return (
     <PageContainer>
@@ -79,8 +81,9 @@ async function EditBaptismContent({
       />
 
       <BaptismForm
-        branches={options.branches}
-        members={options.members}
+        branches={branches.filter((branch) => branch.id === baptism.churchBranchId)}
+        members={[]}
+        existingMemberName={memberName}
         allowedBaptismTypes={[baptism.baptismType]}
         action={updateAction}
         submitLabel="Save Changes"

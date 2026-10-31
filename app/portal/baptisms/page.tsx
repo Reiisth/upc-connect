@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getHistoricalRecordBranches } from "@/lib/historical-records";
 import {
   hasAnyPermission,
   hasPermission,
@@ -26,7 +27,6 @@ import {
 } from "./access";
 import BaptismsTable from "./BaptismsTable";
 import {
-  loadBaptismOptions,
   loadBaptismRecords,
 } from "./data";
 import { getBaptismSummary } from "./types";
@@ -42,10 +42,10 @@ export default function BaptismsPage() {
 async function BaptismsContent() {
   const access = await requireBaptismPermission("baptisms.view");
   const admin = createAdminClient();
-  const options = await loadBaptismOptions(access, admin);
+  const branches = await getHistoricalRecordBranches(access, admin);
   const records = await loadBaptismRecords(
     admin,
-    options.branches,
+    branches,
   );
   const summary = getBaptismSummary(records);
   const canCreate = hasAnyPermission(
@@ -102,16 +102,16 @@ async function BaptismsContent() {
         />
       </div>
 
-      {options.branches.length === 0 ? (
+      {branches.length === 0 ? (
         <EmptyState
           icon={<Droplets className="h-5 w-5" />}
-          title="No active branch access"
-          description="There are no active church branches available for your account, so baptism records cannot be displayed."
+          title="No branch access"
+          description="There are no church branches available for your account, so baptism records cannot be displayed."
         />
       ) : (
         <BaptismsTable
           records={records}
-          branches={options.branches}
+          branches={branches}
           canUpdateWater={canUpdateWater}
           canUpdateHolyGhost={canUpdateHolyGhost}
         />

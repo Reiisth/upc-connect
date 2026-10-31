@@ -7,12 +7,13 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getHistoricalRecordBranches } from "@/lib/historical-records";
 
 import { updateContribution } from "../../actions";
 import { requireContributionsPermission } from "../../access";
 import {
   loadContributionForEdit,
-  loadContributionOptions,
+  loadContributionEditOptions,
 } from "../../data";
 import { ContributionForm } from "../../ContributionForm";
 
@@ -41,16 +42,17 @@ async function EditContributionContent({
 
   const { contributionId } = await params;
   const admin = createAdminClient();
-  const options = await loadContributionOptions(access, admin);
+  const branches = await getHistoricalRecordBranches(access, admin);
   const contribution = await loadContributionForEdit(
     admin,
-    options.branches,
+    branches,
     contributionId,
   );
 
   if (!contribution) {
     notFound();
   }
+  const options = await loadContributionEditOptions(access, admin, contribution);
 
   const updateAction = updateContribution.bind(
     null,
@@ -65,11 +67,11 @@ async function EditContributionContent({
         eyebrow="Financial Operations"
         eyebrowIcon={<HandCoins className="h-4 w-4" />}
         title="Edit Contribution"
-        description="Update the contribution details while preserving its original recorder."
+        description="Correct contribution details while preserving its historical branch and original recorder."
       />
 
       <ContributionForm
-        branches={options.branches}
+        branches={branches.filter((branch) => branch.id === contribution.churchBranchId)}
         members={options.members}
         services={options.services}
         action={updateAction}

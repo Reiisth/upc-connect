@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { assertHistoricalRecordBranch } from "@/lib/historical-records";
 
 import {
   assertActiveServiceBranch,
@@ -181,7 +182,6 @@ async function validateMemberForBranch(
   admin: ReturnType<typeof createAdminClient>,
   memberId: string | null,
   branchId: string,
-  allowedArchivedMemberId: string | null = null,
 ) {
   if (!memberId) return;
 
@@ -207,7 +207,7 @@ async function validateMemberForBranch(
     );
   }
 
-  if (data.is_archived && memberId !== allowedArchivedMemberId) {
+  if (data.is_archived) {
     throw new ContributionValidationError(
       "Archived members cannot be linked to a new contribution.",
     );
@@ -218,7 +218,6 @@ async function validateServiceForBranch(
   admin: ReturnType<typeof createAdminClient>,
   serviceId: string | null,
   branchId: string,
-  allowedCancelledServiceId: string | null = null,
 ) {
   if (!serviceId) return;
 
@@ -239,10 +238,7 @@ async function validateServiceForBranch(
     );
   }
 
-  if (
-    data.status === "cancelled" &&
-    serviceId !== allowedCancelledServiceId
-  ) {
+  if (data.status === "cancelled") {
     throw new ContributionValidationError(
       "Cancelled services cannot be linked to new contributions.",
     );
@@ -302,6 +298,7 @@ export async function createContribution(
   }
 
   revalidatePath(contributionsPath);
+  revalidatePath("/portal/reports");
 
   if (contributionId) {
     revalidatePath(`${contributionsPath}/${contributionId}/edit`);
@@ -343,46 +340,47 @@ export async function updateContribution(
       );
     }
 
-    await assertActiveServiceBranch(
+    await assertHistoricalRecordBranch(
       admin,
       access,
       existing.church_branch_id,
     );
-    await assertActiveServiceBranch(
-      admin,
-      access,
-      payload.church_branch_id,
-    );
-    await validateMemberForBranch(
-      admin,
-      payload.member_id,
-      payload.church_branch_id,
-      existing.member_id === payload.member_id
-        ? existing.member_id
-        : null,
-    );
-    await validateServiceForBranch(
-      admin,
-      payload.service_id,
-      payload.church_branch_id,
-      existing.service_id === payload.service_id
-        ? existing.service_id
-        : null,
-    );
+    if (payload.church_branch_id !== existing.church_branch_id) {
+      throw new ContributionValidationError("Contribution branch cannot be changed after the record is created.");
+    }
+    // Only new relationships use today's roster/service eligibility. An
+    // unchanged historical link must survive transfer, archive and cancellation.
+    const addingMember = payload.member_id !== existing.member_id && payload.member_id !== null;
+    const addingService = payload.service_id !== existing.service_id && payload.service_id !== null;
+    if (addingMember || addingService) {
+      await assertActiveServiceBranch(admin, access, existing.church_branch_id);
+    }
+    if (payload.member_id !== existing.member_id) await validateMemberForBranch(admin, payload.member_id, existing.church_branch_id);
+    if (payload.service_id !== existing.service_id) await validateServiceForBranch(admin, payload.service_id, existing.church_branch_id);
 
-    const { error } = await admin
+    let query = admin
       .from("financial_contributions")
       .update({
-        ...payload,
+        member_id: payload.member_id,
+        service_id: payload.service_id,
+        contribution_type: payload.contribution_type,
+        amount: payload.amount,
+        contribution_date: payload.contribution_date,
+        payment_method: payload.payment_method,
+        notes: payload.notes,
         // Keep the original recorder for audit history. If legacy data lacks
         // one, derive it from the authenticated accounting officer.
         recorded_by: existing.recorded_by ?? access.user.id,
       })
-      .eq("id", contributionId);
+      .eq("id", contributionId).eq("church_branch_id", existing.church_branch_id);
+    query = existing.member_id ? query.eq("member_id", existing.member_id) : query.is("member_id", null);
+    query = existing.service_id ? query.eq("service_id", existing.service_id) : query.is("service_id", null);
+    const { data: saved, error } = await query.select("id").maybeSingle();
 
     if (error) {
       throwDatabaseFailure("updating contribution", error);
     }
+    if (!saved) throw new ContributionValidationError("The contribution changed while you were editing. Reload it and try again.");
   } catch (error) {
     return {
       error: getActionErrorMessage(
@@ -393,6 +391,7 @@ export async function updateContribution(
   }
 
   revalidatePath(contributionsPath);
+  revalidatePath("/portal/reports");
   revalidatePath(`${contributionsPath}/${contributionId}/edit`);
 
   redirect(contributionsPath);

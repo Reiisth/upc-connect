@@ -31,6 +31,7 @@ type BaptismFormProps = {
   submitLabel: string;
   allowedBaptismTypes?: readonly BaptismType[];
   values?: BaptismFormValues;
+  existingMemberName?: string;
 };
 
 const defaultValues: BaptismFormValues = {
@@ -50,6 +51,7 @@ export function BaptismForm({
   submitLabel,
   allowedBaptismTypes = BAPTISM_TYPES,
   values,
+  existingMemberName,
 }: BaptismFormProps) {
   const formValues = values ?? defaultValues;
   const initialBaptismType = allowedBaptismTypes.includes(
@@ -77,15 +79,10 @@ export function BaptismForm({
     initialBaptismActionState,
   );
 
-  const existingMemberId = values?.memberId ?? null;
   const branchMembers = members.filter(
     (member) =>
       member.churchBranchId === branchId &&
-      (member.id === existingMemberId || isActiveMember(member)),
-  );
-  const existingHistoricalMember = members.find(
-    (member) =>
-      member.id === existingMemberId && !isActiveMember(member),
+      isActiveMember(member),
   );
 
   function handleBranchChange(nextBranchId: string) {
@@ -118,7 +115,7 @@ export function BaptismForm({
 
       <FormSection
         title="Baptism Information"
-        description="Record one water baptism or Holy Ghost baptism for an active member of an assigned branch."
+        description={values ? "Correct historical details. The recorded member, branch and baptism type cannot be changed." : "Record one water baptism or Holy Ghost baptism for an active member of an assigned branch."}
       >
         <div className="grid gap-5 md:grid-cols-2">
           <FormField
@@ -126,8 +123,9 @@ export function BaptismForm({
             htmlFor="baptism-branch"
             required
             className="md:col-span-2"
-            description="Only active branches available to your account are listed."
+            description={values ? "Baptism branch cannot be changed after creation." : "Only active branches available to your account are listed."}
           >
+            {values && <input type="hidden" name="church_branch_id" value={branchId} />}
             <Select
               id="baptism-branch"
               name="church_branch_id"
@@ -136,7 +134,7 @@ export function BaptismForm({
                 handleBranchChange(event.target.value)
               }
               required
-              disabled={branches.length === 0}
+              disabled={Boolean(values) || branches.length === 0}
             >
               <option value="" disabled>
                 Select a church branch
@@ -156,15 +154,12 @@ export function BaptismForm({
             htmlFor="baptism-member"
             required
             className="md:col-span-2"
-            description="Only active members are available for new records."
+            description={values ? "The historical member link is fixed, including after transfer or archive." : "Only active members are available for new records."}
           >
-            {existingHistoricalMember && (
-              <p className="mb-2 text-xs text-amber-700">
-                This record preserves a historical link to an inactive or
-                archived member. You may leave the member unchanged.
-              </p>
-            )}
-
+            {values ? <>
+              <input type="hidden" name="member_id" value={formValues.memberId} />
+              <Input id="baptism-member" value={existingMemberName ?? "Unknown member"} readOnly disabled />
+            </> : (
             <Select
               id="baptism-member"
               name="member_id"
@@ -186,6 +181,7 @@ export function BaptismForm({
                 </option>
               ))}
             </Select>
+            )}
           </FormField>
 
           <FormField

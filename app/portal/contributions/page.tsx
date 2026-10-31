@@ -16,12 +16,13 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getHistoricalRecordBranches } from "@/lib/historical-records";
 
 import {
   requireContributionsPermission,
 } from "./access";
 import { hasPermission } from "@/lib/permissions";
-import { loadContributionOptions, loadContributionRecords } from "./data";
+import { loadContributionRecords } from "./data";
 import ContributionsTable from "./ContributionsTable";
 import {
   formatContributionCents,
@@ -41,10 +42,10 @@ async function ContributionsContent() {
     "contributions.view",
   );
   const admin = createAdminClient();
-  const options = await loadContributionOptions(access, admin);
+  const branches = await getHistoricalRecordBranches(access, admin);
   const records = await loadContributionRecords(
     admin,
-    options.branches,
+    branches,
   );
   const summary = getContributionSummary(records);
   const canCreate = hasPermission(
@@ -104,16 +105,16 @@ async function ContributionsContent() {
         />
       </div>
 
-      {options.branches.length === 0 ? (
+      {branches.length === 0 ? (
         <EmptyState
           icon={<HandCoins className="h-5 w-5" />}
-          title="No active branch access"
-          description="There are no active church branches available for your account, so contributions cannot be displayed."
+          title="No branch access"
+          description="There are no church branches available for your account, so contributions cannot be displayed."
         />
       ) : (
         <ContributionsTable
           records={records}
-          branches={options.branches}
+          branches={branches}
           canUpdate={canUpdate}
         />
       )}

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { assertHistoricalRecordBranch } from "@/lib/historical-records";
 import { hasPermission } from "@/lib/permissions";
 
 import { assertActiveServiceBranch } from "../services/access";
@@ -178,7 +179,6 @@ async function validateMemberForBranch(
   admin: ReturnType<typeof createAdminClient>,
   memberId: string,
   branchId: string,
-  allowedHistoricalMemberId: string | null = null,
 ) {
   const { data, error } = await admin
     .from("members")
@@ -207,7 +207,7 @@ async function validateMemberForBranch(
   const isActive =
     !data.is_archived && data.member_status === "active";
 
-  if (!isActive && memberId !== allowedHistoricalMemberId) {
+  if (!isActive) {
     throw new BaptismValidationError(
       "Only active members can be linked to a new baptism record.",
     );
@@ -304,6 +304,7 @@ export async function createBaptism(
   }
 
   revalidatePath(baptismsPath);
+  revalidatePath("/portal/reports");
 
   if (baptismId) {
     revalidatePath(`${baptismsPath}/${baptismId}/edit`);
@@ -349,19 +350,14 @@ export async function updateBaptism(
     const existingPermission = getBaptismUpdatePermission(
       existing.baptism_type,
     );
-    const resultingPermission = getBaptismUpdatePermission(
-      payload.baptism_type,
-    );
-
-    if (!existingPermission || !resultingPermission) {
+    if (!existingPermission) {
       throw new BaptismValidationError(
         "The baptism record has an unsupported baptism type.",
       );
     }
 
     if (
-      !hasPermission(access.permissions, existingPermission) ||
-      !hasPermission(access.permissions, resultingPermission)
+      !hasPermission(access.permissions, existingPermission)
     ) {
       throw new BaptismAuthorizationError(
         "You do not have permission to update this baptism type.",
@@ -374,44 +370,36 @@ export async function updateBaptism(
       );
     }
 
-    await assertActiveServiceBranch(
+    await assertHistoricalRecordBranch(
       admin,
       access,
       existing.church_branch_id,
     );
-    await assertActiveServiceBranch(
-      admin,
-      access,
-      payload.church_branch_id,
-    );
-    await validateMemberForBranch(
-      admin,
-      payload.member_id,
-      payload.church_branch_id,
-      existing.member_id === payload.member_id
-        ? existing.member_id
-        : null,
-    );
-    await validateUniqueBaptism(
-      admin,
-      payload.member_id,
-      payload.baptism_type,
-      baptismId,
-    );
+    if (payload.church_branch_id !== existing.church_branch_id) {
+      throw new BaptismValidationError("Baptism branch cannot be changed after the record is created.");
+    }
+    if (payload.member_id !== existing.member_id) {
+      throw new BaptismValidationError("Baptism member cannot be changed after the record is created.");
+    }
 
-    const { error } = await admin
+    const { data: saved, error } = await admin
       .from("baptism_records")
       .update({
-        ...payload,
+        baptism_date: payload.baptism_date,
+        officiated_by: payload.officiated_by,
+        location: payload.location,
+        notes: payload.notes,
         // Preserve the original recorder for historical audit data. Legacy
         // rows without a recorder use the current authenticated user.
         recorded_by: existing.recorded_by ?? access.user.id,
       })
-      .eq("id", baptismId);
+      .eq("id", baptismId).eq("church_branch_id", existing.church_branch_id)
+      .eq("member_id", existing.member_id).eq("baptism_type", existing.baptism_type).select("id").maybeSingle();
 
     if (error) {
       throwDatabaseFailure("updating baptism record", error);
     }
+    if (!saved) throw new BaptismValidationError("The baptism record changed while you were editing. Reload it and try again.");
   } catch (error) {
     return {
       error: getActionErrorMessage(
@@ -422,6 +410,7 @@ export async function updateBaptism(
   }
 
   revalidatePath(baptismsPath);
+  revalidatePath("/portal/reports");
   revalidatePath(`${baptismsPath}/${baptismId}/edit`);
 
   redirect(baptismsPath);
