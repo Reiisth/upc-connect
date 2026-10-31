@@ -489,6 +489,7 @@ export default function FieldManagementTable({
                     <td className="px-4 py-4">
                       <select
                         value={field.field_type}
+                        disabled={field.is_builtin}
                         onChange={(event) =>
                           updateField(field.id, {
                             field_type: event.target.value,
@@ -503,6 +504,7 @@ export default function FieldManagementTable({
                         <option value="date">Date</option>
                         <option value="select">Dropdown</option>
                         <option value="textarea">Textarea</option>
+                        <option value="checkbox">Checkbox</option>
                       </select>
                     </td>
 
@@ -665,6 +667,7 @@ export default function FieldManagementTable({
                   <option value="date">Date</option>
                   <option value="select">Dropdown</option>
                   <option value="textarea">Textarea</option>
+                  <option value="checkbox">Checkbox</option>
                 </select>
               </div>
             </div>

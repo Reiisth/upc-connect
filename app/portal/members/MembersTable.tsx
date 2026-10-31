@@ -237,7 +237,7 @@ export default function MembersTable({
     currentPage * itemsPerPage,
   );
 
-  const hasActions = canArchive || canLinkAccount;
+  const hasActions = true;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -426,6 +426,7 @@ export default function MembersTable({
                     {hasActions && (
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                          <TableActionButton href={`/portal/members/${member.id}`}>Member Details</TableActionButton>
                           {canLinkAccount && (
                             member.account_status === "no_account" ? (
                               <TableActionButton

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Link2 } from "lucide-react";
 
+import { getAccountTargetScopes } from "../../accounts/target-scope";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteMembers } from "../actions";
 import { requireMembersPermission } from "../access";
@@ -61,29 +62,12 @@ export default async function InviteMembersPage({
 
   const existingEmails: string[] = [];
 
-  let page = 1;
-
-  while (true) {
-    const { data, error } = await admin.auth.admin.listUsers({
-      page,
-      perPage: 1000,
-    });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    for (const user of data.users) {
-      if (user.email) {
-        existingEmails.push(user.email);
-      }
-    }
-
-    if (data.users.length < 1000) {
-      break;
-    }
-
-    page++;
+  const targets = await getAccountTargetScopes(access, admin);
+  for (const target of targets.values()) {
+    if (!target.canViewMembers && !target.canViewStaff) continue;
+    const { data, error } = await admin.auth.admin.getUserById(target.userId);
+    if (error) throw new Error("Unable to load accessible accounts.");
+    if (data.user?.email) existingEmails.push(data.user.email);
   }
 
   existingEmails.sort((a, b) => a.localeCompare(b));
@@ -97,7 +81,7 @@ export default async function InviteMembersPage({
       .getAll("member_ids")
       .map((value) => String(value));
 
-    await inviteMembers(memberIds, email);
+    await inviteMembers(memberIds, email, memberId);
   }
 
   return (

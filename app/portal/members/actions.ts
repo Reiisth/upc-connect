@@ -6,58 +6,73 @@ import { redirect } from "next/navigation";
 
 import { assertActiveServiceBranch } from "../services/access";
 import { requireMembersPermission } from "./access";
+import { requireStaffMember } from "./data";
+import { validateChurchMember } from "./validation";
+import { getAccountTargetScopes } from "../accounts/target-scope";
+import { hasPermission } from "@/lib/permissions";
 
 export async function createMember(formData: FormData) {
   const access = await requireMembersPermission("members.create");
 
-  const firstName = String(formData.get("first_name") ?? "").trim();
-  const lastName = String(formData.get("last_name") ?? "").trim();
-  const churchBranchId = String(
-    formData.get("church_branch_id") ?? "",
-  ).trim();
-
-  if (!firstName || !lastName) {
-    throw new Error("First name and last name are required.");
-  }
+  const payload = validateChurchMember(formData);
 
   const admin = createAdminClient();
   await assertActiveServiceBranch(
     admin,
     access,
-    churchBranchId,
+    payload.church_branch_id,
   );
 
-  const { error } = await admin.from("members").insert({
-    first_name: firstName,
-    last_name: lastName,
-    church_branch_id: churchBranchId,
-  });
+  await validateDepartment(admin, payload.department_id);
+  const { data, error } = await admin.from("members").insert(payload).select("id").single();
 
   if (error) {
     throw new Error(error.message);
   }
 
-  redirect("/portal/members");
+  revalidatePath("/portal/members");
+  redirect(hasPermission(access.permissions, "members.view") ? `/portal/members/${data.id}`
+    : hasPermission(access.permissions, "members.update") ? `/portal/members/${data.id}/edit` : "/portal/members/new?created=1");
+}
+
+async function validateDepartment(admin: ReturnType<typeof createAdminClient>, departmentId: string | null) {
+  if (!departmentId) return;
+  const { data, error } = await admin.from("departments").select("id").eq("id", departmentId).maybeSingle();
+  if (error || !data) throw new Error("Select a valid department.");
+}
+
+function refreshMember(memberId: string) {
+  for (const path of ["/portal/members", `/portal/members/${memberId}`, `/portal/members/${memberId}/edit`,
+    "/portal/profile", `/portal/profile/${memberId}`, "/portal/inactivity", "/portal/reports", "/portal/attendance"]) revalidatePath(path);
+}
+
+export async function updateMember(memberId: string, form: FormData) {
+  const { member, access, admin } = await requireStaffMember(memberId, "members.update");
+  if (member.is_archived) throw new Error("Restore the member before editing church information.");
+  const payload = validateChurchMember(form);
+  if (member.church_branch_id || !access.isSystemAdmin) await assertActiveServiceBranch(admin, access, member.church_branch_id ?? "");
+  await assertActiveServiceBranch(admin, access, payload.church_branch_id);
+  await validateDepartment(admin, payload.department_id);
+  let query = admin.from("members").update({ ...payload, updated_at: new Date().toISOString() })
+    .eq("id", memberId).eq("is_archived", false);
+  query = member.church_branch_id ? query.eq("church_branch_id", member.church_branch_id) : query.is("church_branch_id", null);
+  const { data: saved, error } = await query.select("id").maybeSingle();
+  if (error || !saved) throw new Error("The member could not be updated. Reload the record and try again.");
+  refreshMember(memberId);
+  redirect(hasPermission(access.permissions, "members.view") ? `/portal/members/${memberId}` : `/portal/members/${memberId}/edit`);
+}
+
+export async function restoreMember(memberId: string) {
+  const { member, access, admin } = await requireStaffMember(memberId, "members.archive");
+  await assertActiveServiceBranch(admin, access, member.church_branch_id ?? "");
+  const { data: saved, error } = await admin.from("members").update({ is_archived: false, archived_at: null, updated_at: new Date().toISOString() })
+    .eq("id", memberId).eq("church_branch_id", member.church_branch_id).select("id").maybeSingle();
+  if (error || !saved) throw new Error("The member could not be restored. Reload the record and try again.");
+  refreshMember(memberId);
 }
 
 export async function archiveMember(memberId: string) {
-  const access = await requireMembersPermission("members.archive");
-
-  const admin = createAdminClient();
-
-  const { data: member, error: memberLookupError } = await admin
-    .from("members")
-    .select("id, church_branch_id")
-    .eq("id", memberId)
-    .maybeSingle();
-
-  if (memberLookupError) {
-    throw new Error(memberLookupError.message);
-  }
-
-  if (!member) {
-    throw new Error("The requested member could not be found.");
-  }
+  const { member, access, admin } = await requireStaffMember(memberId, "members.archive");
 
   await assertActiveServiceBranch(
     admin,
@@ -65,27 +80,28 @@ export async function archiveMember(memberId: string) {
     member.church_branch_id ?? "",
   );
 
-  const { error } = await admin
+  const { data: saved, error } = await admin
     .from("members")
     .update({
       is_archived: true,
       archived_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", memberId);
+    .eq("id", memberId).eq("church_branch_id", member.church_branch_id).select("id").maybeSingle();
 
-  if (error) {
-    throw new Error(error.message);
+  if (error || !saved) {
+    throw new Error("The member could not be archived. Reload the record and try again.");
   }
 
-  revalidatePath("/portal/members");
+  refreshMember(memberId);
 }
 
-export async function inviteMembers(memberIds: string[], email: string) {
+export async function inviteMembers(memberIds: string[], email: string, returnMemberId?: string) {
   const access = await requireMembersPermission(
     "members.link_account",
   );
 
+  if (!Array.isArray(memberIds) || memberIds.some((value) => typeof value !== "string") || typeof email !== "string") throw new Error("Invalid account connection request.");
   const uniqueMemberIds = Array.from(new Set(memberIds));
 
   if (uniqueMemberIds.length === 0) {
@@ -155,6 +171,13 @@ export async function inviteMembers(memberIds: string[], email: string) {
     }
 
     page++;
+  }
+
+  if (existingUserId) {
+    const target = (await getAccountTargetScopes(access, admin, existingUserId)).get(existingUserId);
+    if (!target || !target.canViewMembers && !target.canViewStaff) redirect("/access-denied");
+    const { data: profile, error: profileError } = await admin.from("profiles").select("archived_at").eq("id", existingUserId).maybeSingle();
+    if (profileError || !profile || profile.archived_at) throw new Error("This account is unavailable for connection.");
   }
 
   let userId = existingUserId;
@@ -237,6 +260,10 @@ export async function inviteMembers(memberIds: string[], email: string) {
     revalidatePath(`/portal/accounts/${userId}`);
   }
 
+  if (returnMemberId && uniqueMemberIds.includes(returnMemberId) && hasPermission(access.permissions, "members.view")) {
+    refreshMember(returnMemberId);
+    redirect('/portal/members/' + returnMemberId);
+  }
   redirect("/portal/members");
 }
 

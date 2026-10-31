@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
-import { useFormStatus } from "react-dom";
+import { isProfileDefinition, isSelfServiceField } from "@/lib/member-field-policy";
+import { memberToday } from "@/lib/member-validation";
 import { FormSection } from "@/components/ui/form-section";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -48,7 +49,6 @@ type MemberProfileFormProps = {
     middle_name: string | null;
     last_name: string;
     nickname: string | null;
-    zone: number | null;
     phone_number: string | null;
     birth_date: string | null;
     gender: string | null;
@@ -60,18 +60,14 @@ type MemberProfileFormProps = {
     region: string | null;
     country: string | null;
     wedding_anniversary: string | null;
-    first_attendance_date: string | null;
-    department_id: string | null;
-    position: string | null;
-    church_branch_id: string | null;
     civil_status: string | null;
   };
   accountEmail: string;
   branches: Branch[];
   departments: Department[];
   fieldDefinitions: FieldDefinition[];
-  customFieldValues: Record<string, string | number | null>;
-  action: (formData: FormData) => void | Promise<void>;
+  customFieldValues: Record<string, string | number | boolean | null>;
+  action: (formData: FormData) => void | Promise<void | { error: string }>;
 };
 
 export default function MemberProfileForm({
@@ -79,17 +75,20 @@ export default function MemberProfileForm({
   accountEmail,
   branches,
   departments,
-  fieldDefinitions,
+  fieldDefinitions: suppliedDefinitions,
   customFieldValues,
   action,
 }: MemberProfileFormProps) {
+  const fieldDefinitions = suppliedDefinitions.filter(isProfileDefinition);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const getFieldDefinition = (fieldKey: string) =>
     fieldDefinitions.find(
       (field) => field.field_key === fieldKey,
     );
 
   const isFieldVisible = (fieldKey: string) =>
-    getFieldDefinition(fieldKey)?.is_visible ?? true;
+    (isSelfServiceField(fieldKey) || fieldKey === "email") && (getFieldDefinition(fieldKey)?.is_visible ?? true);
 
   const isFieldRequired = (fieldKey: string) =>
     getFieldDefinition(fieldKey)?.is_required ?? false;
@@ -116,7 +115,7 @@ export default function MemberProfileForm({
       )
       : [];
   };
-  const today = new Date().toISOString().split("T")[0];
+  const today = memberToday();
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const formRef = useRef<HTMLFormElement>(null);
   const [country, setCountry] = useState(member.country ?? "Philippines");
@@ -158,7 +157,7 @@ export default function MemberProfileForm({
 
   const isNCR = selectedRegion?.regionNumber === 13;
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const form = event.currentTarget;
@@ -169,7 +168,7 @@ export default function MemberProfileForm({
         (field) =>
           field.is_visible &&
           field.is_required &&
-          field.field_key !== "photo_url",
+          field.field_key !== "email",
       )
       .map((field) =>
         field.is_builtin
@@ -260,7 +259,10 @@ export default function MemberProfileForm({
       return;
     }
 
-    action(formData);
+    setSaving(true); setSaveError(null);
+    try { const result = await action(formData); if (result?.error) setSaveError(result.error); }
+    catch { setSaveError("Your profile could not be saved. Review the fields and try again."); }
+    finally { setSaving(false); }
   }
 
   useEffect(() => {
@@ -599,48 +601,6 @@ export default function MemberProfileForm({
                 {getFieldOptions("civil_status").map((option) => (
                   <option key={option} value={option.toLowerCase()}>
                     {option}
-                  </option>
-                ))}
-              </Select>
-            </FormField>
-          )}
-
-          {isFieldVisible("zone") && (
-            <FormField
-              label={getFieldLabel("zone", "Zone")}
-              htmlFor="zone"
-              required={isFieldRequired("zone")}
-              error={
-                fieldErrors.zone
-                  ? "This field is required."
-                  : undefined
-              }
-              style={{
-                order: getFieldOrder("zone"),
-              }}
-            >
-              <Select
-                id="zone"
-                name="zone"
-                defaultValue={member.zone ?? ""}
-                required={isFieldRequired("zone")}
-                onChange={() => {
-                  setFieldErrors((current) => ({
-                    ...current,
-                    zone: false,
-                  }));
-                }}
-                className={
-                  fieldErrors.zone
-                    ? "border-red-500 focus-visible:ring-red-200"
-                    : undefined
-                }
-              >
-                <option value="">Select zone</option>
-
-                {getFieldOptions("zone").map((option) => (
-                  <option key={option} value={option}>
-                    Zone {option}
                   </option>
                 ))}
               </Select>
@@ -1138,196 +1098,10 @@ export default function MemberProfileForm({
       </FormSection>
 
       <FormSection
-        title="Church Information"
-        description="Update your church membership and ministry information."
+        title="Personal Dates"
+        description="Church information is maintained by authorized staff."
       >
         <div className="grid gap-5 sm:grid-cols-2">
-
-          {isFieldVisible("church_branch_id") && (
-            <FormField
-              label={getFieldLabel(
-                "church_branch_id",
-                "Church Branch",
-              )}
-              htmlFor="church_branch_id"
-              required={isFieldRequired("church_branch_id")}
-              error={
-                fieldErrors.church_branch_id
-                  ? "This field is required."
-                  : undefined
-              }
-              style={{
-                order: getFieldOrder("church_branch_id"),
-              }}
-            >
-              <Select
-                id="church_branch_id"
-                name="church_branch_id"
-                defaultValue={member.church_branch_id ?? ""}
-                required={isFieldRequired("church_branch_id")}
-                onChange={() => {
-                  setFieldErrors((current) => ({
-                    ...current,
-                    church_branch_id: false,
-                  }));
-                }}
-                className={
-                  fieldErrors.church_branch_id
-                    ? "border-red-500 focus-visible:ring-red-200"
-                    : undefined
-                }
-              >
-                <option value="">
-                  {getFieldPlaceholder(
-                    "church_branch_id",
-                    "Select church branch",
-                  )}
-                </option>
-
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </Select>
-            </FormField>
-          )}
-
-          {isFieldVisible("department_id") && (
-            <FormField
-              label={getFieldLabel(
-                "department_id",
-                "Department",
-              )}
-              htmlFor="department_id"
-              required={isFieldRequired("department_id")}
-              error={
-                fieldErrors.department_id
-                  ? "This field is required."
-                  : undefined
-              }
-              style={{
-                order: getFieldOrder("department_id"),
-              }}
-            >
-              <Select
-                id="department_id"
-                name="department_id"
-                defaultValue={member.department_id ?? ""}
-                required={isFieldRequired("department_id")}
-                onChange={() => {
-                  setFieldErrors((current) => ({
-                    ...current,
-                    department_id: false,
-                  }));
-                }}
-                className={
-                  fieldErrors.department_id
-                    ? "border-red-500 focus-visible:ring-red-200"
-                    : undefined
-                }
-              >
-                <option value="">
-                  {getFieldPlaceholder(
-                    "department_id",
-                    "Select department",
-                  )}
-                </option>
-
-                {departments.map((department) => (
-                  <option
-                    key={department.id}
-                    value={department.id}
-                  >
-                    {department.name}
-                  </option>
-                ))}
-              </Select>
-            </FormField>
-          )}
-
-          {isFieldVisible("position") && (
-            <FormField
-              label={getFieldLabel(
-                "position",
-                "Position",
-              )}
-              htmlFor="position"
-              required={isFieldRequired("position")}
-              error={
-                fieldErrors.position
-                  ? "This field is required."
-                  : undefined
-              }
-              style={{
-                order: getFieldOrder("position"),
-              }}
-            >
-              <Input
-                id="position"
-                name="position"
-                defaultValue={member.position ?? ""}
-                placeholder={getFieldPlaceholder(
-                  "position",
-                  "Enter position",
-                )}
-                required={isFieldRequired("position")}
-                onChange={() => {
-                  setFieldErrors((current) => ({
-                    ...current,
-                    position: false,
-                  }));
-                }}
-                className={
-                  fieldErrors.position
-                    ? "border-red-500 focus-visible:ring-red-200"
-                    : undefined
-                }
-              />
-            </FormField>
-          )}
-
-          {isFieldVisible("first_attendance_date") && (
-            <FormField
-              label={getFieldLabel(
-                "first_attendance_date",
-                "First Date of Attendance",
-              )}
-              htmlFor="first_attendance_date"
-              required={isFieldRequired("first_attendance_date")}
-              error={
-                fieldErrors.first_attendance_date
-                  ? "This field is required."
-                  : undefined
-              }
-              style={{
-                order: getFieldOrder("first_attendance_date"),
-              }}
-            >
-              <Input
-                id="first_attendance_date"
-                name="first_attendance_date"
-                type="date"
-                defaultValue={member.first_attendance_date ?? ""}
-                max={today}
-                required={isFieldRequired("first_attendance_date")}
-                onClick={(event) => {
-                  event.currentTarget.showPicker?.();
-                }}
-                onChange={() => {
-                  setFieldErrors((current) => ({
-                    ...current,
-                    first_attendance_date: false,
-                  }));
-                }}
-                className={
-                  fieldErrors.first_attendance_date
-                    ? "border-red-500 focus-visible:ring-red-200"
-                    : undefined
-                }
-              />
-            </FormField>
-          )}
 
           {["married", "widowed"].includes(civilStatus) &&
             isFieldVisible("wedding_anniversary") && (
@@ -1386,6 +1160,11 @@ export default function MemberProfileForm({
                 ? "This field is required."
                 : undefined;
 
+              if (field.field_type === "checkbox") {
+                return <FormField key={field.id} label={field.label} htmlFor={fieldName} required={field.is_required} error={error}>
+                  <input id={fieldName} name={fieldName} type="checkbox" value="true" required={field.is_required} defaultChecked={customFieldValues[field.id] === true} />
+                </FormField>;
+              }
               if (field.field_type === "textarea") {
                 return (
                   <FormField
@@ -1566,15 +1345,15 @@ export default function MemberProfileForm({
         </FormSection>
       )}
 
+      {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
       <FormActions>
-        <SaveProfileButton />
+        <SaveProfileButton pending={saving} />
       </FormActions>
     </form>
   );
 }
 
-function SaveProfileButton() {
-  const { pending } = useFormStatus();
+function SaveProfileButton({ pending }: { pending: boolean }) {
 
   return (
     <Button

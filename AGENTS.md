@@ -106,6 +106,13 @@ Personal information is primarily maintained by the member/account owner.
 
 Member management should focus on church-related information.
 
+Staff Member detail/edit uses `members.view` / `members.update` plus target
+branch scope. Branch changes require both old and new branch authorization.
+Profile completion and edits must use `app/portal/profile/actions.ts`, which
+requires `profile.update` and linked ownership and only writes personal fields.
+Operational fields cannot be configured into self-service. See
+`docs/MEMBER_PROFILE_LIFECYCLE.md` for the exact ownership boundary.
+
 ## Account Management
 
 Member accounts may link to multiple member profiles.

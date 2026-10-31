@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports, @next/next/no-assign-module-variable -- CommonJS/VM module loader for regression tests. */
 const { readFileSync, existsSync } = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
@@ -18,7 +19,7 @@ exports.loadTypeScript = function loadTypeScript(entry, stubs = {}) {
       },
     }).outputText;
     vm.runInNewContext(code, {
-      module, exports: module.exports, process, console, URL, URLSearchParams,
+      module, exports: module.exports, process, console, URL, URLSearchParams, Error,
       AbortController, setTimeout, clearTimeout,
       require(name) {
         if (Object.hasOwn(stubs, name)) return stubs[name];

@@ -10,6 +10,8 @@ import { PageHeader } from "@/components/ui/page-header";
 
 import { requireOwnedProfile } from "../access";
 import { hasPermission } from "@/lib/permissions";
+import { saveMemberProfile } from "../actions";
+import { isProfileDefinition } from "@/lib/member-field-policy";
 import { getMemberFieldDefinitions } from "@/lib/member-fields";
 import MemberProfileForm from "../../components/MemberProfileForm";
 
@@ -61,154 +63,20 @@ async function MemberProfileContent({
     .select("id, name")
     .order("name");
 
-  const fieldDefinitions = await getMemberFieldDefinitions();
+  const fieldDefinitions = (await getMemberFieldDefinitions()).filter(isProfileDefinition);
 
   if (departmentsError) {
     throw new Error(departmentsError.message);
   }
 
-  async function updateProfile(formData: FormData) {
-    "use server";
+  const updateProfile = saveMemberProfile.bind(null, memberId);
 
-    const { supabase } = await requireOwnedProfile(memberId, "profile.update");
+  const { data: customValues, error: customError } = await supabase.from("member_custom_field_values")
+    .select("field_definition_id, value").eq("member_id", memberId);
+  if (customError) throw new Error("Unable to load supplemental profile fields.");
+  const customValueMap = Object.fromEntries((customValues ?? []).map((row) => [row.field_definition_id, row.value]));
 
-    const zoneValue = String(formData.get("zone") ?? "").trim();
-
-    const region =
-      String(formData.get("region") ?? "").trim();
-
-    const provinceValue =
-      String(formData.get("province") ?? "").trim();
-
-    const province = provinceValue || null;
-
-    const { error } = await supabase
-      .from("members")
-      .update({
-        first_name:
-          String(formData.get("first_name") ?? "").trim(),
-
-        last_name:
-          String(formData.get("last_name") ?? "").trim(),
-
-
-        middle_name:
-          String(formData.get("middle_name") ?? "").trim() || null,
-
-        nickname:
-          String(formData.get("nickname") ?? "").trim() || null,
-
-        birth_date:
-          String(formData.get("birth_date") ?? "") || null,
-
-        gender:
-          String(formData.get("gender") ?? "") || null,
-
-        civil_status:
-          String(formData.get("civil_status") ?? "").trim() || null,
-
-        zone: zoneValue ? Number(zoneValue) : null,
-
-        phone_number:
-          String(formData.get("phone_number") ?? "").trim() || null,
-
-        street_address:
-          String(formData.get("street_address") ?? "").trim() || null,
-
-        barangay:
-          String(formData.get("barangay") ?? "").trim() || null,
-
-        city:
-          String(formData.get("city") ?? "").trim() || null,
-
-        province,
-
-        region: region || null,
-
-        country:
-          String(formData.get("country") ?? "").trim() || null,
-
-        wedding_anniversary:
-          ["married", "widowed"].includes(
-            String(formData.get("civil_status") ?? ""),
-          )
-            ? String(formData.get("wedding_anniversary") ?? "") || null
-            : null,
-
-        first_attendance_date:
-          String(formData.get("first_attendance_date") ?? "") || null,
-
-        department_id:
-          String(formData.get("department_id") ?? "").trim() || null,
-        position:
-          String(formData.get("position") ?? "").trim() || null,
-
-        church_branch_id:
-          String(formData.get("church_branch_id") ?? "").trim() || null,
-
-        account_status: "connected",
-        profile_status: "completed",
-        profile_completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", memberId);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const customDefinitions =
-      await getMemberFieldDefinitions();
-
-    const visibleCustomFields = customDefinitions.filter(
-      (field) =>
-        !field.is_builtin &&
-        field.is_visible,
-    );
-
-    const customValues = visibleCustomFields.map((field) => {
-      const formKey = `custom_field_${field.id}`;
-      const rawValue = String(
-        formData.get(formKey) ?? "",
-      ).trim();
-
-      let value: string | number | null = rawValue || null;
-
-      if (
-        field.field_type === "number" &&
-        rawValue !== ""
-      ) {
-        const numericValue = Number(rawValue);
-
-        value = Number.isNaN(numericValue)
-          ? null
-          : numericValue;
-      }
-
-      return {
-        member_id: memberId,
-        field_definition_id: field.id,
-        value,
-        updated_at: new Date().toISOString(),
-      };
-    });
-
-    if (customValues.length > 0) {
-      const { error: customFieldError } = await supabase
-        .from("member_custom_field_values")
-        .upsert(customValues, {
-          onConflict: "member_id,field_definition_id",
-        });
-
-      if (customFieldError) {
-        throw new Error(customFieldError.message);
-      }
-    }
-
-    redirect("/portal/profile");
-  }
-
-  if (member.profile_status !== "completed" && hasPermission(permissions, "profile.update")) {
+  if (!member.is_archived && member.profile_status !== "completed" && hasPermission(permissions, "profile.update")) {
     return (
       <PageContainer className="max-w-5xl">
         <PageHeader
@@ -226,7 +94,7 @@ async function MemberProfileContent({
           branches={branches ?? []}
           departments={departments ?? []}
           fieldDefinitions={fieldDefinitions}
-          customFieldValues={{}}
+          customFieldValues={customValueMap}
           action={updateProfile}
         />
       </PageContainer>
@@ -265,7 +133,7 @@ async function MemberProfileContent({
           }}
         />
 
-        {hasPermission(permissions, "profile.update") && <EditProfileButton memberId={memberId} />}
+        {!member.is_archived && hasPermission(permissions, "profile.update") && <EditProfileButton memberId={memberId} />}
       </div>
     </PageContainer>
   );

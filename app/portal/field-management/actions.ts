@@ -1,5 +1,7 @@
 "use server";
 
+import { isProfileDefinition, isReservedMemberField } from "@/lib/member-field-policy";
+
 import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -303,6 +305,7 @@ export async function restoreDefaultFieldConfiguration() {
   ];
 
   for (const field of defaults) {
+    if (!isProfileDefinition({ ...field, is_builtin: true })) continue;
     const { error } = await admin
       .from("member_field_definitions")
       .update({
@@ -335,6 +338,28 @@ export async function saveFieldConfiguration(
   await requireAdministrationPermission("administration.view");
 
   const admin = createAdminClient();
+  const { data: existingFields, error: definitionError } = await admin.from("member_field_definitions")
+    .select("id, field_key, field_type, is_builtin");
+  if (definitionError) throw new Error("Unable to verify field definitions.");
+  const known = new Map((existingFields ?? []).map((field) => [field.id, field]));
+  if (!Array.isArray(fields)) throw new Error("Invalid field configuration.");
+  for (const field of fields) {
+    if (!field || typeof field.id !== "string" || typeof field.field_key !== "string" ||
+        typeof field.label !== "string" || !field.label.trim() || field.label.length > 120 ||
+        !["text", "textarea", "number", "date", "email", "phone", "select", "checkbox"].includes(field.field_type) ||
+        typeof field.is_required !== "boolean" || typeof field.is_visible !== "boolean" ||
+        !Number.isInteger(field.sort_order) || !/^[a-z][a-z0-9_]*$/.test(field.field_key)) throw new Error("Invalid field configuration.");
+    const existing = known.get(field.id);
+    if (field.id.startsWith("new-")) {
+      if (isReservedMemberField(field.field_key)) throw new Error("Church and system fields cannot be configured as custom profile fields.");
+    } else if (!existing || existing.field_key !== field.field_key || !isProfileDefinition(existing)) {
+      throw new Error("This field is not a configurable personal profile field.");
+    } else if (existing.is_builtin && existing.field_type !== field.field_type) {
+      throw new Error("Built-in profile field types cannot be changed.");
+    }
+    if (field.options_source && !["custom", "departments", "church_branches", "psgc_regions"].includes(field.options_source)) throw new Error("Invalid option source.");
+  }
+
 
   for (const field of fields) {
     if (

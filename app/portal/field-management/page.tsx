@@ -1,3 +1,4 @@
+import { isProfileDefinition } from "@/lib/member-field-policy";
 import { Suspense } from "react";
 
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -55,7 +56,7 @@ async function FieldManagementContent() {
         </p>
       </div>
 
-      <FieldManagementTable fields={fields ?? []} />
+      <FieldManagementTable fields={(fields ?? []).filter(isProfileDefinition)} />
     </main>
   );
 }
