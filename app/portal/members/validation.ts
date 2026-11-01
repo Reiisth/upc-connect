@@ -1,6 +1,6 @@
 import { formText, memberDate } from "@/lib/member-validation";
 
-export function validateChurchMember(form: FormData) {
+export function validateChurchMember(form: FormData, { creating = false }: { creating?: boolean } = {}) {
   const allowed = new Set(["first_name", "middle_name", "last_name", "church_branch_id", "first_attendance_date", "member_status", "department_id", "position", "zone"]);
   for (const key of form.keys()) {
     if (!allowed.has(key) && !key.startsWith("$ACTION_")) throw new Error("Only registration identity and church information can be edited here.");
@@ -9,7 +9,7 @@ export function validateChurchMember(form: FormData) {
   if (!first_name || !last_name) throw new Error("First name and last name are required.");
   const church_branch_id = formText(form, "church_branch_id");
   if (!church_branch_id) throw new Error("A church branch is required.");
-  const member_status = formText(form, "member_status") || "active";
+  const member_status = creating ? "active" : formText(form, "member_status") || "active";
   if (!["active", "inactive"].includes(member_status)) throw new Error("Select a valid administrative member status.");
   const zone = formText(form, "zone");
   if (zone && !/^[1-5]$/.test(zone)) throw new Error("Zone must be between 1 and 5.");

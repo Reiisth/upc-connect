@@ -6,6 +6,8 @@ import { logoutPortal } from "./actions";
 import { requireActiveAccount } from "@/lib/auth";
 import { getCurrentUserPermissions } from "@/lib/permissions-server";
 import PortalNavigation from "./PortalNavigation";
+import { getPortalUserContext } from "@/lib/portal-user-context";
+import { PortalIdentitySummary } from "./PortalIdentitySummary";
 
 export default function PortalLayout({
   children,
@@ -27,6 +29,13 @@ async function PortalShell({
   const { user } = await requireActiveAccount();
 
   const permissions = await getCurrentUserPermissions(user.id);
+  const metadataName = user.user_metadata?.display_name ?? user.user_metadata?.full_name;
+  const identity = await getPortalUserContext(
+    user.id,
+    typeof metadataName === "string" && metadataName.trim()
+      ? metadataName.trim()
+      : user.email ?? "Account",
+  );
 
   return (
     <div className="min-h-screen bg-[#EEF3FB] md:flex">
@@ -58,6 +67,7 @@ async function PortalShell({
         />
 
         <div className="border-t p-4">
+          <PortalIdentitySummary context={identity} />
           <form action={logoutPortal}>
             <button
               type="submit"
@@ -116,6 +126,7 @@ async function PortalShell({
       <PortalNavigation
         permissions={permissions}
         variant="mobile"
+        identity={identity}
       />
     </div>
   );

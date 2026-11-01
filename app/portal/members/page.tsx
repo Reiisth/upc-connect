@@ -72,6 +72,7 @@ async function MembersPageContent() {
       member_status,
       account_status,
       profile_status,
+      is_archived,
       created_at,
       department:departments (
         name
@@ -79,8 +80,7 @@ async function MembersPageContent() {
       church_branch:church_branches (
         name
       )
-    `)
-    .eq("is_archived", false);
+    `);
 
   if (!isSystemAdmin) {
     if (branchIds.length === 0) {
@@ -114,21 +114,22 @@ async function MembersPageContent() {
     }).order("id").range(from, to),
   );
 
-  const totalMembers = members?.length ?? 0;
+  const activeMemberRows = members?.filter((member) => !member.is_archived) ?? [];
+  const totalMembers = activeMemberRows.length;
 
   const activeMembers =
-    members?.filter(
+    activeMemberRows.filter(
       (member) => member.member_status === "active",
     ).length ?? 0;
 
   const connectedMembers =
-    members?.filter(
+    activeMemberRows.filter(
       (member) =>
         member.account_status === "connected",
     ).length ?? 0;
 
   const incompleteProfiles =
-    members?.filter(
+    activeMemberRows.filter(
       (member) =>
         member.profile_status !== "completed",
     ).length ?? 0;

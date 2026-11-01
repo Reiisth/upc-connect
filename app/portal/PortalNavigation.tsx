@@ -20,6 +20,8 @@ import {
   type PermissionKey,
 } from "@/lib/permissions";
 import ActiveNavigationLink from "./ActiveNavigationLink";
+import { PortalIdentitySummary } from "./PortalIdentitySummary";
+import type { PortalUserContext } from "@/lib/portal-user-context";
 
 type Item = {
   label: string;
@@ -32,6 +34,7 @@ type Group = { label: string; items: Item[] };
 type PortalNavigationProps = {
   permissions: readonly PermissionKey[];
   variant: "desktop" | "mobile";
+  identity?: PortalUserContext;
 };
 
 const groups: Group[] = [
@@ -91,7 +94,7 @@ function NavigationLink({ item, mobile = false }: { item: Item; mobile?: boolean
   );
 }
 
-export default function PortalNavigation({ permissions, variant }: PortalNavigationProps) {
+export default function PortalNavigation({ permissions, variant, identity }: PortalNavigationProps) {
   const visibleGroups = groups.map((group) => ({
     ...group,
     items: group.items.filter((item) => itemIsVisible(item, permissions)).map((item) =>
@@ -122,6 +125,7 @@ export default function PortalNavigation({ permissions, variant }: PortalNavigat
               <span>More</span>
             </summary>
             <div className="absolute bottom-full right-0 mb-2 max-h-[70vh] w-72 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl border bg-white p-3 shadow-xl">
+              {identity && <div className="mb-3"><PortalIdentitySummary context={identity} /></div>}
               {moreGroups.map((group) => (
                 <section key={group.label} className="mb-3 last:mb-0">
                   <h2 className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{group.label}</h2>

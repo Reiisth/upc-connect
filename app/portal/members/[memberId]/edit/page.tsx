@@ -21,6 +21,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
   return <PageContainer className="max-w-4xl">
     <PageHeader title="Edit Member" description="Maintain registration identity and church-controlled information."
       backHref={access.permissions.includes("members.view") ? `/portal/members/${memberId}` : "/portal/members"} backLabel="Back to Member" />
-    <MemberChurchForm action={updateMember.bind(null, memberId)} branches={branches} departments={departments ?? []} member={member} editing />
+    <MemberChurchForm action={updateMember.bind(null, memberId)} branches={branches} departments={departments ?? []} member={member} editing
+      cancelHref={access.permissions.includes("members.view") ? `/portal/members/${memberId}` : "/portal/members"} />
   </PageContainer>;
 }

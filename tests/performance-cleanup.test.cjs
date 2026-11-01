@@ -41,7 +41,8 @@ test('all four list pages wire their scoped, ordered queries through explicit pa
   }
   const members = readFileSync(files[0], 'utf8');
   assert.match(members, /membersQuery = membersQuery\.in\(\s*"church_branch_id",\s*branchIds,?\s*\)/);
-  assert.match(members, /const totalMembers = members\?\.length/);
+  assert.match(members, /const activeMemberRows = members\?\.filter\(\(member\) => !member\.is_archived\) \?\? \[\]/);
+  assert.match(members, /const totalMembers = activeMemberRows\.length/);
   for (const file of files.slice(1)) {
     assert.match(readFileSync(file, 'utf8'), /\.in\("church_branch_id", branchIds\)/);
   }

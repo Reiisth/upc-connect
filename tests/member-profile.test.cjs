@@ -130,8 +130,12 @@ test('creation captures first attendance or unknown and returns the new detail w
   for (const date of ['', '2000-01-01']) {
     const h = harness(); await assert.rejects(h.load('app/portal/members/actions.ts').createMember(h.staffForm({ first_attendance_date: date })), /redirect:\/portal\/members\/created/);
     assert.equal(h.db.members.at(-1).first_attendance_date, date || null);
+    assert.equal(h.db.members.at(-1).member_status, 'active');
     assert.equal(h.events.some((event) => event.invite), false);
   }
+  const tampered = harness();
+  await assert.rejects(tampered.load('app/portal/members/actions.ts').createMember(tampered.staffForm({ member_status: 'inactive' })), /redirect:\/portal\/members\/created/);
+  assert.equal(tampered.db.members.at(-1).member_status, 'active');
 });
 
 test('first-attendance date rejects impossible/future dates and administrative statuses honor the live constraint intersection', async () => {
@@ -217,7 +221,21 @@ test('member transfer/archive never rewrites attendance, follow-up branch, Auth 
   assert.equal(JSON.stringify([h.db.attendance_records, h.db.member_follow_ups, h.db.account_members, h.db.profiles]), history);
   const attendance = await h.load('app/portal/attendance/data.ts').loadAttendanceRows(h.client, { id: 'service', churchBranchId: 'a' });
   assert.ok(attendance.some((row) => row.member.id === 'owned' && row.attendance));
-  await api.restoreMember('owned'); assert.equal(h.db.members[0].is_archived, false);
+  const preserved = ['account_status', 'church_branch_id', 'first_attendance_date', 'member_status'];
+  const beforeRestore = Object.fromEntries(preserved.map((key) => [key, h.db.members[0][key]]));
+  await api.restoreMember('owned');
+  assert.equal(h.db.members[0].is_archived, false); assert.equal(h.db.members[0].archived_at, null);
+  assert.deepEqual(Object.fromEntries(preserved.map((key) => [key, h.db.members[0][key]])), beforeRestore);
+  assert.equal(JSON.stringify([h.db.attendance_records, h.db.member_follow_ups, h.db.account_members, h.db.profiles]), history);
+});
+
+test('member restore requires members.archive and target branch scope', async () => {
+  const unauthorized = harness({ permissions: ['members.view'] });
+  await assert.rejects(unauthorized.load('app/portal/members/actions.ts').restoreMember('owned'), denied);
+  const outOfScope = harness(); outOfScope.db.members[1].is_archived = true;
+  await assert.rejects(outOfScope.load('app/portal/members/actions.ts').restoreMember('foreign'), denied);
+  assert.equal(outOfScope.db.members[1].is_archived, true);
+  assert.equal(outOfScope.writes.length, 0);
 });
 
 test('inactivity keeps missing first attendance unknown and uses updated date independently of stored status', async () => {

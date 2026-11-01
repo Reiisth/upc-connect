@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { disconnectMember, archiveMember } from "./actions";
-import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
+import { disconnectMember } from "./actions";
+import { MemberArchiveControl } from "./MemberArchiveControl";
 import {
-  Archive,
   MailPlus,
   Search,
   SearchX,
@@ -26,6 +25,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableActionButton } from "@/components/ui/table-action-button";
+import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
 
 type Member = {
   id: string;
@@ -51,6 +51,7 @@ type Member = {
   account_status: string;
   profile_status: string;
   created_at: string;
+  is_archived: boolean;
 
   department:
   | {
@@ -71,53 +72,6 @@ type MembersTableProps = {
   canLinkAccount: boolean;
 };
 
-function ArchiveMemberButton({
-  memberId,
-  memberName,
-}: {
-  memberId: string;
-  memberName: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  async function handleArchive() {
-    setLoading(true);
-
-    try {
-      await archiveMember(memberId);
-      setOpen(false);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <>
-      <TableActionButton
-        type="button"
-        icon={<Archive />}
-        onClick={() => setOpen(true)}
-      >
-        Archive
-      </TableActionButton>
-
-      <ConfirmActionModal
-        open={open}
-        title="Archive member?"
-        description={`${memberName} will be removed from the active members list, but their profile, attendance, contributions, and other historical records will be preserved.`}
-        confirmLabel="Archive"
-        variant="danger"
-        loading={loading}
-        onConfirm={handleArchive}
-        onClose={() => {
-          if (!loading) setOpen(false);
-        }}
-      />
-    </>
-  );
-}
-
 export default function MembersTable({
   members,
   canArchive,
@@ -127,6 +81,7 @@ export default function MembersTable({
   const [memberStatusFilter, setMemberStatusFilter] = useState("all");
   const [accountStatusFilter, setAccountStatusFilter] = useState("all");
   const [profileStatusFilter, setProfileStatusFilter] = useState("all");
+  const [archiveFilter, setArchiveFilter] = useState("active");
   const [selectedMember, setSelectedMember] =
     useState<Member | null>(null);
   const [sortBy, setSortBy] = useState("newest");
@@ -165,12 +120,16 @@ export default function MembersTable({
       const matchesProfileStatus =
         profileStatusFilter === "all" ||
         member.profile_status === profileStatusFilter;
+      const matchesArchive = archiveFilter === "all" ||
+        (archiveFilter === "active" && !member.is_archived) ||
+        (archiveFilter === "archived" && member.is_archived);
 
       return (
         matchesSearch &&
         matchesMemberStatus &&
         matchesAccountStatus &&
-        matchesProfileStatus
+        matchesProfileStatus &&
+        matchesArchive
       );
     });
 
@@ -224,6 +183,7 @@ export default function MembersTable({
     memberStatusFilter,
     accountStatusFilter,
     profileStatusFilter,
+    archiveFilter,
     sortBy,
   ]);
 
@@ -246,6 +206,7 @@ export default function MembersTable({
     memberStatusFilter,
     accountStatusFilter,
     profileStatusFilter,
+    archiveFilter,
     sortBy,
   ]);
 
@@ -265,6 +226,11 @@ export default function MembersTable({
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
+          <Select value={archiveFilter} onChange={(event) => setArchiveFilter(event.target.value)} className="lg:w-36" aria-label="Filter by archive status">
+            <option value="active">Active Members</option>
+            <option value="archived">Archived Members</option>
+            <option value="all">All Members</option>
+          </Select>
           <Select
             value={sortBy}
             onChange={(event) => setSortBy(event.target.value)}
@@ -330,7 +296,7 @@ export default function MembersTable({
               search ||
                 memberStatusFilter !== "all" ||
                 accountStatusFilter !== "all" ||
-                profileStatusFilter !== "all"
+                profileStatusFilter !== "all" || archiveFilter !== "active"
                 ? "No members match your current search or filters. Try adjusting them."
                 : "There are no members to display yet."
             }
@@ -369,7 +335,9 @@ export default function MembersTable({
                         onClick={() => setSelectedMember(member)}
                         className="font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline"
                       >
-                        {fullName}
+                        <span className="flex flex-col items-start gap-1">{fullName}
+                          {member.is_archived && <StatusBadge variant="muted">Archived</StatusBadge>}
+                        </span>
                       </button>
                     </TableCell>
 
@@ -427,7 +395,7 @@ export default function MembersTable({
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                           <TableActionButton href={`/portal/members/${member.id}`}>Member Details</TableActionButton>
-                          {canLinkAccount && (
+                          {!member.is_archived && canLinkAccount && (
                             member.account_status === "no_account" ? (
                               <TableActionButton
                                 href={`/portal/members/invite?memberId=${member.id}`}
@@ -444,9 +412,11 @@ export default function MembersTable({
                           )}
 
                           {canArchive && (
-                            <ArchiveMemberButton
+                            <MemberArchiveControl
                               memberId={member.id}
-                              memberName={`${member.first_name} ${member.last_name}`}
+                              memberName={fullName}
+                              archived={member.is_archived}
+                              compact
                             />
                           )}
                         </div>

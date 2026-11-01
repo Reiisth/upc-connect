@@ -14,7 +14,7 @@ import { hasPermission } from "@/lib/permissions";
 export async function createMember(formData: FormData) {
   const access = await requireMembersPermission("members.create");
 
-  const payload = validateChurchMember(formData);
+  const payload = validateChurchMember(formData, { creating: true });
 
   const admin = createAdminClient();
   await assertActiveServiceBranch(
