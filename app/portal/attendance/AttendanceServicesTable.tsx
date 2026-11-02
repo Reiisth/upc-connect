@@ -11,6 +11,7 @@ import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
@@ -149,15 +150,7 @@ export default function AttendanceServicesTable({
             aria-label="Filter attendance by service date"
           />
 
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline"
-            >
-              Clear filters
-            </button>
-          )}
+          {hasFilters && <ClearFiltersButton onClick={clearFilters} />}
         </div>
       </div>
 

@@ -138,3 +138,64 @@ test('branch and role administration tables keep their existing unfiltered layou
     assert.doesNotMatch(source(file), /TableColumnFilter|Filter by/);
   }
 });
+
+test('filtered tables share the Services clear action and preserve broader context', () => {
+  const clearButton = source('components/ui/clear-filters-button.tsx');
+  assert.match(clearButton, /variant="ghost"/);
+  assert.match(clearButton, /text-slate-500 hover:bg-transparent hover:text-\[#203264\] hover:underline/);
+  assert.match(clearButton, /type="button"/);
+  for (const file of [
+    'app/portal/services/ServicesTable.tsx',
+    'app/portal/members/MembersTable.tsx',
+    'app/portal/accounts/members/MemberAccountsTable.tsx',
+    'app/portal/accounts/staff/StaffAccountsTable.tsx',
+    'app/portal/attendance/AttendanceServicesTable.tsx',
+    'app/portal/attendance/AttendanceView.tsx',
+    'app/portal/follow-ups/FollowUpsTable.tsx',
+    'app/portal/contributions/ContributionsTable.tsx',
+    'app/portal/baptisms/BaptismsTable.tsx',
+  ]) {
+    assert.match(source(file), /ClearFiltersButton/ , `${file} should use the shared action`);
+    assert.match(source(file), /hasClearableFilters|hasFilters/ , `${file} should show the action only when filters are active`);
+  }
+  const members = source('app/portal/members/MembersTable.tsx');
+  assert.match(members, /function clearFilters\(\)\s*\{\s*setSearch\(""\);\s*setMemberStatusFilter\("all"\);\s*setAccountStatusFilter\("all"\);\s*setProfileStatusFilter\("all"\);/);
+  assert.match(members, /archiveFilter,\s*sortBy/);
+  const memberAccounts = source('app/portal/accounts/members/MemberAccountsTable.tsx');
+  assert.match(memberAccounts, /const hasClearableFilters = search\.trim\(\) !== "" \|\| memberCountFilter !== "all"/);
+  assert.doesNotMatch(memberAccounts.slice(memberAccounts.indexOf('function clearFilters'), memberAccounts.indexOf('\n  }', memberAccounts.indexOf('function clearFilters'))), /setStatusFilter/);
+  for (const file of ['app/portal/contributions/ContributionsTable.tsx', 'app/portal/baptisms/BaptismsTable.tsx']) {
+    const text = source(file);
+    assert.match(text, /setDateFrom\(event\.target\.value\)/);
+    assert.match(text, /setDateTo\(event\.target\.value\)/);
+    assert.doesNotMatch(text.slice(text.indexOf('function clearFilters'), text.indexOf('\n  }', text.indexOf('function clearFilters'))), /setDateFrom|setDateTo/);
+  }
+  const followUps = source('app/portal/follow-ups/FollowUpsTable.tsx');
+  assert.match(followUps, /current, search: "", branch: "", method: "", outcome: "", due: "all"/);
+  assert.doesNotMatch(followUps.slice(followUps.indexOf('function clearFilters'), followUps.indexOf('\n  }', followUps.indexOf('function clearFilters'))), /dateFrom|dateTo/);
+});
+
+test('Login uses the canonical shared Input and keeps password visibility custom', () => {
+  const login = source('app/login/page.tsx');
+  assert.match(login, /import \{ Input \} from "@\/components\/ui\/input"/);
+  assert.equal((login.match(/<Input/g) ?? []).length, 2);
+  assert.match(login, /aria-invalid=\{Boolean\(emailError\) \|\| undefined\}/);
+  assert.match(login, /className="pr-12"/);
+  assert.match(login, /aria-label=\{\s*showPassword\s*\?/);
+  assert.match(login, /<Button\s+type="submit"/);
+});
+
+test('shared form controls use login focus, radius and disabled/error states', () => {
+  const input = source('components/ui/input.tsx');
+  const textarea = source('components/ui/textarea.tsx');
+  const select = source('components/ui/select.tsx');
+  assert.match(input, /h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-3/);
+  assert.match(input, /focus-visible:ring-4 focus-visible:ring-\[#5D94E8\]\/10/);
+  assert.match(input, /aria-invalid:border-red-400/);
+  assert.match(input, /disabled:cursor-not-allowed/);
+  for (const control of [textarea, select]) {
+    assert.match(control, /rounded-xl border border-slate-300 bg-white/);
+    assert.match(control, /focus-visible:ring-4 focus-visible:ring-\[#5D94E8\]\/10/);
+    assert.match(control, /disabled:cursor-not-allowed/);
+  }
+});

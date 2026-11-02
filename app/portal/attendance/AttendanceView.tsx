@@ -12,6 +12,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormActions } from "@/components/ui/form-actions";
@@ -100,6 +101,11 @@ export default function AttendanceView({
       return matchesSearch && matchesStatus;
     });
   }, [rows, search, statusFilter]);
+  const hasClearableFilters = Boolean(search.trim() || statusFilter !== "all");
+  function clearFilters() {
+    setSearch("");
+    setStatusFilter("all");
+  }
 
   const recordableRows = useMemo(
     () => {
@@ -341,7 +347,7 @@ export default function AttendanceView({
               aria-label="Search attendance members"
             />
           </div>
-
+          {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} />}
         </div>
 
         {rows.length === 0 ? (

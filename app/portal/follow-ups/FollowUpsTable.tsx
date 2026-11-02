@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { History, Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,10 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
   function field(key: keyof typeof filters, value: string) { setFilters((current) => ({ ...current, [key]: value })); }
   const filtered = useMemo(() => filterFollowUps(rows, filters, today), [rows, filters, today]);
   const reversedDates = Boolean(filters.dateFrom && filters.dateTo && filters.dateFrom > filters.dateTo);
+  const hasClearableFilters = Boolean(filters.search.trim() || filters.branch || filters.method || filters.outcome || filters.due !== "all");
+  function clearFilters() {
+    setFilters((current) => ({ ...current, search: "", branch: "", method: "", outcome: "", due: "all" }));
+  }
   return (
     <section aria-label="Follow-up records" className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -33,7 +37,7 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
         </Select></FormField>
         <FormField label="Follow-up date from" htmlFor="follow-ups-from"><Input id="follow-ups-from" type="date" value={filters.dateFrom} onChange={(event) => field("dateFrom", event.target.value)} /></FormField>
         <FormField label="Follow-up date to" htmlFor="follow-ups-to"><Input id="follow-ups-to" type="date" min={filters.dateFrom || undefined} value={filters.dateTo} onChange={(event) => field("dateTo", event.target.value)} /></FormField>
-        <div className="flex items-end"><Button type="button" variant="outline" onClick={() => setFilters(initialFilters)}>Clear filters</Button></div>
+        {hasClearableFilters && <div className="flex items-end"><ClearFiltersButton onClick={clearFilters} /></div>}
       </div>
       {reversedDates && <p role="alert" className="text-sm text-red-700">The end date must be on or after the start date.</p>}
       <p role="status" className="text-sm text-slate-500">Showing {filtered.length} of {rows.length} records. Next-date filters use Asia/Manila today ({formatAttendanceDate(today)}), independently of outcome.</p>

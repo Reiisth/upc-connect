@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import MemberCardModal from "./MemberCardModal";
 import { Input } from "@/components/ui/input";
+import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { Select } from "@/components/ui/select";
 import {
   Table,
@@ -195,6 +196,16 @@ export default function MembersTable({
   );
 
   const hasActions = true;
+  const hasClearableFilters = Boolean(
+    search.trim() || memberStatusFilter !== "all" || accountStatusFilter !== "all" || profileStatusFilter !== "all",
+  );
+
+  function clearFilters() {
+    setSearch("");
+    setMemberStatusFilter("all");
+    setAccountStatusFilter("all");
+    setProfileStatusFilter("all");
+  }
 
   useEffect(() => {
     setCurrentPage(1);
@@ -243,6 +254,7 @@ export default function MembersTable({
           </Select>
 
         </div>
+        {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} className="self-start" />}
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border bg-white shadow-sm">

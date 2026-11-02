@@ -19,6 +19,7 @@ import {
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -139,11 +140,11 @@ export default function MemberAccountsTable({
     search.trim() !== "" ||
     memberCountFilter !== "all" ||
     statusFilter !== "active";
+  const hasClearableFilters = search.trim() !== "" || memberCountFilter !== "all";
 
   function clearFilters() {
     setSearch("");
     setMemberCountFilter("all");
-    setStatusFilter("active");
   }
 
   return (
@@ -160,15 +161,7 @@ export default function MemberAccountsTable({
           />
         </div>
 
-        {hasFilters && (
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline"
-          >
-            Clear filters
-          </button>
-        )}
+        {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} />}
       </div>
 
       {displayedAccounts.length === 0 ? (

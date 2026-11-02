@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 
 export default function LoginPage() {
@@ -207,7 +209,7 @@ export default function LoginPage() {
                   Email Address
                 </label>
 
-                <input
+                <Input
                   id="email"
                   type="email"
                   value={email}
@@ -225,10 +227,7 @@ export default function LoginPage() {
                   autoComplete="email"
                   placeholder="Enter your email"
                   disabled={loading}
-                  className={`w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:ring-4 ${emailError
-                    ? "border-red-400 focus:border-red-400 focus:ring-red-100"
-                    : "focus:border-[#5D94E8] focus:ring-[#5D94E8]/10"
-                    }`}
+                  aria-invalid={Boolean(emailError) || undefined}
                 />
 
                 {emailError && (
@@ -257,7 +256,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="relative">
-                  <input
+                  <Input
                     id="password"
                     type={
                       showPassword
@@ -279,10 +278,8 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     placeholder="Enter your password"
                     disabled={loading}
-                    className={`w-full rounded-xl border bg-white px-4 py-3 pr-12 text-sm outline-none transition focus:ring-4 ${passwordError
-                      ? "border-red-400 focus:border-red-400 focus:ring-red-100"
-                      : "focus:border-[#5D94E8] focus:ring-[#5D94E8]/10"
-                      }`}
+                    aria-invalid={Boolean(passwordError) || undefined}
+                    className="pr-12"
                   />
 
                   <button
@@ -322,10 +319,10 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <button
+              <Button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5D94E8] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#4B82D6] disabled:cursor-not-allowed disabled:opacity-60"
+                className="h-11 w-full px-4 py-3 font-semibold"
               >
                 {loading ? (
                   <>
@@ -338,7 +335,7 @@ export default function LoginPage() {
                     Sign In
                   </>
                 )}
-              </button>
+              </Button>
             </form>
 
             {/* ACCOUNT REQUEST */}

@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -227,15 +228,7 @@ export default function StaffAccountsTable({
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-[#203264] hover:underline"
-            >
-              Clear filters
-            </button>
-          )}
+          {hasFilters && <ClearFiltersButton onClick={clearFilters} />}
         </div>
       </div>
 
