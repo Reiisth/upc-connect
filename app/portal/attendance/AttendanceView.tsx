@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableActionButton } from "@/components/ui/table-action-button";
+import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import { saveAttendanceRecord } from "./actions";
 import { formatManilaTimestamp, toManilaDateTimeValue } from "@/lib/manila-time";
@@ -341,20 +342,6 @@ export default function AttendanceView({
             />
           </div>
 
-          <Select
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value as AttendanceFilter)
-            }
-            className="lg:w-48"
-            aria-label="Filter attendance by status"
-          >
-            <option value="all">All statuses</option>
-            <option value="present">Present</option>
-            <option value="late">Late</option>
-            <option value="excused">Excused</option>
-            <option value="absent">No record (current roster)</option>
-          </Select>
         </div>
 
         {filteredRows.length === 0 ? (
@@ -376,7 +363,7 @@ export default function AttendanceView({
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Attendance Status" value={statusFilter} onChange={(value) => setStatusFilter(value as AttendanceFilter)} options={[{ value: "all", label: "All statuses" }, { value: "present", label: "Present" }, { value: "late", label: "Late" }, { value: "excused", label: "Excused" }, { value: "absent", label: "No record (current roster)" }]} /></div></TableHead>
                 <TableHead>Check-in Time</TableHead>
                 <TableHead>Method</TableHead>
                 <TableHead>Recorded By</TableHead>

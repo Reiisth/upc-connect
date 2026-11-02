@@ -13,7 +13,6 @@ import { useRouter } from "next/navigation";
 import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -24,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableActionButton } from "@/components/ui/table-action-button";
+import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import {
   archiveStaffAccount,
@@ -227,49 +227,6 @@ export default function StaffAccountsTable({
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
-          <Select
-            value={roleFilter}
-            onChange={(event) => setRoleFilter(event.target.value)}
-            className="lg:w-48"
-            aria-label="Filter by role"
-          >
-            <option value="all">All roles</option>
-            {roleOptions.map((role) => (
-              <option key={role.key} value={role.key}>
-                {role.displayName}
-              </option>
-            ))}
-          </Select>
-
-          <Select
-            value={branchFilter}
-            onChange={(event) => setBranchFilter(event.target.value)}
-            className="lg:w-48"
-            aria-label="Filter by branch"
-          >
-            <option value="all">All branches</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-                {!branch.isActive ? " (Inactive)" : ""}
-              </option>
-            ))}
-          </Select>
-
-          <Select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="lg:w-44"
-            aria-label="Filter by account status"
-          >
-            <option value="all">All statuses</option>
-            {statusOptions.map((status) => (
-              <option key={status} value={status}>
-                {statusLabels[status]}
-              </option>
-            ))}
-          </Select>
-
           {hasFilters && (
             <button
               type="button"
@@ -302,9 +259,9 @@ export default function StaffAccountsTable({
             <TableRow>
               <TableHead>Staff</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Roles</TableHead>
-              <TableHead>Branch Access</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead><div className="flex items-center gap-1">Roles<TableColumnFilter label="Role" value={roleFilter} onChange={setRoleFilter} options={[{ value: "all", label: "All roles" }, ...roleOptions.map((role) => ({ value: role.key, label: role.displayName }))]} /></div></TableHead>
+              <TableHead><div className="flex items-center gap-1">Branch Access<TableColumnFilter label="Branch Access" value={branchFilter} onChange={setBranchFilter} options={[{ value: "all", label: "All branches" }, ...branches.map((branch) => ({ value: branch.id, label: `${branch.name}${branch.isActive ? "" : " (Inactive)"}` }))]} /></div></TableHead>
+              <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Account Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "All statuses" }, ...statusOptions.map((status) => ({ value: status, label: statusLabels[status] }))]} /></div></TableHead>
               <TableHead>Last Sign-in</TableHead>
               <TableHead>Created</TableHead>
               <TableHead>Actions</TableHead>

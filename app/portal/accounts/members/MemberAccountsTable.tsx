@@ -19,7 +19,6 @@ import {
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -30,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableActionButton } from "@/components/ui/table-action-button";
+import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 type Account = {
   canChangeAccount: boolean;
@@ -160,28 +160,6 @@ export default function MemberAccountsTable({
           />
         </div>
 
-        <Select
-          value={memberCountFilter}
-          onChange={(event) =>
-            setMemberCountFilter(event.target.value)
-          }
-          className="sm:w-48"
-        >
-          <option value="all">All accounts</option>
-          <option value="single">1 linked member</option>
-          <option value="multiple">Multiple linked members</option>
-        </Select>
-
-        <Select
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
-          className="sm:w-40"
-        >
-          <option value="active">Active</option>
-          <option value="archived">Archived</option>
-          <option value="all">All statuses</option>
-        </Select>
-
         {hasFilters && (
           <button
             type="button"
@@ -213,8 +191,8 @@ export default function MemberAccountsTable({
             <TableRow>
               <TableHead>Email</TableHead>
               <TableHead>Linked Members</TableHead>
-              <TableHead>Count</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead><div className="flex items-center gap-1">Count<TableColumnFilter label="Linked Member Count" value={memberCountFilter} onChange={setMemberCountFilter} options={[{ value: "all", label: "All accounts" }, { value: "single", label: "1 linked member" }, { value: "multiple", label: "Multiple linked members" }]} /></div></TableHead>
+              <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Account Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "active", label: "Active" }, { value: "archived", label: "Archived" }, { value: "all", label: "All statuses" }]} /></div></TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>

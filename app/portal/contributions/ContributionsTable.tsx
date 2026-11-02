@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableActionButton } from "@/components/ui/table-action-button";
+import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import {
   CONTRIBUTION_TYPES,
@@ -149,32 +150,6 @@ export default function ContributionsTable({
             ))}
           </Select>
 
-          <Select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value)}
-            aria-label="Filter contributions by type"
-          >
-            <option value="all">All types</option>
-            {CONTRIBUTION_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {formatContributionType(type)}
-              </option>
-            ))}
-          </Select>
-
-          <Select
-            value={paymentFilter}
-            onChange={(event) => setPaymentFilter(event.target.value)}
-            aria-label="Filter contributions by payment method"
-          >
-            <option value="all">All payment methods</option>
-            {PAYMENT_METHODS.map((method) => (
-              <option key={method} value={method}>
-                {formatPaymentMethod(method)}
-              </option>
-            ))}
-          </Select>
-
           <Input
             type="date"
             value={dateFrom}
@@ -217,10 +192,10 @@ export default function ContributionsTable({
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead>Contributor</TableHead>
-              <TableHead>Type</TableHead>
+              <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Contribution Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...CONTRIBUTION_TYPES.map((type) => ({ value: type, label: formatContributionType(type) }))]} /></div></TableHead>
               <TableHead>Branch</TableHead>
               <TableHead>Service</TableHead>
-              <TableHead>Payment Method</TableHead>
+              <TableHead><div className="flex items-center gap-1">Payment Method<TableColumnFilter label="Payment Method" value={paymentFilter} onChange={setPaymentFilter} options={[{ value: "all", label: "All payment methods" }, ...PAYMENT_METHODS.map((method) => ({ value: method, label: formatPaymentMethod(method) }))]} /></div></TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Recorded By</TableHead>
               <TableHead>Actions</TableHead>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import { disconnectMember } from "./actions";
 import { MemberArchiveControl } from "./MemberArchiveControl";
 import {
@@ -26,6 +27,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableActionButton } from "@/components/ui/table-action-button";
 import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
+import { TableColumnFilter } from "@/components/ui/table-column-filter";
+import { matchesMemberStatusFilter } from "./member-filters";
 
 type Member = {
   id: string;
@@ -109,9 +112,7 @@ export default function MembersTable({
         member.account_status.toLowerCase().includes(query) ||
         member.profile_status.toLowerCase().includes(query);
 
-      const matchesMemberStatus =
-        memberStatusFilter === "all" ||
-        member.member_status === memberStatusFilter;
+      const matchesMemberStatus = matchesMemberStatusFilter(member.member_status, memberStatusFilter);
 
       const matchesAccountStatus =
         accountStatusFilter === "all" ||
@@ -245,45 +246,6 @@ export default function MembersTable({
             <option value="inactive_first">Inactive First</option>
           </Select>
 
-          <Select
-            value={memberStatusFilter}
-            onChange={(event) =>
-              setMemberStatusFilter(event.target.value)
-            }
-            className="lg:w-44"
-            aria-label="Filter by member status"
-          >
-            <option value="all">All Member Statuses</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </Select>
-
-          <Select
-            value={accountStatusFilter}
-            onChange={(event) =>
-              setAccountStatusFilter(event.target.value)
-            }
-            className="lg:w-44"
-            aria-label="Filter by account status"
-          >
-            <option value="all">All Account Statuses</option>
-            <option value="connected">Connected</option>
-            <option value="invited">Invited</option>
-            <option value="no_account">No Account</option>
-          </Select>
-
-          <Select
-            value={profileStatusFilter}
-            onChange={(event) =>
-              setProfileStatusFilter(event.target.value)
-            }
-            className="lg:w-44"
-            aria-label="Filter by profile status"
-          >
-            <option value="all">All Profile Statuses</option>
-            <option value="completed">Completed</option>
-            <option value="incomplete">Incomplete</option>
-          </Select>
         </div>
       </div>
 
@@ -307,9 +269,9 @@ export default function MembersTable({
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Member Status</TableHead>
-                <TableHead>Account Status</TableHead>
-                <TableHead>Profile Status</TableHead>
+                <TableHead><ColumnHeading label="Member Status"><TableColumnFilter label="Member Status" value={memberStatusFilter} onChange={setMemberStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }]} /></ColumnHeading></TableHead>
+                <TableHead><ColumnHeading label="Account Status"><TableColumnFilter label="Account Status" value={accountStatusFilter} onChange={setAccountStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "connected", label: "Connected" }, { value: "invited", label: "Invited" }, { value: "no_account", label: "No Account" }]} /></ColumnHeading></TableHead>
+                <TableHead><ColumnHeading label="Profile Status"><TableColumnFilter label="Profile Status" value={profileStatusFilter} onChange={setProfileStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "completed", label: "Completed" }, { value: "incomplete", label: "Incomplete" }]} /></ColumnHeading></TableHead>
 
                 {hasActions && (
                   <TableHead>Actions</TableHead>
@@ -485,6 +447,10 @@ export default function MembersTable({
       )}
     </>
   );
+}
+
+function ColumnHeading({ label, children }: { label: string; children: ReactNode }) {
+  return <div className="flex min-w-0 items-center gap-1"><span>{label}</span>{children}</div>;
 }
 
 function DisconnectMemberButton({

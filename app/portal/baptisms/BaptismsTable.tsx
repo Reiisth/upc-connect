@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableActionButton } from "@/components/ui/table-action-button";
+import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import {
   BAPTISM_TYPES,
@@ -136,19 +137,6 @@ export default function BaptismsTable({
             ))}
           </Select>
 
-          <Select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value)}
-            aria-label="Filter baptisms by type"
-          >
-            <option value="all">All baptism types</option>
-            {BAPTISM_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {formatBaptismType(type)}
-              </option>
-            ))}
-          </Select>
-
           <Input
             type="date"
             value={dateFrom}
@@ -194,7 +182,7 @@ export default function BaptismsTable({
           <TableHeader>
             <TableRow>
               <TableHead>Member</TableHead>
-              <TableHead>Baptism Type</TableHead>
+              <TableHead><div className="flex items-center gap-1">Baptism Type<TableColumnFilter label="Baptism Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All baptism types" }, ...BAPTISM_TYPES.map((type) => ({ value: type, label: formatBaptismType(type) }))]} /></div></TableHead>
               <TableHead>Baptism Date</TableHead>
               <TableHead>Branch</TableHead>
               <TableHead>Officiated By</TableHead>

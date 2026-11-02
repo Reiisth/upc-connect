@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableActionButton } from "@/components/ui/table-action-button";
+import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import {
   formatServiceStatus,
@@ -148,34 +149,6 @@ export default function AttendanceServicesTable({
             aria-label="Filter attendance by service date"
           />
 
-          <Select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value)}
-            className="xl:w-44"
-            aria-label="Filter attendance by service type"
-          >
-            <option value="all">All types</option>
-            {SERVICE_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {formatServiceType(type)}
-              </option>
-            ))}
-          </Select>
-
-          <Select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="xl:w-40"
-            aria-label="Filter attendance by service status"
-          >
-            <option value="all">All statuses</option>
-            {SERVICE_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {formatServiceStatus(status)}
-              </option>
-            ))}
-          </Select>
-
           {hasFilters && (
             <button
               type="button"
@@ -203,11 +176,11 @@ export default function AttendanceServicesTable({
           <TableHeader>
             <TableRow>
               <TableHead>Service</TableHead>
-              <TableHead>Type</TableHead>
+              <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...SERVICE_TYPES.map((type) => ({ value: type, label: formatServiceType(type) }))]} /></div></TableHead>
               <TableHead>Branch</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Start Time</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Service Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "All statuses" }, ...SERVICE_STATUSES.map((status) => ({ value: status, label: formatServiceStatus(status) }))]} /></div></TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>

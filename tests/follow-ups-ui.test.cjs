@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Node test runner uses CommonJS. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const { followUpsHarness, ids, id } = require('./helpers/follow-ups-harness.cjs');
@@ -37,7 +39,9 @@ test('list renders joined history, useful filters and permission-gated edit acti
     const h = followUpsHarness({ permissions: permissionKeys });
     const Page = h.load('app/portal/follow-ups/page.tsx', withLinks).default;
     const html = await contentHtml(Page);
-    for (const text of ['Juan Cruz', 'Main Church', 'Staff Performer', 'No Response', 'Overdue', 'Due Today', 'Upcoming', 'History']) assert.ok(html.includes(text), text);
+    for (const text of ['Juan Cruz', 'Main Church', 'Staff Performer', 'No Response', 'History']) assert.ok(html.includes(text), text);
+    const tableSource = fs.readFileSync('app/portal/follow-ups/FollowUpsTable.tsx', 'utf8');
+    for (const dueOption of ['Overdue', 'Due Today', 'Upcoming']) assert.ok(tableSource.includes(dueOption), dueOption);
     assert.equal(html.includes('Record Follow-up'), permissionKeys.includes('follow_ups.create'));
     assert.equal(html.includes('>Edit<'), permissionKeys.includes('follow_ups.update'));
     assert.ok(!/>Delete</.test(html));

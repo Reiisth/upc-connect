@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableActionButton } from "@/components/ui/table-action-button";
+import { TableColumnFilter } from "@/components/ui/table-column-filter";
 import { formatAttendanceDate } from "@/lib/inactivity/presentation";
 import { FollowUpOutcomeBadge } from "./FollowUpOutcomeBadge";
 import { filterFollowUps, getDueStatus, FOLLOW_UP_METHODS, FOLLOW_UP_OUTCOMES, METHOD_LABELS, OUTCOME_LABELS,
@@ -30,24 +31,22 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
         <FormField label="Branch" htmlFor="follow-ups-branch"><Select id="follow-ups-branch" value={filters.branch} onChange={(event) => field("branch", event.target.value)}>
           <option value="">All accessible branches</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}{branch.isActive ? "" : " (Inactive branch)"}</option>)}
         </Select></FormField>
-        <FormField label="Outcome" htmlFor="follow-ups-outcome"><Select id="follow-ups-outcome" value={filters.outcome} onChange={(event) => field("outcome", event.target.value)}>
-          <option value="">All outcomes</option>{FOLLOW_UP_OUTCOMES.map((outcome) => <option key={outcome} value={outcome}>{OUTCOME_LABELS[outcome]}</option>)}
-        </Select></FormField>
-        <FormField label="Method" htmlFor="follow-ups-method"><Select id="follow-ups-method" value={filters.method} onChange={(event) => field("method", event.target.value)}>
-          <option value="">All methods</option>{FOLLOW_UP_METHODS.map((method) => <option key={method} value={method}>{METHOD_LABELS[method]}</option>)}
-        </Select></FormField>
         <FormField label="Follow-up date from" htmlFor="follow-ups-from"><Input id="follow-ups-from" type="date" value={filters.dateFrom} onChange={(event) => field("dateFrom", event.target.value)} /></FormField>
         <FormField label="Follow-up date to" htmlFor="follow-ups-to"><Input id="follow-ups-to" type="date" min={filters.dateFrom || undefined} value={filters.dateTo} onChange={(event) => field("dateTo", event.target.value)} /></FormField>
-        <FormField label="Next follow-up" htmlFor="follow-ups-due"><Select id="follow-ups-due" value={filters.due} onChange={(event) => field("due", event.target.value)}>
-          <option value="all">All dates</option><option value="overdue">Overdue</option><option value="today">Due Today</option><option value="upcoming">Upcoming</option>
-        </Select></FormField>
         <div className="flex items-end"><Button type="button" variant="outline" onClick={() => setFilters(initialFilters)}>Clear filters</Button></div>
       </div>
       {reversedDates && <p role="alert" className="text-sm text-red-700">The end date must be on or after the start date.</p>}
       <p role="status" className="text-sm text-slate-500">Showing {filtered.length} of {rows.length} records. Next-date filters use Asia/Manila today ({formatAttendanceDate(today)}), independently of outcome.</p>
       {!filtered.length ? <EmptyState title={rows.length ? "No matching follow-ups" : "No follow-ups recorded"} description="A record appears only when staff records a follow-up action." /> : (
         <Table className="min-w-[1080px]" aria-label="Historical member follow-ups">
-          <TableHeader><TableRow>{["Follow-up Date", "Member", "Branch", "Method", "Outcome", "Followed Up By", "Next Follow-up", "Actions"].map((label) => <TableHead key={label}>{label}</TableHead>)}</TableRow></TableHeader>
+          <TableHeader><TableRow>
+            <TableHead>Follow-up Date</TableHead><TableHead>Member</TableHead><TableHead>Branch</TableHead>
+            <TableHead><div className="flex items-center gap-1">Method<TableColumnFilter label="Follow-up Method" value={filters.method || "all"} onChange={(value) => field("method", value === "all" ? "" : value)} options={[{ value: "all", label: "All methods" }, ...FOLLOW_UP_METHODS.map((method) => ({ value: method, label: METHOD_LABELS[method] }))]} /></div></TableHead>
+            <TableHead><div className="flex items-center gap-1">Outcome<TableColumnFilter label="Follow-up Outcome" value={filters.outcome || "all"} onChange={(value) => field("outcome", value === "all" ? "" : value)} options={[{ value: "all", label: "All outcomes" }, ...FOLLOW_UP_OUTCOMES.map((outcome) => ({ value: outcome, label: OUTCOME_LABELS[outcome] }))]} /></div></TableHead>
+            <TableHead>Followed Up By</TableHead>
+            <TableHead><div className="flex items-center gap-1">Next Follow-up<TableColumnFilter label="Next Follow-up" value={filters.due} onChange={(value) => field("due", value)} options={[{ value: "all", label: "All dates" }, { value: "overdue", label: "Overdue" }, { value: "today", label: "Due Today" }, { value: "upcoming", label: "Upcoming" }]} /></div></TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow></TableHeader>
           <TableBody>{filtered.map((row) => {
             const due = getDueStatus(row.nextFollowUpDate, today);
             return <TableRow key={row.id}>

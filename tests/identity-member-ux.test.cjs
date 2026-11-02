@@ -129,7 +129,8 @@ test('account lists expose archived status and gate restore by permission plus t
   const members = fs.readFileSync('app/portal/accounts/members/MemberAccountsTable.tsx', 'utf8');
   const staff = fs.readFileSync('app/portal/accounts/staff/StaffAccountsTable.tsx', 'utf8');
   assert.match(members, /useState\("active"\)/);
-  assert.match(members, /value="archived">Archived/);
+  assert.match(members, /TableColumnFilter label="Account Status"/);
+  assert.match(members, /value: "archived", label: "Archived"/);
   assert.match(members, /account\.archivedAt && canRestore && account\.canChangeAccount/);
   assert.match(staff, /"archived"/);
   assert.match(staff, /account\.status === "archived" && canRestore && account\.canChangeAccount/);
