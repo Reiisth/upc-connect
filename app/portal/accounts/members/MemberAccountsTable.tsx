@@ -171,7 +171,7 @@ export default function MemberAccountsTable({
         )}
       </div>
 
-      {filteredAccounts.length === 0 ? (
+      {displayedAccounts.length === 0 ? (
         <EmptyState
           icon={<SearchX className="h-5 w-5" />}
           title={
@@ -198,7 +198,9 @@ export default function MemberAccountsTable({
           </TableHeader>
 
           <TableBody>
-            {filteredAccounts.map((account) => (
+            {filteredAccounts.length === 0 ? (
+              <TableRow><TableCell colSpan={5}><p role="status" className="py-3 text-center text-sm text-slate-500">No accounts match the current filters.</p></TableCell></TableRow>
+            ) : filteredAccounts.map((account) => (
               <TableRow key={account.userId}>
                 <TableCell>
                   <TableActionButton

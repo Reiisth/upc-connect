@@ -1,3 +1,3 @@
-export function matchesMemberStatusFilter(memberStatus: string, filter: string) {
-  return filter === "all" || memberStatus === filter;
+export function matchesMemberColumnFilter(value: string, filter: string) {
+  return filter === "all" || value === filter;
 }

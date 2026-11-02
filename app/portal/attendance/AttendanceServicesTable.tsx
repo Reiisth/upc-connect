@@ -161,7 +161,7 @@ export default function AttendanceServicesTable({
         </div>
       </div>
 
-      {filteredServices.length === 0 ? (
+      {services.length === 0 ? (
         <EmptyState
           icon={<SearchX className="h-5 w-5" />}
           title={hasFilters ? "No matching services" : "No services found"}
@@ -186,7 +186,9 @@ export default function AttendanceServicesTable({
           </TableHeader>
 
           <TableBody>
-            {filteredServices.map((service) => (
+            {filteredServices.length === 0 ? (
+              <TableRow><TableCell colSpan={7}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
+            ) : filteredServices.map((service) => (
               <TableRow key={service.id}>
                 <TableCell>
                   <div className="flex items-start gap-3">

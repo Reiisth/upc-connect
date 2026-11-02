@@ -344,7 +344,7 @@ export default function AttendanceView({
 
         </div>
 
-        {filteredRows.length === 0 ? (
+        {rows.length === 0 ? (
           <EmptyState
             icon={<SearchX className="h-5 w-5" />}
             title={
@@ -372,7 +372,9 @@ export default function AttendanceView({
             </TableHeader>
 
             <TableBody>
-              {filteredRows.map((row) => {
+              {filteredRows.length === 0 ? (
+                <TableRow><TableCell colSpan={6}><p role="status" className="py-3 text-center text-sm text-slate-500">No attendance rows match the current filters.</p></TableCell></TableRow>
+              ) : filteredRows.map((row) => {
                 const rowStatus = row.attendance?.status ?? "absent";
 
                 return (

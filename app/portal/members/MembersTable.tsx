@@ -28,7 +28,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { TableActionButton } from "@/components/ui/table-action-button";
 import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
 import { TableColumnFilter } from "@/components/ui/table-column-filter";
-import { matchesMemberStatusFilter } from "./member-filters";
+import { matchesMemberColumnFilter } from "./member-filters";
 
 type Member = {
   id: string;
@@ -112,15 +112,11 @@ export default function MembersTable({
         member.account_status.toLowerCase().includes(query) ||
         member.profile_status.toLowerCase().includes(query);
 
-      const matchesMemberStatus = matchesMemberStatusFilter(member.member_status, memberStatusFilter);
+      const matchesMemberStatus = matchesMemberColumnFilter(member.member_status, memberStatusFilter);
 
-      const matchesAccountStatus =
-        accountStatusFilter === "all" ||
-        member.account_status === accountStatusFilter;
+      const matchesAccountStatus = matchesMemberColumnFilter(member.account_status, accountStatusFilter);
 
-      const matchesProfileStatus =
-        profileStatusFilter === "all" ||
-        member.profile_status === profileStatusFilter;
+      const matchesProfileStatus = matchesMemberColumnFilter(member.profile_status, profileStatusFilter);
       const matchesArchive = archiveFilter === "all" ||
         (archiveFilter === "active" && !member.is_archived) ||
         (archiveFilter === "archived" && member.is_archived);
@@ -250,18 +246,11 @@ export default function MembersTable({
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border bg-white shadow-sm">
-        {filteredMembers.length === 0 ? (
+        {members.length === 0 ? (
           <EmptyState
             icon={<SearchX className="h-5 w-5" />}
             title="No members found"
-            description={
-              search ||
-                memberStatusFilter !== "all" ||
-                accountStatusFilter !== "all" ||
-                profileStatusFilter !== "all" || archiveFilter !== "active"
-                ? "No members match your current search or filters. Try adjusting them."
-                : "There are no members to display yet."
-            }
+            description="There are no members in this branch and archive view."
           />
         ) : (
           <Table className="min-w-[850px]">
@@ -280,7 +269,15 @@ export default function MembersTable({
             </TableHeader>
 
             <TableBody>
-              {paginatedMembers.map((member) => {
+              {filteredMembers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={hasActions ? 6 : 5}>
+                    <p role="status" className="py-3 text-center text-sm text-slate-500">
+                      No members match the current filters.
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : paginatedMembers.map((member) => {
                 const fullName = [
                   member.first_name,
                   member.middle_name,

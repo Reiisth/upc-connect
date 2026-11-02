@@ -163,7 +163,7 @@ export default function BaptismsTable({
         )}
       </div>
 
-      {filteredRecords.length === 0 ? (
+      {records.length === 0 ? (
         <EmptyState
           icon={<SearchX className="h-5 w-5" />}
           title={
@@ -193,7 +193,9 @@ export default function BaptismsTable({
           </TableHeader>
 
           <TableBody>
-            {filteredRecords.map((record) => (
+            {filteredRecords.length === 0 ? (
+              <TableRow><TableCell colSpan={8}><p role="status" className="py-3 text-center text-sm text-slate-500">No baptism records match the current filters.</p></TableCell></TableRow>
+            ) : filteredRecords.map((record) => (
               <TableRow key={record.id}>
                 <TableCell>
                   <div className="flex items-start gap-3">

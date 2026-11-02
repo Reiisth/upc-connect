@@ -37,7 +37,7 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
       </div>
       {reversedDates && <p role="alert" className="text-sm text-red-700">The end date must be on or after the start date.</p>}
       <p role="status" className="text-sm text-slate-500">Showing {filtered.length} of {rows.length} records. Next-date filters use Asia/Manila today ({formatAttendanceDate(today)}), independently of outcome.</p>
-      {!filtered.length ? <EmptyState title={rows.length ? "No matching follow-ups" : "No follow-ups recorded"} description="A record appears only when staff records a follow-up action." /> : (
+      {!rows.length ? <EmptyState title="No follow-ups recorded" description="A record appears only when staff records a follow-up action." /> : (
         <Table className="min-w-[1080px]" aria-label="Historical member follow-ups">
           <TableHeader><TableRow>
             <TableHead>Follow-up Date</TableHead><TableHead>Member</TableHead><TableHead>Branch</TableHead>
@@ -47,7 +47,9 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
             <TableHead><div className="flex items-center gap-1">Next Follow-up<TableColumnFilter label="Next Follow-up" value={filters.due} onChange={(value) => field("due", value)} options={[{ value: "all", label: "All dates" }, { value: "overdue", label: "Overdue" }, { value: "today", label: "Due Today" }, { value: "upcoming", label: "Upcoming" }]} /></div></TableHead>
             <TableHead>Actions</TableHead>
           </TableRow></TableHeader>
-          <TableBody>{filtered.map((row) => {
+          <TableBody>{!filtered.length ? (
+            <TableRow><TableCell colSpan={8}><p role="status" className="py-3 text-center text-sm text-slate-500">No follow-ups match the current filters.</p></TableCell></TableRow>
+          ) : filtered.map((row) => {
             const due = getDueStatus(row.nextFollowUpDate, today);
             return <TableRow key={row.id}>
               <TableCell className="whitespace-nowrap">{formatAttendanceDate(row.followUpDate)}</TableCell>

@@ -239,7 +239,7 @@ export default function StaffAccountsTable({
         </div>
       </div>
 
-      {filteredAccounts.length === 0 ? (
+      {accounts.length === 0 ? (
         <EmptyState
           icon={<SearchX className="h-5 w-5" />}
           title={
@@ -269,7 +269,9 @@ export default function StaffAccountsTable({
           </TableHeader>
 
           <TableBody>
-            {filteredAccounts.map((account) => (
+            {filteredAccounts.length === 0 ? (
+              <TableRow><TableCell colSpan={8}><p role="status" className="py-3 text-center text-sm text-slate-500">No staff accounts match the current filters.</p></TableCell></TableRow>
+            ) : filteredAccounts.map((account) => (
               <TableRow key={account.id}>
                 <TableCell>
                   <TableActionButton
