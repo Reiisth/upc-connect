@@ -4,7 +4,6 @@ import {
   SlidersHorizontal,
   Settings,
   ShieldCheck,
-  UsersRound,
 } from "lucide-react";
 
 import { hasPermission } from "@/lib/permissions";
@@ -29,10 +28,6 @@ async function AdministrationContent() {
   const canViewBranches = hasPermission(
     permissions,
     "branches.view",
-  );
-  const canManageStaffBranchAccess = hasPermission(
-    permissions,
-    "accounts.manage_branch_access",
   );
   const canViewRoles = hasPermission(
     permissions,
@@ -63,26 +58,6 @@ async function AdministrationContent() {
 
                 <p className="mt-1 text-sm text-slate-500">
                   View, create, edit, and manage church branches.
-                </p>
-              </div>
-            </div>
-          </ClickableCard>
-        )}
-
-        {canManageStaffBranchAccess && (
-        <ClickableCard href="/portal/accounts/staff">
-            <div className="flex items-start gap-4">
-              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
-                <UsersRound className="h-5 w-5" />
-              </div>
-
-              <div>
-                <h2 className="font-semibold text-[#203264]">
-                  Staff Branch Access
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  Manage staff branch assignments in Accounts.
                 </p>
               </div>
             </div>
