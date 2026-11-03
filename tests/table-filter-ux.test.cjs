@@ -76,6 +76,8 @@ test('true zero-record Members dataset still uses the ordinary empty state', () 
   assert.match(table, /filteredMembers\.length === 0 \? \(/);
   assert.match(table, /No members match the current filters\./);
   assert.match(table, /title="No members found"/);
+  assert.match(table, /className="block w-full text-left font-medium/);
+  assert.match(table, /className="flex w-full flex-col items-start gap-1 text-left"/);
 });
 
 test('Phase 2F tables retain headers when their nonempty source dataset filters to zero rows', () => {

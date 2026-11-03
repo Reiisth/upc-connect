@@ -304,9 +304,9 @@ export default function MembersTable({
                       <button
                         type="button"
                         onClick={() => setSelectedMember(member)}
-                        className="font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline"
+                        className="block w-full text-left font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline"
                       >
-                        <span className="flex flex-col items-start gap-1">{fullName}
+                        <span className="flex w-full flex-col items-start gap-1 text-left">{fullName}
                           {member.is_archived && <StatusBadge variant="muted">Archived</StatusBadge>}
                         </span>
                       </button>
