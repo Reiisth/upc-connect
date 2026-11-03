@@ -19,7 +19,7 @@ function harness({ permissions = ['members.view', 'members.create', 'members.upd
     city: null, barangay: null, civil_status: null, birth_date: null, department_id: null, position: null, zone: null };
   const db = { members: [{ id: 'owned', ...base }, { id: 'foreign', ...base, church_branch_id: 'b' }],
     church_branches: [{ id: 'a', name: 'Branch A', is_active: true }, { id: 'b', name: 'Branch B', is_active: true }],
-    departments: [{ id: 'dept', name: 'Ministry' }], profiles: [{ id: 'actor', archived_at: null }, { id: 'foreign-account', archived_at: null }],
+    departments: [{ id: 'dept', name: 'Ministry', is_active: true }], profiles: [{ id: 'actor', archived_at: null }, { id: 'foreign-account', archived_at: null }],
     account_members: [{ id: 'link', user_id: 'actor', member_id: 'owned', relationship: 'member' }, { id: 'foreign-link', user_id: 'foreign-account', member_id: 'foreign', relationship: 'member' }],
     user_roles: [{ user_id: 'actor', role_id: 'custom', roles: { key: 'custom_steward', is_staff: true, is_active: true } }],
     user_branch_access: [{ user_id: 'actor', church_branch_id: 'a' }],
@@ -105,6 +105,16 @@ test('custom-role staff can update church fields for a scoped target without pro
   await assert.rejects(h.load('app/portal/members/actions.ts').updateMember('owned', h.staffForm({ first_attendance_date: '2000-01-01', member_status: 'inactive', zone: '3', department_id: 'dept' })), /redirect:\/portal\/members\/owned/);
   assert.equal(h.db.members[0].first_attendance_date, '2000-01-01'); assert.equal(h.db.members[0].zone, 3);
   assert.ok(h.events.some((event) => event.revalidate === '/portal/inactivity'));
+});
+
+test('inactive department cannot be assigned to a new Member but remains preservable on that Member edit', async () => {
+  const h = harness();
+  h.db.departments[0].is_active = false;
+  const actions = h.load('app/portal/members/actions.ts');
+  await assert.rejects(actions.createMember(h.staffForm({ department_id: 'dept' })), /Select an active department/);
+  h.db.members[0].department_id = 'dept';
+  await assert.rejects(actions.updateMember('owned', h.staffForm({ department_id: 'dept' })), /redirect:\/portal\/members\/owned/);
+  assert.equal(h.db.members[0].department_id, 'dept');
 });
 
 test('staff edit/view enforce permission and old/new branch scope; system-admin still requires the permission', async () => {
@@ -257,7 +267,7 @@ test('staff detail links reuse canonical account/follow-up workflows and the Mem
 
 test('Field Management cannot mutate operational definitions or create reserved-key custom fields', async () => {
   const h = harness(); h.db.member_field_definitions.push(definition('branch', 'church_branch_id', 'select', { is_builtin: true }));
-  const api = h.load('app/portal/field-management/actions.ts');
+  const api = h.load('app/portal/administration/profile-fields/actions.ts');
   const payload = { ...definition('branch', 'church_branch_id', 'select'), is_required: true };
   await assert.rejects(api.saveFieldConfiguration([payload]), /not a configurable/);
   await assert.rejects(api.saveFieldConfiguration([{ ...payload, id: 'new-branch' }]), /Church and system/);

@@ -20,6 +20,8 @@ export async function getAdministrationHubPermissions() {
     "administration.view",
     "branches.view",
     "roles.view",
+    "departments.view",
+    "departments.manage",
     "accounts.manage_branch_access",
   ]);
 

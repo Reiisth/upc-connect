@@ -58,7 +58,7 @@ const groups: Group[] = [
     { label: "Accounts", href: "/portal/accounts", icon: UserRoundCog,
       canView: (permissions) => hasAnyPermission(permissions, ["accounts.view", "accounts.manage_branch_access"]) },
     { label: "Administration", href: "/portal/administration", icon: Settings,
-      canView: (permissions) => hasAnyPermission(permissions, ["administration.view", "branches.view", "roles.view", "accounts.manage_branch_access"]) },
+      canView: (permissions) => hasAnyPermission(permissions, ["administration.view", "branches.view", "roles.view", "departments.view", "departments.manage", "accounts.manage_branch_access"]) },
   ] },
   { label: "Personal", items: [
     { label: "My Profiles", href: "/portal/profile", icon: IdCardLanyard, requiredPermission: "profile.view" },

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import {
   Building2,
+  Network,
   SlidersHorizontal,
   Settings,
   ShieldCheck,
@@ -33,6 +34,8 @@ async function AdministrationContent() {
     permissions,
     "roles.view",
   );
+  const canViewDepartments = hasPermission(permissions, "departments.view") ||
+    hasPermission(permissions, "departments.manage");
 
   return (
     <PageContainer>
@@ -84,8 +87,20 @@ async function AdministrationContent() {
           </ClickableCard>
         )}
 
+        {canViewDepartments && (
+          <ClickableCard href="/portal/administration/departments">
+            <div className="flex items-start gap-4">
+              <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]"><Network className="h-5 w-5" /></div>
+              <div>
+                <h2 className="font-semibold text-[#203264]">Church Departments</h2>
+                <p className="mt-1 text-sm text-slate-500">View and manage the church-wide department list.</p>
+              </div>
+            </div>
+          </ClickableCard>
+        )}
+
         {hasPermission(permissions, "administration.view") && (
-          <ClickableCard href="/portal/field-management">
+          <ClickableCard href="/portal/administration/profile-fields">
             <div className="flex items-start gap-4">
               <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
                 <SlidersHorizontal className="h-5 w-5" />
@@ -114,7 +129,6 @@ function AdministrationLoading() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Skeleton className="h-32 rounded-2xl" />
         <Skeleton className="h-32 rounded-2xl" />
       </div>
     </PageContainer>

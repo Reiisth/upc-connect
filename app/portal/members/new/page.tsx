@@ -26,7 +26,7 @@ async function NewMemberContent({ searchParams }: { searchParams: Promise<{ crea
   const admin = createAdminClient();
   const [branches, departmentsResult] = await Promise.all([
     getAccessibleActiveBranches(access, admin),
-    admin.from("departments").select("id, name").order("name"),
+    admin.from("departments").select("id, name").eq("is_active", true).order("name"),
   ]);
   if (departmentsResult.error) throw new Error("Unable to load departments.");
 

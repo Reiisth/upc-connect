@@ -35,10 +35,10 @@ export async function createMember(formData: FormData) {
     : hasPermission(access.permissions, "members.update") ? `/portal/members/${data.id}/edit` : "/portal/members/new?created=1");
 }
 
-async function validateDepartment(admin: ReturnType<typeof createAdminClient>, departmentId: string | null) {
+async function validateDepartment(admin: ReturnType<typeof createAdminClient>, departmentId: string | null, allowCurrentInactive = false) {
   if (!departmentId) return;
-  const { data, error } = await admin.from("departments").select("id").eq("id", departmentId).maybeSingle();
-  if (error || !data) throw new Error("Select a valid department.");
+  const { data, error } = await admin.from("departments").select("id, is_active").eq("id", departmentId).maybeSingle();
+  if (error || !data || !data.is_active && !allowCurrentInactive) throw new Error("Select an active department.");
 }
 
 function refreshMember(memberId: string) {
@@ -52,7 +52,7 @@ export async function updateMember(memberId: string, form: FormData) {
   const payload = validateChurchMember(form);
   if (member.church_branch_id || !access.isSystemAdmin) await assertActiveServiceBranch(admin, access, member.church_branch_id ?? "");
   await assertActiveServiceBranch(admin, access, payload.church_branch_id);
-  await validateDepartment(admin, payload.department_id);
+  await validateDepartment(admin, payload.department_id, payload.department_id === member.department_id);
   let query = admin.from("members").update({ ...payload, updated_at: new Date().toISOString() })
     .eq("id", memberId).eq("is_archived", false);
   query = member.church_branch_id ? query.eq("church_branch_id", member.church_branch_id) : query.is("church_branch_id", null);

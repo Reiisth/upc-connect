@@ -15,7 +15,7 @@ test('branch deactivation uses the shared confirmation and the branch list has o
 
 test('member and field-management flows use the shared confirmation dialog', () => {
   assert.equal(fs.existsSync('app/portal/members/ConfirmActionModal.tsx'), false);
-  const fields = fs.readFileSync('app/portal/field-management/FieldManagementTable.tsx', 'utf8');
+  const fields = fs.readFileSync('app/portal/administration/profile-fields/FieldManagementTable.tsx', 'utf8');
   assert.match(fields, /@\/components\/ui\/confirm-action-modal/);
   assert.doesNotMatch(fields, /members\/ConfirmActionModal/);
 });

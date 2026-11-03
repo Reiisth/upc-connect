@@ -12,7 +12,7 @@ type Values = { first_name: string; middle_name: string | null; last_name: strin
 
 export function MemberChurchForm({ action, branches, departments = [], member, editing = false, cancelHref = "/portal/members" }: {
   action: (form: FormData) => Promise<void>; branches: { id: string; name: string }[];
-  departments?: { id: string; name: string }[]; member?: Values; editing?: boolean;
+  departments?: { id: string; name: string; is_active?: boolean }[]; member?: Values; editing?: boolean;
   cancelHref?: string;
 }) {
   return <form action={action} className="space-y-6">
@@ -32,7 +32,7 @@ export function MemberChurchForm({ action, branches, departments = [], member, e
           <Input id="first_attendance_date" name="first_attendance_date" type="date" max={memberToday()} defaultValue={member?.first_attendance_date ?? ""} />
         </FormField>
         <FormField label="Department" htmlFor="department_id"><Select id="department_id" name="department_id" defaultValue={member?.department_id ?? ""}>
-          <option value="">Not assigned</option>{departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
+          <option value="">Not assigned</option>{departments.map((department) => <option key={department.id} value={department.id}>{department.name}{department.is_active === false ? " (Inactive; current assignment)" : ""}</option>)}
         </Select></FormField>
         <FormField label="Position" htmlFor="position"><Input id="position" name="position" maxLength={120} defaultValue={member?.position ?? ""} /></FormField>
         <FormField label="Zone" htmlFor="zone"><Select id="zone" name="zone" defaultValue={String(member?.zone ?? "")}>

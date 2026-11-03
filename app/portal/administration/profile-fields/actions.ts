@@ -328,7 +328,7 @@ export async function restoreDefaultFieldConfiguration() {
     }
   }
 
-  revalidatePath("/portal/field-management");
+  revalidatePath("/portal/administration/profile-fields");
   revalidatePath("/portal/profile");
 }
 
@@ -431,7 +431,7 @@ export async function saveFieldConfiguration(
     }
   }
 
-  revalidatePath("/portal/field-management");
+  revalidatePath("/portal/administration/profile-fields");
   revalidatePath("/portal/profile");
 }
 
@@ -463,6 +463,6 @@ export async function deleteCustomField(fieldId: string) {
     throw new Error(deleteError.message);
   }
 
-  revalidatePath("/portal/field-management");
+  revalidatePath("/portal/administration/profile-fields");
   revalidatePath("/portal/profile");
 }

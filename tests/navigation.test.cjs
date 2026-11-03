@@ -13,7 +13,7 @@ function nav(pathname, permissions, variant = 'desktop') {
     '@/lib/permissions': {
       PERMISSION_KEYS: ['reports.view', 'members.view', 'services.view', 'attendance.view', 'inactivity.view',
         'follow_ups.view', 'baptisms.view', 'contributions.view', 'accounts.view', 'accounts.manage_branch_access',
-        'administration.view', 'branches.view', 'roles.view', 'profile.view'],
+        'administration.view', 'branches.view', 'roles.view', 'departments.view', 'departments.manage', 'profile.view'],
       hasPermission: (values, key) => values.includes(key),
       hasAnyPermission: (values, keys) => keys.some((key) => values.includes(key)),
     },
@@ -41,12 +41,16 @@ test('portal landing prioritizes Reports, then the first workspace, then profile
   await assert.rejects(portal([]), /redirect:\/access-denied/);
   await assert.rejects(portal(['accounts.manage_branch_access']), /redirect:\/portal\/accounts\/staff/);
   await assert.rejects(portal(['roles.view']), /redirect:\/portal\/administration/);
+  await assert.rejects(portal(['departments.view']), /redirect:\/portal\/administration/);
 });
 
-test('landing and navigation use permissions and no role-name/dashboard route', async () => {
+test('landing and navigation use permissions without a Dashboard route', async () => {
   const source = require('node:fs').readFileSync('app/portal/page.tsx', 'utf8');
   assert.doesNotMatch(source, /system_admin|pastor|accounting_officer|dashboard\.view/);
-  const desktop = nav('/portal/reports', ['dashboard.view', 'reports.view']);
+  assert.doesNotMatch(require('node:fs').readFileSync('lib/permissions.ts', 'utf8'), /dashboard\.view/);
+  assert.match(require('node:fs').readFileSync('lib/permissions.ts', 'utf8'), /"reports\.view"/);
+  assert.doesNotMatch(require('node:fs').readFileSync('app/portal/administration/roles/RolePermissionsSelector.tsx', 'utf8'), /dashboard: "Dashboard"/);
+  const desktop = nav('/portal/reports', ['reports.view']);
   assert.ok(desktop.includes('Reports &amp; Analytics'));
   assert.ok(!desktop.includes('Dashboard'));
   assert.ok(!desktop.includes('Field Management'));
@@ -111,17 +115,27 @@ test('Administration hub admits specific child permissions and shows only permit
   assert.ok(!branchManager.includes('Profile Fields'));
   const admin = await renderHub(['administration.view']);
   assert.ok(admin.includes('Profile Fields'));
+  const departments = await renderHub(['departments.view']);
+  assert.ok(departments.includes('Church Departments'));
+  assert.ok(!departments.includes('Profile Fields'));
 
   const source = require('node:fs').readFileSync('app/portal/administration/access.ts', 'utf8');
   assert.ok(source.includes('getAdministrationHubPermissions'));
   assert.ok(source.includes('branches.view') && source.includes('roles.view'));
 });
 
-test('Profile Fields is linked only from Administration and legacy branch URLs redirect to Accounts', async () => {
+test('Profile Fields is linked only from Administration and old route redirects canonically', async () => {
   const field = require('node:fs').readFileSync('app/portal/PortalNavigation.tsx', 'utf8');
   assert.ok(!field.includes('Field Management'));
   const hub = require('node:fs').readFileSync('app/portal/administration/page.tsx', 'utf8');
   assert.ok(hub.includes('Profile Fields'));
+  assert.ok(hub.includes('/portal/administration/profile-fields'));
+  assert.ok(!hub.includes('href="/portal/field-management"'));
+
+  const profileFieldsLegacy = loadTypeScript('app/portal/field-management/page.tsx', {
+    'next/navigation': { redirect: (url) => { throw new Error(`redirect:${url}`); } },
+  }).default;
+  assert.throws(() => profileFieldsLegacy(), /redirect:\/portal\/administration\/profile-fields/);
 
   const redirect = (url) => { throw new Error(`redirect:${url}`); };
   const index = loadTypeScript('app/portal/administration/staff-branch-access/page.tsx', {

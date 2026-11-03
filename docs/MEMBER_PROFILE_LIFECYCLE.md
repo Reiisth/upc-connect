@@ -12,7 +12,7 @@ self-service. Active-account and active-role permission checks apply to both.
 | Member archive | `is_archived`, `archived_at` | `members.archive` and target branch scope; restore uses the same permission |
 | Registration identity, intentionally shared | `first_name`, `middle_name`, `last_name` | Staff registration/edit and the linked account's Profile |
 | Personal self-service | `nickname`, `birth_date`, `gender`, `civil_status`, `phone_number`, `street_address`, `barangay`, `city`, `province`, `region`, `country`, existing `wedding_anniversary` | `profile.update` and `account_members` ownership |
-| Supplemental personal profile | Non-reserved custom field definitions and their JSON values | The linked account's Profile; Field Management controls presentation/validation |
+| Supplemental personal profile | Non-reserved custom field definitions and their JSON values | The linked account's Profile; Profile Fields controls presentation/validation |
 | System maintained | `id`, `created_at`, `updated_at`, `account_status`, invitation/acceptance metadata, `profile_status`, `profile_completed_at`, account relationships | Existing lifecycle actions; Profile sets completion metadata after successful validation/persistence |
 | Account controlled / read only in Profile | `email` | Existing account connection flow; no Profile email mutation |
 | Legacy / outside this editor | `department` (text), `photo_url` | Preserved; staff uses `department_id`. No new photo workflow. |
@@ -23,7 +23,7 @@ without accounts. It does not expose the other personal/contact fields. Profile
 may also maintain those three names. The exact application allowlists live in
 `lib/member-field-policy.ts` and `app/portal/members/validation.ts`.
 
-Field Management displays only personal and supplemental definitions. Existing
+Profile Fields displays only personal and supplemental definitions. Existing
 operational definitions remain stored for compatibility but cannot grant Profile
 write authority, become required completion fields, or be changed/reset through
 this configuration screen. Built-in input types cannot be changed. New custom
@@ -160,9 +160,10 @@ Updated files:
 
 - `AGENTS.md`
 - `app/portal/components/MemberProfileForm.tsx`
-- `app/portal/field-management/FieldManagementTable.tsx`
-- `app/portal/field-management/actions.ts`
-- `app/portal/field-management/page.tsx`
+- `app/portal/administration/profile-fields/FieldManagementTable.tsx`
+- `app/portal/administration/profile-fields/actions.ts`
+- `app/portal/administration/profile-fields/page.tsx`
+
 - `app/portal/members/MembersTable.tsx`
 - `app/portal/members/actions.ts`
 - `app/portal/members/invite/page.tsx`
@@ -186,3 +187,18 @@ Validated locally on 2026-10-31:
 No live database changes or Auth invitations were performed. Live schema evidence
 came from the supplied read-only metadata query; provider connectivity and live
 database RLS were not integration-tested in this phase.
+
+## Administration catalog updates (Phase 2H)
+
+- Profile Fields is canonical at `/portal/administration/profile-fields`; the
+  old `/portal/field-management` URL redirects there. Its existing
+  `administration.view` authorization, including mutation actions, is retained.
+- `dashboard.view` had no active enforcement point after Dashboard removal. It
+  is removed from the application permission catalog and role assignments by
+  an additive migration. Reports continues to require only `reports.view`.
+- Departments reuse the existing global `departments` reference table because
+  Member and Profile records have no branch-specific department relation.
+  Staff controls the `department_id` Member assignment; Profile self-service
+  cannot change it. Deactivation preserves existing Member references and
+  removes the department from new assignments; edit forms retain a selected
+  inactive department until staff chooses an active replacement.
