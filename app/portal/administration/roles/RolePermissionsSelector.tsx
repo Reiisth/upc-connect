@@ -27,6 +27,7 @@ const groupLabels: Record<string, string> = {
   profile: "Profile",
   reports: "Reports",
   roles: "Roles",
+  service_types: "Service Types",
   services: "Services",
 };
 
