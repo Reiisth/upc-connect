@@ -12,7 +12,6 @@ import {
 } from "./access";
 import {
   SERVICE_STATUSES,
-  SERVICE_TYPES,
   type ServiceStatus,
   type ServiceType,
 } from "./types";
@@ -80,9 +79,7 @@ function validateServiceForm(formData: FormData) {
     throw new Error("Service name must be 200 characters or fewer.");
   }
 
-  if (!SERVICE_TYPES.includes(serviceType)) {
-    throw new Error("Select a valid service type.");
-  }
+  if (!/^[a-z][a-z0-9_]{0,79}$/.test(serviceType)) throw new Error("Select a valid service type.");
 
   if (!SERVICE_STATUSES.includes(status)) {
     throw new Error("Select a valid service status.");
@@ -103,6 +100,8 @@ export async function createService(formData: FormData) {
   const access = await requireServicesPermission("services.create");
   const payload = validateServiceForm(formData);
   const admin = createAdminClient();
+  const { data: type, error: typeError } = await admin.from("service_types").select("key").eq("key", payload.service_type).eq("is_active", true).maybeSingle();
+  if (typeError || !type) throw new Error("Select an active service type.");
 
   await assertActiveServiceBranch(
     admin,
@@ -145,7 +144,7 @@ export async function updateService(
   const { data: currentService, error: currentError } =
     await admin
       .from("services")
-      .select("id, church_branch_id, service_date, status")
+      .select("id, church_branch_id, service_date, status, service_type")
       .eq("id", serviceId)
       .maybeSingle();
 
@@ -155,6 +154,10 @@ export async function updateService(
 
   if (!currentService) {
     throw new Error("The requested service could not be found.");
+  }
+  if (payload.service_type !== currentService.service_type) {
+    const { data: type, error: typeError } = await admin.from("service_types").select("key").eq("key", payload.service_type).eq("is_active", true).maybeSingle();
+    if (typeError || !type) throw new Error("Select an active service type.");
   }
 
   await assertActiveServiceBranch(

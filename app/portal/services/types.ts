@@ -1,12 +1,5 @@
-export const SERVICE_TYPES = [
-  "sunday_morning",
-  "sunday_evening",
-  "prayer_meeting",
-  "special_service",
-  "other",
-] as const;
-
-export type ServiceType = (typeof SERVICE_TYPES)[number];
+export type ServiceType = string;
+export type ServiceTypeOption = { key: string; name: string; isActive: boolean };
 
 export const SERVICE_STATUSES = [
   "scheduled",
@@ -36,7 +29,8 @@ export type ServiceRecord = {
   branch: ServiceBranch | null;
 };
 
-export function formatServiceType(value: string) {
+export function formatServiceType(value: string, names?: Record<string, string>) {
+  if (names?.[value]) return names[value];
   return value
     .split("_")
     .map(

@@ -7,6 +7,7 @@ import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { analyticsToday } from "@/lib/analytics/date-range";
 import { getAnalyticsBranchOptions, getAnalyticsOverview } from "@/lib/analytics/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { AnalyticsOverview } from "@/lib/analytics/types";
 import { parseReportFilters, reportFilterUrl, type ReportSearchParams } from "./filters";
 import ReportsDashboard from "./ReportsDashboard";
@@ -30,6 +31,14 @@ async function ReportsContent({ searchParams }: PageProps) {
     try { overview = await getAnalyticsOverview(parsed.request); }
     catch { loadFailed = true; }
   }
+  let serviceTypeNames: Record<string, string> = {};
+  if (overview) {
+    try {
+      const typeAdmin = createAdminClient();
+      const { data } = await typeAdmin.from("service_types").select("key,name");
+      serviceTypeNames = Object.fromEntries((data ?? []).map((row) => [row.key, row.name]));
+    } catch { /* Fall back to readable key formatting when labels are unavailable. */ }
+  }
   return <PageContainer className="min-w-0">
     <PageHeader eyebrow="Insights" eyebrowIcon={<ChartNoAxesCombined className="h-4 w-4" />} title="Reports & Analytics"
       description="Membership, attendance, member care, and giving across your accessible branches." />
@@ -45,7 +54,7 @@ async function ReportsContent({ searchParams }: PageProps) {
       <p className="mt-2 text-sm text-slate-600">Your data could not be retrieved. Try again or choose another filter.</p>
       <Button asChild variant="outline" className="mt-4"><a href={reportFilterUrl(parsed.values)}>Try again</a></Button>
     </div> : !branches.length ? <EmptyState title="No branch access" description="Your account has no accessible branches for reporting." /> :
-      overview && <ReportsDashboard overview={overview} />}
+      overview && <ReportsDashboard overview={overview} serviceTypeNames={serviceTypeNames} />}
     </ReportsView>
   </PageContainer>;
 }

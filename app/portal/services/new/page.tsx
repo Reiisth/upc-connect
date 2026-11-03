@@ -31,6 +31,8 @@ async function NewServiceContent() {
     access,
     admin,
   );
+  const { data: types, error: typesError } = await admin.from("service_types").select("key,name,is_active").eq("is_active", true).order("name");
+  if (typesError) throw new Error("Unable to load active service types.");
 
   return (
     <PageContainer>
@@ -49,9 +51,10 @@ async function NewServiceContent() {
           title="No active branches available"
           description="You need an assigned active church branch before creating a service."
         />
-      ) : (
+      ) : (types ?? []).length === 0 ? <EmptyState title="No active service types" description="Ask an administrator to activate a service type before creating a service." /> : (
         <ServiceForm
           branches={branches}
+          serviceTypes={(types ?? []).map((t) => ({ key: t.key, name: t.name, isActive: t.is_active }))}
           action={createService}
           submitLabel="Create Service"
         />

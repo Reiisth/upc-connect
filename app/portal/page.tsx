@@ -29,7 +29,7 @@ export default async function PortalPage() {
     redirect(hasPermission(permissions, "accounts.view") ? "/portal/accounts" : "/portal/accounts/staff");
   }
 
-  if (hasAnyPermission(permissions, ["administration.view", "branches.view", "roles.view", "departments.view", "departments.manage"])) {
+  if (hasAnyPermission(permissions, ["administration.view", "branches.view", "roles.view", "departments.view", "departments.manage", "service_types.view", "service_types.manage"])) {
     redirect("/portal/administration");
   }
 

@@ -67,6 +67,10 @@ async function AttendanceContent() {
 
     rows = (data ?? []) as ServiceRow[];
   }
+  const { data: typeRows, error: typeError } = await admin.from("service_types").select("key,name,is_active").order("name");
+  if (typeError) throw new Error("Unable to load service type labels.");
+  const serviceTypes = (typeRows ?? []).map((t) => ({ key: t.key, name: t.name, isActive: t.is_active }));
+  const serviceTypeNames = Object.fromEntries(serviceTypes.map((t) => [t.key, t.name]));
 
   const branchMap = new Map(
     branches.map((branch) => [
@@ -140,6 +144,8 @@ async function AttendanceContent() {
         <AttendanceServicesTable
           services={services}
           branches={branches}
+          serviceTypes={serviceTypes}
+          serviceTypeNames={serviceTypeNames}
         />
       )}
     </PageContainer>

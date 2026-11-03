@@ -31,7 +31,7 @@ import {
   formatServiceStatus,
   formatServiceType,
   SERVICE_STATUSES,
-  SERVICE_TYPES,
+  type ServiceTypeOption,
   type ServiceBranch,
   type ServiceRecord,
   type ServiceStatus,
@@ -39,6 +39,8 @@ import {
 
 type ServicesTableProps = {
   services: ServiceRecord[];
+  serviceTypes: ServiceTypeOption[];
+  serviceTypeNames: Record<string, string>;
   branches: ServiceBranch[];
   canEdit: boolean;
   canManageAttendance: boolean;
@@ -56,6 +58,8 @@ const statusVariants: Record<
 
 export default function ServicesTable({
   services,
+  serviceTypes,
+  serviceTypeNames,
   branches,
   canEdit,
   canManageAttendance,
@@ -163,7 +167,7 @@ export default function ServicesTable({
           <TableHeader>
             <TableRow>
               <TableHead>Service</TableHead>
-              <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...SERVICE_TYPES.map((type) => ({ value: type, label: formatServiceType(type) }))]} /></div></TableHead>
+              <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...serviceTypes.map((type) => ({ value: type.key, label: type.name }))]} /></div></TableHead>
               <TableHead>Branch</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Start Time</TableHead>
@@ -198,7 +202,7 @@ export default function ServicesTable({
                 </TableCell>
 
                 <TableCell>
-                  {formatServiceType(service.serviceType)}
+                  {formatServiceType(service.serviceType, serviceTypeNames)}
                 </TableCell>
 
                 <TableCell>

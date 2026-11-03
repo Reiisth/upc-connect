@@ -83,6 +83,9 @@ async function EditServiceContent({
   }
 
   const service = data as ServiceRow;
+  const { data: types, error: typesError } = await admin.from("service_types").select("key,name,is_active").order("name");
+  if (typesError) throw new Error("Unable to load service types.");
+  const serviceTypes = (types ?? []).filter((t) => t.is_active || t.key === service.service_type).map((t) => ({ key: t.key, name: t.name, isActive: t.is_active }));
   const updateServiceAction = updateService.bind(
     null,
     service.id,
@@ -101,6 +104,7 @@ async function EditServiceContent({
 
       <ServiceForm
         branches={branches}
+        serviceTypes={serviceTypes}
         action={updateServiceAction}
         submitLabel="Save Changes"
         values={{

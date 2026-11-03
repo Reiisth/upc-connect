@@ -66,7 +66,7 @@ async function withGeminiEnv(overrides, work) {
 function aiServerHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)], isSystemAdmin = false,
   rpcFailure = false, branchFailure = false, aggregates = emptyAnalyticsAggregates(), providerFailure = false, response, providerWork } = {}) {
   const calls = { permissions: [], scope: [], reads: [], rpc: [], provider: [], sdk: 0 };
-  const db = { church_branches: branchOptions.map((row) => ({ id: row.id, name: row.name, code: row.code, is_active: row.isActive, inactivity_threshold_weeks: row.inactivityThresholdWeeks })), members: [] };
+  const db = { church_branches: branchOptions.map((row) => ({ id: row.id, name: row.name, code: row.code, is_active: row.isActive, inactivity_threshold_weeks: row.inactivityThresholdWeeks })), members: [], service_types: [{ key: 'prayer_meeting', name: 'Prayer Meeting' }] };
   class Query {
     constructor(table) { this.table = table; this.rows = [...db[table]]; }
     select() { return this; }
@@ -103,6 +103,7 @@ function aiServerHarness({ permissions = ['reports.view'], scopeIds = [id(1), id
   function loadReportsPage() {
     return loadTypeScript('app/portal/reports/page.tsx', { ...serverOnly,
       '@/lib/analytics/server': analytics, '@/lib/analytics/date-range': { ...dates, analyticsToday: () => today },
+      '@/lib/supabase/admin': { createAdminClient: () => admin },
       'next/navigation': navigation,
       'next/link': { __esModule: true, default: (props) => require('react').createElement('a', props) },
       '@google/genai': { GoogleGenAI: class { constructor() { calls.sdk++; throw new Error('Reports must not initialize Gemini'); } } },

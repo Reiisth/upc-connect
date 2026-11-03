@@ -13,7 +13,7 @@ function nav(pathname, permissions, variant = 'desktop') {
     '@/lib/permissions': {
       PERMISSION_KEYS: ['reports.view', 'members.view', 'services.view', 'attendance.view', 'inactivity.view',
         'follow_ups.view', 'baptisms.view', 'contributions.view', 'accounts.view', 'accounts.manage_branch_access',
-        'administration.view', 'branches.view', 'roles.view', 'departments.view', 'departments.manage', 'profile.view'],
+        'administration.view', 'branches.view', 'roles.view', 'departments.view', 'departments.manage', 'service_types.view', 'service_types.manage', 'profile.view'],
       hasPermission: (values, key) => values.includes(key),
       hasAnyPermission: (values, keys) => keys.some((key) => values.includes(key)),
     },
@@ -110,14 +110,17 @@ test('Administration hub admits specific child permissions and shows only permit
   assert.ok(roles.includes('Roles &amp; Permissions'));
   assert.ok(!roles.includes('Church Branches'));
   const branchManager = await renderHub(['accounts.manage_branch_access']);
-  assert.match(branchManager, /href="\/portal\/accounts\/staff"/);
-  assert.ok(branchManager.includes('Staff Branch Access'));
+  assert.ok(!branchManager.includes('Staff Branch Access'));
+  assert.ok(!branchManager.includes('href="/portal/accounts/staff"'));
   assert.ok(!branchManager.includes('Profile Fields'));
   const admin = await renderHub(['administration.view']);
   assert.ok(admin.includes('Profile Fields'));
   const departments = await renderHub(['departments.view']);
   assert.ok(departments.includes('Church Departments'));
   assert.ok(!departments.includes('Profile Fields'));
+  const serviceTypes = await renderHub(['service_types.view']);
+  assert.ok(serviceTypes.includes('Service Types'));
+  assert.ok(!serviceTypes.includes('Staff Branch Access'));
 
   const source = require('node:fs').readFileSync('app/portal/administration/access.ts', 'utf8');
   assert.ok(source.includes('getAdministrationHubPermissions'));
@@ -131,6 +134,7 @@ test('Profile Fields is linked only from Administration and old route redirects 
   assert.ok(hub.includes('Profile Fields'));
   assert.ok(hub.includes('/portal/administration/profile-fields'));
   assert.ok(!hub.includes('href="/portal/field-management"'));
+  assert.ok(!hub.includes('Staff Branch Access'));
 
   const profileFieldsLegacy = loadTypeScript('app/portal/field-management/page.tsx', {
     'next/navigation': { redirect: (url) => { throw new Error(`redirect:${url}`); } },
@@ -162,8 +166,9 @@ test('service attendance action is explicit and gated by attendance.view', () =>
     startTime: '09:00:00', status: 'scheduled', churchBranchId: 'branch-1', notes: null,
     branch: { id: 'branch-1', name: 'Main', code: 'MAIN', isActive: true } };
   const branches = [service.branch];
-  const allowed = renderToStaticMarkup(React.createElement(ServicesTable, { services: [service], branches, canEdit: false, canManageAttendance: true }));
-  const denied = renderToStaticMarkup(React.createElement(ServicesTable, { services: [service], branches, canEdit: false, canManageAttendance: false }));
+  const props = { services: [service], branches, serviceTypes: [{key:'sunday_morning',name:'Sunday Morning',isActive:true}], serviceTypeNames: {sunday_morning:'Sunday Morning'}, canEdit: false };
+  const allowed = renderToStaticMarkup(React.createElement(ServicesTable, { ...props, canManageAttendance: true }));
+  const denied = renderToStaticMarkup(React.createElement(ServicesTable, { ...props, canManageAttendance: false }));
   assert.ok(allowed.includes('Manage Attendance') && allowed.includes('/portal/attendance/service-1'));
   assert.ok(!denied.includes('Manage Attendance') && denied.includes('View only'));
 });

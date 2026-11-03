@@ -22,7 +22,8 @@ export async function getAdministrationHubPermissions() {
     "roles.view",
     "departments.view",
     "departments.manage",
-    "accounts.manage_branch_access",
+    "service_types.view",
+    "service_types.manage",
   ]);
 
   if (!canReachHub) redirect("/access-denied");

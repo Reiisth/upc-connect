@@ -71,6 +71,12 @@ test('unexpected text in allowed numeric, category, date or money positions fail
   }
 });
 
+test('managed service type keys are accepted by the aggregate allowlist', () => {
+  const data = analyticsFixture();
+  data.attendance.byServiceType[0].serviceType = 'midweek_service';
+  assert.equal(buildDecisionSupportInput(data, 'all_accessible_branches').attendance.byServiceType[0].serviceType, 'midweek_service');
+});
+
 test('large aggregate histories fail explicitly instead of silently truncating or changing grouping', () => {
   const data = analyticsFixture();
   data.membership.recordCreationTrend = Array.from({ length: 6000 }, () => ({ periodStart: '2026-10-05', value: 1 }));

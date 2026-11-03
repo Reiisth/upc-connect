@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import {
   Building2,
   Network,
+  CalendarDays,
   SlidersHorizontal,
   Settings,
   ShieldCheck,
@@ -36,6 +37,7 @@ async function AdministrationContent() {
   );
   const canViewDepartments = hasPermission(permissions, "departments.view") ||
     hasPermission(permissions, "departments.manage");
+  const canViewServiceTypes = hasPermission(permissions, "service_types.view") || hasPermission(permissions, "service_types.manage");
 
   return (
     <PageContainer>
@@ -98,6 +100,8 @@ async function AdministrationContent() {
             </div>
           </ClickableCard>
         )}
+
+        {canViewServiceTypes && <ClickableCard href="/portal/administration/service-types"><div className="flex items-start gap-4"><div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]"><CalendarDays className="h-5 w-5" /></div><div><h2 className="font-semibold text-[#203264]">Service Types</h2><p className="mt-1 text-sm text-slate-500">Manage global service type names and availability.</p></div></div></ClickableCard>}
 
         {hasPermission(permissions, "administration.view") && (
           <ClickableCard href="/portal/administration/profile-fields">

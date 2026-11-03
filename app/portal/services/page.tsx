@@ -90,6 +90,10 @@ async function ServicesContent() {
     notes: service.notes,
     branch: branchMap.get(service.church_branch_id) ?? null,
   }));
+  const { data: serviceTypeRows, error: serviceTypeError } = await admin.from("service_types").select("key,name,is_active").order("name");
+  if (serviceTypeError) throw new Error("Unable to load service type labels.");
+  const serviceTypes = (serviceTypeRows ?? []).map((row) => ({ key: row.key, name: row.name, isActive: row.is_active }));
+  const serviceTypeNames = Object.fromEntries(serviceTypes.map((type) => [type.key, type.name]));
 
   const scheduledCount = services.filter(
     (service) => service.status === "scheduled",
@@ -156,6 +160,8 @@ async function ServicesContent() {
       ) : (
         <ServicesTable
           services={services}
+          serviceTypes={serviceTypes}
+          serviceTypeNames={serviceTypeNames}
           branches={branches}
           canEdit={canUpdate}
           canManageAttendance={hasPermission(access.permissions, "attendance.view")}

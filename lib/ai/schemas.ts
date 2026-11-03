@@ -3,7 +3,6 @@ import { z } from "zod";
 import { validAnalyticsDate } from "@/lib/analytics/date-range";
 import { FOLLOW_UP_METHODS, FOLLOW_UP_OUTCOMES } from "@/app/portal/follow-ups/types";
 import { CONTRIBUTION_TYPES } from "@/app/portal/contributions/types";
-import { SERVICE_TYPES } from "@/app/portal/services/types";
 
 const date = z.string().refine(validAnalyticsDate);
 const count = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
@@ -39,7 +38,7 @@ export const decisionSupportInputSchema = z.strictObject({
   }),
   membership: z.strictObject({ nonArchivedMembers: count, recordsAddedInRange: count, missingFirstAttendanceDate: count, recordCreationTrend: countTrend }),
   attendance: attendanceCounts.extend({
-    byServiceType: z.array(attendanceCounts.extend({ serviceType: z.enum(SERVICE_TYPES) })),
+    byServiceType: z.array(attendanceCounts.extend({ serviceType: z.string().regex(/^[a-z][a-z0-9_]{0,79}$/) })),
     trend: z.array(attendanceCounts.extend({ periodStart: date })),
     eligibleCompletedServiceWeeks: count,
     weekly: z.array(z.strictObject({ weekStart: date, uniqueMembers: count, isFinished: z.boolean(), isPartialRange: z.boolean(),

@@ -29,7 +29,7 @@ import {
   formatServiceStatus,
   formatServiceType,
   SERVICE_STATUSES,
-  SERVICE_TYPES,
+  type ServiceTypeOption,
   type ServiceBranch,
   type ServiceRecord,
   type ServiceStatus,
@@ -38,6 +38,8 @@ import {
 type AttendanceServicesTableProps = {
   services: ServiceRecord[];
   branches: ServiceBranch[];
+  serviceTypes: ServiceTypeOption[];
+  serviceTypeNames: Record<string, string>;
 };
 
 const statusVariants: Record<
@@ -53,6 +55,8 @@ const statusVariants: Record<
 export default function AttendanceServicesTable({
   services,
   branches,
+  serviceTypes,
+  serviceTypeNames,
 }: AttendanceServicesTableProps) {
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
@@ -169,7 +173,7 @@ export default function AttendanceServicesTable({
           <TableHeader>
             <TableRow>
               <TableHead>Service</TableHead>
-              <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...SERVICE_TYPES.map((type) => ({ value: type, label: formatServiceType(type) }))]} /></div></TableHead>
+              <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...serviceTypes.map((type) => ({ value: type.key, label: type.name }))]} /></div></TableHead>
               <TableHead>Branch</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Start Time</TableHead>
@@ -204,7 +208,7 @@ export default function AttendanceServicesTable({
                 </TableCell>
 
                 <TableCell>
-                  {formatServiceType(service.serviceType)}
+                  {formatServiceType(service.serviceType, serviceTypeNames)}
                 </TableCell>
 
                 <TableCell>

@@ -26,7 +26,7 @@ function Section({ id, title, description, current, children }: { id: string; ti
   </section>;
 }
 
-export default function ReportsDashboard({ overview: data }: { overview: AnalyticsOverview }) {
+export default function ReportsDashboard({ overview: data, serviceTypeNames = {} }: { overview: AnalyticsOverview; serviceTypeNames?: Record<string, string> }) {
   const { membership, attendance, inactivity, followUps, contributions, baptisms, branches } = data;
   const currentDate = formatReportDate(data.asOfDate);
   const multiple = branches.length > 1;
@@ -80,7 +80,7 @@ export default function ReportsDashboard({ overview: data }: { overview: Analyti
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
         <ReportChart title="Attendance Trend" description={periodNote} labels={periodLabels(attendance.trend)} kind="line"
           series={[{ label: "Physical Check-ins", values: attendance.trend.map((point) => point.physicalCheckIns) }]} emptyMessage="No physical attendance was recorded at completed services in this period." />
-        <ReportChart title="Attendance by Service Type" labels={attendance.byServiceType.map((point) => formatServiceType(point.serviceType))} horizontal
+        <ReportChart title="Attendance by Service Type" labels={attendance.byServiceType.map((point) => formatServiceType(point.serviceType, serviceTypeNames))} horizontal
           series={[{ label: "Physical Check-ins", values: attendance.byServiceType.map((point) => point.physicalCheckIns) }]} emptyMessage="There is no service-type attendance to compare in this period." />
         {multiple && <ReportChart title="Attendance by Branch" labels={branches.map((row) => row.branch.name)} horizontal
           series={[{ label: "Physical Check-ins", values: branches.map((row) => row.attendance.physicalCheckIns) }]} emptyMessage="No physical attendance was recorded in these branches during this period." />}

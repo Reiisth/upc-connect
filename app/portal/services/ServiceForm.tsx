@@ -10,11 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 
 import {
   formatServiceStatus,
-  formatServiceType,
   SERVICE_STATUSES,
-  SERVICE_TYPES,
   type ServiceStatus,
   type ServiceType,
+  type ServiceTypeOption,
 } from "./types";
 import type { ServiceBranchOption } from "./access";
 import { allowedServiceStatuses } from "./lifecycle";
@@ -31,6 +30,7 @@ export type ServiceFormValues = {
 
 type ServiceFormProps = {
   branches: ServiceBranchOption[];
+  serviceTypes: ServiceTypeOption[];
   action: (formData: FormData) => void | Promise<void>;
   submitLabel: string;
   values?: ServiceFormValues;
@@ -38,7 +38,7 @@ type ServiceFormProps = {
 
 const defaultValues: ServiceFormValues = {
   name: "",
-  serviceType: "sunday_morning",
+  serviceType: "",
   serviceDate: "",
   startTime: null,
   status: "scheduled",
@@ -48,11 +48,12 @@ const defaultValues: ServiceFormValues = {
 
 export function ServiceForm({
   branches,
+  serviceTypes,
   action,
   submitLabel,
   values,
 }: ServiceFormProps) {
-  const formValues = values ?? defaultValues;
+  const formValues = values ?? { ...defaultValues, serviceType: serviceTypes.find((type) => type.isActive)?.key ?? "" };
 
   return (
     <form action={action} className="space-y-6">
@@ -89,10 +90,11 @@ export function ServiceForm({
               name="service_type"
               required
               defaultValue={formValues.serviceType}
+              disabled={serviceTypes.length === 0}
             >
-              {SERVICE_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {formatServiceType(type)}
+              {serviceTypes.map((type) => (
+                <option key={type.key} value={type.key}>
+                  {type.name}{!type.isActive ? " (Inactive — existing service)" : ""}
                 </option>
               ))}
             </Select>
@@ -194,7 +196,7 @@ export function ServiceForm({
             <Link href="/portal/services">Cancel</Link>
           </Button>
 
-          <Button type="submit" disabled={branches.length === 0}>
+          <Button type="submit" disabled={branches.length === 0 || serviceTypes.length === 0}>
             {submitLabel}
           </Button>
         </FormActions>

@@ -138,9 +138,16 @@ test('empty reports render zeros, informative chart empty states and unavailable
   assert.ok(!html.includes('Branch Comparison') && !html.includes('Attendance by Branch'));
 });
 
+test('service type report labels resolve current names while report data retains stable keys', () => {
+  const { formatServiceType } = loadTypeScript('app/portal/services/types.ts');
+  const grouped = { serviceType: 'midweek_service', physicalCheckIns: 4 };
+  assert.equal(formatServiceType(grouped.serviceType, { midweek_service: 'Wednesday Worship' }), 'Wednesday Worship');
+  assert.equal(grouped.serviceType, 'midweek_service');
+});
+
 function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)], isSystemAdmin = false, rpcFailure = false, branchFailure = false } = {}) {
   const calls = { rpc: [], permission: [], branchScope: [] };
-  const db = { church_branches: branches.map((branch) => ({ id: branch.id, name: branch.name, code: null, is_active: branch.isActive, inactivity_threshold_weeks: branch.inactivityThresholdWeeks })), members: [] };
+  const db = { church_branches: branches.map((branch) => ({ id: branch.id, name: branch.name, code: null, is_active: branch.isActive, inactivity_threshold_weeks: branch.inactivityThresholdWeeks })), members: [], service_types: [{ key: 'prayer_meeting', name: 'Wednesday Prayer', is_active: true }] };
   class Query {
     constructor(table) { this.table = table; this.rows = [...db[table]]; }
     select() { return this; }
@@ -169,6 +176,7 @@ function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)]
     './actions': { generateReportInsights: () => assert.fail('Normal Reports rendering must not request AI insights') },
     '@/lib/analytics/server': api,
     '@/lib/analytics/date-range': { ...dates, analyticsToday: () => today },
+    '@/lib/supabase/admin': { createAdminClient: () => admin },
     'next/navigation': { redirect: (url) => { throw new Error(`redirect:${url}`); } },
   }).default;
   async function html(params = {}) {

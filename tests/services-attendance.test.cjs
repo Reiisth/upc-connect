@@ -17,6 +17,7 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
     church_branches: [branch, otherBranch].map((key) => ({ id: key, name: key === branch ? 'Service branch' : 'Other branch', code: null, is_active: true })),
     services: [{ id: serviceId, name: 'Worship', service_type: 'sunday_morning', church_branch_id: branch,
       service_date: '2026-10-25', start_time: '09:00:00', status, notes: null }],
+    service_types: [{ key: 'sunday_morning', name: 'Sunday Morning', is_active: true }],
     members: [
       { id: id(11), first_name: 'Current', last_name: 'Member', church_branch_id: branch, is_archived: false, member_status: 'active' },
       { id: id(12), first_name: 'Transferred', last_name: 'Member', church_branch_id: otherBranch, is_archived: false, member_status: 'active' },
@@ -147,6 +148,21 @@ test('service lifecycle is forward-only and completed/cancelled services cannot 
     await assert.rejects(transitions(h)(serviceId, h.serviceForm({ status: to })), allowed ? /redirect:/ : /cannot return/);
     assert.equal(h.db.services[0].status, allowed ? to : from);
   }
+});
+
+test('inactive managed types remain preservable on edit but cannot be selected for new or changed services', async () => {
+  const h = harness();
+  h.db.service_types.push({ key: 'retired_service', name: 'Retired Service', is_active: false });
+  h.db.services[0].service_type = 'retired_service';
+  await assert.rejects(h.load('app/portal/services/actions.ts').updateService(serviceId,
+    h.serviceForm({ name: 'Metadata correction' })), /redirect:\/portal\/services/);
+  assert.equal(h.db.services[0].service_type, 'retired_service');
+  await assert.rejects(h.load('app/portal/services/actions.ts').updateService(serviceId,
+    h.serviceForm({ service_type: 'retired_service', name: 'Metadata correction 2' })), /redirect:\/portal\/services/);
+  await assert.rejects(h.load('app/portal/services/actions.ts').updateService(serviceId,
+    h.serviceForm({ service_type: 'missing_type' })), /active service type/);
+  await assert.rejects(h.load('app/portal/services/actions.ts').createService(
+    h.serviceForm({ service_type: 'retired_service' })), /active service type/);
 });
 
 test('historical archived/inactive/transferred attendees remain visible without duplicate roster rows', async () => {

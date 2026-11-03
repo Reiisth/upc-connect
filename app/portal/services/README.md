@@ -39,3 +39,18 @@ triggers are added. Navigation and page structure remain unchanged.
 
 Validation: `node --test tests/services-attendance.test.cjs`, full `tests/*.test.cjs`,
 TypeScript, targeted ESLint, production build and `git diff --check`.
+
+## Managed service types
+
+Service Types are global reference data in `public.service_types`. The immutable
+text key remains stored in `services.service_type` and is the analytics grouping
+identity; the editable name is presentation only. The additive migration seeds
+the built-in keys and every current key without rewriting Services, then adds a
+restrictive foreign key. Service Types can be created, renamed, activated, and
+deactivated; hard deletion is intentionally omitted. Deactivation prevents use
+for new Services while preserving existing Services and Attendance history.
+Service and Attendance lists include historical rows and show current managed
+names. Reports continue grouping by key and resolve display names from the same
+reference data. `service_types.view` and `service_types.manage` are granted to
+system_admin and pastor by default; runtime checks authorize by permission and
+custom roles may be assigned either permission.
