@@ -21,6 +21,8 @@ const groupLabels: Record<string, string> = {
   branches: "Branches",
   contributions: "Contributions",
   dashboard: "Dashboard",
+  follow_ups: "Follow-ups",
+  inactivity: "Inactivity",
   members: "Members",
   profile: "Profile",
   reports: "Reports",
@@ -127,10 +129,6 @@ export function RolePermissionsSelector({
                       {!permission.is_active && (
                         <StatusBadge variant="muted">Inactive</StatusBadge>
                       )}
-                    </span>
-
-                    <span className="mt-1 block text-xs text-slate-500">
-                      {permission.key}
                     </span>
 
                     {permission.description && (
