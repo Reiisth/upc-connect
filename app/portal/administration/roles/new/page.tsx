@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { ShieldCheck } from "lucide-react";
 
@@ -35,9 +34,9 @@ async function NewRoleContent() {
       <PageHeader
         backHref="/portal/administration/roles"
         backLabel="Back to Roles & Permissions"
-        eyebrow="Roles & Permissions"
+        eyebrow="Administration"
         eyebrowIcon={<ShieldCheck className="h-4 w-4" />}
-        title="Create Custom Role"
+        title="Add Role"
         description="Create a custom role without changing any existing role assignments."
       />
 
@@ -46,15 +45,6 @@ async function NewRoleContent() {
         canManagePermissions={canManagePermissions}
       />
 
-      <p className="text-sm text-slate-500">
-        <Link
-          href="/portal/administration/roles"
-          className="font-medium text-[#203264] underline-offset-4 hover:underline"
-        >
-          Return to the roles list
-        </Link>
-        .
-      </p>
     </PageContainer>
   );
 }

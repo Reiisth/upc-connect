@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
@@ -19,7 +20,7 @@ async function Content() {
   const { data, error } = await admin.from("service_types").select("key,name,is_active").order("name").order("key");
   if (error) throw new Error("Unable to load service types.");
   const canManage = hasPermission(access.permissions, "service_types.manage");
-  return <PageContainer><PageHeader title="Service Types" description="Manage global service labels used by new and historical services." action={canManage ? <Button asChild><Link href="/portal/administration/service-types/new"><Plus />Add Service Type</Link></Button> : undefined} />
+  return <PageContainer><PageHeader backHref="/portal/administration" backLabel="Back to Administration" eyebrow="Administration" eyebrowIcon={<CalendarDays className="h-4 w-4" />} title="Service Types" description="Manage global service labels used by new and historical services." action={canManage ? <Button asChild><Link href="/portal/administration/service-types/new"><Plus />Add Service Type</Link></Button> : undefined} />
     <Table><TableHeader><TableRow><TableHead>Service Type</TableHead><TableHead>Stable Key</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader><TableBody>{(data ?? []).map((row) => <TableRow key={row.key}><TableCell className="font-medium">{row.name}</TableCell><TableCell><code>{row.key}</code></TableCell><TableCell><StatusBadge variant={row.is_active ? "success" : "muted"}>{row.is_active ? "Active" : "Inactive"}</StatusBadge></TableCell><TableCell><div className="flex gap-3">{canManage && <><TableActionButton href={`/portal/administration/service-types/${encodeURIComponent(row.key)}/edit`}>Edit</TableActionButton><StatusAction typeKey={row.key} name={row.name} active={row.is_active}/></>}</div></TableCell></TableRow>)}</TableBody></Table>
   </PageContainer>;
 }

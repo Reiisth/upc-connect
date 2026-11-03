@@ -20,7 +20,7 @@ export default function NewDepartmentPage() {
 async function NewDepartmentContent() {
   await requireAdministrationPermission("departments.manage");
   return <PageContainer className="max-w-3xl">
-    <PageHeader backHref="/portal/administration/departments" backLabel="Back to Church Departments" eyebrow="Administration" eyebrowIcon={<Network className="h-4 w-4" />} title="Add Department" description="Add a global church department for Member records." />
+    <PageHeader backHref="/portal/administration/departments" backLabel="Back to Church Departments" eyebrow="Church Departments" eyebrowIcon={<Network className="h-4 w-4" />} title="Add Department" description="Add a global church department for Member records." />
     <form action={createDepartment}>
       <FormSection title="Department Information" description="Department names are shared across all church branches.">
         <FormField label="Department Name" htmlFor="name" required>

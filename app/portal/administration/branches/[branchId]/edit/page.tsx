@@ -70,7 +70,7 @@ async function EditBranchContent({
       <PageHeader
         backHref="/portal/administration/branches"
         backLabel="Back to Church Branches"
-        eyebrow="Branch Management"
+        eyebrow="Church Branches"
         eyebrowIcon={<Building2 className="h-4 w-4" />}
         title="Edit Church Branch"
         description={`Update the information for ${branch.name}.`}

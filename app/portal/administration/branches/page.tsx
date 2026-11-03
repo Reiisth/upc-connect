@@ -71,7 +71,7 @@ async function BranchesContent() {
       <PageHeader
         backHref="/portal/administration"
         backLabel="Back to Administration"
-        eyebrow="Branch Management"
+        eyebrow="Administration"
         eyebrowIcon={<Building2 className="h-4 w-4" />}
         title="Church Branches"
         description="Create, edit, and manage the church branches available in UPC Connect."

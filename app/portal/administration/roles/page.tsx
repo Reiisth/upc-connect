@@ -59,7 +59,7 @@ async function RolesContent() {
           <Button asChild>
             <Link href="/portal/administration/roles/new">
               <Plus />
-              Create Role
+              Add Role
             </Link>
           </Button>
         ) : undefined}

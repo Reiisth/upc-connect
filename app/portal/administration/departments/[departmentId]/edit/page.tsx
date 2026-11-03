@@ -31,7 +31,7 @@ async function EditDepartmentContent({ params }: { params: Promise<{ departmentI
   const action = updateDepartment.bind(null, department.id);
 
   return <PageContainer className="max-w-3xl">
-    <PageHeader backHref="/portal/administration/departments" backLabel="Back to Church Departments" eyebrow="Administration" eyebrowIcon={<Network className="h-4 w-4" />} title="Edit Department" description="Rename this global church department." />
+    <PageHeader backHref="/portal/administration/departments" backLabel="Back to Church Departments" eyebrow="Church Departments" eyebrowIcon={<Network className="h-4 w-4" />} title="Edit Department" description="Rename this global church department." />
     <form action={action}>
       <FormSection title="Department Information">
         <FormField label="Department Name" htmlFor="name" required>

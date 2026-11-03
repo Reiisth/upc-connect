@@ -30,9 +30,9 @@ async function NewBranchContent() {
       <PageHeader
         backHref="/portal/administration/branches"
         backLabel="Back to Church Branches"
-        eyebrow="Branch Management"
+        eyebrow="Church Branches"
         eyebrowIcon={<Building2 className="h-4 w-4" />}
-        title="Create Church Branch"
+        title="Add Branch"
         description="Add a new church branch to UPC Connect."
       />
 
