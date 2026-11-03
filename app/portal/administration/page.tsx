@@ -53,7 +53,7 @@ async function AdministrationContent() {
           <ClickableCard href="/portal/administration/branches">
             <div className="flex items-start gap-4">
               <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
-                <SlidersHorizontal className="h-5 w-5" />
+                <Building2 className="h-5 w-5" />
               </div>
 
               <div>
@@ -113,7 +113,7 @@ async function AdministrationContent() {
           <ClickableCard href="/portal/field-management">
             <div className="flex items-start gap-4">
               <div className="rounded-xl bg-[#EEF3FB] p-3 text-[#203264]">
-                <Building2 className="h-5 w-5" />
+                <SlidersHorizontal className="h-5 w-5" />
               </div>
               <div>
                 <h2 className="font-semibold text-[#203264]">Profile Fields</h2>
