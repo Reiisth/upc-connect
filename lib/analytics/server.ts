@@ -3,8 +3,8 @@ import { cache } from "react";
 import { requirePermission } from "@/lib/permissions-server";
 import { getUserBranchScope } from "@/lib/branch-access";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { calculateWeeklyInactivity, type MemberInactivitySummary } from "@/lib/inactivity/calculate";
-import { analyticsToday, resolveAnalyticsDateRange, validAnalyticsDate, validateAnalyticsGrouping } from "./date-range";
+import { calculateWeeklyInactivity, manilaDateFromTimestamp, type MemberInactivitySummary } from "@/lib/inactivity/calculate";
+import { analyticsToday, resolveAnalyticsDateRange, validateAnalyticsGrouping } from "./date-range";
 import { assembleAnalytics, emptyAnalyticsAggregates } from "./assemble";
 import type { AnalyticsAggregates, AnalyticsBranch, AnalyticsOverview, AnalyticsRequest } from "./types";
 
@@ -45,10 +45,11 @@ export async function getAnalyticsBranchOptions(): Promise<readonly AnalyticsBra
 async function loadInactivityInputs(admin: ReturnType<typeof createAdminClient>, branches: readonly AnalyticsBranch[], today: string): Promise<MemberInactivitySummary[]> {
   const ids = branches.filter((branch) => branch.isActive).map((branch) => branch.id);
   if (!ids.length) return [];
-  const members = await allRows((from, to) => admin.from("members").select("id, church_branch_id, first_attendance_date")
+  const members = await allRows((from, to) => admin.from("members").select("id, church_branch_id, created_at")
     .in("church_branch_id", ids).eq("is_archived", false).order("id").range(from, to));
-  const earliest = members.map((row) => row.first_attendance_date as string | null)
-    .filter((date): date is string => Boolean(date && validAnalyticsDate(date) && date <= today)).sort()[0];
+  const registrationDates = members.map((row) => manilaDateFromTimestamp(row.created_at))
+    .filter((date): date is string => Boolean(date));
+  const earliest = registrationDates.sort()[0];
   const [services, attendance] = earliest ? await Promise.all([
     allRows((from, to) => admin.from("services").select("id, church_branch_id, service_date, status")
       .in("church_branch_id", ids).eq("status", "completed").gte("service_date", earliest).lte("service_date", today).order("id").range(from, to)),
@@ -59,7 +60,7 @@ async function loadInactivityInputs(admin: ReturnType<typeof createAdminClient>,
       .in("attendance_status", ["present", "late"]).order("id").range(from, to)),
   ]) : [[], []];
   return calculateWeeklyInactivity({
-    members: members.map((row) => ({ id: row.id, branchId: row.church_branch_id, eligibilityDate: row.first_attendance_date })),
+    members: members.map((row) => ({ id: row.id, branchId: row.church_branch_id, registrationDate: manilaDateFromTimestamp(row.created_at) })),
     services: services.map((row) => ({ id: row.id, branchId: row.church_branch_id, serviceDate: row.service_date, status: row.status })),
     attendance: attendance.map((row) => ({ memberId: row.member_id, serviceId: row.service_id, status: row.attendance_status })),
     thresholds: new Map(branches.map((branch) => [branch.id, branch.inactivityThresholdWeeks])), today,

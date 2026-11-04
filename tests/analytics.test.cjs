@@ -45,7 +45,7 @@ test('empty analytics produces zero counts, null denominators and empty series',
 
 test('inactivity summaries use existing calculation rules, own branch thresholds and unknown population', () => {
   const summaries = calculateWeeklyInactivity({
-    members: [{ id: 'one', branchId: 'a', eligibilityDate: '2026-01-01' }, { id: 'two', branchId: 'b', eligibilityDate: '2026-01-01' }, { id: 'unknown', branchId: 'a', eligibilityDate: null }],
+    members: [{ id: 'one', branchId: 'a', registrationDate: '2026-01-01' }, { id: 'two', branchId: 'b', registrationDate: '2026-01-01' }, { id: 'unknown', branchId: 'a', registrationDate: null }],
     services: ['2026-10-05', '2026-10-12', '2026-10-19'].flatMap((serviceDate, i) => ['a', 'b'].map((branchId) => ({ id: branchId + i, branchId, serviceDate, status: 'completed' }))),
     attendance: [], thresholds: new Map([['a', 3], ['b', 4]]), today,
   });
@@ -79,7 +79,7 @@ test('assembly preserves aggregate decimal strings, global distinct counts and s
   assert.ok(!Object.hasOwn(result.attendance, 'branchId'));
 });
 
-function serverHarness({ permissions = ['reports.view'], branchIds = ['a', 'b'], rpcError = false, inactiveBranch = false, memberCount = 3 } = {}) {
+function serverHarness({ permissions = ['reports.view'], branchIds = ['a', 'b'], rpcError = false, inactiveBranch = false, memberCount = 3, registrationDate = '2026-01-01T00:00:00Z' } = {}) {
   const calls = [], reads = [];
   const tables = {
     church_branches: [
@@ -88,11 +88,11 @@ function serverHarness({ permissions = ['reports.view'], branchIds = ['a', 'b'],
       { id: 'outside', name: 'Not permitted', code: null, is_active: true, inactivity_threshold_weeks: 3 },
     ],
     members: [
-      { id: 'one', church_branch_id: 'a', first_attendance_date: '2026-01-01', member_status: 'inactive', is_archived: false },
-      { id: 'two', church_branch_id: 'b', first_attendance_date: '2026-01-01', member_status: 'active', is_archived: false },
-      { id: 'unknown', church_branch_id: 'a', first_attendance_date: null, member_status: 'inactive', is_archived: false },
-      { id: 'archived', church_branch_id: 'a', first_attendance_date: '2026-01-01', member_status: 'active', is_archived: true },
-      { id: 'foreign', church_branch_id: 'outside', first_attendance_date: '2026-01-01', member_status: 'active', is_archived: false },
+      { id: 'one', church_branch_id: 'a', first_attendance_date: '2022-05-10', created_at: registrationDate, member_status: 'inactive', is_archived: false },
+      { id: 'two', church_branch_id: 'b', first_attendance_date: null, created_at: '2026-01-01T00:00:00Z', member_status: 'active', is_archived: false },
+      { id: 'unknown', church_branch_id: 'a', first_attendance_date: '2022-05-10', created_at: null, member_status: 'inactive', is_archived: false },
+      { id: 'archived', church_branch_id: 'a', first_attendance_date: '2026-01-01', created_at: '2026-01-01T00:00:00Z', member_status: 'active', is_archived: true },
+      { id: 'foreign', church_branch_id: 'outside', first_attendance_date: '2026-01-01', created_at: '2026-01-01T00:00:00Z', member_status: 'active', is_archived: false },
     ],
     services: ['2026-10-05', '2026-10-12', '2026-10-19'].flatMap((service_date, i) => ['a','b','outside'].map((church_branch_id) => ({ id: church_branch_id + i, church_branch_id, service_date, status: 'completed' }))),
     attendance_records: [],
@@ -154,6 +154,16 @@ test('all accessible branches keep differing thresholds and never expand to fore
   assert.equal(result.asOfDate, today);
   assert.equal(h.calls[0].args.p_branch_ids.length, 2);
   assert.equal(h.reads.filter((table) => table === 'services').length, 1, 'No per-branch source query loop');
+});
+
+test('Reports inactivity and approaching-threshold metrics use registration date, independent of first attendance history', async () => {
+  const h = serverHarness({ registrationDate: '2026-10-14T00:00:00Z' });
+  const result = await h.getAnalyticsOverview({ branchId: 'a' });
+  assert.equal(result.inactivity.needsFollowUpMembers, 0);
+  assert.equal(result.inactivity.monitoringMembers, 1);
+  assert.equal(result.inactivity.unknownMembers, 1);
+  assert.equal(result.inactivity.approachingFollowUpThreshold, 0);
+  assert.equal(result.branches[0].inactivity.needsFollowUpMembers, 0);
 });
 
 test('empty access is safe, inactive branches retain historical aggregates but no current inactivity, failures hide database details', async () => {

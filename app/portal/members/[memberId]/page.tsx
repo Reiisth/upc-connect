@@ -63,7 +63,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
         </div>
         <dl className="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
           <Info label="Church Branch" value={branch?.name ?? "Not assigned"} />
-          <Info label="First Attendance" value={member.first_attendance_date ?? "Unknown"} />
+          <Info label="First Attendance (Historical)" value={member.first_attendance_date ?? "Unknown"} />
           <Info label="Department" value={department?.name ?? "Not assigned"} />
           <Info label="Position" value={member.position ?? "Not provided"} />
           <Info label="Zone" value={member.zone == null ? "Not assigned" : String(member.zone)} />

@@ -28,7 +28,7 @@ export function MemberChurchForm({ action, branches, departments = [], member, e
             {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
           </Select>
         </FormField>
-        <FormField label="First Attendance Date" htmlFor="first_attendance_date" description="Leave blank when unknown. Inactivity needs this date to establish eligibility.">
+        <FormField label="First Attendance Date" htmlFor="first_attendance_date" description="Historical reference: the date this person first attended the church. It does not determine UPC Connect attendance monitoring.">
           <Input id="first_attendance_date" name="first_attendance_date" type="date" max={memberToday()} defaultValue={member?.first_attendance_date ?? ""} />
         </FormField>
         <FormField label="Department" htmlFor="department_id"><Select id="department_id" name="department_id" defaultValue={member?.department_id ?? ""}>

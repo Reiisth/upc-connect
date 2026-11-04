@@ -39,7 +39,7 @@ export function labelDecisionSupportEvidence(
     asOfDate: ["Current-state reference date", "date"], "branchScope.mode": ["Branch scope", "text"], "branchScope.branchCount": "Accessible branches in report",
   });
   add("membership", { nonArchivedMembers: "Current non-archived members", recordsAddedInRange: "Member records added in period",
-    missingFirstAttendanceDate: "Members missing first attendance date" });
+    missingFirstAttendanceDate: "Members missing historical first-attendance reference date" });
   input.membership.recordCreationTrend.forEach((point, i) => add(`membership.recordCreationTrend.${i}`,
     { ...period, value: "Member records added" }, `Period starting ${point.periodStart}`));
   add("attendance", { ...attendance, eligibleCompletedServiceWeeks: "Eligible completed-service weeks" });

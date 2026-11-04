@@ -184,7 +184,7 @@ new totals, shares or forecasts.
 
 ## Structured result, evidence and prompt version
 
-Prompt version `2` and all instructions live in
+Prompt version `3` and all instructions live in
 `prompts/decision-support.ts`. The output schema has:
 
 - `executiveSummary`: bounded plain text.

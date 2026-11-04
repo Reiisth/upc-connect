@@ -4,7 +4,7 @@ import { getUserBranchScope } from "@/lib/branch-access";
 import { requirePermission } from "@/lib/permissions-server";
 import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { calculateWeeklyInactivity, manilaDate } from "./calculate";
+import { calculateWeeklyInactivity, manilaDate, manilaDateFromTimestamp } from "./calculate";
 import type { InactivityBranch, InactivityMemberRow } from "./presentation";
 
 type QueryPage<T> = PromiseLike<{
@@ -28,7 +28,8 @@ async function allRows<T>(page: (from: number, to: number) => QueryPage<T>): Pro
  * Request-scoped server entry point. Never accept caller-supplied access claims.
  * Reload source records each call so attendance corrections are reflected.
  * Load all non-archived branch members regardless of stored member_status.
- * Missing eligibility stays visible as unknown for future data cleanup.
+ * Missing/invalid created_at stays visible as unknown; first_attendance_date is
+ * historical reference data and does not control monitoring eligibility.
  * This does not change or persist their lifecycle status.
  */
 export async function getBranchMemberInactivity(branchId: string): Promise<InactivityMemberRow[]> {
@@ -46,27 +47,29 @@ export async function getBranchMemberInactivity(branchId: string): Promise<Inact
   if (!branch) throw new Error("The selected branch does not exist or is inactive.");
   const today = manilaDate(new Date());
 
-  const [members, services, attendance] = await Promise.all([
-    allRows((from, to) => admin.from("members")
-      .select("id, first_name, middle_name, last_name, church_branch_id, first_attendance_date, member_status")
-      .eq("church_branch_id", branchId).eq("is_archived", false)
-      .order("id").range(from, to)),
+  const members = await allRows((from, to) => admin.from("members")
+    .select("id, first_name, middle_name, last_name, church_branch_id, created_at, member_status")
+    .eq("church_branch_id", branchId).eq("is_archived", false)
+    .order("id").range(from, to));
+  const registrationDates = members.map((member) => manilaDateFromTimestamp(member.created_at))
+    .filter((date): date is string => Boolean(date));
+  const earliestRegistrationDate = registrationDates.sort()[0];
+  const [services, attendance] = earliestRegistrationDate ? await Promise.all([
     allRows((from, to) => admin.from("services")
       .select("id, church_branch_id, service_date, status")
       .eq("church_branch_id", branchId).eq("status", "completed")
-      .lte("service_date", today).order("id").range(from, to)),
+      .gte("service_date", earliestRegistrationDate).lte("service_date", today).order("id").range(from, to)),
     allRows((from, to) => admin.from("attendance_records")
       .select("id, member_id, service_id, attendance_status, services!inner(church_branch_id, status, service_date)")
       .eq("services.church_branch_id", branchId).eq("services.status", "completed")
-      .lte("services.service_date", today).in("attendance_status", ["present", "late"])
+      .gte("services.service_date", earliestRegistrationDate).lte("services.service_date", today).in("attendance_status", ["present", "late"])
       .order("id").range(from, to)),
-  ]);
+  ]) : [[], []];
 
   const summaries = calculateWeeklyInactivity({
     members: members.map((member) => ({
       id: member.id, branchId: member.church_branch_id,
-      // No created_at/account-acceptance fallback: neither proves attendance eligibility.
-      eligibilityDate: member.first_attendance_date,
+      registrationDate: manilaDateFromTimestamp(member.created_at),
     })),
     services: services.map((service) => ({
       id: service.id, branchId: service.church_branch_id,

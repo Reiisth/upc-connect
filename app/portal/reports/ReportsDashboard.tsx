@@ -67,7 +67,7 @@ export default function ReportsDashboard({ overview: data, serviceTypeNames = {}
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
         <ReportChart title="Member Records Added" description={periodNote} labels={periodLabels(membership.recordCreationTrend)}
           series={[{ label: "Records Added", values: membership.recordCreationTrend.map((point) => point.value) }]} kind="line" emptyMessage="No member records were created in this period." />
-        <ReportChart title="Recorded First Attendances" description="Recorded first-attendance dates, separate from record creation and official membership acceptance." labels={periodLabels(membership.firstAttendanceTrend)}
+        <ReportChart title="Recorded First Attendances" description="Historical reference dates for when people first attended church. They do not determine UPC Connect attendance monitoring." labels={periodLabels(membership.firstAttendanceTrend)}
           series={[{ label: "First Attendances", values: membership.firstAttendanceTrend.map((point) => point.value), color: "#16836B" }]} kind="line" emptyMessage="No first-attendance dates were recorded in this period." />
       </div>
     </Section>
@@ -99,7 +99,7 @@ export default function ReportsDashboard({ overview: data, serviceTypeNames = {}
     <Section id="inactivity" title="Attendance Follow-up Flags" current={currentDate} description="Based on consecutive absent eligible weeks and each active branch’s threshold. These flags identify cases for human follow-up and never set administrative Member Status. The selected date range does not change current flags.">
       <Stats items={[
         { label: "Monitoring", value: count(inactivity.monitoringMembers) }, { label: "Needs Follow-up", value: count(inactivity.needsFollowUpMembers) },
-        { label: "Unknown", value: count(inactivity.unknownMembers), note: "Missing or invalid first-attendance date" },
+        { label: "Unknown", value: count(inactivity.unknownMembers), note: "Missing or invalid UPC Connect registration date" },
         { label: "Needs Follow-up Among Calculable Members", value: formatReportPercent(inactivity.needsFollowUpPercent) },
         { label: "Approaching Threshold", value: count(inactivity.approachingFollowUpThreshold) },
         { label: "Average Absent-week Streak", value: count(inactivity.averageConsecutiveAbsentWeeks), note: "Calculable members only" },

@@ -13,7 +13,7 @@ function definition(id, field_key, field_type = 'text', extra = {}) {
 function harness({ permissions = ['members.view', 'members.create', 'members.update', 'members.archive', 'members.link_account', 'profile.view', 'profile.update', 'administration.view'],
   branchIds = ['a'], isSystemAdmin = false, failWrite, beforeWrite } = {}) {
   const base = { first_name: 'Registered', last_name: 'Person', middle_name: null, nickname: null,
-    church_branch_id: 'a', first_attendance_date: null, member_status: 'active', is_archived: false,
+    church_branch_id: 'a', first_attendance_date: null, created_at: '2026-01-05T00:00:00Z', member_status: 'active', is_archived: false,
     archived_at: null, profile_status: 'incomplete', profile_completed_at: null, account_status: 'connected',
     email: 'owner@example.test', phone_number: null, country: null, region: null, province: null,
     city: null, barangay: null, civil_status: null, birth_date: null, department_id: null, position: null, zone: null };
@@ -136,6 +136,15 @@ test('self-service rejects church branch, eligibility, administrative status, ar
   }
 });
 
+test('staff Member Edit does not accept or expose the system registration timestamp', async () => {
+  const h = harness();
+  const createdAt = h.db.members[0].created_at;
+  await assert.rejects(h.load('app/portal/members/actions.ts').updateMember('owned', h.staffForm({ created_at: '2022-05-10T00:00:00Z' })), /Only registration identity/);
+  assert.equal(h.db.members[0].created_at, createdAt);
+  const formSource = require('node:fs').readFileSync(require('node:path').join(__dirname, '../app/portal/members/MemberChurchForm.tsx'), 'utf8');
+  assert.ok(!formSource.includes('name="created_at"'));
+});
+
 test('creation captures first attendance or unknown and returns the new detail without an automatic invitation', async () => {
   for (const date of ['', '2000-01-01']) {
     const h = harness(); await assert.rejects(h.load('app/portal/members/actions.ts').createMember(h.staffForm({ first_attendance_date: date })), /redirect:\/portal\/members\/created/);
@@ -248,12 +257,12 @@ test('member restore requires members.archive and target branch scope', async ()
   assert.equal(outOfScope.writes.length, 0);
 });
 
-test('inactivity keeps missing first attendance unknown and uses updated date independently of stored status', async () => {
+test('inactivity uses system registration despite missing or edited first attendance and stored status', async () => {
   const h = harness(); const calculate = h.load('lib/inactivity/calculate.ts').calculateWeeklyInactivity;
   const run = () => calculate({ today: '2026-10-27', thresholds: new Map([['a', 1]]),
-    members: [{ id: 'owned', branchId: h.db.members[0].church_branch_id, eligibilityDate: h.db.members[0].first_attendance_date }],
+    members: [{ id: 'owned', branchId: h.db.members[0].church_branch_id, registrationDate: '2026-01-05' }],
     services: [{ id: 'service', branchId: 'a', serviceDate: '2026-10-19', status: 'completed' }], attendance: [] })[0];
-  assert.equal(run().calculationStatus, 'eligibility_unknown');
+  assert.equal(run().calculationStatus, 'evaluated');
   await assert.rejects(h.load('app/portal/members/actions.ts').updateMember('owned', h.staffForm({ first_attendance_date: '2000-01-01', member_status: 'inactive' })), /redirect:/);
   assert.equal(run().needsFollowUp, true);
 });

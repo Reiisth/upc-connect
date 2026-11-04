@@ -134,10 +134,10 @@ test('invalid structure, extra fields, empty/oversized prose, bad enums, unknown
 });
 
 test('central versioned prompt binds observations and cautious recommendations to supplied evidence and definitions', () => {
-  assert.equal(DECISION_SUPPORT_PROMPT_VERSION, '2');
+  assert.equal(DECISION_SUPPORT_PROMPT_VERSION, '3');
   for (const rule of ['Use ONLY the supplied analytics', 'Do not invent', 'Do not claim causation', 'Every number', 'Preserve decimal money strings exactly',
     'private attributes', 'Do not name individual', 'theological judgments', 'financial promises', 'best or worst', 'mandatory decisions', 'irreversible changes',
-    'latestNeedsFollowUpMembers', 'Unknown', 'Null eligibility', 'undatedRecords', 'NOT verified official membership growth', 'human review']) {
+    'latestNeedsFollowUpMembers', 'Unknown', 'registration timestamp is missing or invalid', 'First attendance dates are historical reference information', 'Null eligibility', 'undatedRecords', 'NOT verified official membership growth', 'human review']) {
     assert.ok(DECISION_SUPPORT_SYSTEM_INSTRUCTION.includes(rule), rule);
   }
   const input = buildDecisionSupportInput(analyticsFixture(), 'all_accessible_branches');

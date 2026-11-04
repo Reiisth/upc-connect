@@ -12,9 +12,9 @@ function rows(threshold = 3) {
   return calculateWeeklyInactivity({
     today: '2026-10-27', thresholds: new Map([['a', threshold]]),
     members: [
-      { id: 'absent', branchId: 'a', eligibilityDate: '2026-01-05' },
-      { id: 'present', branchId: 'a', eligibilityDate: '2026-01-05' },
-      { id: 'unknown', branchId: 'a', eligibilityDate: null },
+      { id: 'absent', branchId: 'a', registrationDate: '2026-01-05' },
+      { id: 'present', branchId: 'a', registrationDate: '2026-01-05' },
+      { id: 'unknown', branchId: 'a', registrationDate: null },
     ],
     services: ['2026-10-05', '2026-10-12', '2026-10-19'].map((serviceDate, i) => ({
       id: `s${i}`, serviceDate, branchId: 'a', status: 'completed',
@@ -54,7 +54,7 @@ test('rendered table shows administrative status separately from attendance flag
   data[0].consecutiveAbsentWeeks = 5;
   const html = renderToStaticMarkup(React.createElement(Table, { rows: data }));
   for (const text of ['Juan Dela Cruz', 'Member Status', 'Attendance Flag', 'Monitoring', 'Needs Follow-up', 'Unknown', '5 / 3 weeks',
-    'Missing or invalid first attendance date', '33.3% (1/3 weeks)', 'Oct 19, 2026']) assert.ok(html.includes(text), text);
+    'Missing or invalid UPC Connect registration date', '33.3% (1/3 weeks)', 'Oct 19, 2026']) assert.ok(html.includes(text), text);
   assert.ok(html.indexOf('Juan Dela Cruz') < html.indexOf('Maria Santos'));
   assert.ok(html.includes('overflow-x-auto'));
   assert.ok(!html.includes('Low attendance'));

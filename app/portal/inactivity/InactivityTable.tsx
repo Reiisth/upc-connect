@@ -86,7 +86,7 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
                     <TableCell className="min-w-48 max-w-xs text-left">
                       <p className="font-medium text-slate-900">{row.memberName}</p>
                       {derivedStatus === "unknown" && (
-                        <p className="mt-1 text-xs text-slate-500">Missing or invalid first attendance date</p>
+                        <p className="mt-1 text-xs text-slate-500">Missing or invalid UPC Connect registration date</p>
                       )}
                       {row.calculationStatus === "evaluated" && row.recentEligibleWeeks === 0 && (
                         <p className="mt-1 text-xs text-slate-500">No eligible completed weeks yet</p>

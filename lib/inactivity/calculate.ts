@@ -2,7 +2,7 @@
 export type InactivityMember = {
   id: string;
   branchId: string;
-  eligibilityDate: string | null;
+  registrationDate: string | null;
 };
 
 export type InactivityService = {
@@ -21,7 +21,7 @@ export type InactivityAttendance = {
 export type MemberInactivitySummary = {
   memberId: string;
   branchId: string;
-  eligibilityDate: string | null;
+  monitoringStartDate: string | null;
   inactivityThresholdWeeks: number;
   lastAttendedDate: string | null;
   lastAttendedServiceId: string | null;
@@ -67,10 +67,19 @@ export function manilaDate(now: Date): string {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
+/** Convert a database TIMESTAMPTZ to its deterministic Manila calendar date. */
+export function manilaDateFromTimestamp(value: string | null): string | null {
+  if (!value) return null;
+  const instant = new Date(value);
+  if (!Number.isFinite(instant.getTime())) return null;
+  try { return manilaDate(instant); } catch { return null; }
+}
+
 /**
  * No writes, caching, role decisions, or percentage-based status decisions.
- * Only full calendar weeks starting on/after eligibility are evaluated.
- * An initial partial week may supply last attendance, but never an absence.
+ * Monitoring starts on the first Monday on or after the Manila registration
+ * date. A Monday registration can count that week; Tuesday-Sunday starts next
+ * Monday. Pre-registration attendance is ignored.
  */
 export function calculateWeeklyInactivity(input: {
   members: readonly InactivityMember[];
@@ -111,7 +120,7 @@ export function calculateWeeklyInactivity(input: {
     const member = members.get(attendance.memberId);
     const service = services.get(attendance.serviceId);
     if (!member || !service || service.branchId !== member.branchId) continue;
-    const start = member.eligibilityDate ? dateNumber(member.eligibilityDate) : NaN;
+    const start = member.registrationDate ? dateNumber(member.registrationDate) : NaN;
     const date = dateNumber(service.serviceDate);
     if (!Number.isFinite(start) || date < start) continue;
     const weeks = attendedWeeks.get(member.id) ?? new Set<number>();
@@ -129,21 +138,23 @@ export function calculateWeeklyInactivity(input: {
     if (!Number.isInteger(threshold) || threshold! < 1 || threshold! > 52) {
       throw new Error("Missing or invalid branch inactivity threshold.");
     }
-    const start = member.eligibilityDate ? dateNumber(member.eligibilityDate) : NaN;
+    const registrationDate = member.registrationDate ? dateNumber(member.registrationDate) : NaN;
+    const registrationWeek = Number.isFinite(registrationDate) ? monday(registrationDate) : NaN;
+    const monitoringWeek = registrationDate === registrationWeek ? registrationWeek : registrationWeek + 7 * DAY;
     const last = lastAttendance.get(member.id);
     const base = {
       memberId: member.id, branchId: member.branchId,
-      eligibilityDate: Number.isFinite(start) ? member.eligibilityDate : null,
+      monitoringStartDate: Number.isFinite(registrationDate) ? member.registrationDate : null,
       inactivityThresholdWeeks: threshold!,
       lastAttendedDate: last?.serviceDate ?? null,
       lastAttendedServiceId: last?.id ?? null,
       recentEligibleWeeks: 0, recentAttendedWeeks: 0, recentAttendanceRate: null,
     };
-    if (!Number.isFinite(start)) {
+    if (!Number.isFinite(registrationDate)) {
       return { ...base, calculationStatus: "eligibility_unknown",
         consecutiveAbsentWeeks: null, needsFollowUp: null, remainingWeeksBeforeFollowUp: null };
     }
-    const weeks = (sortedWeeks.get(member.branchId) ?? []).filter((week) => week >= start);
+    const weeks = (sortedWeeks.get(member.branchId) ?? []).filter((week) => week >= monitoringWeek);
     const present = attendedWeeks.get(member.id) ?? new Set<number>();
     let streak = 0;
     for (const week of weeks) {

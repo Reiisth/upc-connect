@@ -33,7 +33,7 @@ async function InactivityContent({ searchParams }: PageProps) {
     <PageContainer>
       <PageHeader eyebrow="Attendance" eyebrowIcon={<Activity className="h-4 w-4" />}
         title="Attendance Follow-up Monitoring"
-        description="Weekly attendance flags help staff identify members for human follow-up. They are separate from administrative Member Status and never change it." />
+        description="Attendance monitoring begins when the Member is registered in UPC Connect. Weekly flags help staff identify members for human follow-up and never change administrative Member Status." />
 
       {!branch ? (
         <EmptyState icon={<Activity className="h-5 w-5" />} title="No active branch access"

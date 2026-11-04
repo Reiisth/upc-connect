@@ -16,7 +16,7 @@ const serverCode = ts.transpileModule(
 function member(id, overrides = {}) {
   return {
     id, church_branch_id: 'a', is_archived: false,
-    member_status: 'inactive', first_attendance_date: '2026-01-05',
+    member_status: 'inactive', first_attendance_date: '2022-05-10', created_at: '2026-01-05T00:00:00Z',
     ...overrides,
   };
 }
@@ -38,6 +38,7 @@ function inactivityServer(members, { threshold = 3, attendance = [], branchIds =
     value(row, key) { return key.split('.').reduce((value, part) => value?.[part], row); }
     select() { return this; }
     eq(key, value) { this.rows = this.rows.filter((row) => this.value(row, key) === value); return this; }
+    gte(key, value) { this.rows = this.rows.filter((row) => this.value(row, key) >= value); return this; }
     lte(key, value) { this.rows = this.rows.filter((row) => this.value(row, key) <= value); return this; }
     in(key, values) { this.rows = this.rows.filter((row) => values.includes(this.value(row, key))); return this; }
     order(key) { this.rows = [...this.rows].sort((a, b) => String(a[key]).localeCompare(String(b[key]))); return this; }
@@ -86,6 +87,21 @@ test('loader includes non-archived members with stored inactive status', async (
   assert.equal(result[0].memberStatus, 'inactive');
 });
 
+test('created_at controls eligibility and first_attendance_date changes cannot move monitoring start', async () => {
+  const registeredWednesday = member('registered-wednesday', {
+    created_at: '2026-10-14T00:00:00Z', first_attendance_date: '2022-05-10',
+  });
+  const first = await loader([registeredWednesday], { attendance: [{ member_id: registeredWednesday.id, service_id: 's1', attendance_status: 'late' }] })('a');
+  const afterHistoricalDateEdit = await loader([{ ...registeredWednesday, first_attendance_date: '2026-10-20' }], {
+    attendance: [{ member_id: registeredWednesday.id, service_id: 's1', attendance_status: 'late' }],
+  })('a');
+  assert.equal(first[0].monitoringStartDate, '2026-10-14');
+  assert.equal(first[0].consecutiveAbsentWeeks, 1, 'Only the full week beginning Monday October 19 is eligible');
+  assert.equal(first[0].recentEligibleWeeks, 1);
+  assert.equal(afterHistoricalDateEdit[0].consecutiveAbsentWeeks, first[0].consecutiveAbsentWeeks);
+  assert.equal(afterHistoricalDateEdit[0].needsFollowUp, first[0].needsFollowUp);
+});
+
 test('loader excludes archived and other-branch members', async () => {
   const result = await loader([
     member('included'), member('archived', { is_archived: true }),
@@ -94,18 +110,22 @@ test('loader excludes archived and other-branch members', async () => {
   assert.deepEqual(Array.from(result, (summary) => summary.memberId), ['included']);
 });
 
-test('loader retains missing/invalid first attendance dates as unknown without a created_at fallback', async () => {
+test('first attendance reference does not affect monitoring; missing or invalid created_at is unknown', async () => {
   const result = await loader([
-    member('missing', { first_attendance_date: null, created_at: '2026-01-01T00:00:00Z' }),
-    member('invalid', { first_attendance_date: '2026-02-30' }),
+    member('missing-first-attendance', { first_attendance_date: null }),
+    member('old-first-attendance', { first_attendance_date: '2022-05-10' }),
+    member('missing-created-at', { created_at: null }),
+    member('invalid-created-at', { created_at: 'invalid' }),
   ])('a');
-  assert.equal(result.length, 2);
-  for (const summary of result) {
+  assert.equal(result.length, 4);
+  for (const summary of result.filter((row) => row.memberId.includes('created-at'))) {
     assert.equal(summary.calculationStatus, 'eligibility_unknown');
     assert.equal(summary.consecutiveAbsentWeeks, null);
     assert.equal(summary.needsFollowUp, null);
     assert.equal(summary.remainingWeeksBeforeFollowUp, null);
   }
+  assert.equal(result.find((row) => row.memberId === 'missing-first-attendance').calculationStatus, 'evaluated');
+  assert.equal(result.find((row) => row.memberId === 'old-first-attendance').calculationStatus, 'evaluated');
 });
 
 test('derived inactivity depends on weekly absence streak and threshold, not stored status', async () => {

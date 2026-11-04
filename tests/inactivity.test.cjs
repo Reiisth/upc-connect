@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { calculateWeeklyInactivity, manilaDate } = require('../lib/inactivity/calculate.ts');
+const { calculateWeeklyInactivity, manilaDate, manilaDateFromTimestamp } = require('../lib/inactivity/calculate.ts');
 
 const service = (id, serviceDate, branchId = 'a', status = 'completed') =>
   ({ id, serviceDate, branchId, status });
@@ -9,7 +9,7 @@ const record = (serviceId, status = 'present', memberId = 'm') =>
 function run(services, attendance = [], options = {}) {
   return calculateWeeklyInactivity({
     today: '2026-10-27', thresholds: new Map([['a', 3], ['b', 4]]),
-    members: [{ id: 'm', branchId: 'a', eligibilityDate: '2026-01-05' }],
+    members: [{ id: 'm', branchId: 'a', registrationDate: '2026-01-05' }],
     services, attendance, ...options,
   });
 }
@@ -39,8 +39,8 @@ test('thresholds and branch calendars independently determine inactivity', () =>
   const services = ['2026-10-05', '2026-10-12', '2026-10-19'].flatMap((date, i) =>
     [service(`a${i}`, date), service(`b${i}`, date, 'b')]);
   const members = [
-    { id: 'm', branchId: 'a', eligibilityDate: '2026-01-05' },
-    { id: 'n', branchId: 'b', eligibilityDate: '2026-01-05' },
+    { id: 'm', branchId: 'a', registrationDate: '2026-01-05' },
+    { id: 'n', branchId: 'b', registrationDate: '2026-01-05' },
   ];
   const [a, b] = run(services, [], { members });
   assert.equal(a.consecutiveAbsentWeeks, 3);
@@ -89,30 +89,65 @@ test('scheduled, ongoing, cancelled, future and other-branch attendance cannot q
   assert.equal(result.lastAttendedDate, null);
 });
 
-test('weeks before eligibility and partial starting week are excluded', () => {
+test('partial registration week is excluded and monitoring starts on the first Monday on or after registration', () => {
   const services = [service('before', '2026-10-05'), service('partial', '2026-10-14'), service('full', '2026-10-19')];
   const result = run(services, [record('before'), record('partial')], {
-    members: [{ id: 'm', branchId: 'a', eligibilityDate: '2026-10-14' }],
+    members: [{ id: 'm', branchId: 'a', registrationDate: '2026-10-14' }],
   })[0];
   assert.equal(result.consecutiveAbsentWeeks, 1);
   assert.equal(result.recentEligibleWeeks, 1);
   assert.equal(result.lastAttendedDate, '2026-10-14');
-  const monday = run(services, [], { members: [{ id: 'm', branchId: 'a', eligibilityDate: '2026-10-12' }] })[0];
+  const monday = run(services, [], { members: [{ id: 'm', branchId: 'a', registrationDate: '2026-10-12' }] })[0];
   assert.equal(monday.recentEligibleWeeks, 2);
 });
 
+test('registration date ignores every pre-registration service week and begins the streak only afterward', () => {
+  const services = ['2026-10-05', '2026-10-12', '2026-10-19'].map((date, i) => service(String(i), date));
+  const member = { id: 'm', branchId: 'a', registrationDate: '2026-10-14' };
+  const noAttendance = run(services, [], { members: [member] })[0];
+  const withPreRegistrationAttendance = run(services, [record('0'), record('1')], { members: [member] })[0];
+  assert.equal(noAttendance.consecutiveAbsentWeeks, 1);
+  assert.equal(noAttendance.recentEligibleWeeks, 1);
+  assert.equal(noAttendance.needsFollowUp, false);
+  assert.equal(withPreRegistrationAttendance.consecutiveAbsentWeeks, noAttendance.consecutiveAbsentWeeks);
+  assert.equal(withPreRegistrationAttendance.recentEligibleWeeks, noAttendance.recentEligibleWeeks);
+  assert.equal(withPreRegistrationAttendance.recentAttendanceRate, 0, 'Pre-registration present records do not enter the recent rate');
+  const postRegistrationLate = run(services, [record('2', 'late')], { members: [member] })[0];
+  assert.equal(postRegistrationLate.consecutiveAbsentWeeks, 0);
+  assert.equal(postRegistrationLate.recentAttendanceRate, 100);
+});
+
+test('Monday registration may use that week while Tuesday through Sunday starts the next Monday', () => {
+  const services = ['2026-10-12', '2026-10-19'].map((date, i) => service(String(i), date));
+  const monday = run(services, [], { members: [{ id: 'm', branchId: 'a', registrationDate: '2026-10-12' }] })[0];
+  const tuesday = run(services, [], { members: [{ id: 'm', branchId: 'a', registrationDate: '2026-10-13' }] })[0];
+  const sunday = run(services, [], { members: [{ id: 'm', branchId: 'a', registrationDate: '2026-10-18' }] })[0];
+  assert.equal(monday.consecutiveAbsentWeeks, 2);
+  assert.equal(tuesday.consecutiveAbsentWeeks, 1);
+  assert.equal(sunday.consecutiveAbsentWeeks, 1);
+});
+
+test('Manila registration date comes from the created_at instant, not the server timezone', () => {
+  assert.equal(manilaDateFromTimestamp('2026-11-03T16:30:00Z'), '2026-11-04');
+  assert.equal(manilaDateFromTimestamp(null), null);
+  assert.equal(manilaDateFromTimestamp('invalid'), null);
+});
+
 test('missing/invalid eligibility is explicitly unknown; future start has no eligible weeks', () => {
-  for (const eligibilityDate of [null, 'invalid', '2026-02-30']) {
+  for (const registrationDate of [null, 'invalid', '2026-02-30']) {
     const result = run([service('1', '2026-10-19')], [], {
-      members: [{ id: 'm', branchId: 'a', eligibilityDate }],
+      members: [{ id: 'm', branchId: 'a', registrationDate }],
     })[0];
     assert.equal(result.calculationStatus, 'eligibility_unknown');
     assert.equal(result.needsFollowUp, null);
     assert.equal(result.consecutiveAbsentWeeks, null);
   }
-  assert.equal(run([service('1', '2026-10-19')], [], {
-    members: [{ id: 'm', branchId: 'a', eligibilityDate: '2026-11-02' }],
-  })[0].recentEligibleWeeks, 0);
+  const futureRegistration = run([service('1', '2026-10-19')], [], {
+    members: [{ id: 'm', branchId: 'a', registrationDate: '2026-11-02' }],
+  })[0];
+  assert.equal(futureRegistration.recentEligibleWeeks, 0);
+  assert.equal(futureRegistration.calculationStatus, 'evaluated');
+  assert.equal(futureRegistration.needsFollowUp, false);
 });
 
 test('recent rate uses last eight eligible weeks; rate never changes inactivity', () => {

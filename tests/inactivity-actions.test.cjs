@@ -114,7 +114,7 @@ test('changing the threshold immediately changes the attendance flag with no mem
   function calculate() {
     return calculateWeeklyInactivity({
       today: '2026-10-27', thresholds: new Map([['a', h.branch.inactivity_threshold_weeks]]),
-      members: [{ id: 'm', branchId: 'a', eligibilityDate: '2026-01-05' }], attendance: [],
+      members: [{ id: 'm', branchId: 'a', registrationDate: '2026-01-05' }], attendance: [],
       services: ['2026-10-05', '2026-10-12', '2026-10-19'].map((serviceDate, i) => ({
         id: String(i), serviceDate, branchId: 'a', status: 'completed',
       })),
