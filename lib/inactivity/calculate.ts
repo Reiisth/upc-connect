@@ -33,14 +33,14 @@ export type MemberInactivitySummary = {
   | {
       calculationStatus: "evaluated";
       consecutiveAbsentWeeks: number;
-      isInactive: boolean;
-      remainingWeeksBeforeInactive: number;
+      needsFollowUp: boolean;
+      remainingWeeksBeforeFollowUp: number;
     }
   | {
       calculationStatus: "eligibility_unknown";
       consecutiveAbsentWeeks: null;
-      isInactive: null;
-      remainingWeeksBeforeInactive: null;
+      needsFollowUp: null;
+      remainingWeeksBeforeFollowUp: null;
     }
 );
 
@@ -141,7 +141,7 @@ export function calculateWeeklyInactivity(input: {
     };
     if (!Number.isFinite(start)) {
       return { ...base, calculationStatus: "eligibility_unknown",
-        consecutiveAbsentWeeks: null, isInactive: null, remainingWeeksBeforeInactive: null };
+        consecutiveAbsentWeeks: null, needsFollowUp: null, remainingWeeksBeforeFollowUp: null };
     }
     const weeks = (sortedWeeks.get(member.branchId) ?? []).filter((week) => week >= start);
     const present = attendedWeeks.get(member.id) ?? new Set<number>();
@@ -155,8 +155,8 @@ export function calculateWeeklyInactivity(input: {
     return {
       ...base, calculationStatus: "evaluated",
       consecutiveAbsentWeeks: streak,
-      isInactive: streak >= threshold!,
-      remainingWeeksBeforeInactive: Math.max(0, threshold! - streak),
+      needsFollowUp: streak >= threshold!,
+      remainingWeeksBeforeFollowUp: Math.max(0, threshold! - streak),
       recentEligibleWeeks: recent.length, recentAttendedWeeks: attended,
       recentAttendanceRate: recent.length ? attended / recent.length * 100 : null,
     };

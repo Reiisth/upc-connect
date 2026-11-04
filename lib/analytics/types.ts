@@ -34,8 +34,8 @@ export type AttendanceMetrics = AttendanceCounts & {
   eligibleCompletedServiceWeeks: number;
 };
 export type InactivityMetrics = {
-  monitoredMembers: number; calculableMembers: number; derivedInactiveMembers: number; derivedActiveMembers: number;
-  unknownMembers: number; inactivePercent: number | null; averageConsecutiveAbsentWeeks: number | null; oneWeekAwayMembers: number;
+  monitoredMembers: number; calculableMembers: number; needsFollowUpMembers: number; monitoringMembers: number;
+  unknownMembers: number; needsFollowUpPercent: number | null; averageConsecutiveAbsentWeeks: number | null; approachingFollowUpThreshold: number;
 };
 export type FollowUpMetrics = {
   total: number; uniqueMembers: number;

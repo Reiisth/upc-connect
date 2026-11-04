@@ -82,7 +82,8 @@ test('loader includes non-archived members with stored inactive status', async (
   assert.equal(result[0].memberId, 'inactive');
   assert.equal(result[0].calculationStatus, 'evaluated');
   assert.equal(result[0].consecutiveAbsentWeeks, 3);
-  assert.equal(result[0].isInactive, true);
+  assert.equal(result[0].needsFollowUp, true);
+  assert.equal(result[0].memberStatus, 'inactive');
 });
 
 test('loader excludes archived and other-branch members', async () => {
@@ -102,23 +103,23 @@ test('loader retains missing/invalid first attendance dates as unknown without a
   for (const summary of result) {
     assert.equal(summary.calculationStatus, 'eligibility_unknown');
     assert.equal(summary.consecutiveAbsentWeeks, null);
-    assert.equal(summary.isInactive, null);
-    assert.equal(summary.remainingWeeksBeforeInactive, null);
+    assert.equal(summary.needsFollowUp, null);
+    assert.equal(summary.remainingWeeksBeforeFollowUp, null);
   }
 });
 
 test('derived inactivity depends on weekly absence streak and threshold, not stored status', async () => {
   const members = [member('inactive'), member('active', { member_status: 'active' })];
   const result = await loader(members)('a');
-  assert.ok(result.every((summary) => summary.consecutiveAbsentWeeks === 3 && summary.isInactive));
+  assert.ok(result.every((summary) => summary.consecutiveAbsentWeeks === 3 && summary.needsFollowUp));
   const higherThreshold = await loader(members, { threshold: 4 })('a');
-  assert.ok(higherThreshold.every((summary) => summary.consecutiveAbsentWeeks === 3 && !summary.isInactive));
+  assert.ok(higherThreshold.every((summary) => summary.consecutiveAbsentWeeks === 3 && !summary.needsFollowUp));
   const attended = await loader(members, {
     attendance: [{ member_id: 'inactive', service_id: 's2', attendance_status: 'present' }],
   })('a');
   const inactive = attended.find((summary) => summary.memberId === 'inactive');
   assert.equal(inactive.consecutiveAbsentWeeks, 0);
-  assert.equal(inactive.isInactive, false);
+  assert.equal(inactive.needsFollowUp, false);
 });
 
 test('loader still rejects branches outside the authenticated scope', async () => {

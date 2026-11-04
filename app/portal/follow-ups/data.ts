@@ -104,8 +104,8 @@ export async function loadFollowUpForEdit(access: FollowUpAccess, admin: Admin, 
 export async function loadFollowUpMember(access: FollowUpAccess, admin: Admin, id: string, history: readonly FollowUpRecord[]): Promise<FollowUpMember | null> {
   if (!isUuid(id)) return null;
   const { data, error } = await admin.from("members")
-    .select("id, first_name, middle_name, last_name, church_branch_id, is_archived").eq("id", id).maybeSingle();
+    .select("id, first_name, middle_name, last_name, church_branch_id, is_archived, member_status").eq("id", id).maybeSingle();
   if (error) { console.error("Follow-up member lookup failed", error); throw new Error("Unable to load this member."); }
   if (!data || (!access.branchIds.includes(data.church_branch_id) && !history.some((row) => row.memberId === id))) return null;
-  return { id: data.id, name: memberName(data), branchId: data.church_branch_id, isArchived: data.is_archived };
+  return { id: data.id, name: memberName(data), branchId: data.church_branch_id, isArchived: data.is_archived, memberStatus: data.member_status };
 }

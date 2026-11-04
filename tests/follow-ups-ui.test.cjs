@@ -82,13 +82,13 @@ test('history uses the existing derived inactivity loader; a resolved outcome do
     ...withLinks,
     '@/lib/inactivity/server': { getBranchMemberInactivity: async (branchId) => {
       assert.equal(branchId, ids.a); calculations++;
-      return [{ memberId: ids.member, calculationStatus: 'evaluated', isInactive: true, consecutiveAbsentWeeks: 3,
+      return [{ memberId: ids.member, calculationStatus: 'evaluated', needsFollowUp: true, consecutiveAbsentWeeks: 3,
         inactivityThresholdWeeks: 3, recentAttendanceRate: 0, recentEligibleWeeks: 3, recentAttendedWeeks: 0 }];
     } },
   }).default;
   const html = await contentHtml(Page, { params: Promise.resolve({ memberId: ids.member }), searchParams: Promise.resolve({}) });
   assert.equal(calculations, 1);
-  assert.ok(html.includes('Inactive') && html.includes('Resolved'));
+  assert.ok(html.includes('Needs Follow-up') && html.includes('Resolved'));
   assert.ok(html.includes('&lt;script&gt;unsafe&lt;/script&gt;'));
   assert.ok(!html.includes('Record Follow-up') && !html.includes('>Edit<'));
 });
@@ -105,15 +105,15 @@ test('transferred-member history remains accessible without revealing the inacce
   assert.ok(!html.includes('Record Follow-up'));
 });
 
-test('inactivity table offers follow-up actions for inactive, active and unknown members according to permissions', () => {
+test('inactivity table offers follow-up actions only when the attendance flag needs follow-up', () => {
   const Table = loadTypeScript('app/portal/inactivity/InactivityTable.tsx', withLinks).default;
   const rows = [true, false, null].map((inactive, i) => ({ memberId: id(50 + i), branchId: ids.a, memberName: `Member ${i}`,
-    calculationStatus: inactive === null ? 'eligibility_unknown' : 'evaluated', isInactive: inactive,
+    calculationStatus: inactive === null ? 'eligibility_unknown' : 'evaluated', needsFollowUp: inactive,
     consecutiveAbsentWeeks: inactive === null ? null : inactive ? 3 : 0, inactivityThresholdWeeks: 3,
     recentEligibleWeeks: 0, recentAttendedWeeks: 0, recentAttendanceRate: null, lastAttendedDate: null }));
   const html = renderToStaticMarkup(React.createElement(Table, { rows, canCreateFollowUps: true, canViewFollowUps: true }));
-  assert.equal((html.match(/Record Follow-up/g) || []).length, 3);
-  for (const row of rows) assert.ok(html.includes(`/portal/follow-ups/new?memberId=${row.memberId}&amp;branchId=${ids.a}`));
+  assert.equal((html.match(/Record Follow-up/g) || []).length, 1);
+  assert.ok(html.includes(`/portal/follow-ups/new?memberId=${rows[0].memberId}&amp;branchId=${ids.a}`));
   const readOnly = renderToStaticMarkup(React.createElement(Table, { rows, canViewFollowUps: true }));
   assert.ok(!readOnly.includes('Record Follow-up'));
   assert.ok(readOnly.includes('View Follow-ups'));

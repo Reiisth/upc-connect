@@ -255,7 +255,7 @@ test('inactivity keeps missing first attendance unknown and uses updated date in
     services: [{ id: 'service', branchId: 'a', serviceDate: '2026-10-19', status: 'completed' }], attendance: [] })[0];
   assert.equal(run().calculationStatus, 'eligibility_unknown');
   await assert.rejects(h.load('app/portal/members/actions.ts').updateMember('owned', h.staffForm({ first_attendance_date: '2000-01-01', member_status: 'inactive' })), /redirect:/);
-  assert.equal(run().isInactive, true);
+  assert.equal(run().needsFollowUp, true);
 });
 
 test('staff detail links reuse canonical account/follow-up workflows and the Members list retains a detail destination', async () => {

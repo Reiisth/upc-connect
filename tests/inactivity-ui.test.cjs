@@ -5,7 +5,7 @@ const { renderToStaticMarkup } = require('react-dom/server');
 const { loadTypeScript } = require('./helpers/load-typescript.cjs');
 const { calculateWeeklyInactivity } = require('../lib/inactivity/calculate.ts');
 const {
-  filterInactivityRows, getMonitoringCounts, getDerivedStatus, formatRecentRate,
+  filterInactivityRows, getMonitoringCounts, getAttendanceFlag, formatRecentRate,
 } = require('../lib/inactivity/presentation.ts');
 
 function rows(threshold = 3) {
@@ -20,14 +20,14 @@ function rows(threshold = 3) {
       id: `s${i}`, serviceDate, branchId: 'a', status: 'completed',
     })),
     attendance: [{ memberId: 'present', serviceId: 's2', status: 'late' }],
-  }).map((row) => ({ ...row, memberName: { absent: 'Juan Dela Cruz', present: 'Maria Santos', unknown: 'Pedro Reyes' }[row.memberId] }));
+  }).map((row) => ({ ...row, memberName: { absent: 'Juan Dela Cruz', present: 'Maria Santos', unknown: 'Pedro Reyes' }[row.memberId], memberStatus: row.memberId === 'unknown' ? 'inactive' : 'active' }));
 }
 
 test('presentation prioritizes inactive members, sorts streaks and keeps unknown members visible', () => {
   const data = rows();
   const ordered = filterInactivityRows([...data].reverse(), { search: '', status: 'all', minimumAbsences: 0 });
   assert.deepEqual(ordered.map((row) => row.memberId), ['absent', 'present', 'unknown']);
-  assert.deepEqual(getMonitoringCounts(data), { total: 3, inactive: 1, active: 1, unknown: 1 });
+  assert.deepEqual(getMonitoringCounts(data), { total: 3, monitoring: 1, needsFollowUp: 1, unknown: 1 });
   assert.equal(data[0].memberId, 'absent', 'Sorting must not mutate the source');
 });
 
@@ -42,22 +42,26 @@ test('name, derived-status and minimum-absence filters operate on calculated res
 test('low recent rate has no bearing on active status and percentages show their actual denominator', () => {
   const data = rows(4);
   assert.equal(data[0].recentAttendanceRate, 0);
-  assert.equal(getDerivedStatus(data[0]), 'active');
+  assert.equal(getAttendanceFlag(data[0]), 'monitoring');
   assert.equal(formatRecentRate(data[1]), '33.3% (1/3 weeks)');
   assert.equal(formatRecentRate(data[2]), '—');
 });
 
-test('rendered table shows derived statuses, uncapped absences, unknown reason and neutral attendance rates', () => {
+test('rendered table shows administrative status separately from attendance flags, uncapped absences, unknown reason and neutral attendance rates', () => {
   const Table = loadTypeScript('app/portal/inactivity/InactivityTable.tsx').default;
   const data = rows();
   // Counts may exceed the threshold and must remain fully visible.
   data[0].consecutiveAbsentWeeks = 5;
   const html = renderToStaticMarkup(React.createElement(Table, { rows: data }));
-  for (const text of ['Juan Dela Cruz', 'Inactive', 'Active', 'Unknown', '5 / 3 weeks',
+  for (const text of ['Juan Dela Cruz', 'Member Status', 'Attendance Flag', 'Monitoring', 'Needs Follow-up', 'Unknown', '5 / 3 weeks',
     'Missing or invalid first attendance date', '33.3% (1/3 weeks)', 'Oct 19, 2026']) assert.ok(html.includes(text), text);
   assert.ok(html.indexOf('Juan Dela Cruz') < html.indexOf('Maria Santos'));
   assert.ok(html.includes('overflow-x-auto'));
   assert.ok(!html.includes('Low attendance'));
+  const memberStatusVisible = renderToStaticMarkup(React.createElement(Table, { rows: data, canViewMemberStatus: true, canUpdateMemberStatus: true }));
+  assert.ok(memberStatusVisible.includes('Member Status') && memberStatusVisible.includes('Review Member Status'));
+  assert.ok(memberStatusVisible.includes('active'), 'Administrative status remains visible as its own field');
+  assert.ok(!/<th[^>]*>Member Status<\/th>/.test(html) && !html.includes('Review Member Status'));
 });
 
 const branch = { id: 'a', name: 'Main Church', code: 'MAIN', inactivityThresholdWeeks: 3 };
@@ -92,7 +96,7 @@ test('page scopes branch selection and summary rendering under its Suspense boun
   const content = page.props.children;
   const html = renderToStaticMarkup(await content.type(content.props));
   assert.deepEqual(loadedBranches, ['a']);
-  assert.ok(html.includes('Derived Active') && html.includes('Derived Inactive') && html.includes('Unknown'));
+  assert.ok(html.includes('Monitoring') && html.includes('Needs Follow-up') && html.includes('Unknown'));
   assert.ok(html.includes('Pedro Reyes'));
   const forbidden = Page({ searchParams: Promise.resolve({ branch: 'unassigned' }) }).props.children;
   await assert.rejects(forbidden.type(forbidden.props), /redirect:\/access-denied/);

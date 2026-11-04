@@ -31,7 +31,9 @@ date adapter or custom SVG chart framework. Charts render the DTO's existing
 buckets; sparse series are labelled as such and not reaggregated. Weekly activity
 stays weekly. Null eligibility rates and other undefined averages/percentages
 display Unavailable. Current derived inactivity/latest follow-ups/data quality
-are labelled separately from selected-range activity. Member Records Added is
+are labelled separately from selected-range activity. Attendance flags describe
+a need for human follow-up and never change administrative Member Status;
+authorized staff use the existing member edit route to review it. Member Records Added is
 explicitly record creation rather than official membership growth.
 
 ## Exact money

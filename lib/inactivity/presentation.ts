@@ -1,6 +1,6 @@
 import type { MemberInactivitySummary } from "./calculate";
 
-export type InactivityMemberRow = MemberInactivitySummary & { memberName: string };
+export type InactivityMemberRow = MemberInactivitySummary & { memberName: string; memberStatus: string | null };
 
 export type InactivityBranch = {
   id: string;
@@ -9,33 +9,36 @@ export type InactivityBranch = {
   inactivityThresholdWeeks: number;
 };
 
-export type DerivedInactivityStatus = "active" | "inactive" | "unknown";
+export type AttendanceFlag = "monitoring" | "needs_follow_up" | "unknown";
 
-export function getDerivedStatus(row: MemberInactivitySummary): DerivedInactivityStatus {
+export function getAttendanceFlag(row: MemberInactivitySummary): AttendanceFlag {
   if (row.calculationStatus === "eligibility_unknown") return "unknown";
-  return row.isInactive ? "inactive" : "active";
+  return row.needsFollowUp ? "needs_follow_up" : "monitoring";
 }
 
 export function getMonitoringCounts(rows: readonly MemberInactivitySummary[]) {
-  const counts = { total: rows.length, active: 0, inactive: 0, unknown: 0 };
-  for (const row of rows) counts[getDerivedStatus(row)]++;
+  const counts = { total: rows.length, monitoring: 0, needsFollowUp: 0, unknown: 0 };
+  for (const row of rows) {
+    const flag = getAttendanceFlag(row);
+    counts[flag === "needs_follow_up" ? "needsFollowUp" : flag]++;
+  }
   return counts;
 }
 
-/** Presentation only: use the calculated status and streak without deriving them again. */
+/** Presentation only: use the calculated attendance flag and streak without deriving them again. */
 export function filterInactivityRows(
   rows: readonly InactivityMemberRow[],
-  filters: { search: string; status: DerivedInactivityStatus | "all"; minimumAbsences: number },
+  filters: { search: string; status: AttendanceFlag | "all"; minimumAbsences: number },
 ): InactivityMemberRow[] {
   const search = filters.search.trim().toLocaleLowerCase("en-PH");
-  const priority = { inactive: 0, active: 1, unknown: 2 };
+  const priority = { needs_follow_up: 0, monitoring: 1, unknown: 2 };
   return rows.filter((row) =>
     row.memberName.toLocaleLowerCase("en-PH").includes(search) &&
-    (filters.status === "all" || getDerivedStatus(row) === filters.status) &&
+    (filters.status === "all" || getAttendanceFlag(row) === filters.status) &&
     (filters.minimumAbsences <= 0 ||
       (row.consecutiveAbsentWeeks !== null && row.consecutiveAbsentWeeks >= filters.minimumAbsences)),
   ).sort((a, b) =>
-    priority[getDerivedStatus(a)] - priority[getDerivedStatus(b)] ||
+    priority[getAttendanceFlag(a)] - priority[getAttendanceFlag(b)] ||
     (b.consecutiveAbsentWeeks ?? -1) - (a.consecutiveAbsentWeeks ?? -1) ||
     a.memberName.localeCompare(b.memberName, "en-PH") || a.memberId.localeCompare(b.memberId),
   );

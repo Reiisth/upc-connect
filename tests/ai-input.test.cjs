@@ -18,8 +18,8 @@ test('analytics maps to reduced aggregates without recomputing metrics, money, l
   assert.equal(input.attendance.averagePerService, 4.5);
   assert.equal(input.attendance.weekly[0].eligibleMemberCount, null);
   assert.equal(input.attendance.weekly[0].participationRatePercent, null);
-  assert.equal(input.inactivity.inactivePercent, data.inactivity.inactivePercent);
-  assert.equal(input.inactivity.derivedActiveMembers, 8);
+  assert.equal(input.inactivity.needsFollowUpPercent, data.inactivity.needsFollowUpPercent);
+  assert.equal(input.inactivity.monitoringMembers, 8);
   assert.equal(input.followUps.latestNeedsFollowUpMembers, 0);
   assert.equal(input.followUps.byOutcome[0].count, 3, 'Historical activity is separate from latest current state');
   assert.equal(input.contributions.totalAmount, '9999999999999999999900.01');
@@ -64,7 +64,7 @@ test('unexpected text in allowed numeric, category, date or money positions fail
     (data) => { data.contributions.totalAmount = '1e24'; },
     (data) => { data.contributions.totalAmount = '0.301'; },
     (data) => { data.membership.recordCreationTrend[0].periodStart = '2026-02-30'; },
-    (data) => { data.inactivity.inactivePercent = NaN; },
+    (data) => { data.inactivity.needsFollowUpPercent = NaN; },
   ]) {
     const data = analyticsFixture(); poison(data);
     assert.throws(() => buildDecisionSupportInput(data, 'all_accessible_branches'), (error) => error.code === 'ANALYTICS_UNAVAILABLE');
@@ -123,6 +123,7 @@ test('invalid structure, extra fields, empty/oversized prose, bad enums, unknown
     (value) => { value.keyFindings[0].evidence = ['branches.2.nonArchivedMembers']; },
     (value) => { value.keyFindings[0].evidence = ['__proto__.polluted']; },
     (value) => { value.executiveSummary = 'Forecast attendance of 938475 members.'; },
+    (value) => { value.recommendations[0].recommendation = 'Automatically set Member Status to inactive when the threshold is reached.'; },
   ]) {
     const value = validInsight(); change(value);
     assert.throws(() => validateDecisionSupportResponse(JSON.stringify(value), input), (error) => error.code === 'INVALID_RESPONSE');
@@ -133,7 +134,7 @@ test('invalid structure, extra fields, empty/oversized prose, bad enums, unknown
 });
 
 test('central versioned prompt binds observations and cautious recommendations to supplied evidence and definitions', () => {
-  assert.equal(DECISION_SUPPORT_PROMPT_VERSION, '1');
+  assert.equal(DECISION_SUPPORT_PROMPT_VERSION, '2');
   for (const rule of ['Use ONLY the supplied analytics', 'Do not invent', 'Do not claim causation', 'Every number', 'Preserve decimal money strings exactly',
     'private attributes', 'Do not name individual', 'theological judgments', 'financial promises', 'best or worst', 'mandatory decisions', 'irreversible changes',
     'latestNeedsFollowUpMembers', 'Unknown', 'Null eligibility', 'undatedRecords', 'NOT verified official membership growth', 'human review']) {

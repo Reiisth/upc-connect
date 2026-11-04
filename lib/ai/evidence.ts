@@ -10,9 +10,9 @@ const attendance: Fields = {
 };
 const inactivity: Fields = {
   monitoredMembers: "Current monitored members", calculableMembers: "Members with calculable inactivity",
-  derivedActiveMembers: "Currently derived active members", derivedInactiveMembers: "Currently derived inactive members",
-  unknownMembers: "Members with unknown inactivity", inactivePercent: ["Current inactive percentage", "percent"],
-  averageConsecutiveAbsentWeeks: "Average consecutive absent eligible weeks", oneWeekAwayMembers: "Members one eligible week from inactivity",
+  monitoringMembers: "Members in Monitoring", needsFollowUpMembers: "Members Needing Follow-up",
+  unknownMembers: "Members with unknown attendance flag", needsFollowUpPercent: ["Needs Follow-up among calculable members", "percent"],
+  averageConsecutiveAbsentWeeks: "Average consecutive absent eligible weeks", approachingFollowUpThreshold: "Members approaching the follow-up threshold",
 };
 const contribution: Fields = {
   count: "Contribution count", totalAmount: ["Total contributions", "money"], averageAmount: ["Average contribution", "money"],
@@ -79,7 +79,7 @@ export function labelDecisionSupportEvidence(
       waterBaptismsInRange: "Water baptisms in period", holyGhostBaptismsInRange: "Holy Ghost baptisms in period",
     }, context);
     if (branch.inactivity) add(`branches.${i}.inactivity`, inactivity, context);
-    else labels.set(`branches.${i}.inactivity`, { label: `${context} · Current inactivity monitoring`, format: "text" });
+    else labels.set(`branches.${i}.inactivity`, { label: `${context} · Current attendance follow-up flags`, format: "text" });
   });
   return evidence.map((item) => {
     const descriptor = labels.get(item.path);

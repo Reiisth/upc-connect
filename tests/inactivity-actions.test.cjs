@@ -109,7 +109,7 @@ test('inactive branch or failed update cannot report success or revalidate resul
   }
 });
 
-test('changing the rule immediately changes derived status with no member or attendance writes', async () => {
+test('changing the threshold immediately changes the attendance flag with no member or attendance writes', async () => {
   const h = harness();
   function calculate() {
     return calculateWeeklyInactivity({
@@ -120,9 +120,9 @@ test('changing the rule immediately changes derived status with no member or att
       })),
     })[0];
   }
-  assert.equal(calculate().isInactive, true);
+  assert.equal(calculate().needsFollowUp, true);
   await h.save('4');
-  assert.equal(calculate().isInactive, false);
+  assert.equal(calculate().needsFollowUp, false);
   assert.equal(calculate().consecutiveAbsentWeeks, 3);
   assert.equal(calculate().inactivityThresholdWeeks, 4);
   assert.equal(h.writes.length, 1);

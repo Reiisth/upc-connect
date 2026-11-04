@@ -36,12 +36,12 @@ export async function updateInactivityThreshold(
     .eq("id", branchId).eq("is_active", true).select("id").maybeSingle();
   if (error) {
     console.error("Inactivity threshold update failed.", error);
-    return { status: "error", message: "The inactivity rule could not be saved. Please try again." };
+    return { status: "error", message: "The absence follow-up threshold could not be saved. Please try again." };
   }
   if (!data) {
     return { status: "error", message: "The selected branch does not exist or is inactive." };
   }
 
   revalidatePath("/portal/inactivity");
-  return { status: "success", message: `Inactivity rule saved: ${threshold} consecutive absent ${threshold === 1 ? "week" : "weeks"}. Results have been refreshed.` };
+  return { status: "success", message: `Absence Follow-up Threshold saved: ${threshold} eligible absent ${threshold === 1 ? "week" : "weeks"}. Attendance flags have been refreshed; Member Status was not changed.` };
 }

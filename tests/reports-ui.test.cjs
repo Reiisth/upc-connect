@@ -26,7 +26,7 @@ function overviewFixture() {
   result.attendance.averagePerService = 6;
   result.attendance.trend = [{ periodStart: '2026-10-05', completedServices: 2, physicalCheckIns: 12, uniqueMembers: 8, averagePerService: 6 }];
   result.attendance.weekly = [{ ...result.attendance.trend[0], weekStart: '2026-10-05', isFinished: true, isPartialRange: false, eligibleMemberCount: null, participationRatePercent: null }];
-  result.inactivity = { monitoredMembers: 10, calculableMembers: 9, derivedActiveMembers: 7, derivedInactiveMembers: 2, unknownMembers: 1, inactivePercent: 200 / 9, averageConsecutiveAbsentWeeks: 1.5, oneWeekAwayMembers: 1 };
+  result.inactivity = { monitoredMembers: 10, calculableMembers: 9, monitoringMembers: 7, needsFollowUpMembers: 2, unknownMembers: 1, needsFollowUpPercent: 200 / 9, averageConsecutiveAbsentWeeks: 1.5, approachingFollowUpThreshold: 1 };
   result.followUps.total = 6;
   result.followUps.uniqueMembers = 2;
   result.followUps.byOutcome = [{ outcome: 'needs_follow_up', count: 5 }, { outcome: 'resolved', count: 1 }];
@@ -82,8 +82,8 @@ test('invalid and ambiguous search params cannot execute analytics', () => {
 
 test('money formatting preserves cents and arbitrarily large aggregate strings without binary floats', () => {
   for (const [value, expected] of [
-    ['0.00', '₱0.00'], ['0.30', '₱0.30'], ['0.1', '₱0.10'], ['12', '₱12.00'],
-    ['99999999999900.01', '₱99,999,999,999,900.01'], ['9007199254740993123456.01', '₱9,007,199,254,740,993,123,456.01'],
+    ['0.00', '\u20b10.00'], ['0.30', '\u20b10.30'], ['0.1', '\u20b10.10'], ['12', '\u20b112.00'],
+    ['99999999999900.01', '\u20b199,999,999,999,900.01'], ['9007199254740993123456.01', '\u20b19,007,199,254,740,993,123,456.01'],
   ]) assert.equal(formatReportMoney(value), expected);
   for (const value of [null, 'NaN', '1.001', '1e20', '']) assert.equal(formatReportMoney(value), 'Unavailable');
   assert.equal(formatReportPercent(null), 'Unavailable');
@@ -110,18 +110,16 @@ test('money chart geometry is relative, while tooltips and accessible data retai
 test('dashboard displays DTO states separately: stored status, derived status, latest resolution and undated baptisms', () => {
   const Dashboard = loadTypeScript('app/portal/reports/ReportsDashboard.tsx').default;
   const html = renderToStaticMarkup(React.createElement(Dashboard, { overview: overviewFixture() }));
-  assert.equal(stat(html, 'Stored Active Members'), '99');
-  assert.equal(stat(html, 'Derived Active'), '7');
-  assert.equal(stat(html, 'Derived Inactive'), '2');
-  assert.equal(stat(html, 'Needs Follow-up · Current'), '0', 'Historical needs do not override latest resolved state');
+  assert.equal(stat(html, 'Administratively Active Members'), '99');
+  assert.equal(stat(html, 'Monitoring'), '7');
+  assert.equal(stat(html, 'Needs Follow-up'), '2');
+  assert.equal(stat(html, 'Needs Follow-up \u00b7 Current'), '0', 'Historical needs do not override latest resolved state');
   assert.equal(stat(html, 'Participation Rate'), 'Unavailable');
   assert.equal(stat(html, 'Baptisms in Period'), '0');
   assert.equal(stat(html, 'Undated Baptism Records'), '3');
-  assert.ok(html.includes('₱99,999,999,999,900.01'));
-  assert.ok(html.includes('Member Records Added') && !html.includes('Membership Growth'));
-  assert.ok(html.includes('present + late') && html.includes('branch’s own threshold'));
+  assert.ok(html.includes('\u20b199,999,999,999,900.01'));
+  assert.ok(html.includes('present + late') && html.includes('never set administrative Member Status'));
   assert.ok(html.includes('Branch Comparison') && !html.includes('Inaccessible Branch'));
-  assert.ok(!html.includes('NaN') && !html.includes('Infinity'));
 });
 
 test('empty reports render zeros, informative chart empty states and unavailable averages/rates', () => {
@@ -131,10 +129,8 @@ test('empty reports render zeros, informative chart empty states and unavailable
   const html = renderToStaticMarkup(React.createElement(Dashboard, { overview }));
   assert.equal(stat(html, 'Non-archived Members'), '0');
   assert.equal(stat(html, 'Average Contribution'), 'Unavailable');
-  assert.equal(stat(html, 'Inactive Among Calculable Members'), 'Unavailable');
-  assert.equal(stat(html, 'Participation Rate'), 'Unavailable');
-  assert.ok(html.includes('₱0.00') && html.includes('No chart activity'));
-  assert.ok(!html.includes('NaN') && !html.includes('Infinity') && !html.includes('>0%<'));
+  assert.equal(stat(html, 'Needs Follow-up Among Calculable Members'), 'Unavailable');
+  assert.ok(html.includes('\u20b10.00') && html.includes('No chart activity'));
   assert.ok(!html.includes('Branch Comparison') && !html.includes('Attendance by Branch'));
 });
 

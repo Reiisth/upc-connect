@@ -21,7 +21,7 @@ export default function InactivityPage(props: PageProps) {
 }
 
 async function InactivityContent({ searchParams }: PageProps) {
-  const { branches, canManageSettings, canCreateFollowUps, canViewFollowUps } = await getInactivityBranchOptions();
+  const { branches, canManageSettings, canCreateFollowUps, canViewFollowUps, canViewMemberStatus, canUpdateMemberStatus } = await getInactivityBranchOptions();
   const params = await searchParams;
   const requestedBranch = Array.isArray(params.branch) ? params.branch[0] : params.branch;
   const branch = requestedBranch ? branches.find((item) => item.id === requestedBranch) : branches[0];
@@ -32,8 +32,8 @@ async function InactivityContent({ searchParams }: PageProps) {
   return (
     <PageContainer>
       <PageHeader eyebrow="Attendance" eyebrowIcon={<Activity className="h-4 w-4" />}
-        title="Inactivity Monitoring"
-        description="Weekly attendance results calculated from completed services. These results are separate from stored member statuses." />
+        title="Attendance Follow-up Monitoring"
+        description="Weekly attendance flags help staff identify members for human follow-up. They are separate from administrative Member Status and never change it." />
 
       {!branch ? (
         <EmptyState icon={<Activity className="h-5 w-5" />} title="No active branch access"
@@ -68,8 +68,8 @@ async function InactivityContent({ searchParams }: PageProps) {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Selected branch monitoring totals">
             {[
               { label: "Total Monitored", value: counts.total, icon: UsersRound, note: "Non-archived branch members" },
-              { label: "Derived Active", value: counts.active, icon: CircleCheck, note: "Below the weekly absence threshold" },
-              { label: "Derived Inactive", value: counts.inactive, icon: CircleAlert, note: "At or above the weekly absence threshold" },
+              { label: "Monitoring", value: counts.monitoring, icon: CircleCheck, note: "Below the follow-up threshold" },
+              { label: "Needs Follow-up", value: counts.needsFollowUp, icon: CircleAlert, note: "Threshold reached; staff review is needed" },
               { label: "Unknown", value: counts.unknown, icon: CircleHelp, note: "Missing or invalid attendance start date" },
             ].map(({ label, value, icon: Icon, note }) => (
               <Card key={label}>
@@ -84,7 +84,7 @@ async function InactivityContent({ searchParams }: PageProps) {
               </Card>
             ))}
           </div>
-          <InactivityTable key={branch.id} rows={rows} canCreateFollowUps={canCreateFollowUps} canViewFollowUps={canViewFollowUps} />
+          <InactivityTable key={branch.id} rows={rows} canCreateFollowUps={canCreateFollowUps} canViewFollowUps={canViewFollowUps} canViewMemberStatus={canViewMemberStatus} canUpdateMemberStatus={canUpdateMemberStatus} />
         </>
       )}
     </PageContainer>

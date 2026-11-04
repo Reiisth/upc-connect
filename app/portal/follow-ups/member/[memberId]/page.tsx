@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, UserRoundCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -12,7 +12,7 @@ import { TableActionButton } from "@/components/ui/table-action-button";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasPermission } from "@/lib/permissions";
 import { getBranchMemberInactivity } from "@/lib/inactivity/server";
-import { formatAttendanceDate, formatRecentRate, getDerivedStatus } from "@/lib/inactivity/presentation";
+import { formatAttendanceDate, formatRecentRate, getAttendanceFlag } from "@/lib/inactivity/presentation";
 import { requireFollowUpsPermission } from "../../access";
 import { loadFollowUpBranches, loadFollowUpMember, loadFollowUpRecords } from "../../data";
 import { FollowUpOutcomeBadge } from "../../FollowUpOutcomeBadge";
@@ -35,23 +35,25 @@ async function MemberFollowUpContent({ params, searchParams }: Props) {
   const canCreate = hasPermission(access.permissions, "follow_ups.create") && Boolean(currentBranch?.isActive);
   const summary = hasPermission(access.permissions, "inactivity.view") && currentBranch?.isActive && !member.isArchived
     ? (await getBranchMemberInactivity(currentBranch.id)).find((row) => row.memberId === member.id) : null;
-  const status = summary ? getDerivedStatus(summary) : null;
+  const status = summary ? getAttendanceFlag(summary) : null;
 
   return <PageContainer>
     <PageHeader backHref="/portal/follow-ups" backLabel="Back to Follow-ups" title={`${member.name} — Follow-up History`}
       description="Recorded staff actions, newest first. History stays with its original branch after a member transfers."
       action={<>
         {hasPermission(access.permissions, "members.view") && member.branchId && access.branchIds.includes(member.branchId) && <Button asChild variant="outline"><Link href={`/portal/members/${member.id}`}>Open Member</Link></Button>}
+        {hasPermission(access.permissions, "members.update") && member.branchId && access.branchIds.includes(member.branchId) && <Button asChild variant="outline"><Link href={`/portal/members/${member.id}/edit`}><UserRoundCog />Review Member Status</Link></Button>}
         {canCreate ? <Button asChild><Link href={`/portal/follow-ups/new?memberId=${member.id}&branchId=${member.branchId}`}><Plus />Record Follow-up</Link></Button> : undefined}
       </>} />
     {(await searchParams).saved === "1" && <p role="status" className="text-sm text-emerald-700">Follow-up saved successfully.</p>}
     <Card><CardContent className="space-y-3 p-5">
       <p className="text-sm text-slate-600">Current branch: {currentBranch?.name ?? "Outside your branch access"}{member.isArchived ? " · Archived member" : ""}</p>
       {summary ? <div className="space-y-2 text-sm text-slate-600">
-        <p className="flex flex-wrap items-center gap-2">Current derived inactivity: <StatusBadge variant={status === "inactive" ? "danger" : status === "active" ? "success" : "muted"}>{status === "inactive" ? "Inactive" : status === "active" ? "Active" : "Unknown"}</StatusBadge></p>
+        {hasPermission(access.permissions, "members.view") && member.branchId && access.branchIds.includes(member.branchId) && <p className="flex flex-wrap items-center gap-2">Member Status: <StatusBadge variant={member.memberStatus === "active" ? "success" : "muted"}>{member.memberStatus ?? "Unknown"}</StatusBadge></p>}
+        <p className="flex flex-wrap items-center gap-2">Attendance Flag: <StatusBadge variant={status === "needs_follow_up" ? "warning" : status === "monitoring" ? "success" : "muted"}>{status === "needs_follow_up" ? "Needs Follow-up" : status === "monitoring" ? "Monitoring" : "Unknown"}</StatusBadge></p>
         <p>{summary.consecutiveAbsentWeeks === null ? "Missing or invalid first attendance date" : `${summary.consecutiveAbsentWeeks} / ${summary.inactivityThresholdWeeks} consecutive absent weeks`} · Recent weekly rate: {formatRecentRate(summary)}</p>
-      </div> : <p className="text-sm text-slate-500">A current inactivity summary is unavailable for this member or your access.</p>}
-      <p className="text-xs text-slate-500">Follow-up outcomes do not change attendance, member status or the absence streak.</p>
+      </div> : <p className="text-sm text-slate-500">A current attendance flag is unavailable for this member or your access.</p>}
+      <p className="text-xs text-slate-500">Follow-up outcomes do not change attendance, Member Status or the attendance flag. Review Member Status separately when authorized.</p>
     </CardContent></Card>
 
     {!history.length ? <EmptyState title="No follow-ups recorded" description="No historical follow-up actions are visible for this member within your branch access." /> :

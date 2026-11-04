@@ -98,7 +98,7 @@ test('every scalar evidence path has a readable label with branch, trend-date an
   const displayed = labelDecisionSupportEvidence(scalars, input, [{ label: 'Branch 1', displayName: 'Accessible Church' }]);
   assert.equal(displayed.length, scalars.length);
   assert.ok(displayed.every((item) => item.label.length && item.value === scalars.find((scalar) => scalar.path === item.path).value));
-  assert.ok(displayed.find((item) => item.path === 'branches.0.inactivity.derivedInactiveMembers').label.includes('Accessible Church'));
+  assert.ok(displayed.find((item) => item.path === 'branches.0.inactivity.needsFollowUpMembers').label.includes('Accessible Church'));
   assert.ok(displayed.find((item) => item.path === 'attendance.trend.0.uniqueMembers').label.includes('2026-10-05'));
   assert.ok(displayed.find((item) => item.path === 'followUps.byOutcome.0.count').label.includes('needs follow up'));
   assert.throws(() => labelDecisionSupportEvidence([{ path: '__proto__.value', value: 1 }], input, []), (error) => error.code === 'INVALID_RESPONSE');

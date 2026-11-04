@@ -63,8 +63,8 @@ The latter is the only attendance-specific start date found in the application.
 can be cleared on disconnection. Neither is an eligibility fallback.
 
 Missing or invalid first attendance dates return `eligibility_unknown`, with
-null streak, inactive flag, and remaining weeks. Do not display these members
-as active or inactive based on this result. A valid future start has no eligible
+null streak, unknown attendance flag, and remaining weeks. Do not display these members
+as Monitoring or Needs Follow-up based on this result. A valid future start has no eligible
 history yet. No weeks are evaluated before eligibility; the initial partial
 week is excluded conservatively, unless eligibility itself falls on Monday.
 Attendance on/after eligibility in that partial week can still be the latest
@@ -78,7 +78,7 @@ current branch. This is a known future enhancement, not a blocker for the first
 version, and no schema is introduced here. The pure core supports a branch-specific
 `eligibilityDate` once a reliable source is available. Profile and account
 completion do not control monitoring inclusion. Stored `member_status` never
-controls inclusion or the derived `isInactive` result, and is never updated.
+controls inclusion or the derived `needsFollowUp` result, and is never updated.
 
 ## Data loading and verification
 
@@ -106,3 +106,16 @@ narrow writes and revalidation. Server-rendered UI tests exercise the real page,
 table and editor, including navigation, derived statuses, branch choices, missing
 dates, rate formatting and read-only settings. An authenticated live browser
 session is still needed for an end-to-end check against deployed Supabase data.
+
+## Human review boundary
+
+
+
+## Human review boundary
+
+The calculated result is an Attendance Flag: monitoring, needs_follow_up, or
+unknown. Needs Follow-up asks staff to review the case; it never sets
+administrative members.member_status. The separate Review Member Status action
+opens the existing permission- and branch-checked edit route. Follow-up outcomes
+and threshold saves write no member status. The threshold is presented as the
+Absence Follow-up Threshold.

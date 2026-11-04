@@ -43,7 +43,7 @@ export default function ReportsDashboard({ overview: data, serviceTypeNames = {}
         { label: "Total Members", value: count(membership.nonArchivedMembers), note: "Current non-archived members", icon: UsersRound },
         { label: "Completed Services", value: count(attendance.completedServices), note: "In the selected period", icon: CalendarCheck },
         { label: "Avg Attendance / Service", value: count(attendance.averagePerService), note: "Physical attendance at completed services", icon: Activity },
-        { label: "Derived Inactive Members", value: count(inactivity.derivedInactiveMembers), note: `Current · ${currentDate}`, icon: UserRoundX },
+        { label: "Members Needing Follow-up", value: count(inactivity.needsFollowUpMembers), note: `Current attendance flag · ${currentDate}`, icon: UserRoundX },
         { label: "Follow-ups", value: count(followUps.total), note: "Recorded in the selected period", icon: ClipboardPen },
         { label: "Total Contributions", value: formatReportMoney(contributions.totalAmount), note: "Includes anonymous contributions", icon: Coins },
       ].map(({ label, value, note, icon: Icon }) => <Card key={label}><CardContent className="min-w-0 p-5">
@@ -60,7 +60,7 @@ export default function ReportsDashboard({ overview: data, serviceTypeNames = {}
     <Section id="membership" title="Membership" description="Current member counts and records added during the selected period. Record creation is not a guaranteed official membership start date.">
       <Stats items={[
         { label: "Non-archived Members", value: count(membership.nonArchivedMembers) },
-        { label: "Stored Active Members", value: count(membership.storedActiveMembers), note: "Administrative status, separate from derived inactivity" },
+        { label: "Administratively Active Members", value: count(membership.storedActiveMembers), note: "Current Member Status" },
         { label: "Member Records Added", value: count(membership.recordsAddedInRange), note: "Based on record creation date" },
         { label: "Archived Members", value: count(membership.archivedMembers), note: "Current archive state" },
       ]} />
@@ -96,16 +96,16 @@ export default function ReportsDashboard({ overview: data, serviceTypeNames = {}
         series={[{ label: "Unique Attendees", values: attendance.weekly.map((point) => point.uniqueMembers) }]} emptyMessage="No weekly physical attendance is available for this period." />
     </Section>
 
-    <Section id="inactivity" title="Derived Inactivity" current={currentDate} description="Based on consecutive absent eligible weeks and each active branch’s own threshold. Stored member status does not control these results; the selected date range does not change current state.">
+    <Section id="inactivity" title="Attendance Follow-up Flags" current={currentDate} description="Based on consecutive absent eligible weeks and each active branch’s threshold. These flags identify cases for human follow-up and never set administrative Member Status. The selected date range does not change current flags.">
       <Stats items={[
-        { label: "Derived Active", value: count(inactivity.derivedActiveMembers) }, { label: "Derived Inactive", value: count(inactivity.derivedInactiveMembers) },
+        { label: "Monitoring", value: count(inactivity.monitoringMembers) }, { label: "Needs Follow-up", value: count(inactivity.needsFollowUpMembers) },
         { label: "Unknown", value: count(inactivity.unknownMembers), note: "Missing or invalid first-attendance date" },
-        { label: "Inactive Among Calculable Members", value: formatReportPercent(inactivity.inactivePercent) },
-        { label: "One Week Away", value: count(inactivity.oneWeekAwayMembers) },
+        { label: "Needs Follow-up Among Calculable Members", value: formatReportPercent(inactivity.needsFollowUpPercent) },
+        { label: "Approaching Threshold", value: count(inactivity.approachingFollowUpThreshold) },
         { label: "Average Absent-week Streak", value: count(inactivity.averageConsecutiveAbsentWeeks), note: "Calculable members only" },
       ]} />
-      <ReportChart title="Current Attendance-derived Status" labels={["Derived Active", "Derived Inactive", "Unknown"]} horizontal
-        series={[{ label: "Members", values: [inactivity.derivedActiveMembers, inactivity.derivedInactiveMembers, inactivity.unknownMembers] }]}
+      <ReportChart title="Current Attendance Flag" labels={["Monitoring", "Needs Follow-up", "Unknown"]} horizontal
+        series={[{ label: "Members", values: [inactivity.monitoringMembers, inactivity.needsFollowUpMembers, inactivity.unknownMembers] }]}
         emptyMessage="There are no current monitoring members in the selected active branches." />
       {branches.some((row) => !row.branch.isActive) && <p className="text-xs text-slate-500">Inactive branches retain historical reports but are excluded from current inactivity monitoring.</p>}
     </Section>
@@ -158,14 +158,14 @@ export default function ReportsDashboard({ overview: data, serviceTypeNames = {}
       </div>
     </Section>
 
-    {multiple && <Section id="branches" title="Branch Comparison" description="Members and derived inactivity are current; service, follow-up, contribution, and dated baptism metrics cover the selected period. Unique attendees across branches are not additive.">
+    {multiple && <Section id="branches" title="Branch Comparison" description="Members and attendance follow-up flags are current; service, follow-up, contribution, and dated baptism metrics cover the selected period. Unique attendees across branches are not additive.">
       <Table><caption className="sr-only">Accessible branch comparison</caption><TableHeader><TableRow>
-        {["Branch", "Members", "Completed Services", "Avg Attendance / Service", "Derived Inactive", "Follow-ups", "Contributions", "Water Baptisms", "Holy Ghost Baptisms"].map((label, index) => <TableHead key={label} scope="col" className={index ? "text-right" : ""}>{label}</TableHead>)}
+        {["Branch", "Members", "Completed Services", "Avg Attendance / Service", "Needs Follow-up", "Follow-ups", "Contributions", "Water Baptisms", "Holy Ghost Baptisms"].map((label, index) => <TableHead key={label} scope="col" className={index ? "text-right" : ""}>{label}</TableHead>)}
       </TableRow></TableHeader><TableBody>{branches.map((row) => <TableRow key={row.branch.id}>
         <TableHead scope="row" className="normal-case tracking-normal"><span className="font-medium text-slate-900">{row.branch.name}</span>{!row.branch.isActive && <span className="ml-2 text-xs text-slate-500">Inactive branch</span>}</TableHead>
         {[
           count(row.membership.nonArchivedMembers), count(row.attendance.completedServices), count(row.attendance.averagePerService),
-          row.inactivity ? count(row.inactivity.derivedInactiveMembers) : "Unavailable", count(row.followUps.total), formatReportMoney(row.contributions.totalAmount), count(row.baptisms.water), count(row.baptisms.holyGhost),
+          row.inactivity ? count(row.inactivity.needsFollowUpMembers) : "Unavailable", count(row.followUps.total), formatReportMoney(row.contributions.totalAmount), count(row.baptisms.water), count(row.baptisms.holyGhost),
         ].map((value, index) => <TableCell key={index} className="whitespace-nowrap text-right tabular-nums">{value}</TableCell>)}
       </TableRow>)}</TableBody></Table>
     </Section>}

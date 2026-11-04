@@ -48,7 +48,7 @@ export async function getBranchMemberInactivity(branchId: string): Promise<Inact
 
   const [members, services, attendance] = await Promise.all([
     allRows((from, to) => admin.from("members")
-      .select("id, first_name, middle_name, last_name, church_branch_id, first_attendance_date")
+      .select("id, first_name, middle_name, last_name, church_branch_id, first_attendance_date, member_status")
       .eq("church_branch_id", branchId).eq("is_archived", false)
       .order("id").range(from, to)),
     allRows((from, to) => admin.from("services")
@@ -82,7 +82,8 @@ export async function getBranchMemberInactivity(branchId: string): Promise<Inact
     member.id,
     [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" ").trim() || "Unnamed member",
   ]));
-  return summaries.map((summary) => ({ ...summary, memberName: names.get(summary.memberId)! }));
+  const statuses = new Map(members.map((member) => [member.id, member.member_status]));
+  return summaries.map((summary) => ({ ...summary, memberName: names.get(summary.memberId)!, memberStatus: statuses.get(summary.memberId)! }));
 }
 
 /** Branch choices and UI capabilities come from the current account, never roles in this module. */
@@ -91,6 +92,8 @@ export async function getInactivityBranchOptions(): Promise<{
   canManageSettings: boolean;
   canCreateFollowUps: boolean;
   canViewFollowUps: boolean;
+  canViewMemberStatus: boolean;
+  canUpdateMemberStatus: boolean;
 }> {
   const access = await requirePermission("inactivity.view");
   const scope = await getUserBranchScope(access.user.id);
@@ -98,6 +101,8 @@ export async function getInactivityBranchOptions(): Promise<{
   const followUpCapabilities = {
     canCreateFollowUps: hasPermission(access.permissions, "follow_ups.create"),
     canViewFollowUps: hasPermission(access.permissions, "follow_ups.view"),
+    canViewMemberStatus: hasPermission(access.permissions, "members.view"),
+    canUpdateMemberStatus: hasPermission(access.permissions, "members.update"),
   };
   if (scope.branchIds.length === 0) return { branches: [], canManageSettings, ...followUpCapabilities };
   const admin = createAdminClient();

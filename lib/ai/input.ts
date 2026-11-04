@@ -11,9 +11,9 @@ function attendanceCounts(value: AttendanceCounts) {
 }
 function inactivityCounts(value: InactivityMetrics) {
   return { monitoredMembers: value.monitoredMembers, calculableMembers: value.calculableMembers,
-    derivedActiveMembers: value.derivedActiveMembers, derivedInactiveMembers: value.derivedInactiveMembers,
-    unknownMembers: value.unknownMembers, inactivePercent: value.inactivePercent,
-    averageConsecutiveAbsentWeeks: value.averageConsecutiveAbsentWeeks, oneWeekAwayMembers: value.oneWeekAwayMembers };
+    monitoringMembers: value.monitoringMembers, needsFollowUpMembers: value.needsFollowUpMembers,
+    unknownMembers: value.unknownMembers, needsFollowUpPercent: value.needsFollowUpPercent,
+    averageConsecutiveAbsentWeeks: value.averageConsecutiveAbsentWeeks, approachingFollowUpThreshold: value.approachingFollowUpThreshold };
 }
 
 /** Explicit nested allowlist: never spread source DTOs, branch metadata, or operational records. */

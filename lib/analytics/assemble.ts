@@ -3,14 +3,14 @@ import type { AnalyticsAggregates, AnalyticsBranch, AnalyticsDateRange, Analytic
 
 export function summarizeInactivity(rows: readonly MemberInactivitySummary[]): InactivityMetrics {
   const calculable = rows.filter((row) => row.calculationStatus === "evaluated");
-  const inactive = calculable.filter((row) => row.isInactive).length;
+  const inactive = calculable.filter((row) => row.needsFollowUp).length;
   return {
     monitoredMembers: rows.length, calculableMembers: calculable.length,
-    derivedInactiveMembers: inactive, derivedActiveMembers: calculable.length - inactive,
+    needsFollowUpMembers: inactive, monitoringMembers: calculable.length - inactive,
     unknownMembers: rows.length - calculable.length,
-    inactivePercent: calculable.length ? inactive / calculable.length * 100 : null,
+    needsFollowUpPercent: calculable.length ? inactive / calculable.length * 100 : null,
     averageConsecutiveAbsentWeeks: calculable.length ? calculable.reduce((sum, row) => sum + row.consecutiveAbsentWeeks, 0) / calculable.length : null,
-    oneWeekAwayMembers: calculable.filter((row) => !row.isInactive && row.remainingWeeksBeforeInactive === 1).length,
+    approachingFollowUpThreshold: calculable.filter((row) => !row.needsFollowUp && row.remainingWeeksBeforeFollowUp === 1).length,
   };
 }
 

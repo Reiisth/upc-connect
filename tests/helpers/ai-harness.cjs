@@ -21,8 +21,8 @@ function analyticsFixture() {
     trend: [{ periodStart: '2026-10-05', completedServices: 2, physicalCheckIns: 9, uniqueMembers: 7, averagePerService: 4.5 }],
     weekly: [{ weekStart: '2026-10-05', completedServices: 2, physicalCheckIns: 9, uniqueMembers: 7, averagePerService: 4.5,
       isFinished: true, isPartialRange: false, eligibleMemberCount: null, participationRatePercent: null }] };
-  result.inactivity = { monitoredMembers: 12, calculableMembers: 11, derivedActiveMembers: 8, derivedInactiveMembers: 3, unknownMembers: 1,
-    inactivePercent: 300 / 11, averageConsecutiveAbsentWeeks: 1.75, oneWeekAwayMembers: 2 };
+  result.inactivity = { monitoredMembers: 12, calculableMembers: 11, monitoringMembers: 8, needsFollowUpMembers: 3, unknownMembers: 1,
+    needsFollowUpPercent: 300 / 11, averageConsecutiveAbsentWeeks: 1.75, approachingFollowUpThreshold: 2 };
   result.followUps = { total: 4, uniqueMembers: 2, latestMembers: 2, latestNeedsFollowUpMembers: 0, overdueLatestNextFollowUps: 1,
     byMethod: [{ method: 'call', count: 4 }], byOutcome: [{ outcome: 'needs_follow_up', count: 3 }, { outcome: 'resolved', count: 1 }],
     latestByOutcome: [{ outcome: 'resolved', count: 2 }], trend: [{ periodStart: '2026-10-05', value: 4 }] };
@@ -31,7 +31,7 @@ function analyticsFixture() {
     byPaymentMethod: [], trend: [{ periodStart: '2026-10-05', count: 2, totalAmount: '9999999999999999999900.01', averageAmount: '4999999999999999999950.01' }] };
   result.baptisms = { total: 3, water: 2, holyGhost: 1, undatedRecords: 4,
     trend: [{ periodStart: '2026-10-05', total: 3, water: 2, holyGhost: 1 }] };
-  result.branches[0].inactivity = { ...result.inactivity, derivedInactiveMembers: 3 };
+  result.branches[0].inactivity = { ...result.inactivity, needsFollowUpMembers: 3 };
   result.branches[1].branch.isActive = false;
   result.branches[1].inactivity = null;
   return result;

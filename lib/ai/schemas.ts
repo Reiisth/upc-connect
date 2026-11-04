@@ -13,8 +13,8 @@ const grouping = z.enum(["day", "week", "month"]);
 const countTrend = z.array(z.strictObject({ periodStart: date, value: count }));
 const attendanceCounts = z.strictObject({ completedServices: count, physicalCheckIns: count, uniqueMembers: count, averagePerService: average });
 const inactivity = z.strictObject({
-  monitoredMembers: count, calculableMembers: count, derivedActiveMembers: count, derivedInactiveMembers: count,
-  unknownMembers: count, inactivePercent: percent, averageConsecutiveAbsentWeeks: average, oneWeekAwayMembers: count,
+  monitoredMembers: count, calculableMembers: count, monitoringMembers: count, needsFollowUpMembers: count,
+  unknownMembers: count, needsFollowUpPercent: percent, averageConsecutiveAbsentWeeks: average, approachingFollowUpThreshold: count,
 });
 const contributionAmounts = z.strictObject({ count, totalAmount: money, averageAmount: money.nullable() });
 const outcomeCounts = z.array(z.strictObject({ outcome: z.enum(FOLLOW_UP_OUTCOMES), count }));

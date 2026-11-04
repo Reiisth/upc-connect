@@ -33,7 +33,7 @@ test('empty analytics produces zero counts, null denominators and empty series',
   const result = assemble();
   assert.equal(result.membership.nonArchivedMembers, 0);
   assert.equal(result.attendance.averagePerService, null);
-  assert.equal(result.inactivity.inactivePercent, null);
+  assert.equal(result.inactivity.needsFollowUpPercent, null);
   assert.equal(result.inactivity.averageConsecutiveAbsentWeeks, null);
   assert.equal(result.contributions.totalAmount, '0.00');
   assert.equal(result.contributions.averageAmount, null);
@@ -51,16 +51,16 @@ test('inactivity summaries use existing calculation rules, own branch thresholds
   });
   const result = assemble(undefined, summaries, [branch('a'), branch('b', 4), branch('archivedBranch', 3, false)]);
   assert.equal(result.inactivity.monitoredMembers, 3);
-  assert.equal(result.inactivity.derivedInactiveMembers, 1);
-  assert.equal(result.inactivity.derivedActiveMembers, 1);
+  assert.equal(result.inactivity.needsFollowUpMembers, 1);
+  assert.equal(result.inactivity.monitoringMembers, 1);
   assert.equal(result.inactivity.unknownMembers, 1);
-  assert.equal(result.inactivity.inactivePercent, 50);
+  assert.equal(result.inactivity.needsFollowUpPercent, 50);
   assert.equal(result.inactivity.averageConsecutiveAbsentWeeks, 3);
-  assert.equal(result.inactivity.oneWeekAwayMembers, 1);
-  assert.equal(result.branches[0].inactivity.derivedInactiveMembers, 1);
-  assert.equal(result.branches[1].inactivity.derivedInactiveMembers, 0);
+  assert.equal(result.inactivity.approachingFollowUpThreshold, 1);
+  assert.equal(result.branches[0].inactivity.needsFollowUpMembers, 1);
+  assert.equal(result.branches[1].inactivity.needsFollowUpMembers, 0);
   assert.equal(result.branches[2].inactivity, null);
-  assert.equal(summarizeInactivity([summaries[2]]).inactivePercent, null);
+  assert.equal(summarizeInactivity([summaries[2]]).needsFollowUpPercent, null);
 });
 
 test('assembly preserves aggregate decimal strings, global distinct counts and separate stored membership values', () => {
@@ -75,7 +75,7 @@ test('assembly preserves aggregate decimal strings, global distinct counts and s
   assert.equal(result.attendance.uniqueMembers, 1);
   assert.equal(result.attendance.eligibleCompletedServiceWeeks, 1);
   assert.equal(result.membership.storedActiveMembers, 1);
-  assert.equal(result.inactivity.derivedActiveMembers, 0);
+  assert.equal(result.inactivity.monitoringMembers, 0);
   assert.ok(!Object.hasOwn(result.attendance, 'branchId'));
 });
 
@@ -129,7 +129,7 @@ test('sole server entry requires reports.view, honors selected scope, and does n
   const result = await h.getAnalyticsOverview({ branchId: 'a' });
   assert.equal(result.branches.length, 1);
   assert.equal(result.branches[0].branch.id, 'a');
-  assert.equal(result.inactivity.derivedInactiveMembers, 1);
+  assert.equal(result.inactivity.needsFollowUpMembers, 1);
   assert.equal(result.inactivity.unknownMembers, 1);
   assert.equal(result.inactivity.monitoredMembers, 2, 'Archived, other-branch members are excluded; stored inactive member remains');
   assert.equal(h.calls.length, 1);
@@ -148,9 +148,9 @@ test('all accessible branches keep differing thresholds and never expand to fore
   const h = serverHarness();
   const result = await h.getAnalyticsOverview();
   assert.equal(result.branches.length, 2);
-  assert.equal(result.inactivity.derivedInactiveMembers, 1);
-  assert.equal(result.inactivity.derivedActiveMembers, 1);
-  assert.equal(result.inactivity.oneWeekAwayMembers, 1);
+  assert.equal(result.inactivity.needsFollowUpMembers, 1);
+  assert.equal(result.inactivity.monitoringMembers, 1);
+  assert.equal(result.inactivity.approachingFollowUpThreshold, 1);
   assert.equal(result.asOfDate, today);
   assert.equal(h.calls[0].args.p_branch_ids.length, 2);
   assert.equal(h.reads.filter((table) => table === 'services').length, 1, 'No per-branch source query loop');

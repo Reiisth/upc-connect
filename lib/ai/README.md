@@ -163,7 +163,7 @@ into the payload. An unexpected source shape fails before transmission.
 | Context | Inclusive Manila date range, grouping, current as-of date, selected/all-accessible scope mode and branch count |
 | Membership | Current non-archived count, record additions/trend, missing first-attendance count |
 | Attendance | Completed services, physical check-ins, unique attendees, average, service-type and grouped trends, weekly unique counts and availability flags |
-| Inactivity | Existing derived active/inactive/unknown/calculable counts, inactive percentage, average streak and one-week-away count |
+| Attendance follow-up flags | Monitoring, Needs Follow-up, unknown and calculable counts, threshold percentage, average streak and approaching-threshold count |
 | Follow-ups | Range activity/method/outcome/trend and separately defined latest-member/needs/overdue/outcome aggregates |
 | Contributions | Exact total/average strings, count, type breakdown and trend, including anonymous contributions |
 | Baptisms | Dated total/water/Holy Ghost/trend and separate undated-record count |
@@ -184,7 +184,7 @@ new totals, shares or forecasts.
 
 ## Structured result, evidence and prompt version
 
-Prompt version `1` and all instructions live in
+Prompt version `2` and all instructions live in
 `prompts/decision-support.ts`. The output schema has:
 
 - `executiveSummary`: bounded plain text.
@@ -195,12 +195,15 @@ Prompt version `1` and all instructions live in
 - `limitations`: one to six bounded strings.
 
 `evidence` is an array of exact dot paths such as
-`inactivity.derivedInactiveMembers` or `attendance.trend.0.physicalCheckIns`.
+`inactivity.needsFollowUpMembers` or `attendance.trend.0.physicalCheckIns`.
 Both findings and recommendations require one to four citations. The server
 requires those paths to exist as scalar leaves in the sanitized input and
 returns a deduplicated `evidence` lookup containing the **actual analytics
 values**, rather than accepting a value invented by Gemini. Paths are looked up
 in a prebuilt Map, never executed or used to traverse arbitrary source objects.
+The instructions and response validation reject automatic administrative Member
+Status changes. Attendance follow-up flags are not Member Status, and Gemini has
+no ability to update a member record.
 
 The same Zod schema supplies the provider JSON Schema and validates the parsed
 response locally. Unknown fields, invalid enums, oversized/blank prose, excessive

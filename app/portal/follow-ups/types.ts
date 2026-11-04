@@ -9,7 +9,7 @@ export const OUTCOME_LABELS: Record<FollowUpOutcome, string> = {
   contacted: "Contacted", no_response: "No Response", needs_follow_up: "Needs Follow-up", resolved: "Resolved",
 };
 export type FollowUpBranch = { id: string; name: string; code: string | null; isActive: boolean };
-export type FollowUpMember = { id: string; name: string; branchId: string | null; isArchived: boolean };
+export type FollowUpMember = { id: string; name: string; branchId: string | null; isArchived: boolean; memberStatus?: string };
 export type FollowUpPerformer = { id: string; name: string };
 export type FollowUpRecord = {
   id: string; memberId: string; memberName: string; branchId: string; branchName: string; branchIsActive: boolean;

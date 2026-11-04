@@ -21,9 +21,9 @@ export default function ThresholdSettings({ branch, canManage }: {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Inactivity Rule</CardTitle>
+        <CardTitle>Absence Follow-up Threshold</CardTitle>
         <p className="text-sm text-slate-500">
-          A member is considered inactive after {branch.inactivityThresholdWeeks} consecutive absent weeks.
+          A follow-up flag appears after {branch.inactivityThresholdWeeks} consecutive eligible weeks without attendance. It never changes administrative Member Status.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -32,9 +32,9 @@ export default function ThresholdSettings({ branch, canManage }: {
           Attending at least one service resets the consecutive absence count.
         </p>
         {canManage ? (
-          <form action={formAction} className="space-y-3" aria-label="Inactivity rule settings">
+          <form action={formAction} className="space-y-3" aria-label="Absence follow-up threshold settings">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <FormField label="Consecutive absent weeks" htmlFor="inactivity-threshold" className="sm:max-w-56">
+              <FormField label="Absence Follow-up Threshold (eligible weeks)" htmlFor="inactivity-threshold" className="sm:max-w-56">
                 <Input key={branch.inactivityThresholdWeeks} id="inactivity-threshold" name="inactivity_threshold_weeks"
                   type="number" min={1} max={52} step={1} required defaultValue={branch.inactivityThresholdWeeks}
                   disabled={pending} aria-describedby="threshold-help" />

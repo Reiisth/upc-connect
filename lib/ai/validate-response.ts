@@ -32,6 +32,8 @@ export function validateDecisionSupportResponse(raw: unknown, input: DecisionSup
   const prose = [insight.executiveSummary, ...insight.limitations,
     ...insight.keyFindings.flatMap((item) => [item.title, item.observation]),
     ...insight.recommendations.flatMap((item) => [item.title, item.recommendation, item.rationale])];
+  const automaticMemberStatusAction = /\b(?:automatically\s+)?(?:set|change|update|mark|classify|switch)\s+(?:the\s+)?(?:administrative\s+)?member\s+status\b(?:.{0,60}\bautomatically\b)?/i;
+  if (prose.some((text) => automaticMemberStatusAction.test(text))) throw new DecisionSupportError("INVALID_RESPONSE");
   if (prose.some((text) => numericLiterals(text).some((literal) => !suppliedNumbers.has(literal)))) throw new DecisionSupportError("INVALID_RESPONSE");
   return { insight, evidence };
 }

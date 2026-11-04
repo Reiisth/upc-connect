@@ -73,6 +73,11 @@ administrative values. They do not represent derived weekly inactivity. Archive
 uses the separate boolean/timestamp, not a status string. Existing NULL statuses
 remain readable; a staff save chooses an explicit administrative value.
 
+Attendance monitoring uses separate flags (`Monitoring`, `Needs Follow-up`,
+`Unknown`). Reaching the absence follow-up threshold never updates Member Status.
+A status decision remains a human action in the existing permission- and
+branch-checked staff member edit workflow; follow-up outcomes do not change it.
+
 Current branch means present administrative assignment. No transfer date,
 effective interval, or past membership is inferred. Attendance retains its
 service-based historical branch context. Member edits/archive do not change
