@@ -12,6 +12,8 @@ export function assertLanHost(host) {
 }
 
 export function localDevConfig(env, lan = false) {
+  const port = Number(env.PORT || 3000);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be an integer from 1 to 65535.');
   const internalUrl = assertLoopback(env.NEXT_PUBLIC_SUPABASE_URL || '');
   if (!env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || !env.SUPABASE_SECRET_KEY) throw new Error('Local public and server keys are required.');
   const childEnv = { ...env, UPC_LOCAL_INTERNAL_SUPABASE_URL: internalUrl };
@@ -25,5 +27,5 @@ export function localDevConfig(env, lan = false) {
     childEnv.NEXT_PUBLIC_SUPABASE_URL = browserUrl.origin;
     childEnv.UPC_LOCAL_LAN_HOST = host;
   }
-  return { env: childEnv, args: ['node_modules/next/dist/bin/next', 'dev', '--hostname', lan ? '0.0.0.0' : '127.0.0.1'] };
+  return { env: childEnv, port, args: ['node_modules/next/dist/bin/next', 'dev', '--port', String(port), '--hostname', lan ? '0.0.0.0' : '127.0.0.1'] };
 }

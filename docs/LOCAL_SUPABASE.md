@@ -139,3 +139,23 @@ See [Supabase redirect URL rules](https://supabase.com/docs/guides/auth/redirect
 
 Browser camera/QR and some PWA features require a secure context; HTTP on a LAN
 IP may not support them. This mode addresses connectivity/login testing.
+
+## Avoid mixing Next.js runtimes
+
+Run one Next.js server on the intended port. The local launcher probes IPv4 and
+IPv6 loopback and refuses an existing listener; it supplies an explicit port so
+Next cannot silently choose another. `PORT` can select a different explicit port
+when intentionally testing a separate instance. Raw `next dev`/`next start`
+commands bypass this launcher check.
+
+Stop development before building, then restart the desired mode. After switching
+between a production build and development/bundlers, open a fresh tab or hard
+reload so an old client runtime cannot consume new server-component metadata.
+Do not run an old loopback-only production server alongside a wildcard LAN dev
+server on port 3000: Windows can allow both listeners, giving each origin a
+different runtime. Next manages chunk paths; no assetPrefix/publicPath override
+is needed. All `/_next/` endpoints bypass application auth routing, and local/LAN
+development origins are explicitly allowed for HMR.
+
+See [chunk investigation](NEXT_CHUNK_INVESTIGATION.md) for the observed process
+conflict, verified HMR issues, browser results and limits of the diagnosis.

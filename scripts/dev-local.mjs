@@ -1,9 +1,11 @@
 import { spawn } from 'node:child_process';
 import { loadLocalEnv } from './local-env.mjs';
 import { localDevConfig } from './local-dev-config.mjs';
+import { assertDevPortAvailable } from './local-dev-port.mjs';
 loadLocalEnv();
 if (process.argv.length > 3 || (process.argv[2] && process.argv[2] !== '--lan')) throw new Error('Use dev-local.mjs [--lan].');
 const config = localDevConfig(process.env, process.argv[2] === '--lan');
+await assertDevPortAvailable(config.port);
 console.log(`Browser Supabase: ${config.env.NEXT_PUBLIC_SUPABASE_URL}; privileged server: loopback.`);
 const child = spawn(process.execPath, config.args, { env: config.env, stdio: 'inherit' });
 child.on('error', error => { console.error(error.message); process.exitCode = 1; });
