@@ -4,7 +4,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:local:start": "node scripts/local-db.mjs start",
+    "db:local:reset": "node scripts/local-db.mjs reset",
+    "db:local:status": "node scripts/local-db.mjs status",
+    "db:local:auth": "node scripts/setup-local-auth.mjs",
+    "dev:local": "node scripts/dev-local.mjs",
+    "dev:lan": "node scripts/dev-local.mjs --lan",
+    "test": "node --test tests/*.test.cjs",
+    "db:local:reseed": "node scripts/reseed-local.mjs",
+    "db:local:verify": "node scripts/verify-local-db.mjs",
+    "app:local:verify": "node scripts/verify-local-app.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",

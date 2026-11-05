@@ -22,7 +22,7 @@ test('branch authorization migration against disposable PostgreSQL', { skip: !en
     return result.stdout.replace(/\r\n/g, '\n').trim();
   }
   const fixture = readFileSync(path.join(__dirname, 'fixtures/branch-authorization.sql'), 'utf8');
-  const migration = readFileSync(path.join(__dirname, '../supabase/migrations/20261031090000_harden_branch_authorization.sql'), 'utf8');
+  const migration = readFileSync(path.join(__dirname, '../supabase/archive/pre_baseline/20261031090000_harden_branch_authorization.sql'), 'utf8');
   const runAs = (user, query, setup = '', fail = false) => sql(`BEGIN; ${setup}
     SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub = '${user ?? ''}'; ${query} ROLLBACK;`, { fail });
   const role = (key) => `public.has_role('${key}')`;

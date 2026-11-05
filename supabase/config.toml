@@ -1,0 +1,40 @@
+# Local only. CLI pinned by scripts/local-db.mjs to 3.0.0.
+project_id = "upc-connect-local"
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+health_timeout = "2m"
+[db.migrations]
+enabled = true
+schema_paths = []
+[db.seed]
+enabled = true
+sql_paths = ["./bootstrap/current_reference.sql", "./seed.sql"]
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/**", "http://127.0.0.1:3000/**"]
+# For LAN email/OAuth testing, add the explicit current laptop origin locally
+# (http://<private-IPv4>:3000/**) and restart the local stack. See LOCAL_SUPABASE.md.
+enable_signup = true
+minimum_password_length = 8
+[auth.email]
+enabled = true
+enable_confirmations = false
+[studio]
+enabled = true
+port = 54323
+[local_smtp]
+enabled = true
+port = 54324
+[storage]
+enabled = true
+[analytics]
+enabled = false

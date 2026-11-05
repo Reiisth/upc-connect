@@ -7,7 +7,7 @@ test('managed service type migration preserves legacy service keys and status co
  sql(`CREATE DATABASE ${database};`,'postgres');
  try {
   sql(readFileSync(path.join(__dirname,'fixtures/service-types.sql'),'utf8'));
-  const migration=readFileSync(path.join(__dirname,'../supabase/migrations/20261103110000_manage_service_types.sql'),'utf8'); sql(migration);
+  const migration=readFileSync(path.join(__dirname,'../supabase/archive/pre_baseline/20261103110000_manage_service_types.sql'),'utf8'); sql(migration);
   assert.equal(sql(`SELECT service_type||'|'||status FROM public.services;`),'sunday_morning|completed');
   assert.equal(sql(`SELECT count(*) FROM public.service_types WHERE key IN ('sunday_morning','sunday_evening','prayer_meeting','special_service','other');`),'5');
   assert.equal(sql(`SELECT count(*) FROM pg_constraint WHERE conrelid='public.services'::regclass AND conname='services_service_type_check';`),'0');

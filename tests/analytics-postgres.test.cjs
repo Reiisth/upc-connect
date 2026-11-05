@@ -27,7 +27,7 @@ test('analytics RPC against disposable PostgreSQL', { skip: !enabled }, async (t
   sql(`CREATE DATABASE ${database};`, { db: 'postgres' });
   try {
     sql(readFileSync(path.join(__dirname, 'fixtures/analytics.sql'), 'utf8'));
-    sql(readFileSync(path.join(__dirname, '../supabase/migrations/20261029090000_add_reports_analytics.sql'), 'utf8'));
+    sql(readFileSync(path.join(__dirname, '../supabase/archive/pre_baseline/20261029090000_add_reports_analytics.sql'), 'utf8'));
     await t.test('physical attendance deduplicates member/service, includes late, excludes excused and unfinished services', () => {
       const data = report();
       assert.deepEqual(overall(data.attendance), { branchId: null, completedServices: 4, physicalCheckIns: 3, uniqueMembers: 2, averagePerService: 0.75 });

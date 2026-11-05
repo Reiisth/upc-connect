@@ -2,9 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
-  allowedDevOrigins: [
-    "192.168.18.42",
-  ],
+  allowedDevOrigins: process.env.NODE_ENV === "development" && process.env.UPC_LOCAL_LAN_HOST
+    ? [process.env.UPC_LOCAL_LAN_HOST]
+    : [],
 };
 
 export default nextConfig;

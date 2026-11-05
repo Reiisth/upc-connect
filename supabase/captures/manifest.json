@@ -1,0 +1,47 @@
+{
+  "project": {
+    "name": "UPC Connect",
+    "hosted_reference": "uuionqwconjeguxcwnla",
+    "local_runtime_id": "upc-connect-local"
+  },
+  "reference_captured_at": "2026-11-04T05:20:41.401Z",
+  "reference_provenance": "Read-only hosted API capture reported in preceding conversation; six separate requests, joined RBAC verification. Reconstructed from those captured values, not recaptured during implementation.",
+  "schema_dump": {
+    "path": "remote_schema.sql",
+    "sha256": "8d23c7a1dc2e981d740f1af56327c38e3a5b538838166c57a8686bf585d154d3",
+    "provenance": "User-provided hosted schema-only dump; original dump command/time unavailable."
+  },
+  "auth_trigger": {
+    "name": "on_auth_user_created",
+    "enabled_state": "origin",
+    "when": null,
+    "provenance": "Exact hosted trigger verified and supplied by user in implementation request."
+  },
+  "archived_migration_sha256": {
+    "20261011120000_manage_role_lifecycle.sql": "1ccb3394a799010d65eb8ad0c52abcc9cff5650870dafe263e1aa9927361c034",
+    "20261011130000_create_wedding_records.sql": "ce11b529e604cf8e835dc8e4fda023bd822bdb4b14200ee90c266afbf231efdf",
+    "20261026090000_remove_wedding_records.sql": "97165523b0068c33b5b414e9e3909dc25d5549d46bd3dd76f2acaa539e141bff",
+    "20261027090000_add_inactivity_configuration.sql": "94fde8bda5194b1802ccb751e02353af04a20441cbff7d1e3a01f2b877e044f8",
+    "20261027100000_create_member_follow_ups.sql": "1b9be4a8d06a15368cced8f0b566b7ab37d1702b291cbfdb428ce9c58f38c912",
+    "20261029090000_add_reports_analytics.sql": "bf9f62427cfd9408276fc92d13f4369cd358611c5196f1089cb3acb5f45ea557",
+    "20261031090000_harden_branch_authorization.sql": "e4f389523d094486656e71b5d5820c20a6e13d99bf513f45839da5209be30564",
+    "20261103100000_departments_and_permission_cleanup.sql": "d1a859bb9731280ebbd9c1a5bd3beae310dad47290cb2969039567f945388f4e",
+    "20261103110000_manage_service_types.sql": "5eb2b9876b781414c06c78b273a959f2b3febac517a3374747ebe3a14ce45670"
+  },
+  "hosted_data_modified": false,
+  "row_counts": {
+    "roles": 7,
+    "permissions": 48,
+    "role_permissions": 70,
+    "service_types": 5,
+    "departments": 4,
+    "member_field_definitions": 22
+  },
+  "sha256": {
+    "supabase/captures/current-reference.json": "073c2a424da55912bac052a51bd6fe43a2468d837d706f0fea4ab7874a4ff196",
+    "supabase/captures/auth-user-triggers.sql": "2ac6cd0dfabe178249f79ee7effac00f965d7edc557dcaf95f5542a6ea88a0f5",
+    "supabase/bootstrap/current_reference.sql": "8a5d6deac7b15571e7dc93603274e4eab42a3b2195f3e1c886912fd1a5049c04",
+    "supabase/migrations/20261104060000_current_state_baseline.sql": "50bd2a8beb2ddd57271094a3967c5dd7ff68b47714caf3311d7838339feb527c"
+  },
+  "materialized_at": "2026-11-04T05:53:03.947579+00:00"
+}

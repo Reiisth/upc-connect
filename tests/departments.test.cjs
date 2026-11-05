@@ -92,7 +92,7 @@ test('department permissions use the catalog and role seeding stays limited to s
   const catalog = fs.readFileSync('lib/permissions.ts', 'utf8');
   assert.match(catalog, /"departments\.view"/);
   assert.match(catalog, /"departments\.manage"/);
-  const migration = fs.readFileSync('supabase/migrations/20261103100000_departments_and_permission_cleanup.sql', 'utf8');
+  const migration = fs.readFileSync('supabase/archive/pre_baseline/20261103100000_departments_and_permission_cleanup.sql', 'utf8');
   assert.match(migration, /role_record\.key IN \('system_admin', 'pastor'\)/);
   assert.match(migration, /ON CONFLICT \(key\) DO UPDATE/);
 });

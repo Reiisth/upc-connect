@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local Supabase runtime linkage/cache and private QA outputs
+/supabase/.temp/
+/supabase/.branches/

@@ -21,7 +21,7 @@ test('departments and obsolete permission migration against disposable PostgreSQ
     return result.stdout.replace(/\r\n/g, '\n').trim();
   }
   const fixture = readFileSync(path.join(__dirname, 'fixtures/departments.sql'), 'utf8');
-  const migration = readFileSync(path.join(__dirname, '../supabase/migrations/20261103100000_departments_and_permission_cleanup.sql'), 'utf8');
+  const migration = readFileSync(path.join(__dirname, '../supabase/archive/pre_baseline/20261103100000_departments_and_permission_cleanup.sql'), 'utf8');
   sql(`CREATE DATABASE ${database};`, { db: 'postgres' });
   try {
     sql(fixture);
