@@ -29,6 +29,7 @@ export type AttendanceMember = {
   memberStatus: string | null;
   isArchived: boolean;
   churchBranchId: string;
+  homeBranchName?: string;
 };
 
 export type AttendanceRecord = {
@@ -65,12 +66,16 @@ export type QrAttendanceResult =
   | {
     outcome: "recorded";
     memberName: string;
+    homeBranchName?: string;
+    visitingMember?: boolean;
     attendanceStatus: AttendanceStatus;
     checkInTime: string;
   }
   | {
     outcome: "duplicate";
     memberName: string;
+    homeBranchName?: string;
+    visitingMember?: boolean;
     attendanceStatus: AttendanceStatus;
     checkInTime: string | null;
     method: string | null;
@@ -121,4 +126,8 @@ export function getAttendanceSummary(
   }
 
   return summary;
+}
+
+export function isVisitingMember(homeBranchId: string, serviceBranchId: string) {
+  return Boolean(homeBranchId && serviceBranchId && homeBranchId !== serviceBranchId);
 }

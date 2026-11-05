@@ -47,9 +47,12 @@ test("demo seed has stable, expected-sized records and no Auth or grant bootstra
   assert.equal(ids(followups, "c").length, 10);
   const contributions = section("WITH contributions(", "-- Ten records cover both types");
   assert.equal(ids(contributions, "c").length, 20);
-  const baptisms = section("INSERT INTO public.baptism_records", "COMMIT;");
+  const baptisms = section("INSERT INTO public.baptism_records", "-- Phase 2L:");
   assert.equal(ids(baptisms, "c").length, 10);
 
+  assert.match(seed, /Named non-member Visitor/);
+  assert.match(seed, /North Member gives at South/);
+  assert.match(seed, /South Member gives at North/);
   assert.match(seed, /generate_series\(1,5\)/);
   assert.match(seed, /'demo_legacy_gathering','UPC Demo Legacy Gathering',false/);
   assert.doesNotMatch(seed, /auth\.users|INSERT\s+INTO\s+public\.user_roles|INSERT\s+INTO\s+public\.role_permissions/i);

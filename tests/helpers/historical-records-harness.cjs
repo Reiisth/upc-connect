@@ -41,6 +41,7 @@ exports.historicalHarness = function historicalHarness(options = {}) {
     attendance_records: [{ id: 'attendance', service_id: 'service', member_id: 'historical', attendance_status: 'present', recorded_by: 'original', check_in_time: '2026-10-25T01:00:00Z' }],
     member_follow_ups: [{ id: 'follow-up', member_id: 'historical', church_branch_id: 'a', follow_up_date: '2026-10-20', followed_up_by: 'original', method: 'call', outcome: 'resolved' }],
   };
+  for (const row of db.financial_contributions) { row.contributor_type = row.member_id ? 'member' : 'anonymous'; row.visitor_name = null; }
   const events = [], writes = [];
   class Query {
     constructor(table) { this.table = table; this.filters = []; this.bounds = null; this.operation = null; }
@@ -90,7 +91,7 @@ exports.historicalHarness = function historicalHarness(options = {}) {
   };
   const load = (file) => loadTypeScript(file, stubs);
   const form = (values) => { const data = new FormData(); for (const [key, value] of Object.entries(values)) data.set(key, value ?? ''); return data; };
-  const contributionForm = (overrides = {}) => form({ church_branch_id: 'a', member_id: 'historical', service_id: 'service', contribution_type: 'tithe', amount: '123.45', contribution_date: '2026-10-21', payment_method: 'gcash', notes: 'Corrected', ...overrides });
+  const contributionForm = (overrides = {}) => form({ contributor_type: (overrides.member_id === '' || overrides.member_id === null) ? 'anonymous' : 'member', visitor_name: '', church_branch_id: 'a', member_id: 'historical', service_id: 'service', contribution_type: 'tithe', amount: '123.45', contribution_date: '2026-10-21', payment_method: 'gcash', notes: 'Corrected', ...overrides });
   const baptismForm = (overrides = {}) => form({ church_branch_id: 'a', member_id: 'historical', baptism_type: 'water', baptism_date: '2026-10-21', officiated_by: 'Corrected Pastor', location: 'River', notes: 'Corrected', ...overrides });
   async function branches() {
     const access = await load('app/portal/contributions/access.ts').requireContributionsPermission('contributions.view');

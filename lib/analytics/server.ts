@@ -1,3 +1,4 @@
+import { loadPhysicalParticipation } from "@/lib/inactivity/participation";
 import "server-only";
 import { cache } from "react";
 import { requirePermission } from "@/lib/permissions-server";
@@ -50,15 +51,16 @@ async function loadInactivityInputs(admin: ReturnType<typeof createAdminClient>,
   const registrationDates = members.map((row) => manilaDateFromTimestamp(row.created_at))
     .filter((date): date is string => Boolean(date));
   const earliest = registrationDates.sort()[0];
-  const [services, attendance] = earliest ? await Promise.all([
+  const [homeServices, attendance] = earliest ? await Promise.all([
     allRows((from, to) => admin.from("services").select("id, church_branch_id, service_date, status")
       .in("church_branch_id", ids).eq("status", "completed").gte("service_date", earliest).lte("service_date", today).order("id").range(from, to)),
-    allRows((from, to) => admin.from("attendance_records")
-      .select("id, member_id, service_id, attendance_status, services!inner(church_branch_id, status, service_date)")
-      .in("services.church_branch_id", ids).eq("services.status", "completed").lte("services.service_date", today)
-      .gte("services.service_date", earliest)
-      .in("attendance_status", ["present", "late"]).order("id").range(from, to)),
+    loadPhysicalParticipation(admin, members.map(member => member.id), earliest, today),
   ]) : [[], []];
+  const services = [...homeServices, ...attendance.map(record => {
+    const service = record.services as unknown as { church_branch_id: string; status: string; service_date: string };
+    if (!service) throw new Error("Missing participation service context.");
+    return { id: record.service_id, ...service };
+  })];
   return calculateWeeklyInactivity({
     members: members.map((row) => ({ id: row.id, branchId: row.church_branch_id, registrationDate: manilaDateFromTimestamp(row.created_at) })),
     services: services.map((row) => ({ id: row.id, branchId: row.church_branch_id, serviceDate: row.service_date, status: row.status })),

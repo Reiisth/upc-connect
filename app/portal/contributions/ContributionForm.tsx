@@ -14,6 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 import {
   CONTRIBUTION_TYPES,
+  CONTRIBUTOR_TYPES,
+  type ContributorType,
   formatContributionType,
   formatPaymentMethod,
   PAYMENT_METHODS,
@@ -35,6 +37,8 @@ type ContributionFormProps = {
 };
 
 const defaultValues: ContributionFormValues = {
+  contributorType: "anonymous",
+  visitorName: null,
   memberId: null,
   serviceId: null,
   churchBranchId: "",
@@ -57,6 +61,9 @@ export function ContributionForm({
   const [branchId, setBranchId] = useState(
     formValues.churchBranchId,
   );
+  const [contributorType, setContributorType] = useState<ContributorType>(formValues.contributorType);
+  const [visitorName, setVisitorName] = useState(formValues.visitorName ?? "");
+  const [memberSearch, setMemberSearch] = useState("");
   const [memberId, setMemberId] = useState(
     formValues.memberId ?? "",
   );
@@ -85,7 +92,7 @@ export function ContributionForm({
   const branchMembers = members.filter(
     (member) =>
       member.id === existingMemberId ||
-      member.churchBranchId === branchId && !member.isArchived,
+      !member.isArchived && (!memberSearch.trim() || member.fullName.toLowerCase().includes(memberSearch.trim().toLowerCase())),
   );
   const branchServices = services.filter(
     (service) =>
@@ -100,17 +107,6 @@ export function ContributionForm({
 
   function handleBranchChange(nextBranchId: string) {
     setBranchId(nextBranchId);
-
-    if (
-      memberId &&
-      !members.some(
-        (member) =>
-          member.id === memberId &&
-          member.churchBranchId === nextBranchId,
-      )
-    ) {
-      setMemberId("");
-    }
 
     if (
       serviceId &&
@@ -139,7 +135,7 @@ export function ContributionForm({
 
       <FormSection
         title="Contribution Information"
-        description={values ? "The historical branch is fixed. Existing member and service links can be retained; replacements must meet current eligibility rules." : "Record a contribution for one of your assigned active church branches. Member and service links are optional."}
+        description={values ? "The historical branch is fixed. Existing member and service links can be retained; replacements must meet current eligibility rules." : "Record a contribution for one of your assigned active church branches. Choose a Member from any home branch, a named Visitor, or Anonymous. Service links are optional."}
       >
         <div className="grid gap-5 md:grid-cols-2">
           <FormField
@@ -173,28 +169,29 @@ export function ContributionForm({
             </Select>
           </FormField>
 
-          <FormField
-            label="Contributor"
-            htmlFor="contribution-member"
-            description="Leave as Anonymous for a contribution without a member link."
-          >
-            <Select
-              id="contribution-member"
-              name="member_id"
-              value={memberId}
-              onChange={(event) => setMemberId(event.target.value)}
-              disabled={!branchId || branchMembers.length === 0}
-            >
-              <option value="">Anonymous contribution</option>
-
-              {branchMembers.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.fullName}
-                  {member.id === existingMemberId ? " (Existing historical link)" : ""}
-                </option>
-              ))}
+          <FormField label="Contributor Type" htmlFor="contributor-type" required>
+            <Select id="contributor-type" name="contributor_type" value={contributorType}
+              onChange={event => { setContributorType(event.target.value as ContributorType); setMemberId(""); setVisitorName(""); }} required>
+              {CONTRIBUTOR_TYPES.map(type => <option key={type} value={type}>{formatContributionType(type)}</option>)}
             </Select>
           </FormField>
+          {contributorType === "member" && <>
+            <FormField label="Find Member" htmlFor="contributor-search" description="Search eligible member identities across all home branches.">
+              <Input id="contributor-search" type="search" value={memberSearch} onChange={event => setMemberSearch(event.target.value)} />
+            </FormField>
+            <FormField label="Member" htmlFor="contribution-member" required>
+              <Select id="contribution-member" name="member_id" value={memberId} onChange={event => setMemberId(event.target.value)} required disabled={!branchId}>
+                <option value="">Select a member</option>
+                {branchMembers.map(member => <option key={member.id} value={member.id}>
+                  {member.fullName} · {member.homeBranchName ?? "Home branch unknown"}{member.churchBranchId && member.churchBranchId !== branchId ? " · Visiting Member" : ""}{member.isArchived ? " · Archived (historical)" : ""}
+                </option>)}
+              </Select>
+            </FormField>
+          </>}
+          {contributorType === "visitor" && <FormField label="Visitor Name" htmlFor="visitor-name" required description="Name retained on this contribution only.">
+            <Input id="visitor-name" name="visitor_name" value={visitorName} onChange={event => setVisitorName(event.target.value)} maxLength={160} required />
+          </FormField>}
+
 
           <FormField
             label="Service"

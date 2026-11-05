@@ -32,10 +32,11 @@ import {
 import { TableActionButton } from "@/components/ui/table-action-button";
 import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
-import { saveAttendanceRecord } from "./actions";
+import { saveAttendanceRecord, searchAttendanceMembers } from "./actions";
 import { formatManilaTimestamp, toManilaDateTimeValue } from "@/lib/manila-time";
 import {
   formatAttendanceStatus,
+  isVisitingMember,
   formatMemberName,
   type AttendanceMemberRow,
   type AttendanceStatus,
@@ -44,6 +45,7 @@ import {
 
 type AttendanceViewProps = {
   serviceId: string;
+  serviceBranchId?: string;
   rows: AttendanceMemberRow[];
   summary: AttendanceSummary;
   canRecord: boolean;
@@ -64,12 +66,16 @@ const statusVariants: Record<
 
 export default function AttendanceView({
   serviceId,
+  serviceBranchId = "",
   rows,
   summary,
   canRecord,
   canCorrect,
 }: AttendanceViewProps) {
   const router = useRouter();
+  const [lookup, setLookup] = useState("");
+  const [lookupRows, setLookupRows] = useState<AttendanceMemberRow[]>([]);
+  const selectionRows = useMemo(() => [...rows, ...lookupRows.filter(found => !rows.some(row => row.member.id === found.member.id))], [rows, lookupRows]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] =
     useState<AttendanceFilter>("all");
@@ -109,10 +115,10 @@ export default function AttendanceView({
 
   const recordableRows = useMemo(
     () => {
-      return rows.filter((row) => row.attendance
+      return selectionRows.filter((row) => row.attendance
         ? canCorrect : canRecord && row.isCurrentlyEligible);
     },
-    [canCorrect, canRecord, rows],
+    [canCorrect, canRecord, selectionRows],
   );
 
   const canEdit = canRecord || canCorrect;
@@ -202,13 +208,25 @@ export default function AttendanceView({
             canRecord && canCorrect
               ? "Record attendance for an active member or correct an existing record. Manual records use the current account as the recorder."
               : canRecord
-                ? "Record attendance for an active member of this branch. New manual records use the current account as the recorder. Existing records require the attendance.correct permission."
+                ? "Record attendance for an active member from any home branch. New manual records use the current account as the recorder. Existing records require the attendance.correct permission."
                 : "Correct existing attendance records. New records require the attendance.record permission."
           }
         >
           <form onSubmit={handleSubmit} className="space-y-5">
             <input type="hidden" name="attendance_record_id"
-              value={rows.find((row) => row.member.id === selectedMemberId)?.attendance?.id ?? ""} />
+              value={selectionRows.find((row) => row.member.id === selectedMemberId)?.attendance?.id ?? ""} />
+            {canRecord && <FormField label="Find Visiting Member" htmlFor="attendance-lookup" description="Search member names church-wide (up to 30 matches). Only identity and home branch are shown.">
+              <div className="flex gap-2">
+                <Input id="attendance-lookup" type="search" value={lookup} onChange={event => setLookup(event.target.value)} placeholder="At least two characters" />
+                <Button type="button" variant="outline" disabled={isPending || lookup.trim().length < 2} onClick={() => startTransition(async () => {
+                  try {
+                    const members = await searchAttendanceMembers(serviceId, lookup);
+                    setLookupRows(members.map(member => ({ member, attendance: null, isCurrentlyEligible: true })));
+                    setErrorMessage(members.length ? null : "No eligible members found.");
+                  } catch (error) { setErrorMessage(error instanceof Error ? error.message : "Unable to search members."); }
+                })}>Find Members</Button>
+              </div>
+            </FormField>}
             <div className="grid gap-5 md:grid-cols-3">
               <FormField
                 label="Member"
@@ -220,7 +238,7 @@ export default function AttendanceView({
                   name="member_id"
                   value={selectedMemberId}
                   onChange={(event) => {
-                    const row = rows.find(
+                    const row = selectionRows.find(
                       (item) => item.member.id === event.target.value,
                     );
 
@@ -235,7 +253,7 @@ export default function AttendanceView({
 
                   {recordableRows.map((row) => (
                     <option key={row.member.id} value={row.member.id}>
-                      {formatMemberName(row.member)}
+                      {formatMemberName(row.member)}{row.member.homeBranchName ? ` · ${row.member.homeBranchName}` : ""}{isVisitingMember(row.member.churchBranchId, serviceBranchId) ? " · Visiting Member" : ""}
                     </option>
                   ))}
                 </Select>
@@ -389,7 +407,8 @@ export default function AttendanceView({
                       <p className="font-medium text-slate-900">
                         {formatMemberName(row.member)}
                       </p>
-                      {!row.isCurrentlyEligible && <p className="text-xs text-slate-500">Historical attendee{row.member.isArchived ? " · Archived" : ""}</p>}
+                      {isVisitingMember(row.member.churchBranchId, serviceBranchId) && <p className="text-xs text-slate-500">Visiting Member · {row.member.homeBranchName ?? "Home branch unknown"}</p>}
+                      {!row.isCurrentlyEligible && (row.member.isArchived || row.member.memberStatus !== "active") && <p className="text-xs text-slate-500">Historical attendee{row.member.isArchived ? " · Archived" : ""}</p>}
                     </TableCell>
 
                     <TableCell>

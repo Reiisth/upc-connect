@@ -162,6 +162,7 @@ async function AttendanceServiceContent({
 
       <AttendanceView
         serviceId={service.id}
+        serviceBranchId={service.churchBranchId}
         rows={rows}
         summary={summary}
         canRecord={canRecord}

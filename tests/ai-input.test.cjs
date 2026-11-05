@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- CommonJS test harness */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadTypeScript } = require('./helpers/load-typescript.cjs');
@@ -144,4 +145,15 @@ test('central versioned prompt binds observations and cautious recommendations t
   const prompt = buildDecisionSupportPrompt(input);
   assert.ok(prompt.userContent.includes(JSON.stringify(input)));
   assert.equal(prompt.systemInstruction, DECISION_SUPPORT_SYSTEM_INSTRUCTION);
+});
+
+test('Visitor identities on source objects never enter Gemini aggregates', () => {
+  const data = analyticsFixture();
+  data.contributions.visitor_name = 'Maria Santos';
+  data.contributions.visitorName = 'Maria Santos';
+  data.contributions.records = [{ contributor_type:'visitor', visitor_name:'Maria Santos', amount:'500.00' }];
+  const wire = JSON.stringify(buildDecisionSupportInput(data, 'all_accessible_branches'));
+  assert.ok(!wire.includes('Maria Santos'));
+  assert.ok(!wire.includes('visitor_name'));
+  assert.ok(!wire.includes('visitorName'));
 });

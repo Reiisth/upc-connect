@@ -75,7 +75,7 @@ population includes active branches only.
 | Follow-up activity | `member_follow_ups.follow_up_date` in range | Total records, distinct members, method/outcome groups and trend; uses each record's stored branch. | Empty activity returns zero/empty arrays. No role/member-status filter changes historical action counts. |
 | Current follow-up state | Same table, all accessible selected history with `follow_up_date <= asOfDate` | Latest per member ordered by follow-up date DESC, creation time DESC, ID DESC. `latestNeedsFollowUpMembers` counts only latest `needs_follow_up`; latest outcome distribution includes all outcomes. A later resolved entry supersedes earlier needs-follow-up. | There is no invented generic unresolved-case status. Scope is latest **accessible selected** history; a later action in an inaccessible/unselected branch is not consulted or leaked. Future-dated actions do not become current early. |
 | Overdue latest next dates | Latest accessible follow-up per member | `next_follow_up_date < asOfDate`. Only the latest record's explicit date matters. A later null next date supersedes earlier dates. Any latest outcome may carry an explicit next date, including resolved. | Null or due-today/future dates are not overdue. Unlike the operational list's per-record due filter, this analytics metric describes latest per-member state. It is not a stored reminder/case status. |
-| Contributions | `financial_contributions.contribution_date` in range | Every scoped row, including anonymous/null-member contributions. Counts, exact totals, averages, contribution-type/payment-method groups, trend and branch totals. | Empty total is `0.00`; average is null. No member join can accidentally exclude anonymous or transferred members. |
+| Contributions | `financial_contributions.contribution_date` in range | Every scoped row, including Member, Visitor and Anonymous contributions. Counts, exact totals, averages, contribution-type/payment-method groups, trend and branch totals. | Empty total is `0.00`; average is null. Receiving branch controls financial attribution; no member join excludes Visitor, Anonymous or transferred members. |
 | Baptisms | `baptism_records.baptism_date` in range | Total, water, Holy Ghost, trend and branch totals use the date and `water` / `holy_ghost` types already used by the module. | Null baptism dates never enter date-range totals/trends. `undatedRecords` separately counts all scoped undated records as a current data-quality measure, independent of range. No `created_at` fallback. |
 
 ## Money precision
@@ -98,8 +98,9 @@ Only compact aggregates cross the API for membership, attendance reporting,
 follow-ups, contributions and baptisms.
 
 The explicit exception is existing TypeScript inactivity calculation: minimal
-non-archived member inputs are paginated, then two paginated streams load
-completed services and qualifying attendance across all selected active branches.
+non-archived member inputs are paginated, then paginated reads load
+home-branch completed services and qualifying participation at any branch for
+only those authorized home-member IDs. Foreign rosters are never loaded.
 History is bounded by the earliest valid UPC Connect registration date and today, never
 by an arbitrary last-eight-week/report window. There are no queries per member
 or per branch. The shared calculation function receives each branch threshold.

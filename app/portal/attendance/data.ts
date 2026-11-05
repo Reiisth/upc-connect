@@ -32,6 +32,7 @@ type MemberRow = {
   member_status: string | null;
   is_archived: boolean;
   church_branch_id: string;
+  church_branches?: { name: string } | null;
 };
 
 type AttendanceRow = {
@@ -110,14 +111,14 @@ export async function loadAttendanceRows(
   const memberData = await readAll(admin
     .from("members")
     .select(
-      "id, first_name, middle_name, last_name, member_status, is_archived, church_branch_id",
+      "id, first_name, middle_name, last_name, member_status, is_archived, church_branch_id, church_branches(name)",
     )
     .eq("church_branch_id", service.churchBranchId)
     .eq("is_archived", false)
     .eq("member_status", "active")
     .order("id"));
 
-  const members = (memberData ?? []) as MemberRow[];
+  const members = (memberData ?? []) as unknown as MemberRow[];
   const eligibleIds = new Set(members.map((member) => member.id));
   // The service is already authorized by loadAccessibleService. Its recorded
   // facts anchor history, independent of today's member roster.
@@ -128,9 +129,9 @@ export async function loadAttendanceRows(
     .filter((id) => !eligibleIds.has(id));
   for (let start = 0; start < historicalIds.length; start += 100) {
     const historicalMembers = await readAll(admin.from("members")
-      .select("id, first_name, middle_name, last_name, member_status, is_archived, church_branch_id")
+      .select("id, first_name, middle_name, last_name, member_status, is_archived, church_branch_id, church_branches(name)")
       .in("id", historicalIds.slice(start, start + 100)).order("id"));
-    members.push(...historicalMembers as MemberRow[]);
+    members.push(...historicalMembers as unknown as MemberRow[]);
   }
   const knownIds = new Set(members.map((member) => member.id));
   for (const id of historicalIds) {
@@ -191,6 +192,7 @@ export async function loadAttendanceRows(
       memberStatus: member.member_status,
       isArchived: member.is_archived,
       churchBranchId: member.church_branch_id,
+      homeBranchName: member.church_branches?.name ?? "Home branch unknown",
     };
 
     return {

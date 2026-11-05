@@ -59,9 +59,9 @@ changed by attendance calculations or follow-up outcomes.
   Asia/Manila.
 - Weeks run Monday through Sunday. Only weeks strictly before the current Monday
   are evaluated for absence and recent-rate calculations.
-- A branch week is eligible only if it contains a completed service. Scheduled,
+- A home-branch week is eligible only if it contains a completed service. Scheduled,
   ongoing, cancelled, future, and no-service weeks do not count.
-- Present and late records count as physical attendance. Excused records do not.
+- Present and late records at ANY branch count as physical attendance. Excused records do not.
   QR and manual methods have identical weight.
 - One or more qualifying attendances make a week present. Multiple missed
   services make one absent week. A present week stops the consecutive streak.
@@ -72,9 +72,11 @@ changed by attendance calculations or follow-up outcomes.
 
 ## Data loading and verification
 
-The loader reads members first, then completed services and qualifying
-attendance from the oldest valid registration date in two parallel paginated
-streams. Pages contain 500 rows. It does not query per member or truncate old
+The loader reads members first, then home-branch completed services and qualifying
+physical participation from the oldest valid registration date. The shared
+participation loader batches authorized home-member IDs (100 per batch) and
+paginates 500 rows, including attended foreign Services without loading foreign
+rosters or profiles. Service reads also paginate 500 rows. It does not query per member or truncate old
 post-registration absence history. The calculator groups services by branch/week
 and indexes attendance by member/week.
 

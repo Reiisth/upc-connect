@@ -45,7 +45,7 @@ export default function ReportsDashboard({ overview: data, serviceTypeNames = {}
         { label: "Avg Attendance / Service", value: count(attendance.averagePerService), note: "Physical attendance at completed services", icon: Activity },
         { label: "Members Needing Follow-up", value: count(inactivity.needsFollowUpMembers), note: `Current attendance flag · ${currentDate}`, icon: UserRoundX },
         { label: "Follow-ups", value: count(followUps.total), note: "Recorded in the selected period", icon: ClipboardPen },
-        { label: "Total Contributions", value: formatReportMoney(contributions.totalAmount), note: "Includes anonymous contributions", icon: Coins },
+        { label: "Total Contributions", value: formatReportMoney(contributions.totalAmount), note: "Includes Member, Visitor, and Anonymous contributions", icon: Coins },
       ].map(({ label, value, note, icon: Icon }) => <Card key={label}><CardContent className="min-w-0 p-5">
         <div className="flex items-center justify-between gap-2"><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p><Icon className="h-5 w-5 shrink-0 text-[#5D94E8]" aria-hidden="true" /></div>
         <p className="mt-3 break-words text-2xl font-semibold tabular-nums text-[#203264]">{value}</p><p className="mt-2 text-xs text-slate-500">{note}</p>
@@ -126,7 +126,7 @@ export default function ReportsDashboard({ overview: data, serviceTypeNames = {}
       </div>
     </Section>
 
-    <Section id="contributions" title="Contributions" description="Contributions dated within the selected period, including anonymous contributions. All displayed peso amounts preserve exact decimal values.">
+    <Section id="contributions" title="Contributions" description="Contributions dated within the selected period, including Member, Visitor, and Anonymous contributions. All displayed peso amounts preserve exact decimal values.">
       <Stats items={[
         { label: "Total Contributions", value: formatReportMoney(contributions.totalAmount) }, { label: "Contribution Count", value: count(contributions.count) },
         { label: "Average Contribution", value: formatReportMoney(contributions.averageAmount) },

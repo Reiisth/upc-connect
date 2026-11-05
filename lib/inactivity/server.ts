@@ -1,3 +1,4 @@
+import { loadPhysicalParticipation } from "@/lib/inactivity/participation";
 import "server-only";
 
 import { getUserBranchScope } from "@/lib/branch-access";
@@ -54,18 +55,20 @@ export async function getBranchMemberInactivity(branchId: string): Promise<Inact
   const registrationDates = members.map((member) => manilaDateFromTimestamp(member.created_at))
     .filter((date): date is string => Boolean(date));
   const earliestRegistrationDate = registrationDates.sort()[0];
-  const [services, attendance] = earliestRegistrationDate ? await Promise.all([
+  const [homeServices, attendance] = earliestRegistrationDate ? await Promise.all([
     allRows((from, to) => admin.from("services")
       .select("id, church_branch_id, service_date, status")
       .eq("church_branch_id", branchId).eq("status", "completed")
       .gte("service_date", earliestRegistrationDate).lte("service_date", today).order("id").range(from, to)),
-    allRows((from, to) => admin.from("attendance_records")
-      .select("id, member_id, service_id, attendance_status, services!inner(church_branch_id, status, service_date)")
-      .eq("services.church_branch_id", branchId).eq("services.status", "completed")
-      .gte("services.service_date", earliestRegistrationDate).lte("services.service_date", today).in("attendance_status", ["present", "late"])
-      .order("id").range(from, to)),
+    loadPhysicalParticipation(admin, members.map(member => member.id), earliestRegistrationDate, today),
   ]) : [[], []];
 
+  // Read only participation facts for already-authorized home members, not foreign rosters.
+  const services = [...homeServices, ...attendance.flatMap(record => {
+    const service = record.services as unknown as { church_branch_id: string; service_date: string; status: string } | null;
+    if (!service) throw new Error("Missing participation service context.");
+    return [{ id: record.service_id, ...service }];
+  })];
   const summaries = calculateWeeklyInactivity({
     members: members.map((member) => ({
       id: member.id, branchId: member.church_branch_id,

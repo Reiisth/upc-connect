@@ -35,16 +35,21 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
   }
   class Query {
     constructor(table) { this.table = table; this.filters = []; this.write = null; this.bounds = null; this.maximum = null; }
-    select() { return this; }
+    select(columns) { this.columns = columns; return this; }
     eq(key, value) { this.filters.push((row) => row[key] === value); return this; }
     in(key, values) { this.filters.push((row) => values.includes(row[key])); return this; }
+    or(filter) {
+      const clauses = filter.split(',').map(part => part.split('.ilike.%'));
+      this.filters.push(row => clauses.some(([key, pattern]) => String(row[key] ?? '').toLowerCase().includes(pattern.slice(0, -1).toLowerCase())));
+      return this;
+    }
     order() { return this; }
     limit(count) { this.maximum = count; return this; }
     range(from, to) { this.bounds = [from, to]; return this; }
     update(payload) { this.write = ['update', payload]; return this; }
     insert(payload) { this.write = ['insert', payload]; return this; }
     result(single = false) {
-      events.push({ table: this.table, operation: this.write?.[0] ?? 'read' });
+      events.push({ table: this.table, operation: this.write?.[0] ?? 'read', columns: this.columns });
       if (failTable === this.table) return { data: null, error: { message: 'query failed' } };
       const source = db[this.table]; assert.ok(source, `Unexpected table ${this.table}`);
       let selected = source.filter((row) => this.filters.every((filter) => filter(row)));
@@ -194,7 +199,7 @@ test('member identification fallback preserves a recorded fact if its member row
 });
 
 test('completed historical corrections work after transfer, archive or stored inactivity without current-branch access', async () => {
-  for (const memberId of [id(12), id(13), id(14)]) {
+  for (const memberId of [id(13), id(14)]) {
     const h = harness({ status: 'completed', branchIds: [branch], permissions: ['attendance.correct'] });
     const record = h.record(memberId);
     await h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(memberId, { attendance_record_id: record.id }));
@@ -202,8 +207,8 @@ test('completed historical corrections work after transfer, archive or stored in
   }
 });
 
-test('new QR and manual attendance reject transferred, archived and inactive members', async () => {
-  for (const memberId of [id(12), id(13), id(14)]) {
+test('new QR and manual attendance reject archived and inactive members', async () => {
+  for (const memberId of [id(13), id(14)]) {
     const h = harness();
     await assert.rejects(h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(memberId)), /active.*non-archived/);
     await assert.rejects(h.actions().recordQrAttendance(serviceId, memberId), /not eligible/);
@@ -315,4 +320,39 @@ test('dependency lookup failures fail closed and invalid source attendance never
   assert.equal(h.db.services[0].church_branch_id, branch);
   const corrupt = harness(); corrupt.record(id(11), 'unsupported');
   await assert.rejects(corrupt.rows(), /unsupported status/);
+});
+
+test('host-only recorder records cross-branch manual and QR attendance without changing membership', async () => {
+  for (const method of ['manual', 'qr']) {
+    const h = harness({ branchIds: [branch], permissions: ['attendance.record'] });
+    h.db.members[1].phone_number = 'PRIVATE';
+    const before = JSON.stringify(h.db.members);
+    if (method === 'manual') await h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(id(12)));
+    else await h.actions().recordQrAttendance(serviceId, id(12));
+    assert.equal(h.db.attendance_records[0].service_id, serviceId);
+    assert.equal(h.db.attendance_records[0].member_id, id(12));
+    assert.equal(JSON.stringify(h.db.members), before);
+    assert.equal(h.db.attendance_records.length, 1);
+    const duplicate = await h.actions().recordQrAttendance(serviceId, id(12));
+    assert.equal(duplicate.outcome, 'duplicate');
+  }
+});
+
+test('cross-branch identity lookup is host-authorized, minimal and excludes archived/inactive people', async () => {
+  const h = harness({ branchIds: [branch], permissions: ['attendance.record'] });
+  Object.assign(h.db.members[1], { email: 'PRIVATE', phone_number: 'PRIVATE', church_branches: { name: 'Other branch' } });
+  const matches = await h.actions().searchAttendanceMembers(serviceId, 'Transferred');
+  assert.equal(matches.length, 1);
+  assert.equal(matches[0].homeBranchName, 'Other branch');
+  assert.ok(!JSON.stringify(matches).includes('PRIVATE'));
+  const selection = h.events.find(event => event.table === 'members').columns;
+  assert.ok(!/email|phone|address|birth|account/.test(selection));
+  for (const search of ['Archived', 'Inactive']) assert.equal((await h.actions().searchAttendanceMembers(serviceId, search)).length, 0);
+  const foreign = harness({ branchIds: [otherBranch], permissions: ['attendance.record'] });
+  await assert.rejects(foreign.actions().searchAttendanceMembers(serviceId, 'Current'), /outside your branch/);
+  await assert.rejects(foreign.actions().recordQrAttendance(serviceId, id(11)), /outside your branch/);
+  assert.equal(foreign.events.some(e => e.table === 'members'), false);
+  const labels = h.load('app/portal/attendance/types.ts');
+  assert.equal(labels.isVisitingMember(otherBranch, branch), true);
+  assert.equal(labels.isVisitingMember(branch, branch), false);
 });

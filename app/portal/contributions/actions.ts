@@ -122,6 +122,14 @@ function validateAmount(value: string) {
 
 function validateContributionForm(formData: FormData) {
   const memberId = getFormText(formData, "member_id") || null;
+  const contributorType = getFormText(formData, "contributor_type");
+  const visitorName = getFormText(formData, "visitor_name") || null;
+  if (!['member', 'visitor', 'anonymous'].includes(contributorType) ||
+      (contributorType === 'member' && (!memberId || visitorName)) ||
+      (contributorType === 'visitor' && (memberId || !visitorName || visitorName.length > 160)) ||
+      (contributorType === 'anonymous' && (memberId || visitorName))) {
+    throw new ContributionValidationError("Select a valid contributor: Member requires a member; Visitor requires a name of 1-160 characters; Anonymous has no identity.");
+  }
   const serviceId = getFormText(formData, "service_id") || null;
   const churchBranchId = getFormText(
     formData,
@@ -167,6 +175,8 @@ function validateContributionForm(formData: FormData) {
   }
 
   return {
+    contributor_type: contributorType,
+    visitor_name: visitorName,
     member_id: memberId,
     service_id: serviceId,
     church_branch_id: churchBranchId,
@@ -178,10 +188,9 @@ function validateContributionForm(formData: FormData) {
   };
 }
 
-async function validateMemberForBranch(
+async function validateContributorMember(
   admin: ReturnType<typeof createAdminClient>,
   memberId: string | null,
-  branchId: string,
 ) {
   if (!memberId) return;
 
@@ -198,12 +207,6 @@ async function validateMemberForBranch(
   if (!data) {
     throw new ContributionValidationError(
       "The selected member could not be found.",
-    );
-  }
-
-  if (data.church_branch_id !== branchId) {
-    throw new ContributionValidationError(
-      "The selected member does not belong to the selected branch.",
     );
   }
 
@@ -263,10 +266,9 @@ export async function createContribution(
       access,
       payload.church_branch_id,
     );
-    await validateMemberForBranch(
+    await validateContributorMember(
       admin,
       payload.member_id,
-      payload.church_branch_id,
     );
     await validateServiceForBranch(
       admin,
@@ -326,7 +328,7 @@ export async function updateContribution(
     const payload = validateContributionForm(formData);
     const { data: existing, error: existingError } = await admin
       .from("financial_contributions")
-      .select("id, member_id, service_id, church_branch_id, recorded_by")
+      .select("id, member_id, contributor_type, visitor_name, service_id, church_branch_id, recorded_by")
       .eq("id", contributionId)
       .maybeSingle();
 
@@ -355,12 +357,14 @@ export async function updateContribution(
     if (addingMember || addingService) {
       await assertActiveServiceBranch(admin, access, existing.church_branch_id);
     }
-    if (payload.member_id !== existing.member_id) await validateMemberForBranch(admin, payload.member_id, existing.church_branch_id);
+    if (payload.member_id !== existing.member_id) await validateContributorMember(admin, payload.member_id);
     if (payload.service_id !== existing.service_id) await validateServiceForBranch(admin, payload.service_id, existing.church_branch_id);
 
     let query = admin
       .from("financial_contributions")
       .update({
+        contributor_type: payload.contributor_type,
+        visitor_name: payload.visitor_name,
         member_id: payload.member_id,
         service_id: payload.service_id,
         contribution_type: payload.contribution_type,
@@ -373,6 +377,8 @@ export async function updateContribution(
         recorded_by: existing.recorded_by ?? access.user.id,
       })
       .eq("id", contributionId).eq("church_branch_id", existing.church_branch_id);
+    query = query.eq("contributor_type", existing.contributor_type);
+    query = existing.visitor_name ? query.eq("visitor_name", existing.visitor_name) : query.is("visitor_name", null);
     query = existing.member_id ? query.eq("member_id", existing.member_id) : query.is("member_id", null);
     query = existing.service_id ? query.eq("service_id", existing.service_id) : query.is("service_id", null);
     const { data: saved, error } = await query.select("id").maybeSingle();

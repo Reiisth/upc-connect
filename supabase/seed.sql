@@ -267,13 +267,13 @@ WITH contributions(id,member_no,branch_no,service_no,days_ago,kind,amount,paymen
  ('c1000000-0000-4000-8000-000000000019'::uuid,25,2,4,29,'other',90.00,'cash','Transport fund'),
  ('c1000000-0000-4000-8000-000000000020'::uuid,26,2,5,36,'love_offering',420.00,'bank_transfer','Offering')
 )
-INSERT INTO public.financial_contributions (id,member_id,service_id,church_branch_id,contribution_type,amount,contribution_date,payment_method,notes)
-SELECT c.id,CASE WHEN c.member_no IS NULL THEN NULL ELSE ('a0000000-0000-4000-8000-'||lpad(c.member_no::text,12,'0'))::uuid END,
+INSERT INTO public.financial_contributions (id,contributor_type,member_id,service_id,church_branch_id,contribution_type,amount,contribution_date,payment_method,notes)
+SELECT c.id,CASE WHEN c.member_no IS NULL THEN 'anonymous' ELSE 'member' END,CASE WHEN c.member_no IS NULL THEN NULL ELSE ('a0000000-0000-4000-8000-'||lpad(c.member_no::text,12,'0'))::uuid END,
        CASE WHEN c.branch_no=1 THEN ('e1000000-0000-4000-8000-'||lpad(c.service_no::text,12,'0'))::uuid ELSE ('e2000000-0000-4000-8000-'||lpad(c.service_no::text,12,'0'))::uuid END,
        CASE WHEN c.branch_no=1 THEN 'b0000000-0000-4000-8000-000000000001'::uuid ELSE 'b0000000-0000-4000-8000-000000000002'::uuid END,
        c.kind,c.amount,d.today-c.days_ago,c.payment,c.notes
 FROM contributions c CROSS JOIN _upc_demo_dates d
-ON CONFLICT (id) DO UPDATE SET member_id=EXCLUDED.member_id,service_id=EXCLUDED.service_id,
+ON CONFLICT (id) DO UPDATE SET contributor_type=EXCLUDED.contributor_type,visitor_name=NULL,member_id=EXCLUDED.member_id,service_id=EXCLUDED.service_id,
  church_branch_id=EXCLUDED.church_branch_id,contribution_type=EXCLUDED.contribution_type,
  amount=EXCLUDED.amount,contribution_date=EXCLUDED.contribution_date,payment_method=EXCLUDED.payment_method,notes=EXCLUDED.notes;
 
@@ -293,5 +293,23 @@ VALUES
 ON CONFLICT (id) DO UPDATE SET member_id=EXCLUDED.member_id,baptism_type=EXCLUDED.baptism_type,
  baptism_date=EXCLUDED.baptism_date,church_branch_id=EXCLUDED.church_branch_id,
  officiated_by=EXCLUDED.officiated_by,location=EXCLUDED.location,notes=EXCLUDED.notes;
+
+
+-- Phase 2L: Lino attends North and South in the same eligible week; Benjie visits North.
+INSERT INTO public.attendance_records(id,service_id,member_id,attendance_status,method) VALUES
+ ('f1000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000003','late','manual'),
+ ('f1000000-0000-4000-8000-000000000002','e1000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000018','present','manual'),
+ ('f1000000-0000-4000-8000-000000000003','e1000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000003','present','manual')
+ON CONFLICT(id) DO UPDATE SET service_id=EXCLUDED.service_id,member_id=EXCLUDED.member_id,
+ attendance_status=EXCLUDED.attendance_status,method=EXCLUDED.method;
+
+-- Receiving branch, not member home branch, owns all three gifts.
+INSERT INTO public.financial_contributions(id,contributor_type,member_id,visitor_name,service_id,church_branch_id,amount,contribution_type,contribution_date,payment_method,notes) VALUES
+ ('c3000000-0000-4000-8000-000000000001','member','a0000000-0000-4000-8000-000000000003',NULL,'e2000000-0000-4000-8000-000000000001','b0000000-0000-4000-8000-000000000002',500.00,'tithe',(SELECT today FROM _upc_demo_dates)-7,'cash','North Member gives at South'),
+ ('c3000000-0000-4000-8000-000000000002','member','a0000000-0000-4000-8000-000000000018',NULL,'e1000000-0000-4000-8000-000000000001','b0000000-0000-4000-8000-000000000001',250.00,'love_offering',(SELECT today FROM _upc_demo_dates)-7,'gcash','South Member gives at North'),
+ ('c3000000-0000-4000-8000-000000000003','visitor',NULL,'Maria Santos',NULL,'b0000000-0000-4000-8000-000000000002',300.00,'love_offering',(SELECT today FROM _upc_demo_dates)-7,'cash','Named non-member Visitor')
+ON CONFLICT(id) DO UPDATE SET contributor_type=EXCLUDED.contributor_type,member_id=EXCLUDED.member_id,
+ visitor_name=EXCLUDED.visitor_name,service_id=EXCLUDED.service_id,church_branch_id=EXCLUDED.church_branch_id,
+ amount=EXCLUDED.amount,contribution_type=EXCLUDED.contribution_type,contribution_date=EXCLUDED.contribution_date,payment_method=EXCLUDED.payment_method,notes=EXCLUDED.notes;
 
 COMMIT;

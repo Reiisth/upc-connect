@@ -119,7 +119,7 @@ export function calculateWeeklyInactivity(input: {
     if (attendance.status !== "present" && attendance.status !== "late") continue;
     const member = members.get(attendance.memberId);
     const service = services.get(attendance.serviceId);
-    if (!member || !service || service.branchId !== member.branchId) continue;
+    if (!member || !service) continue;
     const start = member.registrationDate ? dateNumber(member.registrationDate) : NaN;
     const date = dateNumber(service.serviceDate);
     if (!Number.isFinite(start) || date < start) continue;

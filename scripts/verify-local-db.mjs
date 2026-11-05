@@ -42,7 +42,7 @@ for (const [table, expected] of Object.entries(snapshot)) {
   if (!['departments', 'service_types'].includes(table)) assert.equal(actual.length, expected.length);
 }
 console.log('PASS all captured reference rows, timestamps and exact 70-assignment matrix');
-const counts = { church_branches: 2, members: 30, services: 19, attendance_records: 44, member_follow_ups: 10, financial_contributions: 20, baptism_records: 10, departments: 12, service_types: 6 };
+const counts = { church_branches: 2, members: 30, services: 19, attendance_records: 47, member_follow_ups: 10, financial_contributions: 23, baptism_records: 10, departments: 12, service_types: 6 };
 const rows = {};
 for (const [table, count] of Object.entries(counts)) { rows[table] = await all(table); assert.equal(rows[table].length, count, table); }
 console.log('PASS fixture counts:', counts);
@@ -55,7 +55,7 @@ const summaries = calculateWeeklyInactivity({
 });
 const summary = name => summaries.find(s => s.memberId === rows.members.find(m => m.first_name === name).id);
 assert.equal(summary('Mila').needsFollowUp, false);
-assert.equal(summary('Lino').consecutiveAbsentWeeks, 2);
+assert.equal(summary('Lino').consecutiveAbsentWeeks, 0);
 assert.equal(summary('Nena').consecutiveAbsentWeeks, 3);
 assert.equal(summary('Nena').needsFollowUp, true);
 assert.equal(summary('Amihan').consecutiveAbsentWeeks, 4);
@@ -72,8 +72,18 @@ console.log('PASS live seeded inactivity, registration boundaries, thresholds an
 const rpc = checked(await admin.rpc('get_reports_analytics', { p_branch_ids: rows.church_branches.map(b => b.id), p_from: '2020-01-01', p_to: '2030-12-31', p_grouping: 'week', p_as_of: manilaDate(new Date()) }));
 assert.equal(rpc.version, 1);
 assert.equal(rpc.followUps.find(r => r.branchId === null).total, 10);
-assert.equal(rpc.contributions.find(r => r.branchId === null).count, 20);
-console.log('PASS Reports RPC actual aggregates');
+assert.equal(rpc.contributions.find(r => r.branchId === null).count, 23);
+for (const branch of rows.church_branches) {
+  const exactTotal = sql(`SELECT round(sum(amount),2)::text FROM public.financial_contributions WHERE church_branch_id='${branch.id}';`);
+  assert.equal(rpc.contributions.find(r => r.branchId === branch.id).totalAmount, exactTotal);
+  const physical = Number(sql(`SELECT count(*) FROM public.attendance_records a JOIN public.services s ON s.id=a.service_id WHERE s.church_branch_id='${branch.id}' AND s.status='completed' AND a.attendance_status IN ('present','late');`));
+  assert.equal(rpc.attendance.find(r => r.branchId === branch.id).physicalCheckIns, physical);
+}
+assert.deepEqual(Object.fromEntries(['member','visitor','anonymous'].map(type => [type, rows.financial_contributions.filter(r => r.contributor_type === type).length])), { member:21, visitor:1, anonymous:1 });
+const visitingGift = rows.financial_contributions.find(r => r.id === 'c3000000-0000-4000-8000-000000000001');
+assert.notEqual(visitingGift.church_branch_id, rows.members.find(m => m.id === visitingGift.member_id).church_branch_id);
+assert.equal(summary('Benjie').consecutiveAbsentWeeks, 0);
+console.log('PASS Reports totals use receiving/service branches, all contributor categories distinct, cross-branch inactivity reset');
 const users = {};
 for (const [label, role, branches] of accounts) {
   const client = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, options);

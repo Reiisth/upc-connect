@@ -7,9 +7,9 @@ does not prove where the member belonged when a record was created.
 ## Contributions
 
 Creation requires an active account, `contributions.create`, and an assigned active
-branch. A selected member must exist, be non-archived, and currently belong to that
+branch. A selected member must exist, be non-archived, from any home
 branch. The module previously allowed stored-inactive non-archived members; that
-rule is retained. Member links remain optional for anonymous contributions.
+rule is retained. Explicit contributor categories now distinguish Member, Visitor and Anonymous; see Phase 2L.
 
 A new optional Service link must belong to the selected branch and must not be
 cancelled. Scheduled/ongoing/completed services retain their existing eligibility.
@@ -23,7 +23,7 @@ unchanged `service_id` is preserved, including a cancelled historical service.
 | Field | Normal edit contract |
 | --- | --- |
 | `church_branch_id` | Immutable; server rejects a change even if both branches are in scope. The form shows a fixed branch. |
-| `member_id` | Retain the historical ID, select a currently eligible same-branch replacement, or explicitly remove the optional link for anonymous attribution. |
+| `member_id` | Retain the historical ID, select a currently eligible replacement from any home branch, or explicitly remove the optional link for anonymous attribution. |
 | `service_id` | Retain the historical ID, select a currently valid same-branch service, or explicitly remove the optional link. |
 | Amount, accounting date, type, payment method, notes | Correctable with existing validation. Service date never replaces accounting date. |
 | `recorded_by` | Original recorder retained; the existing legacy-NULL fallback to the authenticated actor remains. |
@@ -82,8 +82,8 @@ the historical branch exists and is in scope without requiring it to be active.
 New-record forms and new links continue using the existing active-branch helper.
 No RLS policies were broadened and no new permissions or role-name gates were added.
 
-Contribution edit options contain current candidates only for the record's branch,
-plus its explicitly retained historical member/service. Transferred or archived
+Contribution edit options contain minimal non-archived candidates across home branches,
+plus its explicitly retained historical member/service. Archived
 members remain selectable only as that record's original link; other archived
 members are excluded from new/replacement candidates. Their current foreign branch
 assignment is not sent as part of the historical fallback option.
@@ -166,3 +166,13 @@ built-in staff name. PostgreSQL tests use a disposable database when configured.
 PostgreSQL 18 ran in an isolated temporary local cluster on port 56341. Its
 disposable databases were dropped by the test suites and the cluster was stopped
 after validation. No production data, live schema, or RLS policy was changed.
+
+## Phase 2L extension
+
+Contributor category can be corrected among Member, Visitor and Anonymous with
+contributions.update and stored receiving-branch scope. New Member links require
+a non-archived Member from any home branch; Visitor requires a trimmed 1-160
+character historical name; Anonymous carries neither identity field. Existing
+historical Member links remain valid after transfer/archive/status changes.
+Branch, recorder, Service integrity and exact NUMERIC rules above remain intact.
+Inactivity now counts physical participation anywhere during eligible home weeks.

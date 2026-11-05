@@ -26,6 +26,7 @@ import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import {
   CONTRIBUTION_TYPES,
+  contributorName,
   formatContributionAmount,
   formatContributionType,
   formatPaymentMethod,
@@ -66,10 +67,10 @@ export default function ContributionsTable({
 
     return [...records]
       .filter((record) => {
-        const contributorName = record.memberName ?? "Anonymous";
+        const name = contributorName(record);
         const matchesSearch =
           !normalizedSearch ||
-          contributorName.toLowerCase().includes(normalizedSearch);
+          name.toLowerCase().includes(normalizedSearch);
         const matchesBranch =
           branchFilter === "all" ||
           record.churchBranchId === branchFilter;
@@ -130,9 +131,9 @@ export default function ContributionsTable({
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by member name..."
+            placeholder="Search by contributor name..."
             className="pl-9"
-            aria-label="Search contributions by member name"
+            aria-label="Search contributions by contributor name"
           />
         </div>
 
@@ -211,9 +212,10 @@ export default function ContributionsTable({
 
                     <div className="min-w-0">
                       <p className="font-medium text-slate-900">
-                        {record.memberName ?? "Anonymous"}
+                        {contributorName(record)}
                       </p>
 
+                      <p className="text-xs text-slate-500">{formatContributionType(record.contributorType)}{record.contributorType === "member" && record.memberHomeBranchName ? ` · ${record.memberHomeBranchName}` : ""}</p>
                       {record.notes && (
                         <p className="mt-1 max-w-xs truncate text-xs text-slate-500">
                           {record.notes}

@@ -2,8 +2,8 @@
 
 ## Current eligibility versus recorded history
 
-New manual/QR attendance requires an active, non-archived member currently in the
-service branch. Historical attendance is anchored to the recorded service/member
+New manual/QR attendance requires an active, non-archived member from any home
+branch. Historical attendance is anchored to the recorded service/member
 pair, not today's member roster. The detail loader reads all service records,
 then merges their member identities with the current eligible roster. A person
 appears once. Transfers, archive and stored member-status changes cannot remove
@@ -67,8 +67,9 @@ No attendance timestamp is rewritten by editing a service.
 
 Reports already aggregates physical attendance from stored service/member pairs,
 with no current member branch/status/archive filter. Its SQL and DTO definitions
-are unchanged. Inactivity's weekly algorithm is unchanged: completed service
-dates, current member branch and first_attendance_date remain authoritative.
+are unchanged. Inactivity uses completed home-branch service weeks and registration time
+(`created_at`) for eligibility, with Present/Late attendance at any branch
+counting as participation during those weeks.
 There is still no transfer-effective-date or historical eligibility roster.
 Restoring historical visibility does not invent either.
 
@@ -88,3 +89,12 @@ Before Phase 1D, decide whether a dedicated audited workflow should support
 missed attendance insertion after completion, reopening/cancelling completed
 services, and correction of cancelled-service anomalies. Normal actions currently
 block these operations. This phase adds no schema or RLS changes.
+
+## Phase 2L lookup
+
+Recording requires host Service scope and attendance.record, without home-branch
+access. The focused church-wide lookup returns eligible identity fields only
+(ID, name, home branch, eligibility flags), capped at 30 matches with at least
+two search characters. It grants no members.view access. Search results extend
+the manual selector, not the host roster's no-record denominator. Visiting Member
+is derived from current home branch versus Service branch and is never stored.

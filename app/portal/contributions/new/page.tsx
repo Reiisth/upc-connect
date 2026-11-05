@@ -37,7 +37,7 @@ async function NewContributionContent() {
         eyebrow="Financial Operations"
         eyebrowIcon={<HandCoins className="h-4 w-4" />}
         title="New Contribution"
-        description="Record a member-linked or anonymous contribution for an assigned active branch."
+        description="Record a Member, Visitor, or Anonymous contribution for an assigned active branch."
       />
 
       {options.branches.length === 0 ? (

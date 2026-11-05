@@ -18,6 +18,8 @@ import type {
 type ContributionRow = {
   id: string;
   member_id: string | null;
+  contributor_type: ContributionRecord["contributorType"];
+  visitor_name: string | null;
   service_id: string | null;
   church_branch_id: string;
   contribution_type: string;
@@ -35,6 +37,7 @@ type MemberRow = {
   last_name: string | null;
   church_branch_id: string | null;
   is_archived: boolean;
+  church_branches?: { name: string } | null;
 };
 
 type ServiceRow = {
@@ -53,6 +56,8 @@ type ProfileRow = {
 export type ContributionEditRecord = {
   id: string;
   memberId: string | null;
+  contributorType: ContributionRecord["contributorType"];
+  visitorName: string | null;
   serviceId: string | null;
   churchBranchId: string;
   contributionType: ContributionRecord["contributionType"];
@@ -85,9 +90,8 @@ export async function loadContributionOptions(
     readAllPages((from, to) => admin
       .from("members")
       .select(
-        "id, first_name, middle_name, last_name, church_branch_id, is_archived",
+        "id, first_name, middle_name, last_name, church_branch_id, is_archived, church_branches(name)",
       )
-      .in("church_branch_id", branchIds)
       .eq("is_archived", false)
       .order("last_name")
       .order("first_name").range(from, to)),
@@ -111,6 +115,7 @@ export async function loadContributionOptions(
     members: members.map((member) => ({
       id: member.id,
       fullName: formatMemberName(member),
+      homeBranchName: (member.church_branches as unknown as { name: string } | null)?.name ?? "Unassigned home branch",
       churchBranchId: member.church_branch_id ?? "",
       isArchived: member.is_archived,
     })),
@@ -137,7 +142,7 @@ export async function loadContributionRecords(
   const rows = await readAllPages((from, to) => admin
     .from("financial_contributions")
     .select(
-      "id, member_id, service_id, church_branch_id, contribution_type, amount, contribution_date, payment_method, recorded_by, notes",
+      "id, member_id, contributor_type, visitor_name, service_id, church_branch_id, contribution_type, amount, contribution_date, payment_method, recorded_by, notes",
     )
     .in("church_branch_id", branchIds)
     .order("contribution_date", { ascending: false }).order("id")
@@ -170,7 +175,7 @@ export async function loadContributionRecords(
         ? admin
           .from("members")
           .select(
-            "id, first_name, middle_name, last_name, church_branch_id, is_archived",
+            "id, first_name, middle_name, last_name, church_branch_id, is_archived, church_branches(name)",
           )
           .in("id", memberIds)
         : Promise.resolve({ data: [], error: null }),
@@ -227,6 +232,9 @@ export async function loadContributionRecords(
   return rows.map((row) => ({
     id: row.id,
     memberId: row.member_id,
+    contributorType: row.contributor_type,
+    visitorName: row.visitor_name,
+    memberHomeBranchName: ((memberResult.data ?? []) as MemberRow[]).find(m => m.id === row.member_id)?.church_branches?.name,
     memberName: row.member_id
       ? members.get(row.member_id) ?? "Unknown member"
       : null,
@@ -261,7 +269,7 @@ export async function loadContributionEditOptions(
     const { data, error } = await admin.from("members").select("id, first_name, middle_name, last_name, is_archived")
       .eq("id", contribution.memberId).maybeSingle();
     if (error) throw new Error("Unable to load the historical contributor.");
-    options.members.push({ id: contribution.memberId, fullName: data ? formatMemberName(data) : "Unknown member",
+    options.members.push({ id: contribution.memberId, homeBranchName: "Historical home branch", fullName: data ? formatMemberName(data) : "Unknown member",
       churchBranchId: "", isArchived: data?.is_archived ?? false });
   }
   if (contribution.serviceId && !options.services.some((service) => service.id === contribution.serviceId)) {
@@ -288,7 +296,7 @@ export async function loadContributionForEdit(
   const { data, error } = await admin
     .from("financial_contributions")
     .select(
-      "id, member_id, service_id, church_branch_id, contribution_type, amount, contribution_date, payment_method, recorded_by, notes",
+      "id, member_id, contributor_type, visitor_name, service_id, church_branch_id, contribution_type, amount, contribution_date, payment_method, recorded_by, notes",
     )
     .eq("id", contributionId)
     .in("church_branch_id", branchIds)
@@ -307,6 +315,8 @@ export async function loadContributionForEdit(
   return {
     id: row.id,
     memberId: row.member_id,
+    contributorType: row.contributor_type,
+    visitorName: row.visitor_name,
     serviceId: row.service_id,
     churchBranchId: row.church_branch_id,
     contributionType: row.contribution_type as ContributionRecord["contributionType"],

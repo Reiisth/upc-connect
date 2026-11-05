@@ -78,6 +78,8 @@ async function EditContributionContent({
         submitLabel="Save Changes"
         values={{
           memberId: contribution.memberId,
+          contributorType: contribution.contributorType,
+          visitorName: contribution.visitorName,
           serviceId: contribution.serviceId,
           churchBranchId: contribution.churchBranchId,
           contributionType: contribution.contributionType,

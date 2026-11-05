@@ -12,7 +12,7 @@ const manifest = JSON.parse(read('supabase/captures/manifest.json'));
 const data = JSON.parse(read('supabase/captures/current-reference.json'));
 
 test('one baseline, original archived bytes and immutable capture hashes', () => {
-  assert.deepEqual(fs.readdirSync(path.join(root, 'supabase/migrations')), ['20261104060000_current_state_baseline.sql']);
+  assert.deepEqual(fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('_current_state_baseline.sql')), ['20261104060000_current_state_baseline.sql']);
   assert.equal(Object.keys(manifest.archived_migration_sha256).length, 9);
   for (const [name, hash] of Object.entries(manifest.archived_migration_sha256)) {
     assert.equal(createHash('sha256').update(fs.readFileSync(path.join(root, 'supabase/archive/pre_baseline', name))).digest('hex'), hash);

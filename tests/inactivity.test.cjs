@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- CommonJS regression harness. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { calculateWeeklyInactivity, manilaDate, manilaDateFromTimestamp } = require('../lib/inactivity/calculate.ts');
@@ -79,9 +80,9 @@ test('late attends, excused does not; corrections immediately change derived sta
   assert.equal(corrected.needsFollowUp, false);
 });
 
-test('scheduled, ongoing, cancelled, future and other-branch attendance cannot qualify', () => {
+test('scheduled, ongoing, cancelled and future attendance cannot qualify', () => {
   const services = ['scheduled', 'ongoing', 'cancelled'].map((status) => service(status, '2026-10-19', 'a', status));
-  services.push(service('future', '2026-11-02'), service('other', '2026-10-19', 'b'));
+  services.push(service('future', '2026-11-02'), service('other', '2026-10-19', 'b', 'cancelled'));
   const result = run(services, services.map((s) => record(s.id)))[0];
   assert.equal(result.recentEligibleWeeks, 0);
   assert.equal(result.consecutiveAbsentWeeks, 0);
@@ -178,4 +179,27 @@ test('invalid configuration fails rather than silently producing an activity sta
   assert.throws(() => run([], [], { thresholds: new Map() }), /threshold/);
   assert.throws(() => run([], [], { today: '2026-02-30' }), /reporting date/);
   assert.throws(() => run([], [], { recentWeekLimit: 0 }), /week limit/);
+});
+
+for (const status of ['present', 'late']) {
+  test(`cross-branch ${status} prevents home-week absence and multiple branches count once`, () => {
+    const services = [service('home', '2026-10-19'), service('away', '2026-10-20', 'b')];
+    const atOther = run(services, [record('away', status)])[0];
+    assert.equal(atOther.recentEligibleWeeks, 1);
+    assert.equal(atOther.recentAttendedWeeks, 1);
+    assert.equal(atOther.consecutiveAbsentWeeks, 0);
+    const both = run(services, [record('away', status), record('home')])[0];
+    assert.equal(both.recentAttendedWeeks, 1);
+    assert.equal(both.inactivityThresholdWeeks, 3);
+    assert.equal(run(services, [record('away', 'excused')])[0].consecutiveAbsentWeeks, 1);
+    assert.equal(run(services)[0].consecutiveAbsentWeeks, 1);
+  });
+}
+test('foreign-only service weeks do not create home eligibility; registration rules still apply', () => {
+  const services = [service('foreign', '2026-10-19', 'b')];
+  assert.equal(run(services, [record('foreign')])[0].recentEligibleWeeks, 0);
+  const prior = run([service('home', '2026-10-19'), ...services], [record('foreign')], {
+    members: [{ id:'m', branchId:'a', registrationDate:'2026-10-21' }],
+  })[0];
+  assert.equal(prior.recentEligibleWeeks, 0);
 });

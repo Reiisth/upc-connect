@@ -1,3 +1,6 @@
+export const CONTRIBUTOR_TYPES = ["member", "visitor", "anonymous"] as const;
+export type ContributorType = (typeof CONTRIBUTOR_TYPES)[number];
+
 export const CONTRIBUTION_TYPES = [
   "tithe",
   "love_offering",
@@ -27,6 +30,7 @@ export type ContributionBranch = {
 export type ContributionMemberOption = {
   id: string;
   fullName: string;
+  homeBranchName?: string;
   churchBranchId: string;
   isArchived: boolean;
 };
@@ -41,6 +45,9 @@ export type ContributionServiceOption = {
 
 export type ContributionRecord = {
   id: string;
+  contributorType: ContributorType;
+  visitorName: string | null;
+  memberHomeBranchName?: string;
   memberId: string | null;
   memberName: string | null;
   serviceId: string | null;
@@ -77,6 +84,8 @@ export const initialContributionActionState: ContributionActionState = {
 };
 
 export type ContributionFormValues = {
+  contributorType: ContributorType;
+  visitorName: string | null;
   memberId: string | null;
   serviceId: string | null;
   churchBranchId: string;
@@ -195,4 +204,9 @@ export function getContributionSummary(
       loveOfferingTotalCents: 0,
     },
   );
+}
+
+export function contributorName(record: Pick<ContributionRecord, "contributorType" | "memberName" | "visitorName">) {
+  return record.contributorType === "visitor" ? record.visitorName ?? "Unknown visitor"
+    : record.contributorType === "anonymous" ? "Anonymous" : record.memberName ?? "Unknown member";
 }

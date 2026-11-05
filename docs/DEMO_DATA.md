@@ -18,8 +18,8 @@ locally by default; the fixed wrappers accept no remote-target arguments.
 Reference bootstrap runs before demo seed and preserves the captured current
 RBAC matrix. It does not restore historical migration defaults.
 
-The seed creates **2 branches, 30 members, 19 services, 44 attendance records,
-10 follow-ups, 20 contributions, 10 baptisms, 8 demo departments, and 1 inactive
+The seed creates **2 branches, 30 members, 19 services, 47 attendance records,
+10 follow-ups, 23 contributions, 10 baptisms, 8 demo departments, and 1 inactive
 historical service type**. There are also 4 captured departments and 5 captured
 service types, giving totals of 12 and 6 respectively. The seed itself creates
 no Auth users or grants.
@@ -58,7 +58,7 @@ The weekly inactivity calculator uses Manila calendar dates, counts only prior M
 | --- | --- | --- |
 | Bagong A. Dela Cruz | Recently registered, no attendance | Monitoring; no inherited absences |
 | Mila B. Reyes | First Attendance Date years ago, UPC Connect registration midweek | Only post-registration eligible weeks count; remains below threshold |
-| Lino C. Santos | North branch, latest two weeks absent, attended an earlier week | Monitoring; below 3-week threshold |
+| Lino C. Santos | North member attends North and South in latest finished week | Monitoring; zero-week streak; one attended week |
 | Nena D. Garcia | North, exactly three latest eligible absences | Needs Follow-up; Member Status remains Active |
 | Ramil E. Mendoza | North, more than three consecutive absences | Needs Follow-up |
 | Celia F. Navarro | Flagged with open follow-up history | Needs Follow-up; follow-up does not change Member Status |
@@ -73,7 +73,7 @@ The weekly inactivity calculator uses Manila calendar dates, counts only prior M
 | Belen O. Salazar | Archived with completed-service attendance history; assigned to inactive department | Archive state is independent and history remains linked |
 | Isko P. Manalo | Archived with attendance and follow-up history | Historical records remain linked |
 | Amihan Q. Dizon | South branch, four latest eligible weeks absent | Needs Follow-up at the 4-week threshold |
-| Benjie R. Lacson | South branch, attendance in the fifth-oldest week | Same four-week absence streak as Amihan; threshold boundary comparison |
+| Benjie R. Lacson | South member attends North in latest finished week | Monitoring; zero-week streak while Amihan still reaches the South threshold |
 | Nardo D. Valdez | Inactive and archived with earlier attendance/follow-up | Historical data remains; no status is derived from attendance |
 
 The cancelled-only week is six weeks back and has no completed service, so the inactivity calculator must skip it. Each branch also has an older completed service using the inactive `UPC Demo Legacy Gathering` type; that row remains valid for historical display. This is a development reference row with a namespaced key and does not alter the managed production types.
@@ -109,3 +109,23 @@ See [LOCAL_SUPABASE_VALIDATION.md](LOCAL_SUPABASE_VALIDATION.md) for the actual
 clean rebuild, Auth, fixture, authorization and application checks performed.
 Raw fixture SQL has no reliable way to identify its host; always use the fixed
 local wrappers, never a hosted SQL editor or hosted connection.
+
+## Phase 2L cross-branch scenarios
+
+| Scenario | Fixture and expected result |
+| --- | --- |
+| A: North Member attends South | Lino Santos, latest finished South service: Late; recorded under South Service. |
+| B: South Member attends North | Benjie Lacson, latest finished North service: Present; recorded under North Service. |
+| C: Cross-branch attendance prevents absence | Benjie has zero consecutive absent weeks, despite missing South. Home branch eligibility and four-week threshold remain South's. |
+| D: Multiple branches in one week | Lino also attends North in the same week; this is one attended monitoring week, with two legitimate service check-ins. |
+| E: North Member gives at South | Lino gives 500.00 tithe; South receives the amount. |
+| F: South Member gives at North | Benjie gives 250.00 love offering; North receives the amount. |
+| G: Visitor contribution | Maria Santos gives 300.00 at South; name is searchable and stored on the contribution; no Member created. |
+| H: Anonymous contribution | Existing 75.00 North gift has no Member or visitor name. |
+| I: Host Service link | Both cross-branch Member gifts link to their receiving branch's latest finished Service. |
+| J: Transfer preservation | Covered by historical correction/transfer regression tests rather than permanently transferring these fixture Members. Original Service and receiving branch remain unchanged. |
+
+The 23 contributions contain 21 Member, one Visitor and one Anonymous record.
+New attendance still excludes archived and stored-inactive Members; new Member
+contributions exclude archived Members but allow stored-inactive Members.
+See [PHASE_2L_CROSS_BRANCH.md](PHASE_2L_CROSS_BRANCH.md) for implementation and validation.

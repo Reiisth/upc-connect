@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports, @next/next/no-assign-module-variable -- CommonJS regression harness. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
@@ -21,10 +22,10 @@ function member(id, overrides = {}) {
   };
 }
 
-function inactivityServer(members, { threshold = 3, attendance = [], branchIds = ['a'], permissionKeys = ['inactivity.view'] } = {}) {
+function inactivityServer(members, { threshold = 3, attendance = [], branchIds = ['a'], permissionKeys = ['inactivity.view'], extraServices = [] } = {}) {
   const services = ['2026-10-05', '2026-10-12', '2026-10-19'].map((date, i) => ({
     id: `s${i}`, church_branch_id: 'a', service_date: date, status: 'completed',
-  }));
+  })).concat(extraServices);
   const tables = {
     church_branches: [{ id: 'a', name: 'Main Church', code: 'MAIN', is_active: true, inactivity_threshold_weeks: threshold }],
     members, services,
@@ -49,6 +50,7 @@ function inactivityServer(members, { threshold = 3, attendance = [], branchIds =
 
   const imports = {
     'server-only': {},
+    '@/lib/inactivity/participation': require('./helpers/load-typescript.cjs').loadTypeScript('lib/inactivity/participation.ts', { 'server-only': {} }),
     '@/lib/branch-access': { getUserBranchScope: async () => ({ branchIds, isSystemAdmin: false }) },
     '@/lib/permissions-server': {
       requirePermission: async (permission) => {
@@ -163,4 +165,22 @@ test('branch options respect scope and explicit permission capabilities', async 
   const noAccess = await inactivityServer([], { branchIds: ['b'] }).getInactivityBranchOptions();
   assert.equal(noAccess.branches.length, 0);
   await assert.rejects(inactivityServer([], { permissionKeys: [] }).getInactivityBranchOptions(), /Access denied/);
+});
+
+test('home-only inactivity viewer counts foreign physical participation without reading a foreign roster', async () => {
+  const members = [member('home'), member('foreign-person', { church_branch_id: 'b' })];
+  const api = loader(members, {
+    branchIds: ['a'],
+    extraServices: [{ id: 'away', church_branch_id: 'b', service_date: '2026-10-20', status: 'completed' }],
+    attendance: [
+      { member_id:'home', service_id:'away', attendance_status:'late' },
+      { member_id:'foreign-person', service_id:'away', attendance_status:'present' },
+    ],
+  });
+  const results = await api('a');
+  assert.equal(results.length, 1);
+  assert.equal(results[0].memberId, 'home');
+  assert.equal(results[0].consecutiveAbsentWeeks, 0);
+  assert.equal(results[0].recentEligibleWeeks, 3);
+  assert.equal(results[0].recentAttendedWeeks, 1);
 });
