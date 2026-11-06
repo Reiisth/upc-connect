@@ -1,5 +1,9 @@
 # Compact operational module summaries
 
+Attendance has since been revised: see [Attendance dashboard filters](ATTENDANCE_DASHBOARD_FILTERS.md)
+for its current cards, scoped server queries and automatic chart modes. The
+Attendance descriptions below document the earlier implementation.
+
 Implemented locally on 2026-11-06 for Attendance, Baptisms and Contributions.
 
 | Page | KPIs | Primary chart | Secondary chart | Period |

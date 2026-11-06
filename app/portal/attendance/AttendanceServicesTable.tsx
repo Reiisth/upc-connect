@@ -1,5 +1,6 @@
 "use client";
-import ModuleMiniDashboard, { type ModuleSummary } from "@/components/module-summary";
+import AttendanceMiniDashboard from "./AttendanceMiniDashboard";
+import type { AttendanceDashboardData } from "@/lib/attendance-dashboard-model";
 
 import { serviceTimestamp } from "@/lib/manila-time";
 
@@ -37,7 +38,7 @@ import {
 } from "../services/types";
 
 type AttendanceServicesTableProps = {
-  dashboard?: ModuleSummary;
+  dashboard?: AttendanceDashboardData;
   canEditServices?: boolean;
   services: ServiceRecord[];
   branches: ServiceBranch[];
@@ -122,7 +123,7 @@ export default function AttendanceServicesTable({
 
   return (
     <div className="space-y-4">
-      {dashboard && <ModuleMiniDashboard data={dashboard} branchId={branchFilter} branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
+      {dashboard && <AttendanceMiniDashboard initial={dashboard} branches={branches} branchFilter={branchFilter} onBranchChange={setBranchFilter} />}
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -138,26 +139,14 @@ export default function AttendanceServicesTable({
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:flex">
-          <Select
-            value={branchFilter}
-            onChange={(event) => setBranchFilter(event.target.value)}
-            className="xl:w-44"
-            aria-label="Filter attendance by branch"
-          >
-            <option value="all">All branches</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </Select>
-
+          {!dashboard && <Select aria-label="Filter attendance by branch" value={branchFilter} onChange={event=>setBranchFilter(event.target.value)}><option value="all">All branches</option>{branches.map(branch=><option key={branch.id} value={branch.id}>{branch.name}</option>)}</Select>}
           <Input
             type="date"
             value={dateFilter}
             onChange={(event) => setDateFilter(event.target.value)}
             className="xl:w-40"
             aria-label="Filter attendance by service date"
+            title="Operational Service date only; independent of Dashboard Date"
           />
 
           {hasFilters && <ClearFiltersButton onClick={clearFilters} />}

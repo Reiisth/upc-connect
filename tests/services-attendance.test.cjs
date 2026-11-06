@@ -37,7 +37,7 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
   }
   class Query {
     constructor(table) { this.table = table; this.filters = []; this.write = null; this.bounds = null; this.maximum = null; }
-    select(columns) { this.columns = columns; return this; }
+    select(columns, options) { this.columns = columns; this.options=options; return this; }
     eq(key, value) { this.filters.push((row) => row[key] === value); return this; }
     in(key, values) { this.filters.push((row) => values.includes(row[key])); return this; }
     or(filter) {
@@ -45,8 +45,10 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
       const clauses = filter.split(',').map(part => part.split('.ilike.%'));
       this.filters.push(row => clauses.some(([key,pattern]) => String(row[key] ?? '').toLowerCase().includes(pattern.slice(0,-1).toLowerCase()))); return this;
     }
+    gte(key,value) {this.filters.push(row=>row[key]>=value);return this;}
+    lte(key,value) {this.filters.push(row=>row[key]<=value);return this;}
     order() { return this; }
-    limit(count) { this.maximum = count; return this; }
+    limit(count, options) { if(!options)this.maximum = count; return this; }
     range(from, to) { this.bounds = [from, to]; return this; }
     update(payload) { this.write = ['update', payload]; return this; }
     insert(payload) { this.write = ['insert', payload]; return this; }
@@ -56,6 +58,8 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
       if (failTable === this.table) return { data: null, error: { message: 'query failed' } };
       const source = db[this.table]; assert.ok(source, `Unexpected table ${this.table}`);
       let selected = source.filter((row) => this.filters.every((filter) => filter(row)));
+      if(this.columns?.includes("attendance_records!inner"))selected=selected.filter(row=>db.attendance_records.some(record=>record.service_id===row.id));
+      const count=this.options?.count?selected.length:undefined;
       if (this.write?.[0] === 'insert') {
         const payload = this.write[1];
         if (this.table === 'attendance_records') {
@@ -73,7 +77,7 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
       if (this.maximum !== null) selected = selected.slice(0, this.maximum);
       if (this.bounds) selected = selected.slice(this.bounds[0], this.bounds[1] + 1);
       const output = selected.map((row) => ({ ...row }));
-      return { data: single ? output[0] ?? null : output, error: null };
+      return { data: this.options?.head ? null : single ? output[0] ?? null : output, error: null, count };
     }
     maybeSingle() { return Promise.resolve(this.result(true)); }
     single() { return Promise.resolve(this.result(true)); }

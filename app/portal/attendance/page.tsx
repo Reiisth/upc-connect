@@ -1,7 +1,7 @@
 import { readAllPages } from "@/lib/supabase/read-all-pages";
 import { hasPermission } from "@/lib/permissions";
 import { effectiveStoredServiceStatus } from "@/app/portal/services/lifecycle";
-import { loadModuleSummary } from "@/lib/module-summary";
+import { loadAttendanceDashboard } from "@/lib/attendance-dashboard";
 import { Suspense } from "react";
 import {
   ClipboardCheck,
@@ -86,7 +86,7 @@ async function AttendanceContent() {
     branch: branchMap.get(service.church_branch_id) ?? null,
   }));
 
-  const dashboard = await loadModuleSummary(admin, "attendance", branchIds);
+  const dashboard = await loadAttendanceDashboard(admin, branches);
   return (
     <PageContainer>
       <PageHeader
