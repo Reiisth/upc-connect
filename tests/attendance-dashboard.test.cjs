@@ -94,3 +94,73 @@ test('large service scopes paginate metadata and batch SQL counts without downlo
  const result=await h.load('a','2026-10-30');assert.equal(result.qualifyingServices,505);assert.equal(result.byBranch[0].present,505);assert.equal(result.average,1);assert.equal(result.latest.present,1);
  assert.ok(h.calls.filter(call=>call.table==='attendance_records').every(call=>call.head));
 });
+
+test('effective authorized branch count drives date charts and Attendance palette is explicit',()=>{
+ const {attendanceChartMode,ATTENDANCE_COLORS}=loadTypeScript('lib/attendance-dashboard-model.ts');
+ assert.equal(attendanceChartMode('2026-11-01',null,1),'doughnut');assert.equal(attendanceChartMode('2026-11-01',null,2),'stacked');assert.equal(attendanceChartMode(null,null,1),'line');
+ assert.equal(ATTENDANCE_COLORS.present,'#365FA6');assert.equal(ATTENDANCE_COLORS.excused,'#8BAFE5');assert.equal(ATTENDANCE_COLORS.absent,'#CBD5E1');
+ const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');let chart,stateIndex=0;
+ const Dashboard=loadTypeScript('app/portal/attendance/AttendanceMiniDashboard.tsx',{'./dashboard-actions':{},'@/app/portal/reports/ReportChart':{__esModule:true,default:props=>{chart=props;return null;}},react:{...React,useState:initial=>[stateIndex++===0?'2026-11-01':initial,()=>{}]}}).default;
+ const initial={branchId:null,date:'2026-11-01',from:'2026-11-01',to:'2026-11-01',latest:null,average:null,totalMembers:10,qualifyingServices:0,trend:[],byBranch:[{id:'a',name:'South',present:2,excused:1,absent:1}]};
+ renderToStaticMarkup(React.createElement(Dashboard,{initial,branches:[{id:'a',name:'South'}],branchFilter:'all',onBranchChange(){}}));
+ assert.equal(chart.kind,'doughnut');assert.match(chart.description,/South/);assert.deepEqual(Array.from(chart.categoryColors),['#365FA6','#8BAFE5','#CBD5E1']);
+});
+
+test('camera-first scanner renders square target and sanitized QR-only recent list without manual entry',()=>{
+ const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+ const Scanner=loadTypeScript('app/portal/attendance/[serviceId]/scan/QrAttendanceScanner.tsx',{'../../actions':{recordQrAttendance:async()=>{}}}).default;
+ const html=renderToStaticMarkup(React.createElement(Scanner,{serviceId:'service',initialRecent:[{recordId:'row',memberName:'Juan Cruz',attendanceStatus:'present',checkInTime:'2026-11-06T01:00:00Z',visitingMember:true,homeBranchName:'North'}]}));
+ assert.match(html,/aspect-square/);assert.match(html,/data-scanner-frame/);assert.match(html,/<video/);assert.match(html,/Recently Scanned/);assert.match(html,/Juan Cruz/);assert.match(html,/Visiting Member/);assert.match(html,/North/);assert.doesNotMatch(html,/Manual QR|<input|Visitor|Inactive Member/);
+});
+
+test('recent QR query is current-Service, QR-only, bounded and returns minimal display information',async()=>{
+ const calls=[];const row={id:'record',attendance_status:'present',check_in_time:'2026-11-06T01:00:00Z',members:{first_name:'Juan',middle_name:null,last_name:'Cruz',church_branch_id:'north',church_branches:{name:'North'}}};
+ const q={select(v){calls.push(['select',v]);return this;},eq(k,v){calls.push(['eq',k,v]);return this;},order(k,v){calls.push(['order',k,v.ascending]);return this;},limit(n){calls.push(['limit',n]);return Promise.resolve({data:[row],error:null});}};
+ const {loadRecentQrScans}=loadTypeScript('app/portal/attendance/data.ts',{'server-only':{},'@/lib/supabase/admin':{},'../services/access':{}});
+ const rows=await loadRecentQrScans({from:()=>q},{id:'current',churchBranchId:'south'});
+ assert.equal(rows[0].memberName,'Juan Cruz');assert.equal(rows[0].visitingMember,true);assert.equal(rows[0].homeBranchName,'North');
+ assert.ok(calls.some(c=>c[0]==='eq'&&c[1]==='service_id'&&c[2]==='current'));assert.ok(calls.some(c=>c[0]==='eq'&&c[1]==='method'&&c[2]==='qr'));assert.ok(calls.some(c=>c[0]==='limit'&&c[1]===20));assert.ok(calls.some(c=>c[0]==='order'&&c[1]==='created_at'&&c[2]===false));
+ assert.doesNotMatch(JSON.stringify(rows),/email|phone|member_status|church_branch_id/);
+});
+
+test('latest comparison uses immediately previous attendance-bearing Service in authorized host scope',async()=>{
+ const h=harness();const north=await h.load('a');assert.equal(north.latestComparison.previous,3);assert.equal(north.latestComparison.percent,-33.3);
+ const all=await h.load();assert.equal(all.latestComparison.previous,2);assert.equal(all.latestComparison.percent,-50);
+ const south=await h.load('b','2026-11-01');assert.equal(south.latestComparison.previous,null);assert.equal(south.latestComparison.percent,null);
+ const dated=await h.load('a','2026-10-04');assert.equal(dated.latestComparison.label,'No previous comparison');
+ const empty=await h.load(null,'2000-01-01');assert.equal(empty.latestComparison.percent,null);
+ // Empty completed, future Scheduled, Cancelled and unauthorized Services never become comparisons.
+ assert.equal(north.latest.id,'a2');assert.equal(north.latestComparison.previous,3);
+});
+test('average comparison uses adjacent equal-length ranges, Present numerator and meaningful Service denominator',async()=>{
+ const h=harness();const add=(id,branch,day,status)=>h.db.services.push({id,name:id,church_branch_id:branch,service_date:day,start_time:'09:00',status});
+ add('prior','a','2026-10-31','completed');add('prior-empty','a','2026-10-31','completed');add('prior-cancel','a','2026-10-31','cancelled');add('prior-foreign','c','2026-10-31','completed');
+ for(let n=0;n<4;n++)h.db.attendance_records.push({id:'prior'+n,service_id:'prior',member_id:String(n),attendance_status:n<2?'present':'excused'});
+ const day=await h.load('a','2026-11-01');assert.equal(day.average,1);assert.equal(day.averageComparison.previous,1);assert.equal(day.averageComparison.percent,0);assert.equal(day.averageComparison.label,'vs previous day');
+ // Current Jun 1-Nov 6 has 159 days; preceding range ends May 31.
+ add('old-period','a','2026-05-31','completed');h.db.attendance_records.push({id:'prev',service_id:'old-period',member_id:'1',attendance_status:'present'});
+ const overview=await h.load('a');assert.equal(overview.averageComparison.previous,1);assert.match(overview.averageComparison.label,/vs previous \d+ days/);assert.equal(overview.totalMembers,2);
+ const missing=await h.load('b','2026-11-01');assert.equal(missing.averageComparison.label,'No previous comparison');
+});
+test('comparison edge cases never invent percent from missing/zero baselines',()=>{
+ const {attendanceComparison:c}=loadTypeScript('lib/attendance-dashboard-model.ts');
+ for(const[current,previous]of[[null,4],[4,null],[null,null]])assert.equal(c(current,previous,'vs previous').label,'No previous comparison');
+ assert.equal(c(5,0,'vs previous').percent,null);assert.equal(c(5,0,'vs previous').label,'Previous value was 0');assert.equal(c(0,0,'vs previous').percent,0);assert.equal(c(0,5,'vs previous').percent,-100);assert.equal(c(5,5,'vs previous').percent,0);
+});
+test('scanner page uses actual shared PageHeader and primary-blue guides without manual input',async()=>{
+ const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+ const Page=loadTypeScript('app/portal/attendance/[serviceId]/scan/page.tsx',{'../../access':{requireAttendancePermission:async()=>({permissions:['attendance.record']})},'@/lib/supabase/admin':{createAdminClient:()=>({})},'../../data':{loadAccessibleService:async()=>({id:'current',name:'Sunday Service',status:'ongoing',branch:{name:'North'},serviceDate:'2026-11-07',startTime:'09:00'}),loadRecentQrScans:async()=>[]},'./QrAttendanceScanner':{__esModule:true,default:()=>null}}).default;
+ const tree=Page({params:Promise.resolve({serviceId:'current'})});const content=await tree.props.children.type(tree.props.children.props);const html=renderToStaticMarkup(content);
+ assert.match(html,/QR Attendance Scanner/);assert.match(html,/Attendance<\/span>/);assert.match(html,/Back to Service Attendance/);assert.match(html,/href="\/portal\/attendance\/current"/);assert.match(html,/font-radio-canada/);
+});
+
+test('Attendance-only chart appearance uses blue area, restrained grid and thinner donut while other charts keep defaults',()=>{
+ const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');let captured;
+ const capture=props=>{captured=props;return null;};
+ const Chart=loadTypeScript('app/portal/reports/ReportChart.tsx',{'react-chartjs-2':{Line:capture,Bar:capture,Doughnut:capture}}).default;
+ const base={compact:true,title:'Attendance',labels:['One','Two'],series:[{label:'Present',color:'#365FA6',values:[3,4]}],emptyMessage:'Empty'};
+ renderToStaticMarkup(React.createElement(Chart,{...base,appearance:'attendance',kind:'line'}));assert.equal(captured.data.datasets[0].fill,true);assert.equal(captured.data.datasets[0].borderColor,'#365FA6');assert.match(captured.data.datasets[0].backgroundColor,/rgba/);assert.equal(captured.options.scales.y.grid.color,'#F0F4FA');
+ renderToStaticMarkup(React.createElement(Chart,{...base,appearance:'attendance',kind:'bar',stacked:true}));assert.equal(captured.options.scales.x.stacked,true);assert.equal(captured.data.datasets[0].borderRadius,6);
+ renderToStaticMarkup(React.createElement(Chart,{...base,appearance:'attendance',kind:'doughnut',categoryColors:['#365FA6','#8BAFE5','#CBD5E1']}));assert.equal(captured.options.cutout,'80%');assert.equal(captured.data.datasets[0].backgroundColor[0],'#365FA6');
+ renderToStaticMarkup(React.createElement(Chart,{...base,kind:'line'}));assert.equal(captured.data.datasets[0].fill,false);assert.equal(captured.options.scales.y.grid.color,'#E8EDF5');
+});

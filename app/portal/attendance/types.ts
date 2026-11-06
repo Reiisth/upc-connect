@@ -64,6 +64,7 @@ export type AttendanceService = ServiceRecord & {
 export type QrAttendanceResult =
   | {
     outcome: "recorded";
+    recordId?: string;
     memberName: string;
     memberStatus?: string | null;
     homeBranchName?: string;
@@ -132,3 +133,5 @@ export function getAttendanceSummary(
 export function isVisitingMember(homeBranchId: string, serviceBranchId: string) {
   return Boolean(homeBranchId && serviceBranchId && homeBranchId !== serviceBranchId);
 }
+
+export type RecentQrScan = {recordId:string;memberName:string;attendanceStatus:AttendanceStatus;checkInTime:string|null;visitingMember:boolean;homeBranchName:string};

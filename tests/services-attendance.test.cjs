@@ -442,7 +442,7 @@ test('Attendance landing groups ongoing first, keeps upcoming read-only and omit
  for(const [n,status,date] of [[2,'scheduled','2026-10-26'],[3,'completed','2026-10-24'],[4,'cancelled','2026-10-24']]) h.db.services.push({...h.db.services[0],id:id(n+100),status,service_date:date,name:status+' fixture'});
  const wrapper=h.load('app/portal/attendance/page.tsx').default();const content=await wrapper.props.children.type(wrapper.props.children.props);const html=renderToStaticMarkup(content);
  assert.ok(html.indexOf('Ongoing Services')<html.indexOf('Upcoming Services'));
- assert.ok(html.includes('Open Attendance')&&html.includes('Edit Service')&&html.includes('Starts'));
+ assert.ok(html.includes('Open Attendance')&&html.includes('Edit Service')&&html.includes('Oct 25, 2026'));
  assert.equal(html.includes('completed fixture'),false);assert.equal(html.includes('cancelled fixture'),false);
  const form=renderToStaticMarkup(React.createElement(h.load('app/portal/services/ServiceForm.tsx').ServiceForm,{branches:[],serviceTypes:[],action(){},submitLabel:'Save'}));
  assert.equal(form.includes('name="status"'),false);
@@ -451,4 +451,11 @@ test('Attendance landing groups ongoing first, keeps upcoming read-only and omit
 test('scheduled-edit form action returns a clean expected error after start, without mutating the Service',async()=>{
  const h=harness({status:'scheduled'});h.setNow('2026-10-27T02:00:00Z');
  const result=await h.load('app/portal/services/actions.ts').updateServiceFormAction(serviceId,h.serviceForm());assert.match(result.error,/already started/);assert.equal(h.events.some(e=>e.operation==='update'),false);
+});
+
+test('QR success returns only scanner identity and attendance data; invalid payload cannot write',async()=>{
+ const h=harness();const result=await h.actions().recordQrAttendance(serviceId,id(11));
+ assert.equal(result.outcome,'recorded');assert.equal(result.attendanceStatus,'present');assert.ok(result.memberName);
+ assert.ok(Object.keys(result).every(key=>['outcome','recordId','memberName','memberStatus','homeBranchName','visitingMember','attendanceStatus','checkInTime'].includes(key)));
+ const before=h.db.attendance_records.length;await assert.rejects(h.actions().recordQrAttendance(serviceId,'not-a-member-qr'),/not a valid/);assert.equal(h.db.attendance_records.length,before);
 });

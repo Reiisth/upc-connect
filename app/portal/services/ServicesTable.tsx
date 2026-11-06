@@ -164,14 +164,11 @@ export default function ServicesTable({
           }
         />
       ) : (
-        <Table className="min-w-[1050px]">
+        <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
               <TableHead>Service</TableHead>
               <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...serviceTypes.map((type) => ({ value: type.key, label: type.name }))]} /></div></TableHead>
-              <TableHead>Branch</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Start Time</TableHead>
               <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Service Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "All statuses" }, ...SERVICE_STATUSES.map((status) => ({ value: status, label: formatServiceStatus(status) }))]} /></div></TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -179,7 +176,7 @@ export default function ServicesTable({
 
           <TableBody>
             {filteredServices.length === 0 ? (
-              <TableRow><TableCell colSpan={7}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
+              <TableRow><TableCell colSpan={4}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
             ) : filteredServices.map((service) => (
               <TableRow key={service.id}>
                 <TableCell>
@@ -193,45 +190,14 @@ export default function ServicesTable({
                         {service.name}
                       </p>
 
-                      {service.notes && (
-                        <p className="mt-1 max-w-xs truncate text-xs text-slate-500">
-                          {service.notes}
-                        </p>
-                      )}
+                      <p className="mt-1 text-xs text-slate-500">{service.branch?.name ?? "Unknown branch"}</p>
+                      <p className="mt-1 text-xs text-slate-500">{formatServiceDate(service.serviceDate)} · {formatStartTime(service.startTime)}</p>
                     </div>
                   </div>
                 </TableCell>
 
                 <TableCell>
                   {formatServiceType(service.serviceType, serviceTypeNames)}
-                </TableCell>
-
-                <TableCell>
-                  {service.branch ? (
-                    <div>
-                      <p className="font-medium text-slate-800">
-                        {service.branch.name}
-                      </p>
-
-                      {service.branch.code && (
-                        <p className="mt-1 text-xs text-slate-500">
-                          {service.branch.code}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <StatusBadge variant="muted">
-                      Unknown branch
-                    </StatusBadge>
-                  )}
-                </TableCell>
-
-                <TableCell className="whitespace-nowrap">
-                  {formatServiceDate(service.serviceDate)}
-                </TableCell>
-
-                <TableCell className="whitespace-nowrap">
-                  {formatStartTime(service.startTime)}
                 </TableCell>
 
                 <TableCell>

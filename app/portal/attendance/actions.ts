@@ -155,7 +155,7 @@ export async function recordQrAttendance(
     .maybeSingle();
 
   if (memberError) {
-    throw new Error(memberError.message);
+    throw new Error("Unable to verify this Member. Try again.");
   }
 
   if (!member) {
@@ -189,7 +189,7 @@ export async function recordQrAttendance(
     .maybeSingle();
 
   if (existingError) {
-    throw new Error(existingError.message);
+    throw new Error("Unable to check existing attendance. Try again.");
   }
 
   if (existing) {
@@ -200,7 +200,7 @@ export async function recordQrAttendance(
   if (!latestService) throw new Error("Service is outside your branch access.");
   assertServiceAttendance(latestService.status, "record");
   const checkInTime = new Date().toISOString();
-  const { error: insertError } = await admin
+  const { data: inserted, error: insertError } = await admin
     .from("attendance_records")
     .insert({
       service_id: serviceId,
@@ -209,11 +209,11 @@ export async function recordQrAttendance(
       method: "qr",
       recorded_by: access.user.id,
       check_in_time: checkInTime,
-    });
+    }).select("id").single();
 
   if (insertError) {
     if (insertError.code !== "23505") {
-      throw new Error(insertError.message);
+      throw new Error("Attendance could not be saved. Try again.");
     }
 
     // Another scan may have won the unique(service_id, member_id) race.
@@ -228,7 +228,7 @@ export async function recordQrAttendance(
       .maybeSingle();
 
     if (concurrentError) {
-      throw new Error(concurrentError.message);
+      throw new Error("Unable to check existing attendance. Try again.");
     }
 
     if (!concurrent) {
@@ -248,6 +248,7 @@ export async function recordQrAttendance(
 
   return {
     outcome: "recorded",
+    recordId: inserted?.id,
     ...identityContext,
     memberName,
     attendanceStatus: "present",
@@ -293,7 +294,7 @@ export async function saveAttendanceRecord(
     .from("attendance_records")
     .select("id, check_in_time")
     .eq("service_id", serviceId).eq("member_id", memberId).maybeSingle();
-  if (existingError) throw new Error(existingError.message);
+  if (existingError) throw new Error("Unable to check existing attendance. Try again.");
 
   const requestedRecordId = getFormText(formData, "attendance_record_id");
   if (requestedRecordId && requestedRecordId !== existing?.id) {
@@ -312,7 +313,7 @@ export async function saveAttendanceRecord(
   if (!existing) {
     const { data: member, error: memberError } = await admin.from("members")
       .select("id, church_branch_id, member_status, is_archived").eq("id", memberId).maybeSingle();
-    if (memberError) throw new Error(memberError.message);
+    if (memberError) throw new Error("Unable to verify this Member. Try again.");
     if (!member || member.is_archived || !["active", "inactive"].includes(member.member_status ?? "")) {
       throw new Error("New attendance requires a non-archived Active or Inactive member.");
     }
@@ -352,7 +353,7 @@ export async function saveAttendanceRecord(
 
     if (insertError) {
       if (insertError.code !== "23505") {
-        throw new Error(insertError.message);
+        throw new Error("Attendance could not be saved. Try again.");
       }
 
       // A concurrent insert won the unique(service_id, member_id) race.
@@ -366,7 +367,7 @@ export async function saveAttendanceRecord(
           .maybeSingle();
 
       if (concurrentError) {
-        throw new Error(concurrentError.message);
+        throw new Error("Unable to check existing attendance. Try again.");
       }
 
       if (!concurrent?.id) {

@@ -4,16 +4,9 @@ import { notFound } from "next/navigation";
 import { CalendarDays, ClipboardCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageContainer } from "@/components/ui/page-container";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 
@@ -21,7 +14,7 @@ import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { requireAttendancePermission } from "../../access";
-import { loadAccessibleService } from "../../data";
+import { loadAccessibleService, loadRecentQrScans } from "../../data";
 import {
   canScanServiceStatus,
 } from "../../types";
@@ -69,64 +62,25 @@ async function QrAttendanceContent({
     service.status,
   );
 
+  const serviceDetails = (
+<div className="space-y-2 text-center">
+        <h2 className="font-radio-canada text-lg font-semibold text-[#203264] sm:text-xl">{service.name}</h2>
+        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500"><StatusBadge variant={getServiceStatusVariant(service.status)}>{formatLabel(service.status)}</StatusBadge><span>{service.branch?.name} · {formatServiceDate(service.serviceDate)} · {formatStartTime(service.startTime)}</span></div>
+      </div>
+  );
+
   return (
-    <PageContainer>
-      <PageHeader
-        backHref={`/portal/attendance/${service.id}`}
-        backLabel="Back to Service Attendance"
-        eyebrow="Attendance"
-        eyebrowIcon={<ClipboardCheck className="h-4 w-4" />}
-        title="Scan Attendance"
-        description="Use a member QR code to record attendance for this service."
-      />
+    <PageContainer className="space-y-4 sm:space-y-6">
+      <PageHeader eyebrow="Attendance" eyebrowIcon={<ClipboardCheck className="h-4 w-4"/>}
+        backHref={`/portal/attendance/${service.id}`} backLabel="Back to Service Attendance"
+        title="QR Attendance Scanner" description="Scan a Member QR code to record Present attendance for this Service."
+        className="space-y-2 sm:space-y-4 [&_h1]:text-2xl sm:[&_h1]:text-3xl [&_p]:mt-1" />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{service.name}</CardTitle>
-          <CardDescription>
-            Scanning is fixed to this service. Each member is checked against
-            the host Service authorization and eligibility before a record is created.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <ServiceDetail label="Branch">
-              {service.branch ? (
-                <>
-                  <span>{service.branch.name}</span>
-                  {service.branch.code && (
-                    <span className="mt-1 block text-xs font-normal text-slate-500">
-                      {service.branch.code}
-                    </span>
-                  )}
-                </>
-              ) : (
-                "Unknown branch"
-              )}
-            </ServiceDetail>
-
-            <ServiceDetail label="Date">
-              {formatServiceDate(service.serviceDate)}
-            </ServiceDetail>
-
-            <ServiceDetail label="Start Time">
-              {formatStartTime(service.startTime)}
-            </ServiceDetail>
-
-            <ServiceDetail label="Service Status">
-              <StatusBadge variant={getServiceStatusVariant(service.status)}>
-                {formatLabel(service.status)}
-              </StatusBadge>
-            </ServiceDetail>
-          </div>
-        </CardContent>
-      </Card>
 
       {canScan && statusAllowsScanning ? (
-        <QrAttendanceScanner serviceId={service.id} />
+        <QrAttendanceScanner key={service.id} serviceId={service.id} serviceDetails={serviceDetails} initialRecent={await loadRecentQrScans(admin,service)} />
       ) : (
-        <EmptyState
+        <div className="space-y-4">{serviceDetails}<EmptyState
           icon={<CalendarDays className="h-5 w-5" />}
           title={getUnavailableTitle(canScan, service.status)}
           description={getUnavailableDescription(
@@ -140,28 +94,9 @@ async function QrAttendanceContent({
               </Link>
             </Button>
           }
-        />
+        /></div>
       )}
     </PageContainer>
-  );
-}
-
-function ServiceDetail({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <div className="mt-2 text-sm font-medium text-slate-900">
-        {children}
-      </div>
-    </div>
   );
 }
 

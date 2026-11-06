@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -101,11 +100,6 @@ async function AttendanceServiceContent({
       <Card>
         <CardHeader>
           <CardTitle>Service Information</CardTitle>
-          <CardDescription>
-            Recorded attendance is preserved after transfers, archive and status
-            changes. Unrecorded rows describe the current eligible roster, not a
-            reconstructed historical absence list.
-          </CardDescription>
         </CardHeader>
 
         <CardContent>

@@ -4,31 +4,25 @@ import {
   AlertCircle,
   Camera,
   CheckCircle2,
-  QrCode,
   RefreshCw,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 import { recordQrAttendance } from "../../actions";
 import {
   formatAttendanceStatus,
   type QrAttendanceResult,
+  type RecentQrScan,
 } from "../../types";
 
 type QrAttendanceScannerProps = {
   serviceId: string;
+  initialRecent?: RecentQrScan[];
+  serviceDetails?: ReactNode;
 };
 
 type ScannerState =
@@ -43,7 +37,7 @@ type ScannerControls = {
 };
 
 export default function QrAttendanceScanner({
-  serviceId,
+  serviceId, initialRecent = [], serviceDetails,
 }: QrAttendanceScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerControlsRef = useRef<ScannerControls | null>(null);
@@ -62,7 +56,9 @@ export default function QrAttendanceScanner({
   const [errorMessage, setErrorMessage] = useState<string | null>(
     null,
   );
-  const [manualValue, setManualValue] = useState("");
+  const [recent,setRecent]=useState(initialRecent);
+  const lastScanRef=useRef({value:"",time:0});
+  const mountedRef=useRef(true);
   const [cameraAttempt, setCameraAttempt] = useState(0);
 
   async function submitQrValue(value: string) {
@@ -70,10 +66,9 @@ export default function QrAttendanceScanner({
 
     const normalizedValue = value.trim();
 
-    if (!normalizedValue) {
-      setErrorMessage("Enter or scan a member QR value.");
-      return;
-    }
+    if (!normalizedValue) return;
+    if(lastScanRef.current.value===normalizedValue && Date.now()-lastScanRef.current.time<4000)return;
+    lastScanRef.current={value:normalizedValue,time:Date.now()};
 
     processingRef.current = true;
     setScannerState("processing");
@@ -91,15 +86,20 @@ export default function QrAttendanceScanner({
         normalizedValue,
       );
 
+      if(!mountedRef.current)return;
       setResult(nextResult);
-      setManualValue("");
+      if(nextResult.outcome==="recorded")setRecent(rows=>[{recordId:nextResult.recordId??nextResult.checkInTime,memberName:nextResult.memberName,attendanceStatus:nextResult.attendanceStatus,checkInTime:nextResult.checkInTime,visitingMember:nextResult.visitingMember??false,homeBranchName:nextResult.homeBranchName??"Home branch unknown"},...rows.filter(row=>row.recordId!==nextResult.recordId)].slice(0,20));
     } catch (error) {
+      if(!mountedRef.current)return;
       setErrorMessage(
         error instanceof Error
           ? error.message
           : "The QR attendance scan could not be completed.",
       );
     } finally {
+      processingRef.current=false;
+      if(!mountedRef.current)return;
+      setScannerState(cameraReadyRef.current?"ready":"error");
       resultTimerRef.current = window.setTimeout(() => {
         processingRef.current = false;
         setResult(null);
@@ -149,7 +149,7 @@ export default function QrAttendanceScanner({
       if (!navigator.mediaDevices?.getUserMedia) {
         setScannerState("unavailable");
         setCameraMessage(
-          "This browser does not provide camera access. Use the manual QR value below.",
+          "This browser does not provide camera access. Open this page in a camera-capable browser.",
         );
         return;
       }
@@ -173,7 +173,7 @@ export default function QrAttendanceScanner({
           {
             audio: false,
             video: {
-              facingMode: { ideal: "environment" },
+              facingMode: { ideal: window.matchMedia("(pointer: coarse)").matches ? "environment" : "user" },
             },
           },
           video,
@@ -220,196 +220,62 @@ export default function QrAttendanceScanner({
   }, [cameraAttempt, serviceId]);
 
   useEffect(() => {
+    mountedRef.current=true;
     return () => {
+      mountedRef.current=false;
       if (resultTimerRef.current !== null) {
         window.clearTimeout(resultTimerRef.current);
       }
     };
   }, []);
 
-  function handleManualSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void submitQrValue(manualValue);
-  }
-
   const cameraStatus = getScannerStatus(scannerState);
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle>QR Check-in</CardTitle>
-            <CardDescription>
-              Scan the opaque member QR code. The member name and branch
-              eligibility are verified on the server.
-            </CardDescription>
-          </div>
-
-          <StatusBadge variant={cameraStatus.variant}>
-            {cameraStatus.label}
-          </StatusBadge>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-5">
-        <div className="relative aspect-video overflow-hidden rounded-2xl bg-slate-950">
-          <video
-            ref={videoRef}
-            muted
-            autoPlay
-            playsInline
-            className="h-full w-full object-cover"
-            aria-label="Attendance QR camera"
-          />
-
-          {scannerState !== "ready" &&
-            scannerState !== "processing" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/85 px-6 text-center text-white">
-                <Camera className="h-8 w-8 text-slate-300" />
-                <p className="text-sm text-slate-200">
-                  {scannerState === "starting"
-                    ? "Starting camera..."
-                    : "Camera scanning is unavailable"}
-                </p>
-              </div>
-            )}
-
-          {scannerState === "processing" && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/70 px-6 text-center text-white">
-              <p className="rounded-xl bg-slate-900/90 px-4 py-3 text-sm">
-                Checking member attendance...
-              </p>
-            </div>
-          )}
-        </div>
-
-        {cameraMessage && (
-          <p className="text-sm text-slate-500">
-            {cameraMessage}
-          </p>
-        )}
-
-        {(scannerState === "error" ||
-          scannerState === "unavailable") && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setCameraAttempt((attempt) => attempt + 1)}
-          >
-            <RefreshCw />
-            Try Camera Again
-          </Button>
-        )}
-
-        {result?.memberStatus === "inactive" && <p className="text-sm text-slate-600">Inactive Member</p>}
-        {result?.visitingMember && <p className="text-sm text-slate-600">Visiting Member · {result.homeBranchName}</p>}
-        {result?.outcome === "recorded" && (
-          <div
-            role="status"
-            className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
-          >
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-            <div>
-              <p className="font-semibold">Attendance recorded</p>
-              <p className="mt-1">
-                {result.memberName} was checked in as present.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {result?.outcome === "duplicate" && (
-          <div
-            role="status"
-            className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-          >
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-            <div>
-              <p className="font-semibold">Already checked in</p>
-              <p className="mt-1">
-                {result.memberName} already has a{" "}
-                {formatAttendanceStatus(result.attendanceStatus).toLowerCase()}{" "}
-                record for this service. The existing record was not changed.
-              </p>
-              {result.checkInTime && (
-                <p className="mt-1 text-xs">
-                  Checked in at {formatCheckInTime(result.checkInTime)}.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {errorMessage && (
-          <div
-            role="alert"
-            className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          >
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>{errorMessage}</p>
-          </div>
-        )}
-
-        <form
-          onSubmit={handleManualSubmit}
-          className="border-t border-slate-200 pt-5"
-        >
-          <FormField
-            label="Manual QR Value"
-            htmlFor="manual-qr-value"
-            description="Use this fallback for desktop testing, camera permission problems, or unsupported browsers."
-          >
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Input
-                id="manual-qr-value"
-                value={manualValue}
-                onChange={(event) => setManualValue(event.target.value)}
-                placeholder="Paste the member QR value"
-                disabled={scannerState === "processing"}
-                autoComplete="off"
-              />
-
-              <Button
-                type="submit"
-                variant="outline"
-                disabled={
-                  scannerState === "processing" ||
-                  !manualValue.trim()
-                }
-              >
-                <QrCode />
-                Check In
-              </Button>
-            </div>
-          </FormField>
-        </form>
-      </CardContent>
-    </Card>
-  );
+  return <section aria-label="Member QR scanner" className="mx-auto w-full max-w-xl space-y-3 sm:space-y-4">
+    <Card><CardContent className="space-y-3 p-3 sm:space-y-4 sm:p-5">
+    {serviceDetails}
+    <div className="text-center"><h2 className="text-lg font-semibold text-[#203264] sm:text-2xl"><span className="sm:hidden">Scan Member QR Code</span><span className="hidden sm:inline">Scan your Member QR Code</span></h2><p className="mt-1 text-sm text-slate-500">Position your QR code inside the frame</p></div>
+    <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-950" data-scanner-frame>
+      <video ref={videoRef} muted autoPlay playsInline className="h-full w-full object-cover" aria-label="Attendance QR camera" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-[18%] rounded-xl border border-white/30">
+       {["left-0 top-0 border-l-4 border-t-4 rounded-tl-xl","right-0 top-0 border-r-4 border-t-4 rounded-tr-xl","left-0 bottom-0 border-l-4 border-b-4 rounded-bl-xl","right-0 bottom-0 border-r-4 border-b-4 rounded-br-xl"].map(c=><span key={c} className={`absolute h-10 w-10 border-primary ${c}`} />)}
+      </div>
+      {(scannerState==="starting"||scannerState==="error"||scannerState==="unavailable")&&<div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/85 px-5 text-center text-white"><Camera className="h-10 w-10"/><p>{scannerState==="starting"?"Starting camera...":"Camera access is required to scan Member QR codes."}</p>{cameraMessage&&<p className="text-sm text-slate-200">{cameraMessage}</p>}{scannerState!=="starting"&&<Button variant="outline" className="text-slate-900" onClick={()=>setCameraAttempt(n=>n+1)}><RefreshCw/>Retry camera</Button>}</div>}
+      {scannerState==="processing"&&<p role="status" className="absolute bottom-4 left-4 right-4 rounded-xl bg-slate-900/90 p-3 text-center text-white">Checking Member attendance...</p>}
+    </div>
+    <div className="text-center"><StatusBadge variant={cameraStatus.variant}>{cameraStatus.label}</StatusBadge></div>
+    <div aria-live="polite" aria-atomic="true" className="min-h-[100px]">
+     {result?<div role="status" className={`flex items-start gap-3 rounded-xl border p-4 ${result.outcome==="recorded"?"border-[#B0F2B4] bg-green-50 text-green-950":"border-[#FFC43D] bg-amber-50 text-amber-950"}`}>
+       {result.outcome==="recorded"?<CheckCircle2 className="h-7 w-7 shrink-0"/>:<AlertCircle className="h-7 w-7 shrink-0"/>}
+       <div><p className="text-lg font-semibold sm:text-2xl">{result.memberName}</p><p className="font-medium">{result.outcome==="recorded"?"Present recorded":"Already Scanned"}</p>{result.outcome==="duplicate"&&<p className="text-sm">Attendance already recorded as {formatAttendanceStatus(result.attendanceStatus)}.</p>}{result.visitingMember&&<p className="mt-1 text-sm">Visiting Member · {result.homeBranchName}</p>}</div>
+     </div>:errorMessage?<div role="alert" className="flex gap-3 rounded-xl border border-[#EF476F] bg-red-50 p-4 text-red-900"><AlertCircle className="h-6 w-6 shrink-0"/><div><p className="font-semibold">Scan could not be recorded</p><p>{errorMessage}</p></div></div>:<p className="py-5 text-center text-sm text-slate-500">Ready for the next Member.</p>}
+    </div>
+    </CardContent></Card>
+    <section aria-label="Recently Scanned" className="rounded-2xl border border-slate-200 bg-white p-3"><h3 className="text-sm font-semibold text-[#203264]">Recently Scanned</h3>
+      {recent.length?<ul className="mt-2 divide-y divide-slate-100">{recent.map(row=><li key={row.recordId} className="py-2"><p className="text-sm font-medium leading-5 text-slate-900">{row.memberName}</p><p className="text-[11px] leading-4 text-slate-500">{formatAttendanceStatus(row.attendanceStatus)}{row.checkInTime?` · ${formatCheckInTime(row.checkInTime)}`:""}</p>{row.visitingMember&&<p className="mt-0.5 text-[11px] leading-4 font-medium text-[#365FA6]">Visiting Member · {row.homeBranchName}</p>}</li>)}</ul>:<p className="py-3 text-xs text-slate-500">No QR scans recorded for this Service yet.</p>}
+    </section>
+  </section>;
 }
 
 function getCameraErrorMessage(error: unknown) {
   if (error instanceof DOMException) {
     if (error.name === "NotAllowedError") {
-      return "Camera permission was denied. Allow camera access or use the manual QR value below.";
+      return "Camera permission was denied. Allow camera access in browser settings, then retry.";
     }
 
     if (error.name === "NotFoundError") {
-      return "No camera was found on this device. Use the manual QR value below.";
+      return "No camera was found. Connect a camera, then retry.";
     }
 
     if (error.name === "NotReadableError") {
-      return "The camera is already in use or unavailable. Use the manual QR value below.";
+      return "The camera is in use or unavailable. Close other camera apps, then retry.";
     }
 
     if (error.name === "OverconstrainedError") {
-      return "The preferred rear camera is unavailable. Check camera permissions or use the manual QR value below.";
+      return "The preferred camera is unavailable. Check your device and camera permissions.";
     }
   }
 
-  return "The camera could not be started. Use the manual QR value below or try again.";
+  return "The camera could not be started. Check permissions and try again.";
 }
 
 function isLocalDevelopmentHost(hostname: string) {
@@ -433,7 +299,7 @@ function getScannerStatus(state: ScannerState) {
     return { label: "Starting camera", variant: "warning" as const };
   }
 
-  return { label: "Manual fallback available", variant: "danger" as const };
+  return { label: "Camera unavailable", variant: "danger" as const };
 }
 
 function formatCheckInTime(value: string) {

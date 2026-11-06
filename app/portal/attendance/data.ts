@@ -221,3 +221,17 @@ async function readAll<T>(query: { range(from: number, to: number): PromiseLike<
     if ((data?.length ?? 0) < 500) return result;
   }
 }
+
+/** Caller supplies a Service returned by loadAccessibleService for attendance.record. */
+export async function loadRecentQrScans(admin: ReturnType<typeof createAdminClient>, service: AttendanceService): Promise<import("./types").RecentQrScan[]> {
+ const {data,error}=await admin.from("attendance_records")
+  .select("id,attendance_status,check_in_time,members(first_name,middle_name,last_name,church_branch_id,church_branches(name))")
+  .eq("service_id",service.id).eq("method","qr").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(20);
+ if(error)throw new Error("Unable to load recent QR scans.");
+ return (data??[]).map(row=>{
+  const member=row.members as unknown as {first_name:string|null;middle_name:string|null;last_name:string|null;church_branch_id:string|null;church_branches:{name:string}|null}|null;
+  return {recordId:row.id,memberName:member?[member.first_name,member.middle_name,member.last_name].filter(Boolean).join(" ")||"Unnamed Member":"Member unavailable",
+   attendanceStatus:row.attendance_status as import("./types").AttendanceStatus,checkInTime:row.check_in_time,
+   visitingMember:Boolean(member?.church_branch_id&&member.church_branch_id!==service.churchBranchId),homeBranchName:member?.church_branches?.name??"Home branch unknown"};
+ });
+}
