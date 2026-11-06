@@ -5,7 +5,7 @@ MODULE_MINI_DASHBOARDS.md; Baptisms and Contributions retain their existing beha
 
 ## Cards and scope
 
-- Latest Service Attendance: all recorded Present, Excused and Absent rows in the
+- Latest Service Attendance: Present records only in the
   latest attendance-bearing qualifying Service, with its name, date, host branch
   and status breakdown. No matching Service displays Unavailable.
 - Average Attendance: Present rows divided by qualifying Services, including

@@ -67,7 +67,7 @@ export default function ReportsDashboard({ overview: data, serviceTypeNames = {}
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
         <ReportChart title="Member Records Added" description={periodNote} labels={periodLabels(membership.recordCreationTrend)}
           series={[{ label: "Records Added", values: membership.recordCreationTrend.map((point) => point.value) }]} kind="line" emptyMessage="No member records were created in this period." />
-        <ReportChart title="Recorded First Attendances" description="Historical reference dates for when people first attended church. They do not determine UPC Connect attendance monitoring." labels={periodLabels(membership.firstAttendanceTrend)}
+        <ReportChart title="Recorded First Attendances" description="Historical reference dates for when people first attended church." labels={periodLabels(membership.firstAttendanceTrend)}
           series={[{ label: "First Attendances", values: membership.firstAttendanceTrend.map((point) => point.value), color: "#16836B" }]} kind="line" emptyMessage="No first-attendance dates were recorded in this period." />
       </div>
     </Section>

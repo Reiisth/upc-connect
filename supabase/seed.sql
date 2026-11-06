@@ -312,4 +312,23 @@ ON CONFLICT(id) DO UPDATE SET contributor_type=EXCLUDED.contributor_type,member_
  visitor_name=EXCLUDED.visitor_name,service_id=EXCLUDED.service_id,church_branch_id=EXCLUDED.church_branch_id,
  amount=EXCLUDED.amount,contribution_type=EXCLUDED.contribution_type,contribution_date=EXCLUDED.contribution_date,payment_method=EXCLUDED.payment_method,notes=EXCLUDED.notes;
 
+-- BEGIN SERVICE COMPLETION DEMO
+-- Current South home roster (Active and Inactive, excluding archived). Complete
+-- this dedicated ongoing Service to fill only its missing home-roster records.
+INSERT INTO public.services(id,church_branch_id,name,service_type,service_date,start_time,status,notes)
+VALUES('e3000000-0000-4000-8000-000000000001','b0000000-0000-4000-8000-000000000002',
+ 'Service Completion Attendance Finalization','sunday_morning',
+ (now() AT TIME ZONE 'Asia/Manila')::date-1,'09:00','ongoing','Completion preview: home roster plus one visiting Present; missing Active/Inactive Members become Absent.')
+ON CONFLICT(id) DO UPDATE SET status='ongoing',service_date=EXCLUDED.service_date;
+-- This isolated fixture resets only its own Service attendance when reseeded.
+DELETE FROM public.attendance_records WHERE service_id='e3000000-0000-4000-8000-000000000001';
+INSERT INTO public.attendance_records(service_id,member_id,attendance_status,method,check_in_time)
+SELECT 'e3000000-0000-4000-8000-000000000001',
+ ('a0000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,
+ CASE n WHEN 23 THEN 'excused' WHEN 24 THEN 'absent' ELSE 'present' END,
+ CASE n WHEN 3 THEN 'qr' ELSE 'manual' END,
+ CASE WHEN n IN (23,24) THEN NULL ELSE now() END
+FROM unnest(ARRAY[17,18,19,20,21,22,23,24,3]) n;
+-- END SERVICE COMPLETION DEMO
+
 COMMIT;

@@ -124,13 +124,13 @@ test('recent QR query is current-Service, QR-only, bounded and returns minimal d
 });
 
 test('latest comparison uses immediately previous attendance-bearing Service in authorized host scope',async()=>{
- const h=harness();const north=await h.load('a');assert.equal(north.latestComparison.previous,3);assert.equal(north.latestComparison.percent,-33.3);
+ const h=harness();const north=await h.load('a');assert.equal(north.latestComparison.previous,1);assert.equal(north.latestComparison.percent,100);
  const all=await h.load();assert.equal(all.latestComparison.previous,2);assert.equal(all.latestComparison.percent,-50);
  const south=await h.load('b','2026-11-01');assert.equal(south.latestComparison.previous,null);assert.equal(south.latestComparison.percent,null);
  const dated=await h.load('a','2026-10-04');assert.equal(dated.latestComparison.label,'No previous comparison');
  const empty=await h.load(null,'2000-01-01');assert.equal(empty.latestComparison.percent,null);
  // Empty completed, future Scheduled, Cancelled and unauthorized Services never become comparisons.
- assert.equal(north.latest.id,'a2');assert.equal(north.latestComparison.previous,3);
+ assert.equal(north.latest.id,'a2');assert.equal(north.latestComparison.previous,1);
 });
 test('average comparison uses adjacent equal-length ranges, Present numerator and meaningful Service denominator',async()=>{
  const h=harness();const add=(id,branch,day,status)=>h.db.services.push({id,name:id,church_branch_id:branch,service_date:day,start_time:'09:00',status});
@@ -163,4 +163,14 @@ test('Attendance-only chart appearance uses blue area, restrained grid and thinn
  renderToStaticMarkup(React.createElement(Chart,{...base,appearance:'attendance',kind:'bar',stacked:true}));assert.equal(captured.options.scales.x.stacked,true);assert.equal(captured.data.datasets[0].borderRadius,6);
  renderToStaticMarkup(React.createElement(Chart,{...base,appearance:'attendance',kind:'doughnut',categoryColors:['#365FA6','#8BAFE5','#CBD5E1']}));assert.equal(captured.options.cutout,'80%');assert.equal(captured.data.datasets[0].backgroundColor[0],'#365FA6');
  renderToStaticMarkup(React.createElement(Chart,{...base,kind:'line'}));assert.equal(captured.data.datasets[0].fill,false);assert.equal(captured.options.scales.y.grid.color,'#E8EDF5');
+});
+
+test('Latest card and comparison count Present only, including a real Service with zero Present',async()=>{
+ const h=harness();const data=await h.load('b','2026-11-01');
+ const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+ const Dashboard=loadTypeScript('app/portal/attendance/AttendanceMiniDashboard.tsx',{'./dashboard-actions':{},'@/app/portal/reports/ReportChart':{__esModule:true,default:()=>null}}).default;
+ const initial={...data,branchId:null,date:null};const html=renderToStaticMarkup(React.createElement(Dashboard,{initial,branches:h.db.branches,branchFilter:'all',onBranchChange(){}}));
+ assert.match(html,/Latest Service Attendance<\/p><p[^>]*>3<\/p>/);assert.equal(data.latest.present+data.latest.excused+data.latest.absent,5);
+ for(const row of h.db.attendance_records)if(row.service_id==='a2')row.attendance_status='absent';
+ const zero=await h.load('a');assert.equal(zero.latest.id,'a2');assert.equal(zero.latest.present,0);assert.equal(zero.latestComparison.previous,1);assert.equal(zero.latestComparison.percent,-100);
 });

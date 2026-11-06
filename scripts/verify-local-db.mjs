@@ -31,7 +31,7 @@ const schema = JSON.parse(sql(`SELECT json_build_object(
  'functions',(SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'),
  'triggers',(SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND (n.nspname='public' OR (n.nspname='auth' AND t.tgname='on_auth_user_created'))),
  'uuid',to_regprocedure('pg_catalog.gen_random_uuid()') IS NOT NULL);`));
-assert.deepEqual(schema, { tables: 18, rls: 18, policies: 37, functions: 12, triggers: 3, uuid: true });
+assert.deepEqual(schema, { tables: 18, rls: 18, policies: 37, functions: 15, triggers: 5, uuid: true });
 assert.equal(sql("SELECT tgenabled FROM pg_trigger WHERE tgrelid='auth.users'::regclass AND tgname='on_auth_user_created';"), 'O');
 console.log('PASS schema:', schema);
 const normalize = row => Object.fromEntries(Object.entries(row).map(([k, v]) => [k, /_at$/.test(k) && v ? new Date(v).toISOString() : v]));
@@ -42,7 +42,7 @@ for (const [table, expected] of Object.entries(snapshot)) {
   if (!['departments', 'service_types'].includes(table)) assert.equal(actual.length, expected.length);
 }
 console.log('PASS all captured reference rows, timestamps and exact 70-assignment matrix');
-const counts = { church_branches: 2, members: 30, services: 19, attendance_records: 47, member_follow_ups: 10, financial_contributions: 23, baptism_records: 10, departments: 12, service_types: 6 };
+const counts = { church_branches: 2, members: 30, services: 20, attendance_records: 56, member_follow_ups: 10, financial_contributions: 23, baptism_records: 10, departments: 12, service_types: 6 };
 const rows = {};
 for (const [table, count] of Object.entries(counts)) { rows[table] = await all(table); assert.equal(rows[table].length, count, table); }
 console.log('PASS fixture counts:', counts);

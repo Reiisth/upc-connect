@@ -29,7 +29,7 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-2", className)}>
       {backHref && (
         <Link
           href={backHref}
@@ -40,10 +40,10 @@ export function PageHeader({
         </Link>
       )}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           {eyebrow && (
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-[#5D94E8]">
+            <div className="mb-1 flex items-center gap-2 text-sm font-medium text-[#5D94E8]">
               {eyebrowIcon}
               <span>{eyebrow}</span>
             </div>
@@ -54,7 +54,7 @@ export function PageHeader({
           </h1>
 
           {description && (
-            <p className="mt-2 max-w-2xl text-sm text-slate-500">
+            <p className="mt-1 max-w-2xl text-sm text-slate-500">
               {description}
             </p>
           )}

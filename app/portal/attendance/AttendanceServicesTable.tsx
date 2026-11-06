@@ -29,12 +29,10 @@ import { TableActionButton } from "@/components/ui/table-action-button";
 import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import {
-  formatServiceStatus,
   formatServiceType,
   type ServiceTypeOption,
   type ServiceBranch,
   type ServiceRecord,
-  type ServiceStatus,
 } from "../services/types";
 
 type AttendanceServicesTableProps = {
@@ -44,16 +42,6 @@ type AttendanceServicesTableProps = {
   branches: ServiceBranch[];
   serviceTypes: ServiceTypeOption[];
   serviceTypeNames: Record<string, string>;
-};
-
-const statusVariants: Record<
-  ServiceStatus,
-  "success" | "warning" | "danger" | "muted"
-> = {
-  scheduled: "warning",
-  ongoing: "success",
-  completed: "muted",
-  cancelled: "danger",
 };
 
 export default function AttendanceServicesTable({
@@ -68,7 +56,6 @@ export default function AttendanceServicesTable({
   const [branchFilter, setBranchFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
 
   const filteredServices = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -85,15 +72,12 @@ export default function AttendanceServicesTable({
           !dateFilter || service.serviceDate === dateFilter;
         const matchesType =
           typeFilter === "all" || service.serviceType === typeFilter;
-        const matchesStatus =
-          statusFilter === "all" || service.status === statusFilter;
 
         return (
           Boolean(matchesSearch) &&
           matchesBranch &&
           matchesDate &&
-          matchesType &&
-          matchesStatus
+          matchesType
         );
       })
       .sort(compareServices);
@@ -103,22 +87,19 @@ export default function AttendanceServicesTable({
     branchFilter,
     dateFilter,
     typeFilter,
-    statusFilter,
   ]);
 
   const hasFilters =
     search.trim() !== "" ||
     branchFilter !== "all" ||
     dateFilter !== "" ||
-    typeFilter !== "all" ||
-    statusFilter !== "all";
+    typeFilter !== "all";
 
   function clearFilters() {
     setSearch("");
     setBranchFilter("all");
     setDateFilter("");
     setTypeFilter("all");
-    setStatusFilter("all");
   }
 
   return (
@@ -161,19 +142,18 @@ export default function AttendanceServicesTable({
             <TableRow>
               <TableHead>Service</TableHead>
               <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...serviceTypes.map((type) => ({ value: type.key, label: type.name }))]} /></div></TableHead>
-              <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Service Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "All statuses" }, ...["ongoing","scheduled"].map((status) => ({ value: status, label: formatServiceStatus(status) }))]} /></div></TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {filteredServices.filter(service => service.status === group).length === 0 ? (
-              <TableRow><TableCell colSpan={4}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
+              <TableRow><TableCell colSpan={3}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
             ) : filteredServices.filter(service => service.status === group).map((service) => (
               <TableRow key={service.id}>
                 <TableCell>
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 rounded-xl bg-[#EEF3FB] p-2 text-[#203264]">
+                    <div className={`mt-0.5 rounded-xl p-2 ${service.status === "ongoing" ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"}`}>
                       <ClipboardCheck className="h-4 w-4" />
                     </div>
 
@@ -192,15 +172,9 @@ export default function AttendanceServicesTable({
                   {formatServiceType(service.serviceType, serviceTypeNames)}
                 </TableCell>
 
-                <TableCell>
-                  <StatusBadge
-                    variant={statusVariants[service.status]}
-                  >
-                    {formatServiceStatus(service.status)}
-                  </StatusBadge>
-                </TableCell>
 
                 <TableCell>
+                  <div className="flex flex-col items-start gap-2">
                   <TableActionButton
                     href={`/portal/attendance/${service.id}`}
                     icon={<ClipboardCheck />}
@@ -208,6 +182,7 @@ export default function AttendanceServicesTable({
                     {service.status === "ongoing" ? "Open Attendance" : "View Service"}
                   </TableActionButton>
                   {service.status === "scheduled" && canEditServices && <TableActionButton href={`/portal/services/${service.id}/edit`} icon={<Pencil />}>Edit Service</TableActionButton>}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

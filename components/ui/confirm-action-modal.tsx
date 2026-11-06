@@ -1,10 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 type ConfirmActionModalProps = {
+  children?: ReactNode;
   open: boolean;
   title: string;
   description: string;
@@ -19,7 +21,7 @@ type ConfirmActionModalProps = {
 };
 
 export function ConfirmActionModal({
-  open,
+  open, children,
   title,
   description,
   confirmLabel = "Confirm",
@@ -39,6 +41,9 @@ export function ConfirmActionModal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
@@ -62,6 +67,8 @@ export function ConfirmActionModal({
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {children && <div className="mt-4">{children}</div>}
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button

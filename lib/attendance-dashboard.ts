@@ -80,7 +80,7 @@ export async function loadAttendanceDashboard(admin:ReturnType<typeof createAdmi
      const latestCounts=await counts([latest.id]);
      result.latest={id:latest.id,name:latest.name,serviceDate:latest.service_date,branchName:scoped.find(branch=>branch.id===latest.church_branch_id)?.name??"Host branch",...latestCounts};
      const previous=latestServices[1]?await counts([latestServices[1].id]):null;
-     result.latestComparison=attendanceComparison(latestCounts.present+latestCounts.excused+latestCounts.absent,previous?previous.present+previous.excused+previous.absent:null,"vs previous service");
+     result.latestComparison=attendanceComparison(latestCounts.present,previous?.present??null,"vs previous service");
    }else result.latestComparison=attendanceComparison(null,null,"vs previous service");
    return result;
  }catch{throw new Error("Unable to load Attendance dashboard. Try again.");}

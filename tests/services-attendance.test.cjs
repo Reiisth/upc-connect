@@ -89,7 +89,15 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
     if (archivedAccount) redirect('/access-denied');
     return { user: { id: id(50) } };
   }
-  const admin = { from: (table) => new Query(table), rpc: async () => ({data:{totals:[],trend:[],breakdown:[]},error:null}) };
+  const admin = { from: (table) => new Query(table), rpc: async (name,args) => {
+      if(name!=='finalize_service_attendance')return {data:{totals:[],trend:[],breakdown:[]},error:null};
+      const service=db.services.find(s=>s.id===args.p_service_id);
+      const existing=db.attendance_records.filter(a=>a.service_id===service.id);
+      const missing=db.members.filter(m=>m.church_branch_id===service.church_branch_id&&!m.is_archived&&['active','inactive'].includes(m.member_status)&&!existing.some(a=>a.member_id===m.id));
+      const summary={present:existing.filter(a=>a.attendance_status==='present').length,excused:existing.filter(a=>a.attendance_status==='excused').length,absent:existing.filter(a=>a.attendance_status==='absent').length,missing:missing.length};
+      if(!args.p_preview){missing.forEach(m=>record(m.id,'absent'));service.status='completed';}
+      return {data:{...summary,generatedAbsent:missing.length,success:true},error:null};
+    } };
   const stubs = {
     'server-only': {},
     'next/navigation': { unstable_rethrow: error => {if(String(error?.message).startsWith('redirect:')) throw error;}, redirect, notFound: () => redirect('/not-found'), useRouter: () => ({ refresh() {} }) },
@@ -458,4 +466,18 @@ test('QR success returns only scanner identity and attendance data; invalid payl
  assert.equal(result.outcome,'recorded');assert.equal(result.attendanceStatus,'present');assert.ok(result.memberName);
  assert.ok(Object.keys(result).every(key=>['outcome','recordId','memberName','memberStatus','homeBranchName','visitingMember','attendanceStatus','checkInTime'].includes(key)));
  const before=h.db.attendance_records.length;await assert.rejects(h.actions().recordQrAttendance(serviceId,'not-a-member-qr'),/not a valid/);assert.equal(h.db.attendance_records.length,before);
+});
+
+test('completion preview counts and final action preserve existing/visiting records and fill current host missing roster',async()=>{
+ const h=harness();const current=h.record(id(11),'excused'),visitor=h.record(id(12),'present');
+ const actions=h.load('app/portal/services/actions.ts');const summary=await actions.previewServiceCompletion(serviceId);
+ assert.deepEqual({...summary},{present:1,excused:1,absent:0,missing:1});
+ const result=await actions.finishService(serviceId,'completed');assert.equal(result.generatedAbsent,1);
+ assert.equal(h.db.services[0].status,'completed');assert.equal(current.attendance_status,'excused');assert.equal(visitor.attendance_status,'present');assert.equal(h.db.attendance_records.find(a=>a.member_id===id(14)).attendance_status,'absent');assert.equal(h.db.attendance_records.some(a=>a.member_id===id(13)),false);
+ await assert.rejects(actions.finishService(serviceId,'completed'),/cannot return/);
+});
+test('completion preview enforces update permission, active account and host branch',async()=>{
+ for(const options of [{permissions:['attendance.record']},{archivedAccount:true},{branchIds:[otherBranch]}]){
+  const h=harness(options);await assert.rejects(h.load('app/portal/services/actions.ts').previewServiceCompletion(serviceId),/redirect:|access|assigned/);assert.equal(h.db.attendance_records.length,0);
+ }
 });

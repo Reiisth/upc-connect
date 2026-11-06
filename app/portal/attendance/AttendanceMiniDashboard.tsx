@@ -30,10 +30,10 @@ export default function AttendanceMiniDashboard({initial,branches,branchFilter,o
  },[branchId,selectedDate,retry,initial]);
  const current=data.branchId===branchId&&data.date===selectedDate;
  const latest=data.latest,mode=attendanceChartMode(selectedDate,branchId,branchId?1:branches.length);
- const total=latest?latest.present+latest.excused+latest.absent:null;
+ const present=latest?.present??null;
  const branchName=!branchId&&branches.length===1?branches[0].name:branchId?branches.find(branch=>branch.id===branchId)?.name??"Selected branch":"All authorized branches";
  const metrics=[
-   {comparison:data.latestComparison,label:"Latest Service Attendance",value:formatReportNumber(total,0),note:latest?`${latest.name} · ${latest.serviceDate}`:"No Service with attendance records."},
+   {comparison:data.latestComparison,label:"Latest Service Attendance",value:formatReportNumber(present,0),note:latest?`${latest.name} · ${latest.serviceDate}`:"No Service with attendance records."},
    {comparison:data.averageComparison,label:"Average Attendance",value:formatReportNumber(data.average),note:null},
    {label:"Total Members",value:formatReportNumber(data.totalMembers,0),note:null},
  ];

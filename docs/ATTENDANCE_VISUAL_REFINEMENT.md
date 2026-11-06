@@ -21,7 +21,7 @@ bars. One authorized branch under All Branches still names the actual branch.
 
 ## Comparison rules
 
-Latest Service Attendance compares the total of all three recorded statuses with
+Latest Service Attendance counts Present members only and compares Present counts with
 the immediately preceding attendance-bearing qualifying Service in the same
 effective host-branch scope. Order is Service date descending, start time descending
 (nulls last), then ID descending. Scheduled, Cancelled and empty Services are

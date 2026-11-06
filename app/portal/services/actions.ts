@@ -221,15 +221,34 @@ export async function finishService(serviceId: string, target: "completed" | "ca
   if (error || !service) throw new Error("Service not found.");
   await assertActiveServiceBranch(admin, access, service.church_branch_id);
   assertServiceTransition(effectiveStoredServiceStatus(service), target);
+  let generatedAbsent=0;
+  if(target==="completed"){
+    const {data,error:completionError}=await admin.rpc("finalize_service_attendance",{p_service_id:serviceId,p_actor_id:access.user.id,p_preview:false});
+    if(completionError)throw new Error("Unable to complete Service. Refresh the attendance review and try again.");
+    generatedAbsent=Number(data.generatedAbsent);
+  }else{
   const { data: changed, error: writeError } = await admin.from("services").update({status:target})
     .eq("id",service.id).eq("church_branch_id",service.church_branch_id).eq("status",service.status)
     .eq("service_date",service.service_date).or(service.start_time === null ? "start_time.is.null" : `start_time.eq.${service.start_time}`)
     .select("id").maybeSingle();
   if (writeError || !changed) throw new Error("The service changed. Refresh before trying again.");
-  for (const path of [servicesPath,"/portal/attendance",`/portal/attendance/${serviceId}`,`/portal/services/${serviceId}/edit`,"/portal/reports","/portal/inactivity"]) revalidatePath(path);
-  return {success:true};
+  }
+  for (const path of [servicesPath,"/portal/attendance",`/portal/attendance/${serviceId}`,`/portal/services/${serviceId}/edit`,`/portal/services/${serviceId}/attendance`,`/portal/attendance/${serviceId}/scan`,"/portal/reports","/portal/inactivity"]) revalidatePath(path);
+  return {success:true,generatedAbsent};
 }
 
+
+export async function previewServiceCompletion(serviceId:string):Promise<{present:number;excused:number;absent:number;missing:number}> {
+ const access=await requireServicesPermission("services.update");
+ const admin=createAdminClient();
+ const {data:service,error}=await admin.from("services").select("id,church_branch_id,service_date,start_time,status").eq("id",serviceId).maybeSingle();
+ if(error||!service)throw new Error("Service not found.");
+ await assertActiveServiceBranch(admin,access,service.church_branch_id);
+ assertServiceTransition(effectiveStoredServiceStatus(service),"completed");
+ const {data,error:previewError}=await admin.rpc("finalize_service_attendance",{p_service_id:serviceId,p_actor_id:access.user.id,p_preview:true});
+ if(previewError)throw new Error("Unable to review attendance. Refresh and try again.");
+ return {present:Number(data.present),excused:Number(data.excused),absent:Number(data.absent),missing:Number(data.missing)};
+}
 
 // Expected scheduling failures are returned to the form instead of being
 // redacted as production server exceptions. Framework redirects still propagate.

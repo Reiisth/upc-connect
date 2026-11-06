@@ -116,7 +116,7 @@ async function PortalShell({
         </div>
 
         <main className="min-w-0 pb-24 md:pb-0">
-          <div className="p-5 sm:p-6 lg:p-8">
+          <div className="p-2 sm:p-3 lg:p-4">
             {children}
           </div>
         </main>
