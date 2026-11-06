@@ -136,9 +136,12 @@ test('edit form retains transferred/archived identity and submits the fixed bran
   const h = historicalHarness(); Object.assign(h.db.members[0], { church_branch_id: 'b', is_archived: true });
   const html = renderToStaticMarkup(await h.content('app/portal/contributions/[contributionId]/edit/page.tsx', { contributionId: 'contribution' }));
   assert.ok(html.includes('Historical Member') && html.includes('Archived (historical)'));
-  assert.ok(/value="historical" selected=""/.test(html));
+  assert.ok(html.includes('type="hidden" name="member_id" value="historical"'));
+  assert.ok(html.includes('role="combobox"') && html.includes('value="Historical Member"'));
   assert.ok(html.includes('type="hidden" name="church_branch_id" value="a"'));
-  assert.ok(html.includes('Foreign Private'), 'focused cross-branch identities are available for replacements');
+  const access=await h.load('app/portal/contributions/access.ts').requireContributionsPermission('contributions.update');
+  const options=await h.load('app/portal/contributions/data.ts').loadContributionOptions(access,h.admin);
+  assert.ok(options.members.some(member=>member.fullName==='Foreign Private'), 'focused cross-branch identities remain available in suggestions');
   const foreign = historicalHarness({ branchIds: ['b'] });
   await assert.rejects(foreign.content('app/portal/contributions/[contributionId]/edit/page.tsx', { contributionId: 'contribution' }), /not-found/);
   assert.equal(foreign.events.some((event) => event.table === 'members'), false);

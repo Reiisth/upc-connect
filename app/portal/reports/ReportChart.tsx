@@ -13,13 +13,14 @@ const COLORS = ["#365FA6", "#16836B", "#B7791F", "#8B5CB5"];
 export type ReportChartSeries = { label: string; values: (number | string | null)[]; color?: string };
 export type ReportChartProps = {
   title: string; description?: string; labels: string[]; series: ReportChartSeries[];
-  appearance?: "attendance"; categoryColors?: string[]; compact?: boolean; kind?: "line" | "bar" | "doughnut"; stacked?: boolean; centerValue?: number; money?: boolean; horizontal?: boolean; emptyMessage: string;
+  moneyScale?: "relative"|"absolute"; appearance?: "attendance"; categoryColors?: string[]; compact?: boolean; kind?: "line" | "bar" | "doughnut"; stacked?: boolean; centerValue?: number; money?: boolean; horizontal?: boolean; emptyMessage: string;
 };
 
-export default function ReportChart({ title, description, labels, series, compact = false, kind = "bar", stacked = false, centerValue, categoryColors, appearance, money = false, horizontal = false, emptyMessage }: ReportChartProps) {
+export default function ReportChart({ title, description, labels, series, compact = false, kind = "bar", stacked = false, centerValue, categoryColors, appearance, money = false, moneyScale="relative", horizontal = false, emptyMessage }: ReportChartProps) {
   const id = useId();
   const refined=appearance==="attendance";
-  const coordinates = money ? relativeMoneyCoordinates(series.map((item) => item.values.map((value) => typeof value === "string" ? value : null))) :
+  const relativeMoney=money&&moneyScale==="relative";
+  const coordinates = money && !relativeMoney ? series.map(item=>item.values.map(value=>typeof value==="string"&&/^\d+(?:\.\d{1,2})?$/.test(value)&&Number.isFinite(Number(value))?Number(value):null)) : money ? relativeMoneyCoordinates(series.map((item) => item.values.map((value) => typeof value === "string" ? value : null))) :
     series.map((item) => item.values.map((value) => typeof value === "number" && Number.isFinite(value) ? value : null));
   const hasData = labels.length > 0 && coordinates.some((values) => values.some((value) => value !== null && value !== 0));
   const formatValue = (value: number | string | null) => money ? formatReportMoney(typeof value === "string" ? value : null) : formatReportNumber(typeof value === "number" ? value : null);
@@ -31,11 +32,11 @@ export default function ReportChart({ title, description, labels, series, compac
     })),
   };
   const numericAxis = {
-    stacked, beginAtZero: true, min: 0, ...(money ? { max: 100 } : {}),
+    stacked, beginAtZero: true, min: 0, ...(relativeMoney ? { max: 100 } : {}),
     grid: { color: refined ? "#F0F4FA" : "#E8EDF5" }, border: { display: false },
-    title: { display: money, text: "Relative amount", color: "#64748B", font: { size: 11 } },
+    title: { display: money, text: relativeMoney?"Relative amount":"Amount (PHP)", color: "#64748B", font: { size: 11 } },
     ticks: { maxTicksLimit: 5, precision: 0, color: refined ? "#8593A8" : "#64748B", font: { size: 11 },
-      callback: (value: string | number) => money ? `${value}%` : formatReportNumber(Number(value), 0) },
+      callback: (value: string | number) => money ? relativeMoney?`${value}%`:new Intl.NumberFormat("en-PH",{style:"currency",currency:"PHP",minimumFractionDigits:0,maximumFractionDigits:2}).format(Number(value)) : formatReportNumber(Number(value), 0) },
   };
   const categoryAxis = { stacked, grid: { display: false }, border: { display: false },
     ticks: { autoSkip: !horizontal, maxTicksLimit: horizontal ? undefined : 6, maxRotation: 30, color: refined ? "#8593A8" : "#64748B", font: { size: 11 } } };
@@ -69,7 +70,7 @@ export default function ReportChart({ title, description, labels, series, compac
           </> : kind === "line" ? <Line data={data} options={options} role="img" aria-labelledby={`${id}-title`} fallbackContent={title} /> :
             <Bar data={data} options={options} role="img" aria-labelledby={`${id}-title`} fallbackContent={title} />}
         </div>
-        {money && <p className="mt-2 text-xs text-slate-500">Relative to the largest amount. Hover or view data for exact peso values.</p>}
+        {relativeMoney && <p className="mt-2 text-xs text-slate-500">Relative to the largest amount. Hover or view data for exact peso values.</p>}
       </>}
       {labels.length > 0 && <details className="mt-4 text-xs text-slate-600">
         <summary className="w-fit cursor-pointer rounded py-1 font-medium text-[#365FA6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">View chart data</summary>

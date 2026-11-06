@@ -1,5 +1,6 @@
 "use client";
 
+import MemberAutocomplete from "./MemberAutocomplete";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
@@ -63,7 +64,6 @@ export function ContributionForm({
   );
   const [contributorType, setContributorType] = useState<ContributorType>(formValues.contributorType);
   const [visitorName, setVisitorName] = useState(formValues.visitorName ?? "");
-  const [memberSearch, setMemberSearch] = useState("");
   const [memberId, setMemberId] = useState(
     formValues.memberId ?? "",
   );
@@ -92,7 +92,7 @@ export function ContributionForm({
   const branchMembers = members.filter(
     (member) =>
       member.id === existingMemberId ||
-      !member.isArchived && (!memberSearch.trim() || member.fullName.toLowerCase().includes(memberSearch.trim().toLowerCase())),
+      !member.isArchived,
   );
   const branchServices = services.filter(
     (service) =>
@@ -175,19 +175,9 @@ export function ContributionForm({
               {CONTRIBUTOR_TYPES.map(type => <option key={type} value={type}>{formatContributionType(type)}</option>)}
             </Select>
           </FormField>
-          {contributorType === "member" && <>
-            <FormField label="Find Member" htmlFor="contributor-search" description="Search eligible member identities across all home branches.">
-              <Input id="contributor-search" type="search" value={memberSearch} onChange={event => setMemberSearch(event.target.value)} />
-            </FormField>
-            <FormField label="Member" htmlFor="contribution-member" required>
-              <Select id="contribution-member" name="member_id" value={memberId} onChange={event => setMemberId(event.target.value)} required disabled={!branchId}>
-                <option value="">Select a member</option>
-                {branchMembers.map(member => <option key={member.id} value={member.id}>
-                  {member.fullName} · {member.homeBranchName ?? "Home branch unknown"}{member.churchBranchId && member.churchBranchId !== branchId ? " · Visiting Member" : ""}{member.isArchived ? " · Archived (historical)" : ""}
-                </option>)}
-              </Select>
-            </FormField>
-          </>}
+          {contributorType === "member" && <FormField label="Member" htmlFor="contribution-member" required>
+            <MemberAutocomplete members={branchMembers} value={memberId} onChange={setMemberId} branchId={branchId}/>
+          </FormField>}
           {contributorType === "visitor" && <FormField label="Visitor Name" htmlFor="visitor-name" required description="Name retained on this contribution only.">
             <Input id="visitor-name" name="visitor_name" value={visitorName} onChange={event => setVisitorName(event.target.value)} maxLength={160} required />
           </FormField>}
