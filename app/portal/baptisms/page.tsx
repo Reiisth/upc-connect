@@ -1,10 +1,9 @@
+import { loadModuleSummary } from "@/lib/module-summary";
 import Link from "next/link";
 import { Suspense } from "react";
 import {
   Droplets,
-  HeartHandshake,
   Plus,
-  Waves,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,6 @@ import BaptismsTable from "./BaptismsTable";
 import {
   loadBaptismRecords,
 } from "./data";
-import { getBaptismSummary } from "./types";
 
 export default function BaptismsPage() {
   return (
@@ -47,7 +45,7 @@ async function BaptismsContent() {
     admin,
     branches,
   );
-  const summary = getBaptismSummary(records);
+  const dashboard = await loadModuleSummary(admin, "baptisms", branches.map(b => b.id));
   const canCreate = hasAnyPermission(
     access.permissions,
     BAPTISM_CREATE_PERMISSIONS,
@@ -80,28 +78,6 @@ async function BaptismsContent() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <BaptismSummaryCard
-          label="Total Baptism Records"
-          value={summary.count}
-          icon={<Droplets />}
-        />
-
-        <BaptismSummaryCard
-          label="Water Baptisms"
-          value={summary.waterCount}
-          icon={<Waves />}
-          valueClassName="text-blue-700"
-        />
-
-        <BaptismSummaryCard
-          label="Holy Ghost Baptisms"
-          value={summary.holyGhostCount}
-          icon={<HeartHandshake />}
-          valueClassName="text-emerald-700"
-        />
-      </div>
-
       {branches.length === 0 ? (
         <EmptyState
           icon={<Droplets className="h-5 w-5" />}
@@ -110,6 +86,7 @@ async function BaptismsContent() {
         />
       ) : (
         <BaptismsTable
+          dashboard={dashboard}
           records={records}
           branches={branches}
           canUpdateWater={canUpdateWater}
@@ -117,40 +94,6 @@ async function BaptismsContent() {
         />
       )}
     </PageContainer>
-  );
-}
-
-function BaptismSummaryCard({
-  label,
-  value,
-  icon,
-  valueClassName = "text-[#203264]",
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  valueClassName?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              {label}
-            </p>
-
-            <p className={`mt-3 text-3xl font-semibold ${valueClassName}`}>
-              {value.toLocaleString("en-PH")}
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

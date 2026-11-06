@@ -1,11 +1,9 @@
+import { loadModuleSummary } from "@/lib/module-summary";
 import Link from "next/link";
 import { Suspense } from "react";
 import {
-  DollarSign,
   HandCoins,
-  HeartHandshake,
   Plus,
-  Receipt,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,10 +22,6 @@ import {
 import { hasPermission } from "@/lib/permissions";
 import { loadContributionRecords } from "./data";
 import ContributionsTable from "./ContributionsTable";
-import {
-  formatContributionCents,
-  getContributionSummary,
-} from "./types";
 
 export default function ContributionsPage() {
   return (
@@ -47,7 +41,7 @@ async function ContributionsContent() {
     admin,
     branches,
   );
-  const summary = getContributionSummary(records);
+  const dashboard = await loadModuleSummary(admin, "contributions", branches.map(b => b.id));
   const canCreate = hasPermission(
     access.permissions,
     "contributions.create",
@@ -76,35 +70,6 @@ async function ContributionsContent() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <ContributionSummaryCard
-          label="Total Contributions"
-          value={summary.count.toLocaleString("en-PH")}
-          icon={<Receipt />}
-        />
-
-        <ContributionSummaryCard
-          label="Total Amount"
-          value={formatContributionCents(summary.totalAmountCents)}
-          icon={<DollarSign />}
-          valueClassName="text-emerald-700"
-        />
-
-        <ContributionSummaryCard
-          label="Tithe Total"
-          value={formatContributionCents(summary.titheTotalCents)}
-          icon={<HandCoins />}
-          valueClassName="text-[#203264]"
-        />
-
-        <ContributionSummaryCard
-          label="Love Offering Total"
-          value={formatContributionCents(summary.loveOfferingTotalCents)}
-          icon={<HeartHandshake />}
-          valueClassName="text-blue-700"
-        />
-      </div>
-
       {branches.length === 0 ? (
         <EmptyState
           icon={<HandCoins className="h-5 w-5" />}
@@ -113,46 +78,13 @@ async function ContributionsContent() {
         />
       ) : (
         <ContributionsTable
+          dashboard={dashboard}
           records={records}
           branches={branches}
           canUpdate={canUpdate}
         />
       )}
     </PageContainer>
-  );
-}
-
-function ContributionSummaryCard({
-  label,
-  value,
-  icon,
-  valueClassName = "text-[#203264]",
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  valueClassName?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              {label}
-            </p>
-
-            <p className={`mt-3 truncate text-2xl font-semibold ${valueClassName}`}>
-              {value}
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

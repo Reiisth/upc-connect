@@ -78,7 +78,7 @@ exports.historicalHarness = function historicalHarness(options = {}) {
     single() { return this.maybeSingle(); }
     then(resolve, reject) { return Promise.resolve(this.result()).then(resolve, reject); }
   }
-  const admin = { from: (table) => new Query(table), auth: { getUser: async () => ({ data: { user: options.anonymous ? null : user }, error: null }) } };
+  const admin = { rpc: async () => ({ data: {totals:[],trend:[],breakdown:[]}, error:null }), from: (table) => new Query(table), auth: { getUser: async () => ({ data: { user: options.anonymous ? null : user }, error: null }) } };
   const stubs = {
     'server-only': {},
     react: { ...React, cache: (fn) => fn, useActionState: (_action, state) => [state, () => {}] },

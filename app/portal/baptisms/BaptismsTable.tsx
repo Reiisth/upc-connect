@@ -1,4 +1,5 @@
 "use client";
+import ModuleMiniDashboard, { type ModuleSummary } from "@/components/module-summary";
 
 import {
   Droplets,
@@ -33,6 +34,7 @@ import {
 } from "./types";
 
 type BaptismsTableProps = {
+  dashboard?: ModuleSummary;
   records: BaptismRecord[];
   branches: BaptismBranch[];
   canUpdateWater: boolean;
@@ -48,6 +50,7 @@ const baptismTypeVariants: Record<
 };
 
 export default function BaptismsTable({
+  dashboard,
   records,
   branches,
   canUpdateWater,
@@ -109,6 +112,7 @@ export default function BaptismsTable({
 
   return (
     <div className="space-y-4">
+      {dashboard && <ModuleMiniDashboard data={dashboard} branchId={branchFilter} branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
       <div className="flex flex-col gap-3">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

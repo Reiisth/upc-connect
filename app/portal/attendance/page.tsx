@@ -1,9 +1,7 @@
+import { loadModuleSummary } from "@/lib/module-summary";
 import { Suspense } from "react";
 import {
-  CalendarDays,
-  CheckCircle2,
   ClipboardCheck,
-  Clock3,
 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -96,13 +94,7 @@ async function AttendanceContent() {
     branch: branchMap.get(service.church_branch_id) ?? null,
   }));
 
-  const ongoingCount = services.filter(
-    (service) => service.status === "ongoing",
-  ).length;
-  const scheduledCount = services.filter(
-    (service) => service.status === "scheduled",
-  ).length;
-
+  const dashboard = await loadModuleSummary(admin, "attendance", branchIds);
   return (
     <PageContainer>
       <PageHeader
@@ -112,28 +104,6 @@ async function AttendanceContent() {
         description="Choose a service to review attendance and record member participation."
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <AttendanceSummaryCard
-          label="Visible Services"
-          value={services.length}
-          icon={<CalendarDays />}
-        />
-
-        <AttendanceSummaryCard
-          label="Scheduled"
-          value={scheduledCount}
-          icon={<Clock3 />}
-          valueClassName="text-amber-700"
-        />
-
-        <AttendanceSummaryCard
-          label="Ongoing"
-          value={ongoingCount}
-          icon={<CheckCircle2 />}
-          valueClassName="text-emerald-700"
-        />
-      </div>
-
       {branches.length === 0 ? (
         <EmptyState
           icon={<ClipboardCheck className="h-5 w-5" />}
@@ -142,6 +112,7 @@ async function AttendanceContent() {
         />
       ) : (
         <AttendanceServicesTable
+          dashboard={dashboard}
           services={services}
           branches={branches}
           serviceTypes={serviceTypes}
@@ -149,40 +120,6 @@ async function AttendanceContent() {
         />
       )}
     </PageContainer>
-  );
-}
-
-function AttendanceSummaryCard({
-  label,
-  value,
-  icon,
-  valueClassName = "text-[#203264]",
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  valueClassName?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              {label}
-            </p>
-
-            <p className={`mt-3 text-3xl font-semibold ${valueClassName}`}>
-              {value}
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

@@ -13,10 +13,10 @@ const COLORS = ["#365FA6", "#16836B", "#B7791F", "#8B5CB5"];
 export type ReportChartSeries = { label: string; values: (number | string | null)[]; color?: string };
 export type ReportChartProps = {
   title: string; description?: string; labels: string[]; series: ReportChartSeries[];
-  kind?: "line" | "bar"; money?: boolean; horizontal?: boolean; emptyMessage: string;
+  compact?: boolean; kind?: "line" | "bar"; money?: boolean; horizontal?: boolean; emptyMessage: string;
 };
 
-export default function ReportChart({ title, description, labels, series, kind = "bar", money = false, horizontal = false, emptyMessage }: ReportChartProps) {
+export default function ReportChart({ title, description, labels, series, compact = false, kind = "bar", money = false, horizontal = false, emptyMessage }: ReportChartProps) {
   const id = useId();
   const coordinates = money ? relativeMoneyCoordinates(series.map((item) => item.values.map((value) => typeof value === "string" ? value : null))) :
     series.map((item) => item.values.map((value) => typeof value === "number" && Number.isFinite(value) ? value : null));
@@ -53,12 +53,12 @@ export default function ReportChart({ title, description, labels, series, kind =
   } satisfies ChartOptions<"line" | "bar">;
 
   return <Card className="min-w-0">
-    <CardHeader><CardTitle><h3 id={`${id}-title`} className="text-base leading-snug">{title}</h3></CardTitle>
+    <CardHeader className={compact ? "p-4 pb-2" : undefined}><CardTitle><h3 id={`${id}-title`} className="text-base leading-snug">{title}</h3></CardTitle>
       {description && <p className="text-xs leading-relaxed text-slate-500">{description}</p>}
     </CardHeader>
-    <CardContent>
-      {!hasData ? <EmptyState title="No chart activity" description={emptyMessage} className="min-h-64 px-3 py-8" /> : <>
-        <div className="relative w-full min-w-0" style={{ height: horizontal ? Math.min(480, Math.max(248, labels.length * 36)) : 256 }}>
+    <CardContent className={compact ? "p-4 pt-0" : undefined}>
+      {!hasData ? <EmptyState title="No chart activity" description={emptyMessage} className={compact ? "min-h-[220px] px-3 py-6" : "min-h-64 px-3 py-8"} /> : <>
+        <div className="relative w-full min-w-0" style={{ height: compact ? 220 : horizontal ? Math.min(480, Math.max(248, labels.length * 36)) : 256 }}>
           {kind === "line" ? <Line data={data} options={options} role="img" aria-labelledby={`${id}-title`} fallbackContent={title} /> :
             <Bar data={data} options={options} role="img" aria-labelledby={`${id}-title`} fallbackContent={title} />}
         </div>

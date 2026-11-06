@@ -1,4 +1,5 @@
 "use client";
+import ModuleMiniDashboard, { type ModuleSummary } from "@/components/module-summary";
 
 import { serviceTimestamp } from "@/lib/manila-time";
 
@@ -36,6 +37,7 @@ import {
 } from "../services/types";
 
 type AttendanceServicesTableProps = {
+  dashboard?: ModuleSummary;
   services: ServiceRecord[];
   branches: ServiceBranch[];
   serviceTypes: ServiceTypeOption[];
@@ -53,6 +55,7 @@ const statusVariants: Record<
 };
 
 export default function AttendanceServicesTable({
+  dashboard,
   services,
   branches,
   serviceTypes,
@@ -117,6 +120,7 @@ export default function AttendanceServicesTable({
 
   return (
     <div className="space-y-4">
+      {dashboard && <ModuleMiniDashboard data={dashboard} branchId={branchFilter} branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
