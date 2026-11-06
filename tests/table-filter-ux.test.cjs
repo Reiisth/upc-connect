@@ -89,7 +89,7 @@ test('Phase 2F tables retain headers when their nonempty source dataset filters 
     ['app/portal/attendance/AttendanceView.tsx', 'rows', 6, 'filteredRows'],
     ['app/portal/follow-ups/FollowUpsTable.tsx', 'rows', 8, 'filtered'],
     ['app/portal/contributions/ContributionsTable.tsx', 'records', 9, 'filteredRecords'],
-    ['app/portal/baptisms/BaptismsTable.tsx', 'records', 8, 'filteredRecords'],
+    ['app/portal/baptisms/BaptismsTable.tsx', 'records', 7, 'filteredRecords'],
   ];
   for (const [file, dataset, columns, filtered] of cases) {
     const text = source(file);

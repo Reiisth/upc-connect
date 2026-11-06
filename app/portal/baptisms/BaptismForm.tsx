@@ -1,7 +1,8 @@
 "use client";
 
+import MemberAutocomplete from "../contributions/MemberAutocomplete";
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useLayoutEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Button } from "@/components/ui/button";
@@ -44,15 +45,23 @@ const defaultValues: BaptismFormValues = {
   notes: "",
 };
 
-export function BaptismForm({
+export function BaptismForm(props:BaptismFormProps) {
+  const [session,setSession]=useState(0);
+  // Cache Components hides routes with Activity instead of unmounting them.
+  // A fresh child also clears useActionState and the autocomplete's local query.
+  useLayoutEffect(()=>()=>setSession(current=>current+1),[]);
+  return <BaptismFormFields key={session} {...props} onReset={()=>setSession(current=>current+1)}/>;
+}
+
+function BaptismFormFields({
   branches,
   members,
   action,
   submitLabel,
   allowedBaptismTypes = BAPTISM_TYPES,
   values,
-  existingMemberName,
-}: BaptismFormProps) {
+  existingMemberName, onReset,
+}: BaptismFormProps & {onReset:()=>void}) {
   const formValues = values ?? defaultValues;
   const initialBaptismType = allowedBaptismTypes.includes(
     formValues.baptismType,
@@ -102,16 +111,7 @@ export function BaptismForm({
 
   return (
     <form action={formAction} className="space-y-6">
-      {actionState.error && (
-        <div
-          role="alert"
-          aria-live="polite"
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-        >
-          <p className="font-semibold">Unable to save baptism record</p>
-          <p className="mt-1">{actionState.error}</p>
-        </div>
-      )}
+
 
       <FormSection
         title="Baptism Information"
@@ -160,27 +160,8 @@ export function BaptismForm({
               <input type="hidden" name="member_id" value={formValues.memberId} />
               <Input id="baptism-member" value={existingMemberName ?? "Unknown member"} readOnly disabled />
             </> : (
-            <Select
-              id="baptism-member"
-              name="member_id"
-              value={memberId}
-              onChange={(event) => setMemberId(event.target.value)}
-              disabled={!branchId || branchMembers.length === 0}
-              required
-            >
-              <option value="" disabled>
-                Select a member
-              </option>
-
-              {branchMembers.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.fullName}
-                  {!isActiveMember(member)
-                    ? " (Historical link)"
-                    : ""}
-                </option>
-              ))}
-            </Select>
+              <MemberAutocomplete key={branchId} id="baptism-member" members={branchMembers}
+                value={memberId} onChange={setMemberId} branchId={branchId} showContext={false}/>
             )}
           </FormField>
 
@@ -249,7 +230,6 @@ export function BaptismForm({
           <FormField
             label="Officiated By"
             htmlFor="baptism-officiated-by"
-            description="Free-text officiant name for now."
           >
             <Input
               id="baptism-officiated-by"
@@ -267,7 +247,6 @@ export function BaptismForm({
           <FormField
             label="Location"
             htmlFor="baptism-location"
-            description="The physical baptism location may differ from the owning branch."
           >
             <Input
               id="baptism-location"
@@ -298,9 +277,20 @@ export function BaptismForm({
           </FormField>
         </div>
 
+      {actionState.error && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        >
+          <p className="font-semibold">Unable to save baptism record</p>
+          <p className="mt-1">{actionState.error}</p>
+        </div>
+      )}
+
         <FormActions>
           <Button variant="outline" asChild>
-            <Link href="/portal/baptisms">Cancel</Link>
+            <Link href="/portal/baptisms" onClick={onReset}>Cancel</Link>
           </Button>
 
           <BaptismSubmitButton label={submitLabel} />

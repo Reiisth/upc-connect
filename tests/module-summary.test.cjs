@@ -34,6 +34,16 @@ test('module SQL summaries match Reports with physical, historical and exact rec
  assert.equal(total(summary('attendance')).physical,3);assert.equal(total(summary('attendance')).count,4); // Includes Excused but physical excludes it.
  sql(`UPDATE members SET member_status='inactive',church_branch_id='${b}' WHERE id='00000000-0000-0000-0000-000000000011';`);
  assert.equal(total(summary('attendance')).physical,3,'current status/home branch never reattributes physical history');
+ sql(readFileSync('supabase/migrations/20261107100000_baptism_summary_series.sql','utf8'));
+ const typed=JSON.parse(sql(`SELECT get_baptism_module_summary(ARRAY['${a}'::uuid],'2026-10-01','2026-10-25');`));
+ assert.ok(typed.trend.every(row=>row.water+row.holyGhost===row.value));
+ assert.ok(typed.trend.every(row=>row.branchId===null||row.branchId===a));
+ const typedGlobal=typed.trend.filter(row=>row.branchId===null);
+ assert.equal(typedGlobal.reduce((sum,row)=>sum+row.water,0),total(summary('baptisms')).water);
+ assert.equal(typedGlobal.reduce((sum,row)=>sum+row.holyGhost,0),total(summary('baptisms')).holyGhost);
+ assert.equal(sql("SELECT has_function_privilege('authenticated','public.get_baptism_module_summary(uuid[],date,date)','EXECUTE');"),'f');
+ assert.deepEqual(JSON.parse(sql("SELECT get_baptism_module_summary(ARRAY[]::uuid[],'2026-10-01','2026-10-25');")).trend,[]);
+
  sql(`INSERT INTO financial_contributions(church_branch_id,contribution_date,amount,contribution_type,payment_method,contributor_type) VALUES ('${a}','2026-10-20',0.21,'other','cash','visitor');`);
  const money=summary('contributions');assert.equal(total(money).amount,'0.51');assert.equal(money.breakdown.find(t=>t.branchId===null&&t.label==='visitor').value,'0.21');assert.ok(money.breakdown.some(t=>t.branchId===null&&t.label==='anonymous'));
  assert.equal(total(summary('contributions',[b])).amount,'0.05','foreign contribution stays at receiving branch');
@@ -53,6 +63,6 @@ test('module loader sends only authorized branch IDs, fixed six-month range and 
 test('mini dashboards render sparse/empty data, exact money and module definitions without identities',()=>{
  const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
  const Component=loadTypeScript('components/module-summary.tsx',{'@/app/portal/reports/ReportChart':{__esModule:true,default:p=>React.createElement('div',{'data-chart':p.title},p.description,p.emptyMessage)}}).default;
- for(const kind of ['attendance','baptisms','contributions']){const html=renderToStaticMarkup(React.createElement(Component,{data:{module:kind,from:'2026-06-01',to:'2026-11-06',totals:[],trend:[],breakdown:[]},branchId:'all',branchName:'All accessible branches'}));assert.match(html,/Module mini dashboard/);if(kind!=="contributions")assert.match(html,/Last (6|12) calendar months/);else assert.match(html,/Selected date range/);assert.match(html,/No .*data for this period/);if(kind==='attendance')assert.match(html,/Present only/);if(kind==='baptisms')assert.match(html,/not distinct people/);if(kind==='contributions')assert.match(html,/Amount by Contributor Type/);}
+ for(const kind of ['attendance','baptisms','contributions']){const html=renderToStaticMarkup(React.createElement(Component,{data:{module:kind,from:'2026-06-01',to:'2026-11-06',totals:[],trend:[],breakdown:[]},branchId:'all',branchName:'All accessible branches'}));assert.match(html,/Module mini dashboard/);if(kind==="attendance")assert.match(html,/Last (6|12) calendar months/);else assert.match(html,/Selected date range/);assert.match(html,/No .*data for this period/);if(kind==='attendance')assert.match(html,/Present only/);if(kind==='baptisms')assert.match(html,/not distinct people/);if(kind==='contributions')assert.match(html,/Amount by Contributor Type/);}
  const html=renderToStaticMarkup(React.createElement(Component,{data:{module:'contributions',from:'2026-06-01',to:'2026-11-06',totals:[{branchId:'b',amount:'9007199254740999.99',count:1,average:'9007199254740999.99'}],trend:[],breakdown:[]},branchId:'b',branchName:'B'}));assert.match(html,/9,007,199,254,740,999.99/);
 });

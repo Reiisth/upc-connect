@@ -3,12 +3,17 @@ import ModuleMiniDashboard, { type ModuleSummary } from "@/components/module-sum
 
 import {
   Droplets,
+  Flame,
   Pencil,
   Search,
   SearchX,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 
+import { refreshBaptismSummary } from "./dashboard-actions";
+import { resolveAnalyticsDateRange, validAnalyticsDate } from "@/lib/analytics/date-range";
+import { FormField } from "@/components/ui/form-field";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
@@ -56,11 +61,33 @@ export default function BaptismsTable({
   canUpdateWater,
   canUpdateHolyGhost,
 }: BaptismsTableProps) {
+  const [page,setPage]=useState(1);
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(dashboard?.from??"");
+  const [dateTo, setDateTo] = useState(dashboard?.to??"");
+  const [range,setRange]=useState({from:dashboard?.from??"",to:dashboard?.to??"",includeUndated:!dashboard});
+  const [summary,setSummary]=useState(dashboard);
+  const [rangeError,setRangeError]=useState("");
+  const [pending,startTransition]=useTransition();
+  const [preset,setPreset]=useState("recent");
+  function applyRange(event:React.FormEvent<HTMLFormElement>){
+    event.preventDefault();setRangeError("");
+    if(!validAnalyticsDate(dateFrom)||!validAnalyticsDate(dateTo)||dateFrom>dateTo){setRangeError("Choose a valid start and end date, with From on or before To.");return;}
+    startTransition(async()=>{try{
+      const next=await refreshBaptismSummary(dateFrom,dateTo);
+      setSummary(next);setRange({from:dateFrom,to:dateTo,includeUndated:preset==="all"});setPage(1);
+    }catch{setRangeError("Unable to apply date range. Try again.");}});
+  }
+  function choosePreset(value:string){
+    setPreset(value);setRangeError("");
+    const today=dashboard?.to??new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Manila"});
+    if(value==="recent"){setDateFrom(dashboard?.from??`${today.slice(0,7)}-01`);setDateTo(today);}
+    else if(value==="month"){setDateFrom(`${today.slice(0,7)}-01`);setDateTo(today);}
+    else if(value==="all"){const dates=records.flatMap(record=>record.baptismDate?[record.baptismDate]:[]).sort(),last=dates[dates.length-1]??today;setDateFrom(dates[0]??today);setDateTo(last>today?last:today);}
+    else if(value!=="custom"){const next=resolveAnalyticsDateRange({preset:value as "last_30_days"|"year_to_date"},today);setDateFrom(next.from);setDateTo(next.to);}
+  }
 
   const filteredRecords = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -77,13 +104,9 @@ export default function BaptismsTable({
           typeFilter === "all" ||
           record.baptismType === typeFilter;
         const matchesDateFrom =
-          !dateFrom ||
-          (record.baptismDate !== null &&
-            record.baptismDate >= dateFrom);
+          !range.from || (record.baptismDate===null ? range.includeUndated : record.baptismDate >= range.from);
         const matchesDateTo =
-          !dateTo ||
-          (record.baptismDate !== null &&
-            record.baptismDate <= dateTo);
+          !range.to || (record.baptismDate===null ? range.includeUndated : record.baptismDate <= range.to);
 
         return (
           matchesSearch &&
@@ -94,7 +117,11 @@ export default function BaptismsTable({
         );
       })
       .sort(compareBaptisms);
-  }, [records, search, branchFilter, typeFilter, dateFrom, dateTo]);
+  }, [records, search, branchFilter, typeFilter, range]);
+
+  const pageSize=10,totalPages=Math.max(1,Math.ceil(filteredRecords.length/pageSize));
+  const currentPage=Math.min(page,totalPages);
+  const pageRecords=filteredRecords.slice((currentPage-1)*pageSize,currentPage*pageSize);
 
   const hasFilters =
     search.trim() !== "" ||
@@ -105,6 +132,7 @@ export default function BaptismsTable({
   const hasClearableFilters = search.trim() !== "" || branchFilter !== "all" || typeFilter !== "all";
 
   function clearFilters() {
+    setPage(1);
     setSearch("");
     setBranchFilter("all");
     setTypeFilter("all");
@@ -112,25 +140,37 @@ export default function BaptismsTable({
 
   return (
     <div className="space-y-4">
-      {dashboard && <ModuleMiniDashboard data={dashboard} branchId={branchFilter} branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
-      <div className="flex flex-col gap-3">
+      <form onSubmit={applyRange} noValidate aria-label="Baptism date range">
+        <fieldset aria-labelledby="baptism-range-title" className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+          <h2 id="baptism-range-title" className="mb-3 text-sm font-semibold text-[#203264]">Date range</h2>
+          <div className="grid grid-cols-2 items-end gap-3 lg:grid-cols-[minmax(150px,1fr)_minmax(150px,1fr)_minmax(150px,1fr)_auto]">
+            <FormField label="Period" htmlFor="baptism-period" className="col-span-2 lg:col-span-1"><Select id="baptism-period" value={preset} onChange={e=>choosePreset(e.target.value)}><option value="recent">Recent 12 months</option><option value="month">This month</option><option value="last_30_days">Last 30 days</option><option value="year_to_date">Year to date</option><option value="all">All time</option><option value="custom">Custom range</option></Select></FormField>
+            <FormField label="From" htmlFor="baptisms-from"><Input id="baptisms-from" type="date" value={dateFrom} max={dateTo||undefined} onChange={(event)=>{setDateFrom(event.target.value);setPreset("custom");}} aria-label="Baptisms from date" aria-invalid={Boolean(rangeError)||undefined}/></FormField>
+            <FormField label="To" htmlFor="baptisms-to"><Input id="baptisms-to" type="date" value={dateTo} min={dateFrom||undefined} onChange={(event)=>{setDateTo(event.target.value);setPreset("custom");}} aria-label="Baptisms to date" aria-invalid={Boolean(rangeError)||undefined}/></FormField>
+            <Button type="submit" className="col-span-2 lg:col-span-1" disabled={pending}>{pending?"Applying...":"Apply range"}</Button>
+          </div>
+          {rangeError&&<p role="alert" className="mt-2 text-sm text-red-700">{rangeError}</p>}
+        </fieldset>
+      </form>
+      {summary && <ModuleMiniDashboard data={summary} branchId={branchFilter} branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
           <Input
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {setSearch(event.target.value);setPage(1);}}
             placeholder="Search by member name..."
             className="pl-9"
             aria-label="Search baptism records by member name"
           />
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="w-full shrink-0 sm:w-56">
           <Select
             value={branchFilter}
-            onChange={(event) => setBranchFilter(event.target.value)}
+            onChange={(event) => {setBranchFilter(event.target.value);setPage(1);}}
             aria-label="Filter baptisms by branch"
           >
             <option value="all">All branches</option>
@@ -141,22 +181,10 @@ export default function BaptismsTable({
             ))}
           </Select>
 
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(event) => setDateFrom(event.target.value)}
-            aria-label="Baptisms from date"
-          />
 
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(event) => setDateTo(event.target.value)}
-            aria-label="Baptisms to date"
-          />
         </div>
 
-        {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} className="self-start" />}
+        {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} className="self-start sm:self-center" />}
       </div>
 
       {records.length === 0 ? (
@@ -174,12 +202,11 @@ export default function BaptismsTable({
           }
         />
       ) : (
-        <Table className="min-w-[1250px]">
+        <Table className="min-w-[1100px]">
           <TableHeader>
             <TableRow>
               <TableHead>Member</TableHead>
-              <TableHead><div className="flex items-center gap-1">Baptism Type<TableColumnFilter label="Baptism Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All baptism types" }, ...BAPTISM_TYPES.map((type) => ({ value: type, label: formatBaptismType(type) }))]} /></div></TableHead>
-              <TableHead>Baptism Date</TableHead>
+              <TableHead><div className="flex items-center gap-1">Baptism Type<TableColumnFilter label="Baptism Type" value={typeFilter} onChange={value=>{setTypeFilter(value);setPage(1);}} options={[{ value: "all", label: "All baptism types" }, ...BAPTISM_TYPES.map((type) => ({ value: type, label: formatBaptismType(type) }))]} /></div></TableHead>
               <TableHead>Branch</TableHead>
               <TableHead>Officiated By</TableHead>
               <TableHead>Location</TableHead>
@@ -190,13 +217,13 @@ export default function BaptismsTable({
 
           <TableBody>
             {filteredRecords.length === 0 ? (
-              <TableRow><TableCell colSpan={8}><p role="status" className="py-3 text-center text-sm text-slate-500">No baptism records match the current filters.</p></TableCell></TableRow>
-            ) : filteredRecords.map((record) => (
+              <TableRow><TableCell colSpan={7}><p role="status" className="py-3 text-center text-sm text-slate-500">No baptism records match the current filters.</p></TableCell></TableRow>
+            ) : pageRecords.map((record) => (
               <TableRow key={record.id}>
                 <TableCell>
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 rounded-xl bg-[#EEF3FB] p-2 text-[#203264]">
-                      <Droplets className="h-4 w-4" />
+                    <div className={`mt-0.5 rounded-xl p-2 ${record.baptismType==="water"?"bg-sky-50 text-sky-600":"bg-amber-50 text-amber-600"}`}>
+                      {record.baptismType==="water"?<Droplets className="h-4 w-4" />:<Flame className="h-4 w-4" />}
                     </div>
 
                     <div className="min-w-0">
@@ -204,19 +231,7 @@ export default function BaptismsTable({
                         {record.memberName}
                       </p>
 
-                      {(!record.memberIsArchived &&
-                        record.memberStatus !== "active") ||
-                      record.memberIsArchived ? (
-                        <p className="mt-1 text-xs text-amber-700">
-                          Historical member link
-                        </p>
-                      ) : null}
-
-                      {record.notes && (
-                        <p className="mt-1 max-w-xs truncate text-xs text-slate-500">
-                          {record.notes}
-                        </p>
-                      )}
+                      <p className="mt-1 text-xs text-slate-500">{formatBaptismDate(record.baptismDate)}</p>
                     </div>
                   </div>
                 </TableCell>
@@ -227,10 +242,6 @@ export default function BaptismsTable({
                   >
                     {formatBaptismType(record.baptismType)}
                   </StatusBadge>
-                </TableCell>
-
-                <TableCell className="whitespace-nowrap">
-                  {formatBaptismDate(record.baptismDate)}
                 </TableCell>
 
                 <TableCell>
@@ -285,6 +296,14 @@ export default function BaptismsTable({
           </TableBody>
         </Table>
       )}
+      {filteredRecords.length>0&&<nav aria-label="Baptisms pagination" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p role="status" className="text-sm text-slate-500">Showing {(currentPage-1)*pageSize+1}-{Math.min(currentPage*pageSize,filteredRecords.length)} of {filteredRecords.length} baptism records</p>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" size="sm" disabled={currentPage===1} onClick={()=>setPage(currentPage-1)}>Previous</Button>
+          <span className="text-sm text-slate-500">Page {currentPage} of {totalPages}</span>
+          <Button type="button" variant="outline" size="sm" disabled={currentPage===totalPages} onClick={()=>setPage(currentPage+1)}>Next</Button>
+        </div>
+      </nav>}
     </div>
   );
 }

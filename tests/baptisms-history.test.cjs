@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Node regression suite. */
 const test = require('node:test');
+const React=require('react');
 const assert = require('node:assert/strict');
 const { renderToStaticMarkup } = require('react-dom/server');
 const { historicalHarness } = require('./helpers/historical-records-harness.cjs');
@@ -98,9 +99,11 @@ test('unknown baptism dates stay NULL and corrections may add or clear dates wit
 });
 
 test('unique member/type guard and database unique-race handling remain enforced for creation', async () => {
-  const h = historicalHarness();
-  assert.match((await h.load(route).createBaptism(null, h.baptismForm())).error, /already has/);
-  assert.equal(h.writes.length, 0);
+  for(const baptism_type of ['water','holy_ghost']){
+    const h = historicalHarness();
+    assert.match((await h.load(route).createBaptism(null, h.baptismForm({baptism_type}))).error, /already has/);
+    assert.equal(h.writes.length, 0);
+  }
   const race = historicalHarness({ uniqueRace: true });
   assert.match((await race.load(route).createBaptism(null, race.baptismForm({ member_id: 'current' }))).error, /already has/);
 });
@@ -126,7 +129,12 @@ test('new-record options exclude archived/inactive members, while list renders h
   const options = await h.load('app/portal/baptisms/data.ts').loadBaptismOptions(access, h.admin);
   assert.deepEqual(Array.from(options.members, (member) => member.id), ['current', 'replacement']);
   const html = renderToStaticMarkup(await h.content('app/portal/baptisms/page.tsx'));
-  assert.ok(html.includes('Historical Member') && html.includes('Date unknown'));
+  assert.ok(html.includes('Historical Member') && html.includes('Date range'));
+  const branches=await h.load('lib/historical-records.ts').getHistoricalRecordBranches(access,h.admin);
+  const records=await h.load('app/portal/baptisms/data.ts').loadBaptismRecords(h.admin,branches);
+  const Table=h.load('app/portal/baptisms/BaptismsTable.tsx').default;
+  const unfiltered=renderToStaticMarkup(React.createElement(Table,{records,branches,canUpdateWater:false,canUpdateHolyGhost:false}));
+  assert.ok(unfiltered.includes('Date unknown'),'undated historical records remain available outside dated filtering');
   assert.ok(!html.includes('New Baptism Record') && !html.includes('>Edit<') && !html.includes('Foreign Private'));
 });
 
