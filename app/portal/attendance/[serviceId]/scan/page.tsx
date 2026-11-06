@@ -85,7 +85,7 @@ async function QrAttendanceContent({
           <CardTitle>{service.name}</CardTitle>
           <CardDescription>
             Scanning is fixed to this service. Each member is checked against
-            the service branch before a record is created.
+            the host Service authorization and eligibility before a record is created.
           </CardDescription>
         </CardHeader>
 
@@ -185,10 +185,10 @@ function getUnavailableDescription(
   }
 
   if (status === "completed") {
-    return "QR attendance scanning closes when a service is completed. Use the attendance view for review or corrections permitted by your role.";
+    return "QR attendance scanning closes when a service is completed. Its history is read-only.";
   }
 
-  return "QR scanning is not available for the current service status.";
+  return "Attendance opens when the Service start time is reached. Refresh then to scan.";
 }
 
 function getServiceStatusVariant(

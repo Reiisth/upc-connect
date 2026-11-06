@@ -13,6 +13,14 @@ test('module SQL summaries match Reports with physical, historical and exact rec
  sql("ALTER TABLE financial_contributions ADD COLUMN contributor_type text; UPDATE financial_contributions SET contributor_type=CASE WHEN member_id IS NULL THEN 'anonymous' ELSE 'member' END;");
  sql(readFileSync('supabase/archive/pre_baseline/20261029090000_add_reports_analytics.sql','utf8'));
  sql(readFileSync('supabase/migrations/20261106090000_module_summaries.sql','utf8'));
+ sql("ALTER TABLE attendance_records ADD CONSTRAINT attendance_records_attendance_status_check CHECK(attendance_status IN ('present','excused','late'));");
+ const countBefore=Number(sql('SELECT count(*) FROM attendance_records;'));
+ sql("UPDATE attendance_records SET attendance_status='late' WHERE id=(SELECT id FROM attendance_records WHERE attendance_status='present' LIMIT 1);");
+ sql(readFileSync('supabase/migrations/20261106100000_attendance_lifecycle.sql','utf8'));
+ assert.equal(Number(sql('SELECT count(*) FROM attendance_records;')),countBefore);
+ assert.equal(sql("SELECT count(*) FROM attendance_records WHERE attendance_status='late';"),'0');
+ sql("INSERT INTO attendance_records(attendance_status) VALUES ('late');",db,true);
+ sql("INSERT INTO attendance_records(attendance_status) VALUES ('absent'); DELETE FROM attendance_records WHERE service_id IS NULL;");
  for(const ids of [[a],[b],[a,b]]){
   const reports=JSON.parse(sql(`SELECT get_reports_analytics(ARRAY[${ids.map(id=>`'${id}'::uuid`).join(',')}],'2026-10-01','2026-10-25','month','2026-10-29');`));
   const global=key=>reports[key].find(t=>t.branchId===null);
@@ -20,6 +28,9 @@ test('module SQL summaries match Reports with physical, historical and exact rec
   const baptism=summary('baptisms',ids);assert.equal(total(baptism).count,global('baptisms').total);assert.equal(total(baptism).water,global('baptisms').water);assert.equal(total(baptism).holyGhost,global('baptisms').holyGhost);assert.equal(total(baptism).undated,global('baptisms').undatedRecords);
   const money=summary('contributions',ids);assert.equal(total(money).amount,global('contributions').totalAmount);assert.equal(total(money).average,global('contributions').averageAmount);
  }
+ sql(`INSERT INTO attendance_records(service_id,member_id,attendance_status) VALUES ('00000000-0000-0000-0000-000000000021','00000000-0000-0000-0000-000000009999','absent');`);
+ const recordedAbsent=summary('attendance');assert.equal(total(recordedAbsent).physical,3);assert.equal(recordedAbsent.breakdown.find(row=>row.branchId===null&&row.label==='absent').value,1);
+ sql(`DELETE FROM attendance_records WHERE member_id='00000000-0000-0000-0000-000000009999';`);
  assert.equal(total(summary('attendance')).physical,3);assert.equal(total(summary('attendance')).count,4); // Includes Excused but physical excludes it.
  sql(`UPDATE members SET member_status='inactive',church_branch_id='${b}' WHERE id='00000000-0000-0000-0000-000000000011';`);
  assert.equal(total(summary('attendance')).physical,3,'current status/home branch never reattributes physical history');
@@ -42,6 +53,6 @@ test('module loader sends only authorized branch IDs, fixed six-month range and 
 test('mini dashboards render sparse/empty data, exact money and module definitions without identities',()=>{
  const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
  const Component=loadTypeScript('components/module-summary.tsx',{'@/app/portal/reports/ReportChart':{__esModule:true,default:p=>React.createElement('div',{'data-chart':p.title},p.description,p.emptyMessage)}}).default;
- for(const kind of ['attendance','baptisms','contributions']){const html=renderToStaticMarkup(React.createElement(Component,{data:{module:kind,from:'2026-06-01',to:'2026-11-06',totals:[],trend:[],breakdown:[]},branchId:'all',branchName:'All accessible branches'}));assert.match(html,/Module mini dashboard/);assert.match(html,/Last (6|12) calendar months/);assert.match(html,/No .*data for this period/);if(kind==='attendance')assert.match(html,/Present \+ Late/);if(kind==='baptisms')assert.match(html,/not distinct people/);if(kind==='contributions')assert.match(html,/Amount by Contributor Type/);}
+ for(const kind of ['attendance','baptisms','contributions']){const html=renderToStaticMarkup(React.createElement(Component,{data:{module:kind,from:'2026-06-01',to:'2026-11-06',totals:[],trend:[],breakdown:[]},branchId:'all',branchName:'All accessible branches'}));assert.match(html,/Module mini dashboard/);assert.match(html,/Last (6|12) calendar months/);assert.match(html,/No .*data for this period/);if(kind==='attendance')assert.match(html,/Present only/);if(kind==='baptisms')assert.match(html,/not distinct people/);if(kind==='contributions')assert.match(html,/Amount by Contributor Type/);}
  const html=renderToStaticMarkup(React.createElement(Component,{data:{module:'contributions',from:'2026-06-01',to:'2026-11-06',totals:[{branchId:'b',amount:'9007199254740999.99',count:1,average:'9007199254740999.99'}],trend:[],breakdown:[]},branchId:'b',branchName:'B'}));assert.match(html,/9,007,199,254,740,999.99/);
 });

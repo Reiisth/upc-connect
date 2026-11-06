@@ -2,7 +2,6 @@
 
 import {
   CheckCircle2,
-  Clock3,
   Pencil,
   Plus,
   Search,
@@ -52,14 +51,14 @@ type AttendanceViewProps = {
   canCorrect: boolean;
 };
 
-type AttendanceFilter = "all" | AttendanceStatus | "absent";
+type AttendanceFilter = "all" | AttendanceStatus | "unrecorded";
 
 const statusVariants: Record<
-  AttendanceStatus | "absent",
+  AttendanceStatus | "unrecorded",
   "success" | "warning" | "info" | "muted"
 > = {
   present: "success",
-  late: "warning",
+  unrecorded: "muted",
   excused: "info",
   absent: "muted",
 };
@@ -100,7 +99,7 @@ export default function AttendanceView({
         formatMemberName(row.member)
           .toLowerCase()
           .includes(normalizedSearch);
-      const rowStatus = row.attendance?.status ?? "absent";
+      const rowStatus = row.attendance?.status ?? "unrecorded";
       const matchesStatus =
         statusFilter === "all" || rowStatus === statusFilter;
 
@@ -179,9 +178,9 @@ export default function AttendanceView({
         />
 
         <AttendanceSummaryCard
-          label="Late"
-          value={summary.late}
-          icon={<Clock3 />}
+          label="Absent (Recorded)"
+          value={summary.absent}
+          icon={<SearchX />}
           valueClassName="text-amber-700"
         />
 
@@ -194,7 +193,7 @@ export default function AttendanceView({
 
         <AttendanceSummaryCard
           label="No Record (Current Roster)"
-          value={summary.absent}
+          value={summary.unrecorded}
           icon={<SearchX />}
           valueClassName="text-slate-600"
         />
@@ -277,8 +276,8 @@ export default function AttendanceView({
                   required
                 >
                   <option value="present">Present</option>
-                  <option value="late">Late</option>
                   <option value="excused">Excused</option>
+                  <option value="absent">Absent</option>
                 </Select>
               </FormField>
 
@@ -387,7 +386,7 @@ export default function AttendanceView({
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
-                <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Attendance Status" value={statusFilter} onChange={(value) => setStatusFilter(value as AttendanceFilter)} options={[{ value: "all", label: "All statuses" }, { value: "present", label: "Present" }, { value: "late", label: "Late" }, { value: "excused", label: "Excused" }, { value: "absent", label: "No record (current roster)" }]} /></div></TableHead>
+                <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Attendance Status" value={statusFilter} onChange={(value) => setStatusFilter(value as AttendanceFilter)} options={[{ value: "all", label: "All statuses" }, { value: "present", label: "Present" }, { value: "excused", label: "Excused" }, { value: "absent", label: "Absent (recorded)" }, { value: "unrecorded", label: "No record (current roster)" }]} /></div></TableHead>
                 <TableHead>Check-in Time</TableHead>
                 <TableHead>Method</TableHead>
                 <TableHead>Recorded By</TableHead>
@@ -399,7 +398,7 @@ export default function AttendanceView({
               {filteredRows.length === 0 ? (
                 <TableRow><TableCell colSpan={6}><p role="status" className="py-3 text-center text-sm text-slate-500">No attendance rows match the current filters.</p></TableCell></TableRow>
               ) : filteredRows.map((row) => {
-                const rowStatus = row.attendance?.status ?? "absent";
+                const rowStatus = row.attendance?.status ?? "unrecorded";
 
                 return (
                   <TableRow key={row.member.id}>

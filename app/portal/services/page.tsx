@@ -1,3 +1,4 @@
+import { effectiveStoredServiceStatus } from "@/app/portal/services/lifecycle";
 import Link from "next/link";
 import { Suspense } from "react";
 import {
@@ -85,7 +86,7 @@ async function ServicesContent() {
     serviceType: service.service_type as ServiceRecord["serviceType"],
     serviceDate: service.service_date,
     startTime: service.start_time,
-    status: service.status as ServiceRecord["status"],
+    status: effectiveStoredServiceStatus(service),
     churchBranchId: service.church_branch_id,
     notes: service.notes,
     branch: branchMap.get(service.church_branch_id) ?? null,

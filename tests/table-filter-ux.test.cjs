@@ -93,8 +93,8 @@ test('Phase 2F tables retain headers when their nonempty source dataset filters 
   ];
   for (const [file, dataset, columns, filtered] of cases) {
     const text = source(file);
-    assert.ok(text.includes(`${dataset}.length === 0`) || text.includes(`!${dataset}.length`), `${file} must branch on its source dataset`);
-    assert.ok(text.includes(`${filtered}.length === 0`) || text.includes(`!${filtered}.length`), `${file} must render the filtered empty row`);
+    assert.ok(text.includes(`${dataset}.length === 0`) || text.includes(`!${dataset}.length`) || text.includes(`!${dataset}.some(service => service.status === group)`), `${file} must branch on its source dataset`);
+    assert.ok(text.includes(`${filtered}.length === 0`) || text.includes(`!${filtered}.length`) || text.includes(`${filtered}.filter(service => service.status === group).length === 0`), `${file} must render the filtered empty row`);
     assert.ok(text.includes(`colSpan={${columns}}`), `${file} must span its table columns`);
   }
 });

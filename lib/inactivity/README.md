@@ -36,7 +36,7 @@ Monitoring starts at the first Monday on or after the Manila registration date:
 - Monday registration can make that Monday-Sunday week eligible.
 - Tuesday through Sunday registration starts the following Monday; the partial
   registration week is excluded from absence streaks and recent attendance rate.
-- Present and late records before the registration date are ignored.
+- Present records before the registration date are ignored.
 - Only completed-service weeks on or after the monitoring start can contribute
   to absence streaks, rates, Needs Follow-up, or approaching-threshold counts.
 - A future registration date remains calculable with no eligible weeks yet.
@@ -61,7 +61,7 @@ changed by attendance calculations or follow-up outcomes.
   are evaluated for absence and recent-rate calculations.
 - A home-branch week is eligible only if it contains a completed service. Scheduled,
   ongoing, cancelled, future, and no-service weeks do not count.
-- Present and late records at ANY branch count as physical attendance. Excused records do not.
+- Present records at ANY branch count as physical attendance. Excused and recorded Absent do not.
   QR and manual methods have identical weight.
 - One or more qualifying attendances make a week present. Multiple missed
   services make one absent week. A present week stops the consecutive streak.

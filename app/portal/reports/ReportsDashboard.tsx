@@ -72,7 +72,7 @@ export default function ReportsDashboard({ overview: data, serviceTypeNames = {}
       </div>
     </Section>
 
-    <Section id="attendance" title="Attendance" description="Physical attendance is present + late at completed services. Excused entries are excluded, and each member is counted once per service.">
+    <Section id="attendance" title="Attendance" description="Physical attendance is present only at completed services. Excused entries are excluded, and each member is counted once per service.">
       <Stats items={[
         { label: "Completed Services", value: count(attendance.completedServices) }, { label: "Physical Check-ins", value: count(attendance.physicalCheckIns) },
         { label: "Unique Attendees", value: count(attendance.uniqueMembers), note: "Deduplicated across the selected scope" }, { label: "Avg Attendance / Completed Service", value: count(attendance.averagePerService) },

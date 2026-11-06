@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { createService } from "../actions";
+import { createServiceFormAction } from "../actions";
 import {
   getAccessibleActiveBranches,
   requireServicesPermission,
@@ -55,7 +55,7 @@ async function NewServiceContent() {
         <ServiceForm
           branches={branches}
           serviceTypes={(types ?? []).map((t) => ({ key: t.key, name: t.name, isActive: t.is_active }))}
-          action={createService}
+          action={createServiceFormAction}
           submitLabel="Create Service"
         />
       )}

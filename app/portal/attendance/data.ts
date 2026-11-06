@@ -1,3 +1,4 @@
+import { effectiveStoredServiceStatus } from "../services/lifecycle";
 import "server-only";
 
 import type { BranchScope } from "@/lib/branch-access";
@@ -59,7 +60,7 @@ function mapService(
     serviceType: row.service_type as ServiceRecord["serviceType"],
     serviceDate: row.service_date,
     startTime: row.start_time,
-    status: row.status as ServiceRecord["status"],
+    status: effectiveStoredServiceStatus(row),
     churchBranchId: row.church_branch_id,
     notes: row.notes,
     branch,

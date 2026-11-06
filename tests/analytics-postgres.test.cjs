@@ -28,7 +28,7 @@ test('analytics RPC against disposable PostgreSQL', { skip: !enabled }, async (t
   try {
     sql(readFileSync(path.join(__dirname, 'fixtures/analytics.sql'), 'utf8'));
     sql(readFileSync(path.join(__dirname, '../supabase/archive/pre_baseline/20261029090000_add_reports_analytics.sql'), 'utf8'));
-    await t.test('physical attendance deduplicates member/service, includes late, excludes excused and unfinished services', () => {
+    await t.test('physical attendance deduplicates member/service, includes Present, excludes excused and unfinished services', () => {
       const data = report();
       assert.deepEqual(overall(data.attendance), { branchId: null, completedServices: 4, physicalCheckIns: 3, uniqueMembers: 2, averagePerService: 0.75 });
       assert.equal(overall(data.attendanceByType.filter((row) => row.serviceType === 'prayer_meeting')).physicalCheckIns, 1);
@@ -36,9 +36,9 @@ test('analytics RPC against disposable PostgreSQL', { skip: !enabled }, async (t
       assert.equal(overall(data.weeklyAttendance.filter((row) => row.weekStart === '2026-10-05')).uniqueMembers, 1);
       assert.ok(data.weeklyAttendance.every((row) => row.participationRatePercent === null && row.eligibleMemberCount === null));
     });
-    await t.test('recorded Present and Late remain reportable for an administratively inactive member', () => {
+    await t.test('recorded Present remain reportable for an administratively inactive member', () => {
       const before = overall(report().attendance);
-      for (const status of ['present', 'late']) {
+      for (const status of ['present']) {
         const result = JSON.parse(sql(`BEGIN;
           UPDATE members SET member_status='inactive' WHERE id='00000000-0000-0000-0000-000000000011';
           INSERT INTO attendance_records(service_id,member_id,attendance_status) SELECT id,

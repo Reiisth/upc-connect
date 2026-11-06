@@ -1,3 +1,6 @@
+"use client";
+import { useState, useTransition } from "react";
+import { unstable_rethrow } from "next/navigation";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -9,21 +12,16 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
-  formatServiceStatus,
-  SERVICE_STATUSES,
-  type ServiceStatus,
   type ServiceType,
   type ServiceTypeOption,
 } from "./types";
 import type { ServiceBranchOption } from "./access";
-import { allowedServiceStatuses } from "./lifecycle";
 
 export type ServiceFormValues = {
   name: string;
   serviceType: ServiceType;
   serviceDate: string;
   startTime: string | null;
-  status: ServiceStatus;
   churchBranchId: string;
   notes: string | null;
 };
@@ -31,7 +29,7 @@ export type ServiceFormValues = {
 type ServiceFormProps = {
   branches: ServiceBranchOption[];
   serviceTypes: ServiceTypeOption[];
-  action: (formData: FormData) => void | Promise<void>;
+  action: (formData: FormData) => void | Promise<void | {error:string}>;
   submitLabel: string;
   values?: ServiceFormValues;
 };
@@ -41,7 +39,6 @@ const defaultValues: ServiceFormValues = {
   serviceType: "",
   serviceDate: "",
   startTime: null,
-  status: "scheduled",
   churchBranchId: "",
   notes: null,
 };
@@ -53,10 +50,17 @@ export function ServiceForm({
   submitLabel,
   values,
 }: ServiceFormProps) {
+  const [error,setError] = useState("");
+  const [pending,start] = useTransition();
   const formValues = values ?? { ...defaultValues, serviceType: serviceTypes.find((type) => type.isActive)?.key ?? "" };
 
   return (
-    <form action={action} className="space-y-6">
+    <form onSubmit={event => {
+      event.preventDefault(); const data = new FormData(event.currentTarget); setError("");
+      start(async () => { try { const result = await action(data); if(result?.error) setError(result.error); }
+        catch(error) { unstable_rethrow(error); setError(error instanceof Error ? error.message : "Unable to save Service."); }
+      });
+    }} className="space-y-6">
       <FormSection
         title="Service Information"
         description="Schedule a service for one of your assigned active church branches."
@@ -101,26 +105,6 @@ export function ServiceForm({
           </FormField>
 
           <FormField
-            label="Status"
-            htmlFor="service-status"
-            required
-            description="Use Cancelled instead of deleting a service."
-          >
-            <Select
-              id="service-status"
-              name="status"
-              required
-              defaultValue={formValues.status}
-            >
-              {(values ? allowedServiceStatuses(values.status) : SERVICE_STATUSES).map((status) => (
-                <option key={status} value={status}>
-                  {formatServiceStatus(status)}
-                </option>
-              ))}
-            </Select>
-          </FormField>
-
-          <FormField
             label="Service Date"
             htmlFor="service-date"
             required
@@ -137,11 +121,13 @@ export function ServiceForm({
           <FormField
             label="Start Time"
             htmlFor="start-time"
-            description="Optional. Use Asia/Manila local time."
+            required
+            description="Asia/Manila. A start at or before now makes the Service Ongoing immediately."
           >
             <Input
               id="start-time"
               name="start_time"
+              required
               type="time"
               step="60"
               defaultValue={formValues.startTime ?? ""}
@@ -191,12 +177,13 @@ export function ServiceForm({
           </FormField>
         </div>
 
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         <FormActions>
           <Button variant="outline" asChild>
             <Link href="/portal/services">Cancel</Link>
           </Button>
 
-          <Button type="submit" disabled={branches.length === 0 || serviceTypes.length === 0}>
+          <Button type="submit" disabled={pending || branches.length === 0 || serviceTypes.length === 0}>
             {submitLabel}
           </Button>
         </FormActions>

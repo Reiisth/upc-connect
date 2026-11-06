@@ -1,110 +1,62 @@
-# Service attendance integrity (Phase 1C)
+# Attendance operations and history
 
-## Current eligibility versus recorded history
+Attendance statuses are Present, Excused and explicitly recorded Absent.
+Only Present is physical participation. A roster Member with no attendance row
+is **No record (current roster)**, not a fabricated Absent record. The status
+filter and summary distinguish these populations.
 
-New manual/QR attendance requires a non-archived Active or Inactive member from any home
-branch. Historical attendance is anchored to the recorded service/member
-pair, not today's member roster. The detail loader reads all service records,
-then merges their member identities with the current eligible roster. A person
-appears once. Transfers, archive and stored member-status changes cannot remove
-recorded rows or change Present/Late/Excused/physical-check-in totals.
+## Effective Service lifecycle
 
-Historical member lookups fetch identification/status only for recorded member
-IDs. No contacts or unrelated branch rosters are loaded. Missing member identities
-use the stored member ID as a fallback. Unsupported stored attendance statuses
-fail explicitly rather than disappearing or becoming inferred absence. Internal
-batched reads exhaust recorded results; no UI pagination is introduced.
+One helper in services/lifecycle.ts combines DATE and TIME WITHOUT TIME ZONE as
+Asia/Manila (+08:00). Completed/Cancelled are authoritative terminal states.
+Otherwise a start at/before the current instant is Ongoing; a future start is
+Scheduled, regardless of the stored nonterminal label. New schedules require a
+start time. Legacy null times are interpreted as Manila midnight on that date.
+No start_at column, cron or polling was introduced.
 
-Currently Eligible and No Record (Current Roster) describe today's population,
-not a historical eligibility denominator or proof of absence at an old service.
-Physical Check-ins = Present + Late. Excused is recorded but non-physical.
+The Attendance landing queries only stored nonterminal Services in authorized
+active host branches, paginates them, derives effective status on the server and
+shows Ongoing Services before Upcoming Services. The compact historical summary
+remains above these sections. Upcoming permits read-only Service information and
+services.update-authorized scheduling edits, without opening the roster or QR.
+A normal refresh/navigation reflects a reached start time.
 
-## Lifecycle and corrections
+Every manual/QR/correction action rechecks the effective host-Service state and
+operation permission before writing. Only Ongoing accepts writes. Scheduled,
+Completed and Cancelled are read-only, including corrections. QR always inserts
+Present; duplicates retain the existing record. Manual conflict recovery still
+requires attendance.correct and a fresh authorized Ongoing Service. Attendance
+unique(service_id,member_id), record identities and historical branch ownership
+remain unchanged.
 
-| Service status | New manual/QR | Existing-record correction |
-| --- | --- | --- |
-| scheduled | Allowed, preserving existing early check-in | Allowed with attendance.correct |
-| ongoing | Allowed | Allowed with attendance.correct |
-| completed | Blocked | Allowed with attendance.correct |
-| cancelled | Blocked | Blocked; history remains readable |
+## Member eligibility and history
 
-Both write paths use `services/lifecycle.ts`. Page capabilities are presentation
-only; each action rechecks active account, exact operation permission, service
-branch scope and lifecycle. Correction is authorized against an existing record
-in the accessible service, without requiring today's member branch/status/archive
-eligibility. It never changes service_id or member_id. The form includes the
-record ID to reject stale/tampered corrections instead of inserting replacements.
+New attendance accepts non-archived Active or Inactive Members from any home
+branch. Host-Service access and attendance.record authorize recording; home-branch
+access is unnecessary. The focused church-wide identity lookup returns minimal
+name/ID/home/status fields, never contact/account/profile data. Visiting Member
+and Inactive Member labels are derived identity context. No Member status,
+branch or archive field is written by attendance. Existing recorded relationships
+remain correctable during Ongoing even after a transfer/archive/status change.
 
-The unique(service_id, member_id) constraint remains unchanged. QR duplicates,
-including concurrent insert conflicts, return the existing record without a
-write. Manual saves targeting an existing pair are corrections. The existing
-manual conflict-recovery behavior remains: re-read the winning record, require
-attendance.correct, recheck service scope/status, then update that record. A
-record-only actor cannot overwrite a concurrent winner.
+Completed/Cancelled attendance remains accessible through Services' View
+Attendance History action at /portal/services/[serviceId]/attendance, with
+attendance.view and host-branch scope. It shows recorded rows, not a reconstructed
+historical absence roster. Direct old Attendance detail links also retain read-only
+history. Terminal corrections now require a separate future audited product
+workflow; ordinary Attendance cannot reopen or modify terminal Services.
 
-Cancelled services with recorded attendance show a warning and retain all rows;
-they remain excluded by existing Reports/Inactivity completed-service rules.
-No automatic deletion or lifecycle reopening occurs.
+## Reports and monitoring
 
-## Time conventions confirmed from live column metadata
+The additive migration converts old physical-status rows to Present and tightens
+the CHECK to Present/Excused/Absent. Reports and module SQL aggregate Present only
+for physical check-ins. Status charts use recorded Present/Excused/Absent, never
+arbitrary roster subtraction. Inactivity uses completed home-branch eligible weeks
+and registration time; Present at any completed branch Service counts for that
+week. Excused and Absent do not reset absence streaks. Member Status remains a
+human decision. No transfer-effective-date roster is invented.
 
-- services.service_date: PostgreSQL DATE, a Manila calendar date. Keep the
-  YYYY-MM-DD value unchanged for storage, filters and reporting.
-- services.start_time: TIME WITHOUT TIME ZONE, Manila local wall time.
-- attendance_records.check_in_time and created_at: TIMESTAMPTZ, absolute instants.
-- services.created_at/updated_at: TIMESTAMPTZ.
-
-`lib/manila-time.ts` interprets datetime-local inputs with explicit UTC+08:00
-(the modern Asia/Manila convention), validates calendar/time round trips and
-stores UTC ISO instants. No host-local parsing is used. Timestamp displays use
-Asia/Manila; edit controls use Manila wall time with seconds. Unchanged correction
-times preserve the original subsecond value. Blank input retains the established
-default: server current instant for Present/Late, null for Excused. Service-list
-sorting combines DATE/TIME with explicit +08:00 only when an instant is needed.
-No attendance timestamp is rewritten by editing a service.
-
-## Compatibility and remaining limits
-
-Reports already aggregates physical attendance from stored service/member pairs,
-with no current member branch/status/archive filter. Its SQL and DTO definitions
-are unchanged. Inactivity uses completed home-branch service weeks and registration time
-(`created_at`) for eligibility, with Present/Late attendance at any branch
-counting as participation during those weeks.
-There is still no transfer-effective-date or historical eligibility roster.
-Restoring historical visibility does not invent either.
-
-Existing active-branch access rules remain: this phase does not add access to
-services in inactive branches. Member names are current identity data, not an
-immutable name-at-attendance snapshot. Pre-1990 historical Philippine daylight
-saving rules are not modeled by the fixed-offset datetime input convention.
-
-The application uses separate database requests. Service writes compare the
-previous branch/date/status to reject stale metadata edits; attendance conflict
-recovery rechecks scope/status. These checks are not a database transaction with
-new attendance/contribution inserts or member transfers. Strict concurrent-write
-and direct-database enforcement would require a narrow locking RPC/trigger, left
-as an explicit deployment/product decision rather than silently adding schema.
-
-Before Phase 1D, decide whether a dedicated audited workflow should support
-missed attendance insertion after completion, reopening/cancelling completed
-services, and correction of cancelled-service anomalies. Normal actions currently
-block these operations. This phase adds no schema or RLS changes.
-
-## Phase 2L lookup
-
-Recording requires host Service scope and attendance.record, without home-branch
-access. The focused church-wide lookup returns eligible identity fields only
-(ID, name, home branch, eligibility flags), capped at 30 matches with at least
-two search characters. It grants no members.view access. Search results extend
-the manual selector, not the host roster's no-record denominator. Visiting Member
-is derived from current home branch versus Service branch and is never stored.
-
-## Returning inactive Members
-
-Administratively Inactive Members can receive new manual/QR attendance at home
-or another branch. Lookup and the host roster include Active and Inactive status,
-while archived Members remain excluded. Inactive identity labels appear in the
-selector, recorded table and QR feedback. Recording writes attendance only: it
-never reactivates, transfers or changes archive state. Review Member Status / the
-existing Member edit flow remains the human decision path. Present/Late count
-normally in inactivity and Reports, independently of stored Member Status.
+Timestamp inputs remain Manila wall time converted to UTC TIMESTAMPTZ. Blank
+check-in defaults to now only for Present; Excused/Absent default null. Unchanged
+corrections retain subsecond precision. No scheduling edit rewrites attendance
+history. See docs/ATTENDANCE_SERVICE_LIFECYCLE.md for the full change report.

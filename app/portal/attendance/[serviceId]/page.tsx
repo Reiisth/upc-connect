@@ -62,7 +62,8 @@ async function AttendanceServiceContent({
     notFound();
   }
 
-  const rows = await loadAttendanceRows(admin, service);
+  const loadedRows = service.status === "scheduled" ? [] : await loadAttendanceRows(admin, service);
+  const rows = service.status === "completed" || service.status === "cancelled" ? loadedRows.filter(row => row.attendance !== null) : loadedRows;
   const summary = getAttendanceSummary(rows);
   const canRecord = canRecordServiceAttendance(service.status) && hasPermission(
     access.permissions,
@@ -84,7 +85,7 @@ async function AttendanceServiceContent({
         eyebrow="Attendance"
         eyebrowIcon={<ClipboardCheck className="h-4 w-4" />}
         title={service.name}
-        description="Review attendance for this service and record eligible member participation."
+        description={service.status === "ongoing" ? "Review and record attendance for this Ongoing Service." : service.status === "scheduled" ? "Upcoming Service information. Attendance opens at the start time." : "Read-only recorded attendance history for this Service."}
         action={
           canScan ? (
             <Button asChild>
@@ -160,14 +161,14 @@ async function AttendanceServiceContent({
         </p>
       )}
 
-      <AttendanceView
+      {service.status === "scheduled" ? <p role="status" className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">This Service has not started. Attendance opens at its Manila start time; refresh then to open the roster.</p> : <AttendanceView
         serviceId={service.id}
         serviceBranchId={service.churchBranchId}
         rows={rows}
         summary={summary}
         canRecord={canRecord}
         canCorrect={canCorrect}
-      />
+      />}
     </PageContainer>
   );
 }

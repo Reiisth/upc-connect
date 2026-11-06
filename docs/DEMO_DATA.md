@@ -52,7 +52,7 @@ evangelism/ministry do not receive inactivity or follow-up permissions.
 
 ## Scenario members
 
-The weekly inactivity calculator uses Manila calendar dates, counts only prior Monday–Sunday weeks with at least one completed service, starts monitoring on the first Monday on or after registration, ignores pre-registration attendance, and treats `present`/`late` as physical attendance. `excused` does not reset an absence streak. Current-week services are included for service lifecycle display but are not completed historical eligibility weeks.
+The weekly inactivity calculator uses Manila calendar dates, counts only prior Monday–Sunday weeks with at least one completed service, starts monitoring on the first Monday on or after registration, ignores pre-registration attendance, and treats `present` as physical attendance. `excused` does not reset an absence streak. Current-week services are included for service lifecycle display but are not completed historical eligibility weeks.
 
 | Member | Scenario | Expected result |
 | --- | --- | --- |
@@ -114,7 +114,7 @@ local wrappers, never a hosted SQL editor or hosted connection.
 
 | Scenario | Fixture and expected result |
 | --- | --- |
-| A: North Member attends South | Lino Santos, latest finished South service: Late; recorded under South Service. |
+| A: North Member attends South | Lino Santos, latest finished South service: Present; recorded under South Service. |
 | B: South Member attends North | Benjie Lacson, latest finished North service: Present; recorded under North Service. |
 | C: Cross-branch attendance prevents absence | Benjie has zero consecutive absent weeks, despite missing South. Home branch eligibility and four-week threshold remain South's. |
 | D: Multiple branches in one week | Lino also attends North in the same week; this is one attended monitoring week, with two legitimate service check-ins. |
@@ -136,7 +136,7 @@ Reuse **Rosa H. Bautista** (North, non-archived, Member Status Inactive). No new
 seed rows are required, so exact fixture counts stay unchanged.
 
 1. Sign in as the North-only demo usher; open North Upcoming Sunday Service.
-2. Select Rosa, labeled Inactive Member, and record Present or Late. The row is
+2. Select Rosa, labeled Inactive Member, and record Present. The row is
    visible and counts as a physical check-in. Member Status remains Inactive;
    home branch and archive state remain unchanged.
 3. With an appropriately scoped recorder, search Rosa on a recordable South
@@ -149,3 +149,25 @@ seed rows are required, so exact fixture counts stay unchanged.
 
 Real browser QA recorded Rosa as Present at North, checked visible attendance
 and unchanged status/branch/archive/timestamp, then removed only that QA row.
+
+## Attendance and Service lifecycle revamp
+
+- Future Scheduled: upcoming fixture (`...000008`) is always future relative to
+  the seed date, including Sunday. It appears under Upcoming; no attendance or
+  QR, but a services.update-authorized user can edit it.
+- Ongoing: current-day fixture (`...000009`) starts at Manila 00:00 so recording
+  works throughout the seed day. Ongoing appears first. Past nonterminal Services
+  stay Ongoing until a human completes/cancels them.
+- Completed and Cancelled: omitted from the operational Attendance landing;
+  still available through Services/history and the applicable Reports rules.
+- Scheduled/Ongoing labels derive from the Manila date/time, without cron.
+  New Service forms require start time and offer no manual status selector.
+- Attendance options are Present, Excused and recorded Absent. Former physical
+  fixture values are Present. All counts remain 47 Attendance rows / 19 Services.
+- Demo pastor has services.create/update; demo admin deliberately does not gain
+  those grants. Demo usher records North attendance; these captured grants remain.
+
+Normal metadata editing is future Scheduled only. Moving a future start into the
+past makes the Service Ongoing immediately. Submission after start returns an
+inline error. Completed/Cancelled are read-only for attendance, including normal
+corrections. Existing Review Member Status remains manual.

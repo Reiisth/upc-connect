@@ -72,10 +72,10 @@ test('current week does not create absence or reset completed-week streak; lates
   assert.equal(result.lastAttendedServiceId, 'now');
 });
 
-test('late attends, excused does not; corrections immediately change derived status', () => {
+test('Present attends, excused does not; corrections immediately change derived status', () => {
   const services = [service('1', '2026-10-05'), service('2', '2026-10-12'), service('3', '2026-10-19')];
-  assert.equal(run(services, [record('3', 'excused')])[0].needsFollowUp, true);
-  const corrected = run(services, [record('3', 'late')])[0];
+  for(const status of ['excused','absent']) assert.equal(run(services, [record('3', status)])[0].needsFollowUp, true);
+  const corrected = run(services, [record('3', 'present')])[0];
   assert.equal(corrected.consecutiveAbsentWeeks, 0);
   assert.equal(corrected.needsFollowUp, false);
 });
@@ -113,9 +113,9 @@ test('registration date ignores every pre-registration service week and begins t
   assert.equal(withPreRegistrationAttendance.consecutiveAbsentWeeks, noAttendance.consecutiveAbsentWeeks);
   assert.equal(withPreRegistrationAttendance.recentEligibleWeeks, noAttendance.recentEligibleWeeks);
   assert.equal(withPreRegistrationAttendance.recentAttendanceRate, 0, 'Pre-registration present records do not enter the recent rate');
-  const postRegistrationLate = run(services, [record('2', 'late')], { members: [member] })[0];
-  assert.equal(postRegistrationLate.consecutiveAbsentWeeks, 0);
-  assert.equal(postRegistrationLate.recentAttendanceRate, 100);
+  const postRegistrationPresent = run(services, [record('2', 'present')], { members: [member] })[0];
+  assert.equal(postRegistrationPresent.consecutiveAbsentWeeks, 0);
+  assert.equal(postRegistrationPresent.recentAttendanceRate, 100);
 });
 
 test('Monday registration may use that week while Tuesday through Sunday starts the next Monday', () => {
@@ -181,7 +181,7 @@ test('invalid configuration fails rather than silently producing an activity sta
   assert.throws(() => run([], [], { recentWeekLimit: 0 }), /week limit/);
 });
 
-for (const status of ['present', 'late']) {
+for (const status of ['present']) {
   test(`cross-branch ${status} prevents home-week absence and multiple branches count once`, () => {
     const services = [service('home', '2026-10-19'), service('away', '2026-10-20', 'b')];
     const atOther = run(services, [record('away', status)])[0];

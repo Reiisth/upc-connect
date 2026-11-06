@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const ts = require('typescript');
 
 /** Load the actual TS/TSX UI for server rendering, with only external boundaries stubbed. */
-exports.loadTypeScript = function loadTypeScript(entry, stubs = {}) {
+exports.loadTypeScript = function loadTypeScript(entry, stubs = {}, globals = {}) {
   const root = path.resolve(__dirname, '../..');
   const cache = new Map();
   function load(filename) {
@@ -20,7 +20,7 @@ exports.loadTypeScript = function loadTypeScript(entry, stubs = {}) {
     }).outputText;
     vm.runInNewContext(code, {
       module, exports: module.exports, process, console, URL, URLSearchParams, Error,
-      AbortController, setTimeout, clearTimeout,
+      AbortController, setTimeout, clearTimeout, ...globals,
       require(name) {
         if (Object.hasOwn(stubs, name)) return stubs[name];
         if (!name.startsWith('.') && !name.startsWith('@/')) return require(name);

@@ -27,8 +27,12 @@ export function formatManilaTimestamp(value: string): string {
   });
 }
 
-/** DATE + TIME is Manila wall time; use only when an instant is needed to sort. */
+/** Authoritative Service start: Manila DATE + TIME, midnight for legacy nulls. */
+export function serviceStartInstant(serviceDate: string, startTime: string | null): number {
+  return Date.parse(parseManilaDateTime(`${serviceDate}T${startTime ?? "00:00"}`));
+}
+
+/** Safe sorting fallback for malformed legacy display data. */
 export function serviceTimestamp(serviceDate: string, startTime: string | null): number {
-  const instant = new Date(`${serviceDate}T${startTime || "23:59"}+08:00`).getTime();
-  return Number.isFinite(instant) ? instant : 0;
+  try { return serviceStartInstant(serviceDate,startTime); } catch { return 0; }
 }

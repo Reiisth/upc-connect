@@ -1,4 +1,5 @@
 "use client";
+import ServiceLifecycleActions from "./ServiceLifecycleActions";
 
 import { serviceTimestamp } from "@/lib/manila-time";
 
@@ -243,14 +244,15 @@ export default function ServicesTable({
 
                 <TableCell>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {canEdit && <TableActionButton
+                    {canEdit && service.status === "scheduled" && <TableActionButton
                       href={`/portal/services/${service.id}/edit`}
                       icon={<Pencil />}
                     >Edit</TableActionButton>}
+                    {canEdit && <ServiceLifecycleActions id={service.id} status={service.status} />}
                     {canManageAttendance && <TableActionButton
-                      href={`/portal/attendance/${service.id}`}
+                      href={service.status === "ongoing" ? `/portal/attendance/${service.id}` : `/portal/services/${service.id}/attendance`}
                       icon={<ClipboardCheck />}
-                    >Manage Attendance</TableActionButton>}
+                    >{service.status === "ongoing" ? "Manage Attendance" : "View Attendance History"}</TableActionButton>}
                   </div>
                   {!canEdit && !canManageAttendance && (
                     <span className="text-sm text-slate-400">

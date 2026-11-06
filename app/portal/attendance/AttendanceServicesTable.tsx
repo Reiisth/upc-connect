@@ -5,6 +5,7 @@ import { serviceTimestamp } from "@/lib/manila-time";
 
 import {
   ClipboardCheck,
+  Pencil,
   Search,
   SearchX,
 } from "lucide-react";
@@ -29,7 +30,6 @@ import { TableColumnFilter } from "@/components/ui/table-column-filter";
 import {
   formatServiceStatus,
   formatServiceType,
-  SERVICE_STATUSES,
   type ServiceTypeOption,
   type ServiceBranch,
   type ServiceRecord,
@@ -38,6 +38,7 @@ import {
 
 type AttendanceServicesTableProps = {
   dashboard?: ModuleSummary;
+  canEditServices?: boolean;
   services: ServiceRecord[];
   branches: ServiceBranch[];
   serviceTypes: ServiceTypeOption[];
@@ -56,6 +57,7 @@ const statusVariants: Record<
 
 export default function AttendanceServicesTable({
   dashboard,
+  canEditServices = false,
   services,
   branches,
   serviceTypes,
@@ -162,17 +164,9 @@ export default function AttendanceServicesTable({
         </div>
       </div>
 
-      {services.length === 0 ? (
-        <EmptyState
-          icon={<SearchX className="h-5 w-5" />}
-          title={hasFilters ? "No matching services" : "No services found"}
-          description={
-            hasFilters
-              ? "No services match your current search or filters. Try adjusting them."
-              : "Services available to your account will appear here."
-          }
-        />
-      ) : (
+      {(["ongoing","scheduled"] as const).map(group => <section key={group} className="space-y-3">
+        <div className="flex flex-wrap items-center gap-3"><h2 className={`text-lg font-semibold ${group === "ongoing" ? "text-[#203264]" : "text-slate-600"}`}>{group === "ongoing" ? "Ongoing Services" : "Upcoming Services"}</h2><StatusBadge variant={group === "ongoing" ? "success" : "muted"}>{group === "ongoing" ? "Attendance Open" : "Preparation Only"}</StatusBadge></div>
+        {!services.some(service => service.status === group) ? <EmptyState icon={<SearchX className="h-5 w-5" />} title={group === "ongoing" ? "No services are currently ongoing." : "No upcoming services."} description="No Services match this section and the current filters." /> : (
         <Table className="min-w-[1050px]">
           <TableHeader>
             <TableRow>
@@ -181,15 +175,15 @@ export default function AttendanceServicesTable({
               <TableHead>Branch</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Start Time</TableHead>
-              <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Service Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "All statuses" }, ...SERVICE_STATUSES.map((status) => ({ value: status, label: formatServiceStatus(status) }))]} /></div></TableHead>
+              <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Service Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "All statuses" }, ...["ongoing","scheduled"].map((status) => ({ value: status, label: formatServiceStatus(status) }))]} /></div></TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
-            {filteredServices.length === 0 ? (
+            {filteredServices.filter(service => service.status === group).length === 0 ? (
               <TableRow><TableCell colSpan={7}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
-            ) : filteredServices.map((service) => (
+            ) : filteredServices.filter(service => service.status === group).map((service) => (
               <TableRow key={service.id}>
                 <TableCell>
                   <div className="flex items-start gap-3">
@@ -256,14 +250,16 @@ export default function AttendanceServicesTable({
                     href={`/portal/attendance/${service.id}`}
                     icon={<ClipboardCheck />}
                   >
-                    Open
+                    {service.status === "ongoing" ? "Open Attendance" : "View Service"}
                   </TableActionButton>
+                  {service.status === "scheduled" && <p className="mt-1 text-xs text-slate-500">Starts {formatServiceDate(service.serviceDate)}, {formatStartTime(service.startTime)}</p>}
+                  {service.status === "scheduled" && canEditServices && <TableActionButton href={`/portal/services/${service.id}/edit`} icon={<Pencil />}>Edit Service</TableActionButton>}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      )}
+      )}</section>)}
     </div>
   );
 }
@@ -274,9 +270,8 @@ function compareServices(
 ) {
   const firstTime = getServiceTimestamp(first);
   const secondTime = getServiceTimestamp(second);
-  const now = Date.now();
-  const firstIsUpcoming = firstTime >= now;
-  const secondIsUpcoming = secondTime >= now;
+  const firstIsUpcoming = first.status === "scheduled";
+  const secondIsUpcoming = second.status === "scheduled";
 
   if (firstIsUpcoming !== secondIsUpcoming) {
     return firstIsUpcoming ? -1 : 1;

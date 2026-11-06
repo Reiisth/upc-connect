@@ -30,8 +30,8 @@ export default function ModuleMiniDashboard({ data, branchId, branchName }: { da
   for (let i=0;i<(data.module === "baptisms" ? 12 : 6);i++) { months.push(month.toISOString().slice(0,10)); month.setUTCMonth(month.getUTCMonth()+1); }
   const points = data.trend.filter(row => row.branchId === id);
   const labels = months.map(date => new Intl.DateTimeFormat("en-PH", {month:"short",timeZone:"UTC"}).format(new Date(`${date}T00:00:00Z`)));
-  const names: Record<string,string> = {present:"Present",late:"Late",excused:"Excused",water:"Water",holy_ghost:"Holy Ghost",member:"Member",visitor:"Visitor",anonymous:"Anonymous"};
-  const categories = data.module === "attendance" ? ["present","late","excused"] : data.module === "baptisms" ? ["water","holy_ghost"] : ["member","visitor","anonymous"];
+  const names: Record<string,string> = {present:"Present",absent:"Absent",excused:"Excused",water:"Water",holy_ghost:"Holy Ghost",member:"Member",visitor:"Visitor",anonymous:"Anonymous"};
+  const categories = data.module === "attendance" ? ["present","excused","absent"] : data.module === "baptisms" ? ["water","holy_ghost"] : ["member","visitor","anonymous"];
   const title = data.module === "attendance" ? "Physical Attendance Trend" : data.module === "baptisms" ? "Baptisms Over Time" : "Contributions Over Time";
   const breakdownTitle = data.module === "attendance" ? "Recorded Attendance Status" : data.module === "baptisms" ? "Baptism Records by Type" : "Amount by Contributor Type";
   return <section aria-label="Module mini dashboard" className="space-y-3">
@@ -41,7 +41,7 @@ export default function ModuleMiniDashboard({ data, branchId, branchName }: { da
     <div className="grid min-w-0 gap-3 lg:grid-cols-3">
       <div className="min-w-0 lg:col-span-2"><ReportChart compact title={title} kind={data.module === "attendance" ? "line" : "bar"} money={isMoney} labels={labels}
         series={[{label:isMoney ? "Amount Received" : data.module === "attendance" ? "Physical Check-ins" : "Baptism Records",values:months.map(period => points.find(row => row.period === period)?.value ?? (isMoney ? "0.00" : 0))}]}
-        description={data.module === "attendance" ? "Completed Services only. Present + Late; includes visiting and inactive Members." : "Monthly totals in the period above."}
+        description={data.module === "attendance" ? "Completed Services only. Present only; includes visiting and inactive Members." : "Monthly totals in the period above."}
         emptyMessage={`No ${data.module === "attendance" ? "physical attendance" : data.module} data for this period.`} /></div>
       <div className="min-w-0"><button type="button" className="text-xs font-medium text-[#365FA6] lg:hidden" onClick={() => setShowBreakdown(!showBreakdown)} aria-expanded={showBreakdown}>{showBreakdown ? "Hide" : "Show"} {breakdownTitle}</button>
         <div className={`${showBreakdown ? "block" : "hidden"} mt-2 lg:mt-0 lg:block`}><ReportChart compact title={breakdownTitle} horizontal money={isMoney} labels={categories.map(key=>names[key])}

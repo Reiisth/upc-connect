@@ -16,7 +16,7 @@ export async function loadPhysicalParticipation(
       .select("id, member_id, service_id, attendance_status, services!inner(church_branch_id, status, service_date)")
       .in("member_id", memberIds.slice(offset, offset + 100))
       .eq("services.status", "completed").gte("services.service_date", from).lte("services.service_date", to)
-      .in("attendance_status", ["present", "late"]).order("id").range(start, end));
+      .eq("attendance_status", "present").order("id").range(start, end));
     rows.push(...page as unknown as Row[]);
   }
   return rows;

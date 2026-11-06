@@ -1,18 +1,16 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { assertServiceTransition } from "./lifecycle";
+import { assertServiceTransition, effectiveStoredServiceStatus } from "./lifecycle";
 
 import {
   assertActiveServiceBranch,
   requireServicesPermission,
 } from "./access";
 import {
-  SERVICE_STATUSES,
-  type ServiceStatus,
   type ServiceType,
 } from "./types";
 
@@ -47,7 +45,7 @@ function validateDate(value: string) {
 }
 
 function validateTime(value: string) {
-  if (!value) return null;
+  if (!value) throw new Error("Start time is required (Asia/Manila).");
 
   if (!/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)) {
     throw new Error("Enter a valid start time.");
@@ -64,7 +62,7 @@ function validateServiceForm(formData: FormData) {
   ) as ServiceType;
   const serviceDate = getFormText(formData, "service_date");
   const startTime = getFormText(formData, "start_time");
-  const status = getFormText(formData, "status") as ServiceStatus;
+  if (getFormText(formData, "status")) throw new Error("Service state is automatic. Use the explicit completion or cancellation action.");
   const churchBranchId = getFormText(
     formData,
     "church_branch_id",
@@ -81,16 +79,11 @@ function validateServiceForm(formData: FormData) {
 
   if (!/^[a-z][a-z0-9_]{0,79}$/.test(serviceType)) throw new Error("Select a valid service type.");
 
-  if (!SERVICE_STATUSES.includes(status)) {
-    throw new Error("Select a valid service status.");
-  }
-
   return {
     name,
     service_type: serviceType,
     service_date: validateDate(serviceDate),
     start_time: validateTime(startTime),
-    status,
     church_branch_id: churchBranchId,
     notes: notes || null,
   };
@@ -111,7 +104,7 @@ export async function createService(formData: FormData) {
 
   const { data, error } = await admin
     .from("services")
-    .insert(payload)
+    .insert({ ...payload, status: effectiveStoredServiceStatus({ ...payload, status: "scheduled" }) })
     .select("id")
     .single();
 
@@ -144,7 +137,7 @@ export async function updateService(
   const { data: currentService, error: currentError } =
     await admin
       .from("services")
-      .select("id, church_branch_id, service_date, status, service_type")
+      .select("id, church_branch_id, service_date, start_time, status, service_type")
       .eq("id", serviceId)
       .maybeSingle();
 
@@ -171,7 +164,10 @@ export async function updateService(
     payload.church_branch_id,
   );
 
-  assertServiceTransition(currentService.status as ServiceStatus, payload.status);
+  const assertScheduled = () => {
+    if (effectiveStoredServiceStatus(currentService) !== "scheduled") throw new Error("This service has already started or is terminal and can no longer be edited as a scheduled service.");
+  };
+  assertScheduled();
   const branchChanged = currentService.church_branch_id !== payload.church_branch_id;
   const dateChanged = currentService.service_date !== payload.service_date;
   if (branchChanged || dateChanged) {
@@ -192,13 +188,15 @@ export async function updateService(
     }
   }
 
+  assertScheduled(); // Re-evaluate at submission after dependency checks, not edit-page time.
   const { data: updated, error } = await admin
     .from("services")
-    .update(payload)
+    .update({ ...payload, status: effectiveStoredServiceStatus({ ...payload, status: "scheduled" }) })
     .eq("id", serviceId)
     .eq("church_branch_id", currentService.church_branch_id)
     .eq("service_date", currentService.service_date)
     .eq("status", currentService.status)
+    .or(currentService.start_time === null ? "start_time.is.null" : `start_time.eq.${currentService.start_time}`)
     .select("id").maybeSingle();
 
   if (error) {
@@ -212,4 +210,34 @@ export async function updateService(
   revalidatePath(`/portal/attendance/${serviceId}`);
 
   redirect(servicesPath);
+}
+
+
+export async function finishService(serviceId: string, target: "completed" | "cancelled") {
+  const access = await requireServicesPermission("services.update");
+  if (target !== "completed" && target !== "cancelled") throw new Error("Select a terminal service action.");
+  const admin = createAdminClient();
+  const { data: service, error } = await admin.from("services").select("id,church_branch_id,service_date,start_time,status").eq("id",serviceId).maybeSingle();
+  if (error || !service) throw new Error("Service not found.");
+  await assertActiveServiceBranch(admin, access, service.church_branch_id);
+  assertServiceTransition(effectiveStoredServiceStatus(service), target);
+  const { data: changed, error: writeError } = await admin.from("services").update({status:target})
+    .eq("id",service.id).eq("church_branch_id",service.church_branch_id).eq("status",service.status)
+    .eq("service_date",service.service_date).or(service.start_time === null ? "start_time.is.null" : `start_time.eq.${service.start_time}`)
+    .select("id").maybeSingle();
+  if (writeError || !changed) throw new Error("The service changed. Refresh before trying again.");
+  for (const path of [servicesPath,"/portal/attendance",`/portal/attendance/${serviceId}`,`/portal/services/${serviceId}/edit`,"/portal/reports","/portal/inactivity"]) revalidatePath(path);
+  return {success:true};
+}
+
+
+// Expected scheduling failures are returned to the form instead of being
+// redacted as production server exceptions. Framework redirects still propagate.
+export async function createServiceFormAction(formData: FormData) {
+  try { await createService(formData); }
+  catch (error) { unstable_rethrow(error); return {error:error instanceof Error ? error.message : "Unable to create Service."}; }
+}
+export async function updateServiceFormAction(serviceId: string, formData: FormData) {
+  try { await updateService(serviceId,formData); }
+  catch (error) { unstable_rethrow(error); return {error:error instanceof Error ? error.message : "Unable to update Service."}; }
 }

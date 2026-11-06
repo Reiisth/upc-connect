@@ -12,11 +12,13 @@ const denied = /redirect:\/access-denied/;
 
 function harness({ permissions = ['services.update', 'services.create', 'attendance.view', 'attendance.record', 'attendance.correct'],
   status = 'ongoing', branchIds = [branch, otherBranch], archivedAccount = false, anonymous = false,
-  raceInsert = false, failTable, concurrentStatus } = {}) {
+  raceInsert = false, failTable, concurrentStatus, startsDuringSubmit = false } = {}) {
+  let clock = '2026-10-25T02:00:00Z';
+  const Clock = class extends Date { constructor(...args) { super(...(args.length ? args : [clock])); } static now() { return new Date(clock).getTime(); } };
   const db = {
     church_branches: [branch, otherBranch].map((key) => ({ id: key, name: key === branch ? 'Service branch' : 'Other branch', code: null, is_active: true })),
     services: [{ id: serviceId, name: 'Worship', service_type: 'sunday_morning', church_branch_id: branch,
-      service_date: '2026-10-25', start_time: '09:00:00', status, notes: null }],
+      service_date: status === 'scheduled' ? '2026-10-26' : '2026-10-25', start_time: '09:00:00', status, notes: null }],
     service_types: [{ key: 'sunday_morning', name: 'Sunday Morning', is_active: true }],
     members: [
       { id: id(11), first_name: 'Current', last_name: 'Member', church_branch_id: branch, is_archived: false, member_status: 'active' },
@@ -39,9 +41,9 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
     eq(key, value) { this.filters.push((row) => row[key] === value); return this; }
     in(key, values) { this.filters.push((row) => values.includes(row[key])); return this; }
     or(filter) {
+      if (!filter.includes('.ilike.')) {const [key,op,value] = filter.split('.'); this.filters.push(row => op === 'is' ? row[key] === null : row[key] === value); return this;}
       const clauses = filter.split(',').map(part => part.split('.ilike.%'));
-      this.filters.push(row => clauses.some(([key, pattern]) => String(row[key] ?? '').toLowerCase().includes(pattern.slice(0, -1).toLowerCase())));
-      return this;
+      this.filters.push(row => clauses.some(([key,pattern]) => String(row[key] ?? '').toLowerCase().includes(pattern.slice(0,-1).toLowerCase()))); return this;
     }
     order() { return this; }
     limit(count) { this.maximum = count; return this; }
@@ -50,6 +52,7 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
     insert(payload) { this.write = ['insert', payload]; return this; }
     result(single = false) {
       events.push({ table: this.table, operation: this.write?.[0] ?? 'read', columns: this.columns });
+      if (startsDuringSubmit && this.table === 'attendance_records' && !this.write) clock='2026-10-27T02:00:00Z';
       if (failTable === this.table) return { data: null, error: { message: 'query failed' } };
       const source = db[this.table]; assert.ok(source, `Unexpected table ${this.table}`);
       let selected = source.filter((row) => this.filters.every((filter) => filter(row)));
@@ -82,10 +85,10 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
     if (archivedAccount) redirect('/access-denied');
     return { user: { id: id(50) } };
   }
-  const admin = { from: (table) => new Query(table) };
+  const admin = { from: (table) => new Query(table), rpc: async () => ({data:{totals:[],trend:[],breakdown:[]},error:null}) };
   const stubs = {
     'server-only': {},
-    'next/navigation': { redirect, notFound: () => redirect('/not-found'), useRouter: () => ({ refresh() {} }) },
+    'next/navigation': { unstable_rethrow: error => {if(String(error?.message).startsWith('redirect:')) throw error;}, redirect, notFound: () => redirect('/not-found'), useRouter: () => ({ refresh() {} }) },
     'next/cache': { revalidatePath: (url) => events.push({ revalidate: url }) },
     'next/link': { __esModule: true, default: (props) => React.createElement('a', props) },
     '@/lib/auth': { requireActiveAccount: active },
@@ -95,16 +98,17 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
     '@/lib/branch-access': { getUserBranchScope: async () => ({ branchIds, isSystemAdmin: false }) },
     '@/lib/supabase/admin': { createAdminClient: () => admin },
   };
-  const load = (file) => loadTypeScript(file, stubs);
+  const load = (file) => loadTypeScript(file, stubs, {Date:Clock});
   const actions = () => load('app/portal/attendance/actions.ts');
   const serviceForm = (overrides = {}) => {
     const data = new FormData(); const row = { ...db.services[0], ...overrides };
+    if (!Object.hasOwn(overrides, 'status')) delete row.status;
     for (const [key, value] of Object.entries(row)) if (value !== null) data.set(key, String(value));
     return data;
   };
   const attendanceForm = (memberId, overrides = {}) => {
     const data = new FormData();
-    for (const [key, value] of Object.entries({ member_id: memberId, attendance_status: 'late', check_in_time: '2026-10-25T09:30', ...overrides })) data.set(key, value);
+    for (const [key, value] of Object.entries({ member_id: memberId, attendance_status: 'present', check_in_time: '2026-10-25T09:30', ...overrides })) data.set(key, value);
     return data;
   };
   const service = () => ({ id: serviceId, churchBranchId: branch });
@@ -113,50 +117,46 @@ function harness({ permissions = ['services.update', 'services.create', 'attenda
     const wrapper = load('app/portal/attendance/[serviceId]/page.tsx').default({ params: Promise.resolve({ serviceId }) });
     return wrapper.props.children.type(wrapper.props.children.props);
   }
-  return { db, events, load, admin, record, actions, serviceForm, attendanceForm, rows, page };
+  return { db, events, load, admin, record, actions, serviceForm, attendanceForm, rows, page, setNow: value => {clock=value;} };
 }
 
-test('service branch/date remain editable without dependents and old/new branch authorization still applies', async () => {
-  const h = harness();
+test('scheduled service branch/date remain editable without dependents and old/new branch authorization still applies', async () => {
+  const h = harness({status:'scheduled'});
   await assert.rejects(h.load('app/portal/services/actions.ts').updateService(serviceId,
     h.serviceForm({ church_branch_id: otherBranch, service_date: '2026-10-26' })), /redirect:\/portal\/services/);
   assert.equal(h.db.services[0].church_branch_id, otherBranch); assert.equal(h.db.services[0].service_date, '2026-10-26');
-  const scoped = harness({ branchIds: [branch] });
+  const scoped = harness({status:'scheduled', branchIds: [branch] });
   await assert.rejects(scoped.load('app/portal/services/actions.ts').updateService(serviceId,
     scoped.serviceForm({ church_branch_id: otherBranch })), /branches assigned/);
 });
 
 test('attendance locks service branch and calendar date; metadata changes do not rewrite attendance timestamps', async () => {
-  const h = harness(); const attendance = h.record(id(11)); const before = attendance.check_in_time;
+  const h = harness({status:'scheduled'}); const attendance = h.record(id(11)); const before = attendance.check_in_time;
   const action = h.load('app/portal/services/actions.ts').updateService;
   await assert.rejects(action(serviceId, h.serviceForm({ church_branch_id: otherBranch })), /branch cannot change/);
-  await assert.rejects(action(serviceId, h.serviceForm({ service_date: '2026-10-26' })), /date cannot change/);
-  await assert.rejects(action(serviceId, h.serviceForm({ name: 'Corrected name', start_time: '10:00', status: 'completed' })), /redirect:/);
+  await assert.rejects(action(serviceId, h.serviceForm({ service_date: '2026-10-27' })), /date cannot change/);
+  await assert.rejects(action(serviceId, h.serviceForm({ name: 'Corrected name', start_time: '10:00' })), /redirect:/);
   assert.equal(attendance.check_in_time, before); assert.equal(h.db.services[0].name, 'Corrected name');
 });
 
 test('linked contributions lock branch; their own contribution_date is not rewritten by service date editing', async () => {
-  const h = harness(); h.db.financial_contributions.push({ id: id(500), service_id: serviceId, church_branch_id: branch, contribution_date: '2026-10-25' });
+  const h = harness({status:'scheduled'}); h.db.financial_contributions.push({ id: id(500), service_id: serviceId, church_branch_id: branch, contribution_date: '2026-10-25' });
   const action = h.load('app/portal/services/actions.ts').updateService;
   await assert.rejects(action(serviceId, h.serviceForm({ church_branch_id: otherBranch })), /branch cannot change/);
   await assert.rejects(action(serviceId, h.serviceForm({ service_date: '2026-10-26' })), /redirect:/);
   assert.equal(h.db.financial_contributions[0].contribution_date, '2026-10-25');
 });
 
-test('service lifecycle is forward-only and completed/cancelled services cannot be reopened', async () => {
-  const transitions = h => h.load('app/portal/services/actions.ts').updateService;
-  for (const [from, to, allowed] of [
-    ['scheduled', 'ongoing', true], ['scheduled', 'completed', true], ['ongoing', 'completed', true],
-    ['ongoing', 'cancelled', true], ['completed', 'ongoing', false], ['completed', 'cancelled', false], ['cancelled', 'scheduled', false],
-  ]) {
-    const h = harness({ status: from });
-    await assert.rejects(transitions(h)(serviceId, h.serviceForm({ status: to })), allowed ? /redirect:/ : /cannot return/);
-    assert.equal(h.db.services[0].status, allowed ? to : from);
-  }
+test('explicit lifecycle actions are forward-only; terminal Services cannot reopen', async () => {
+ for(const [from,to,allowed] of [['scheduled','completed',false],['scheduled','cancelled',true],['ongoing','completed',true],['ongoing','cancelled',true],['completed','cancelled',false],['cancelled','completed',false]]) {
+  const h=harness({status:from});const work=h.load('app/portal/services/actions.ts').finishService(serviceId,to);
+  if(allowed) await work; else await assert.rejects(work,/cannot return/);
+  assert.equal(h.db.services[0].status,allowed?to:from);
+ }
 });
 
 test('inactive managed types remain preservable on edit but cannot be selected for new or changed services', async () => {
-  const h = harness();
+  const h = harness({status:'scheduled'});
   h.db.service_types.push({ key: 'retired_service', name: 'Retired Service', is_active: false });
   h.db.services[0].service_type = 'retired_service';
   await assert.rejects(h.load('app/portal/services/actions.ts').updateService(serviceId,
@@ -182,12 +182,12 @@ test('historical archived/inactive/transferred attendees remain visible without 
 });
 
 test('historical counts remain unchanged after every current-member change, while eligibility changes separately', async () => {
-  const h = harness(); h.record(id(11), 'present'); h.record(id(12), 'late'); h.record(id(13), 'excused');
+  const h = harness(); h.record(id(11), 'present'); h.record(id(12), 'present'); h.record(id(13), 'excused');
   const summary = h.load('app/portal/attendance/types.ts').getAttendanceSummary;
   const before = summary(await h.rows());
   h.db.members[0].is_archived = true; h.db.members[1].church_branch_id = branch; h.db.members[2].member_status = 'inactive';
   const after = summary(await h.rows());
-  for (const key of ['present', 'late', 'excused', 'totalRecorded', 'totalCheckIns']) assert.equal(after[key], before[key]);
+  for (const key of ['present', 'absent', 'excused', 'totalRecorded', 'totalCheckIns']) assert.equal(after[key], before[key]);
   assert.equal(after.totalCheckIns, 2); assert.equal(after.totalRecorded, 3);
 });
 
@@ -198,12 +198,12 @@ test('member identification fallback preserves a recorded fact if its member row
   assert.match(h.load('app/portal/attendance/types.ts').formatMemberName(row.member), /000000000090/);
 });
 
-test('completed historical corrections work after transfer, archive or stored inactivity without current-branch access', async () => {
+test('ongoing corrections work after transfer, archive or stored inactivity without current-branch access', async () => {
   for (const memberId of [id(13), id(14)]) {
-    const h = harness({ status: 'completed', branchIds: [branch], permissions: ['attendance.correct'] });
+    const h = harness({ status: 'ongoing', branchIds: [branch], permissions: ['attendance.correct'] });
     const record = h.record(memberId);
     await h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(memberId, { attendance_record_id: record.id }));
-    assert.equal(record.attendance_status, 'late'); assert.equal(h.db.attendance_records.length, 1);
+    assert.equal(record.attendance_status, 'present'); assert.equal(h.db.attendance_records.length, 1);
   }
 });
 
@@ -216,13 +216,13 @@ test('new QR and manual attendance reject archived members', async () => {
   }
 });
 
-test('QR and manual share scheduled/ongoing recording and completed/cancelled blocking', async () => {
+test('QR and manual allow only ongoing recording, with all other lifecycle states blocked', async () => {
   for (const status of ['scheduled', 'ongoing', 'completed', 'cancelled']) {
     for (const mode of ['manual', 'qr']) {
       const h = harness({ status });
       const work = mode === 'manual' ? h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(id(11))) : h.actions().recordQrAttendance(serviceId, id(11));
-      if (status === 'scheduled' || status === 'ongoing') { await work; assert.equal(h.db.attendance_records.length, 1); }
-      else { await assert.rejects(work, /completed|Cancelled/); assert.equal(h.db.attendance_records.length, 0); }
+      if (status === 'ongoing') { await work; assert.equal(h.db.attendance_records.length, 1); }
+      else { await assert.rejects(work, /Scheduled|Completed|Cancelled/); assert.equal(h.db.attendance_records.length, 0); }
     }
   }
 });
@@ -267,13 +267,13 @@ test('QR duplicates including unique-insert races report the existing fact witho
 test('manual duplicate corrections preserve uniqueness; concurrent inserts still require correction authority and lifecycle', async () => {
   const h = harness(); const row = h.record(id(11));
   await h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(id(11)));
-  assert.equal(h.db.attendance_records.length, 1); assert.equal(row.attendance_status, 'late');
+  assert.equal(h.db.attendance_records.length, 1); assert.equal(row.attendance_status, 'present');
   for (const canCorrect of [false, true]) {
     const racing = harness({ raceInsert: true, permissions: canCorrect ? ['attendance.record', 'attendance.correct'] : ['attendance.record'] });
     const work = racing.actions().saveAttendanceRecord(serviceId, racing.attendanceForm(id(11)));
     if (canCorrect) await work; else await assert.rejects(work, denied);
     assert.equal(racing.db.attendance_records.length, 1);
-    assert.equal(racing.db.attendance_records[0].attendance_status, canCorrect ? 'late' : 'excused');
+    assert.equal(racing.db.attendance_records[0].attendance_status, canCorrect ? 'present' : 'excused');
   }
   const cancelled = harness({ raceInsert: true, concurrentStatus: 'cancelled' });
   await assert.rejects(cancelled.actions().saveAttendanceRecord(serviceId, cancelled.attendanceForm(id(11))), /Cancelled/);
@@ -301,7 +301,7 @@ test('host timezone cannot change manual interpretation, edit values or service 
 });
 
 test('unchanged correction time preserves subsecond timestamp rather than shifting or rounding it', async () => {
-  const h = harness({ status: 'completed' }); const row = h.record(id(12)); const before = row.check_in_time;
+  const h = harness({ status: 'ongoing' }); const row = h.record(id(12)); const before = row.check_in_time;
   await h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(id(12), { check_in_time: '2026-10-25T09:12:34' }));
   assert.equal(row.check_in_time, before);
 });
@@ -311,11 +311,11 @@ test('history loading reads beyond API result pages and never labels current unr
   for (let index = 0; index < 505; index++) h.record(id(1000 + index), 'present');
   const rows = await h.rows(); assert.equal(rows.length, 507);
   const summary = h.load('app/portal/attendance/types.ts').getAttendanceSummary(rows);
-  assert.equal(summary.present, 505); assert.equal(summary.absent, 2); assert.equal(summary.totalEligible, 2);
+  assert.equal(summary.present, 505); assert.equal(summary.unrecorded, 2); assert.equal(summary.totalEligible, 2);
 });
 
 test('dependency lookup failures fail closed and invalid source attendance never becomes inferred absence', async () => {
-  const h = harness({ failTable: 'financial_contributions' });
+  const h = harness({status:'scheduled', failTable: 'financial_contributions' });
   await assert.rejects(h.load('app/portal/services/actions.ts').updateService(serviceId, h.serviceForm({ church_branch_id: otherBranch })), /Unable to verify/);
   assert.equal(h.db.services[0].church_branch_id, branch);
   const corrupt = harness(); corrupt.record(id(11), 'unsupported');
@@ -391,4 +391,60 @@ test('inactive returning members are selectable and clearly identified without o
   const html = renderToStaticMarkup(await h.page());
   assert.match(html, /Inactive Member/);
   assert.match(html, /non-archived Active or Inactive member/);
+});
+
+
+test('effective status follows the Manila start boundary and terminal states are authoritative', () => {
+ const api=harness().load('app/portal/services/lifecycle.ts');
+ const service={status:'scheduled',serviceDate:'2026-11-08',startTime:'09:00:00'};
+ assert.equal(api.effectiveServiceStatus(service,new Date('2026-11-08T00:59:59Z')),'scheduled');
+ assert.equal(api.effectiveServiceStatus(service,new Date('2026-11-08T01:00:00Z')),'ongoing');
+ assert.equal(api.effectiveServiceStatus({...service,status:'ongoing'},new Date('2026-11-08T00:59:59Z')),'scheduled');
+ for(const status of ['completed','cancelled']) assert.equal(api.effectiveServiceStatus({...service,status},new Date('2026-01-01T00:00:00Z')),status);
+ assert.equal(api.effectiveServiceStatus({...service,startTime:null},new Date('2026-11-07T16:00:00Z')),'ongoing');
+});
+test('creation derives Scheduled/Ongoing and rejects every supplied manual lifecycle state',async()=>{
+ for(const [date,status] of [['2026-10-26','scheduled'],['2026-10-25','ongoing']]){
+  const h=harness();await assert.rejects(h.load('app/portal/services/actions.ts').createService(h.serviceForm({service_date:date})),/redirect:/);
+  assert.equal(h.db.services.at(-1).status,status);
+ }
+ for(const status of ['scheduled','ongoing','completed','cancelled']){
+  const h=harness();await assert.rejects(h.load('app/portal/services/actions.ts').createService(h.serviceForm({status})),/state is automatic/);assert.equal(h.db.services.length,1);
+ }
+});
+test('only future scheduling edits are allowed; rescheduling may immediately start; submit rechecks elapsed time',async()=>{
+ for(const status of ['ongoing','completed','cancelled']){
+  const h=harness({status});await assert.rejects(h.load('app/portal/services/actions.ts').updateService(serviceId,h.serviceForm({name:'tamper'})),/already started|terminal/);
+ }
+ for(const [date,expected] of [['2026-10-27','scheduled'],['2026-10-25','ongoing']]){
+  const h=harness({status:'scheduled'});await assert.rejects(h.load('app/portal/services/actions.ts').updateService(serviceId,h.serviceForm({service_date:date})),/redirect:/);assert.equal(h.db.services[0].status,expected);
+ }
+ const race=harness({status:'scheduled',startsDuringSubmit:true});await assert.rejects(race.load('app/portal/services/actions.ts').updateService(serviceId,race.serviceForm({church_branch_id:otherBranch})),/already started/);assert.equal(race.events.some(e=>e.operation==='update'),false);
+ const noPermission=harness({status:'scheduled',permissions:[]});await assert.rejects(noPermission.load('app/portal/services/actions.ts').updateService(serviceId,noPermission.serviceForm()),/access-denied/);
+});
+test('all final Attendance statuses work only while Ongoing; removed status is rejected and missing rows are not Absent',async()=>{
+ for(const status of ['present','excused','absent']){
+  const h=harness();await h.actions().saveAttendanceRecord(serviceId,h.attendanceForm(id(11),{attendance_status:status,check_in_time:''}));
+  assert.equal(h.db.attendance_records[0].attendance_status,status);assert.equal(h.db.attendance_records[0].check_in_time===null,status!=='present');
+ }
+ const invalid=harness();await assert.rejects(invalid.actions().saveAttendanceRecord(serviceId,invalid.attendanceForm(id(11),{attendance_status:['la','te'].join('')})),/valid attendance status/);
+ const h=harness();h.record(id(11),'absent');const summary=h.load('app/portal/attendance/types.ts').getAttendanceSummary(await h.rows());assert.equal(summary.absent,1);assert.equal(summary.unrecorded,1);assert.equal(summary.totalCheckIns,0);
+ for(const status of ['scheduled','completed','cancelled']){
+  const closed=harness({status});const row=closed.record(id(11));await assert.rejects(closed.actions().saveAttendanceRecord(serviceId,closed.attendanceForm(id(11))),/read-only/);assert.equal(row.attendance_status,'present');
+ }
+});
+test('Attendance landing groups ongoing first, keeps upcoming read-only and omits terminal Services',async()=>{
+ const h=harness();
+ for(const [n,status,date] of [[2,'scheduled','2026-10-26'],[3,'completed','2026-10-24'],[4,'cancelled','2026-10-24']]) h.db.services.push({...h.db.services[0],id:id(n+100),status,service_date:date,name:status+' fixture'});
+ const wrapper=h.load('app/portal/attendance/page.tsx').default();const content=await wrapper.props.children.type(wrapper.props.children.props);const html=renderToStaticMarkup(content);
+ assert.ok(html.indexOf('Ongoing Services')<html.indexOf('Upcoming Services'));
+ assert.ok(html.includes('Open Attendance')&&html.includes('Edit Service')&&html.includes('Starts'));
+ assert.equal(html.includes('completed fixture'),false);assert.equal(html.includes('cancelled fixture'),false);
+ const form=renderToStaticMarkup(React.createElement(h.load('app/portal/services/ServiceForm.tsx').ServiceForm,{branches:[],serviceTypes:[],action(){},submitLabel:'Save'}));
+ assert.equal(form.includes('name="status"'),false);
+});
+
+test('scheduled-edit form action returns a clean expected error after start, without mutating the Service',async()=>{
+ const h=harness({status:'scheduled'});h.setNow('2026-10-27T02:00:00Z');
+ const result=await h.load('app/portal/services/actions.ts').updateServiceFormAction(serviceId,h.serviceForm());assert.match(result.error,/already started/);assert.equal(h.events.some(e=>e.operation==='update'),false);
 });

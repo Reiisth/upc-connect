@@ -31,7 +31,7 @@ function parseCheckInTime(
   status: AttendanceStatus,
 ) {
   if (!value) {
-    return status === "excused"
+    return status !== "present"
       ? null
       : new Date().toISOString();
   }
@@ -196,6 +196,9 @@ export async function recordQrAttendance(
     return { ...getDuplicateResult(memberName, existing), ...identityContext };
   }
 
+  const latestService = await loadAccessibleService(access, admin, serviceId);
+  if (!latestService) throw new Error("Service is outside your branch access.");
+  assertServiceAttendance(latestService.status, "record");
   const checkInTime = new Date().toISOString();
   const { error: insertError } = await admin
     .from("attendance_records")
@@ -239,6 +242,9 @@ export async function recordQrAttendance(
 
   revalidatePath(attendancePath);
   revalidatePath(`${attendancePath}/${serviceId}`);
+  revalidatePath(`/portal/services/${serviceId}/attendance`);
+  revalidatePath("/portal/reports");
+  revalidatePath("/portal/inactivity");
 
   return {
     outcome: "recorded",
@@ -325,6 +331,9 @@ export async function saveAttendanceRecord(
     recorded_by: access.user.id,
   };
 
+  const latestService = await loadAccessibleService(access, admin, serviceId);
+  if (!latestService) throw new Error("Service is outside your branch access.");
+  assertServiceAttendance(latestService.status, operation);
   if (existing?.id) {
     await updateAttendanceRecord(
       admin,
@@ -382,6 +391,9 @@ export async function saveAttendanceRecord(
 
   revalidatePath(attendancePath);
   revalidatePath(`${attendancePath}/${serviceId}`);
+  revalidatePath(`/portal/services/${serviceId}/attendance`);
+  revalidatePath("/portal/reports");
+  revalidatePath("/portal/inactivity");
 
   return { success: true };
 }

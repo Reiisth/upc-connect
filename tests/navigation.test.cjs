@@ -161,9 +161,9 @@ test('service attendance action is explicit and gated by attendance.view', () =>
   assert.ok(table.includes('/portal/attendance/${service.id}'));
   assert.ok(page.includes('"attendance.view"'));
 
-  const ServicesTable = loadTypeScript('app/portal/services/ServicesTable.tsx', { 'next/link': link }).default;
+  const ServicesTable = loadTypeScript('app/portal/services/ServicesTable.tsx', { 'next/link': link, './ServiceLifecycleActions': {__esModule:true,default:()=>null} }).default;
   const service = { id: 'service-1', name: 'Sunday Service', serviceType: 'sunday_morning', serviceDate: '2026-10-31',
-    startTime: '09:00:00', status: 'scheduled', churchBranchId: 'branch-1', notes: null,
+    startTime: '09:00:00', status: 'ongoing', churchBranchId: 'branch-1', notes: null,
     branch: { id: 'branch-1', name: 'Main', code: 'MAIN', isActive: true } };
   const branches = [service.branch];
   const props = { services: [service], branches, serviceTypes: [{key:'sunday_morning',name:'Sunday Morning',isActive:true}], serviceTypeNames: {sunday_morning:'Sunday Morning'}, canEdit: false };

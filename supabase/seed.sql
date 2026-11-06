@@ -160,17 +160,17 @@ WITH weekly AS (
   ('b0000000-0000-4000-8000-000000000002'::uuid,'b','000000000009','ongoing','Midweek Prayer Service','Ongoing service is excluded from inactivity.'),
   ('b0000000-0000-4000-8000-000000000002'::uuid,'b','000000000010','cancelled','Cancelled Midweek Service','Cancelled service is excluded from inactivity.')
  ) v(branch_id,prefix,suffix,status,name,notes) CROSS JOIN _upc_demo_dates d
- CROSS JOIN LATERAL (SELECT CASE WHEN suffix='000000000008' THEN d.monday+6 WHEN suffix='000000000009' THEN d.today ELSE d.monday+1 END AS service_date) dt
+ CROSS JOIN LATERAL (SELECT CASE WHEN suffix='000000000008' THEN greatest(d.monday+6,d.today+1) WHEN suffix='000000000009' THEN d.today ELSE d.monday+1 END AS service_date) dt
 )
 INSERT INTO public.services (id,church_branch_id,name,service_type,service_date,start_time,status,notes)
 SELECT id,branch_id,name,service_type,service_date,
-       CASE WHEN status='ongoing' THEN '18:30'::time ELSE '09:00'::time END,status,notes FROM demo_service_rows
+       CASE WHEN status='ongoing' THEN '00:00'::time ELSE '09:00'::time END,status,notes FROM demo_service_rows
 ON CONFLICT (id) DO UPDATE SET church_branch_id=EXCLUDED.church_branch_id,name=EXCLUDED.name,
  service_type=EXCLUDED.service_type,service_date=EXCLUDED.service_date,start_time=EXCLUDED.start_time,
  status=EXCLUDED.status,notes=EXCLUDED.notes;
 
 -- Pattern characters represent completed service weeks, newest to oldest.
--- present/late are physical; an excused row deliberately does not reset the streak.
+-- present is physical; an excused row deliberately does not reset the streak.
 WITH patterns(member_id,branch_id,pattern) AS (VALUES
  ('a0000000-0000-4000-8000-000000000003'::uuid,'b0000000-0000-4000-8000-000000000001'::uuid,'00101'),
  ('a0000000-0000-4000-8000-000000000004'::uuid,'b0000000-0000-4000-8000-000000000001'::uuid,'00011'),
@@ -203,7 +203,7 @@ WITH patterns(member_id,branch_id,pattern) AS (VALUES
 ), attendance_rows AS (
  SELECT p.member_id,p.branch_id,w.week_no,
         CASE WHEN p.member_id='a0000000-0000-4000-8000-000000000010'::uuid AND w.week_no=1 THEN 'excused'
-             WHEN p.member_id='a0000000-0000-4000-8000-000000000009'::uuid THEN 'late' ELSE 'present' END AS attendance_status
+             WHEN p.member_id='a0000000-0000-4000-8000-000000000009'::uuid THEN 'present' ELSE 'present' END AS attendance_status
  FROM patterns p CROSS JOIN generate_series(1,5) w(week_no)
  WHERE substr(p.pattern,w.week_no,1)='1'
 ) , mapped_attendance AS (
@@ -297,7 +297,7 @@ ON CONFLICT (id) DO UPDATE SET member_id=EXCLUDED.member_id,baptism_type=EXCLUDE
 
 -- Phase 2L: Lino attends North and South in the same eligible week; Benjie visits North.
 INSERT INTO public.attendance_records(id,service_id,member_id,attendance_status,method) VALUES
- ('f1000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000003','late','manual'),
+ ('f1000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000003','present','manual'),
  ('f1000000-0000-4000-8000-000000000002','e1000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000018','present','manual'),
  ('f1000000-0000-4000-8000-000000000003','e1000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000003','present','manual')
 ON CONFLICT(id) DO UPDATE SET service_id=EXCLUDED.service_id,member_id=EXCLUDED.member_id,

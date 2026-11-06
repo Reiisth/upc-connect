@@ -93,9 +93,9 @@ test('created_at controls eligibility and first_attendance_date changes cannot m
   const registeredWednesday = member('registered-wednesday', {
     created_at: '2026-10-14T00:00:00Z', first_attendance_date: '2022-05-10',
   });
-  const first = await loader([registeredWednesday], { attendance: [{ member_id: registeredWednesday.id, service_id: 's1', attendance_status: 'late' }] })('a');
+  const first = await loader([registeredWednesday], { attendance: [{ member_id: registeredWednesday.id, service_id: 's1', attendance_status: 'present' }] })('a');
   const afterHistoricalDateEdit = await loader([{ ...registeredWednesday, first_attendance_date: '2026-10-20' }], {
-    attendance: [{ member_id: registeredWednesday.id, service_id: 's1', attendance_status: 'late' }],
+    attendance: [{ member_id: registeredWednesday.id, service_id: 's1', attendance_status: 'present' }],
   })('a');
   assert.equal(first[0].monitoringStartDate, '2026-10-14');
   assert.equal(first[0].consecutiveAbsentWeeks, 1, 'Only the full week beginning Monday October 19 is eligible');
@@ -136,7 +136,7 @@ test('derived inactivity depends on weekly absence streak and threshold, not sto
   assert.ok(result.every((summary) => summary.consecutiveAbsentWeeks === 3 && summary.needsFollowUp));
   const higherThreshold = await loader(members, { threshold: 4 })('a');
   assert.ok(higherThreshold.every((summary) => summary.consecutiveAbsentWeeks === 3 && !summary.needsFollowUp));
-  for (const status of ['present', 'late']) {
+  for (const status of ['present']) {
     const attended = await loader(members, {
       attendance: [{ member_id: 'inactive', service_id: 's2', attendance_status: status }],
     })('a');
@@ -176,7 +176,7 @@ test('home-only inactivity viewer counts foreign physical participation without 
     branchIds: ['a'],
     extraServices: [{ id: 'away', church_branch_id: 'b', service_date: '2026-10-20', status: 'completed' }],
     attendance: [
-      { member_id:'home', service_id:'away', attendance_status:'late' },
+      { member_id:'home', service_id:'away', attendance_status:'present' },
       { member_id:'foreign-person', service_id:'away', attendance_status:'present' },
     ],
   });

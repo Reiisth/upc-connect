@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- CommonJS regression harness */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const React = require('react');
@@ -19,7 +20,7 @@ function rows(threshold = 3) {
     services: ['2026-10-05', '2026-10-12', '2026-10-19'].map((serviceDate, i) => ({
       id: `s${i}`, serviceDate, branchId: 'a', status: 'completed',
     })),
-    attendance: [{ memberId: 'present', serviceId: 's2', status: 'late' }],
+    attendance: [{ memberId: 'present', serviceId: 's2', status: 'present' }],
   }).map((row) => ({ ...row, memberName: { absent: 'Juan Dela Cruz', present: 'Maria Santos', unknown: 'Pedro Reyes' }[row.memberId], memberStatus: row.memberId === 'unknown' ? 'inactive' : 'active' }));
 }
 

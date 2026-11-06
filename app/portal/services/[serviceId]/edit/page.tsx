@@ -1,3 +1,5 @@
+import { effectiveStoredServiceStatus } from "../../lifecycle";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { CalendarDays } from "lucide-react";
@@ -8,14 +10,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { updateService } from "../../actions";
+import { updateServiceFormAction } from "../../actions";
 import {
   getAccessibleActiveBranches,
   requireServicesPermission,
 } from "../../access";
 import { ServiceForm } from "../../ServiceForm";
 import type {
-  ServiceStatus,
   ServiceType,
 } from "../../types";
 
@@ -83,10 +84,11 @@ async function EditServiceContent({
   }
 
   const service = data as ServiceRow;
+  if (effectiveStoredServiceStatus(service) !== "scheduled") return <PageContainer><PageHeader backHref="/portal/services" backLabel="Back to Services" title="Service is read-only" /><EmptyState title="Scheduling edits are closed" description="Only a future Scheduled Service can be edited. Use Services for explicit completion or cancellation; recorded history is retained." /></PageContainer>;
   const { data: types, error: typesError } = await admin.from("service_types").select("key,name,is_active").order("name");
   if (typesError) throw new Error("Unable to load service types.");
   const serviceTypes = (types ?? []).filter((t) => t.is_active || t.key === service.service_type).map((t) => ({ key: t.key, name: t.name, isActive: t.is_active }));
-  const updateServiceAction = updateService.bind(
+  const updateServiceAction = updateServiceFormAction.bind(
     null,
     service.id,
   );
@@ -99,7 +101,7 @@ async function EditServiceContent({
         eyebrow="Attendance Operations"
         eyebrowIcon={<CalendarDays className="h-4 w-4" />}
         title="Edit Service"
-        description={`Update the schedule and status for ${service.name}.`}
+        description={`Update the future schedule for ${service.name}.`}
       />
 
       <ServiceForm
@@ -112,7 +114,6 @@ async function EditServiceContent({
           serviceType: service.service_type as ServiceType,
           serviceDate: service.service_date,
           startTime: service.start_time,
-          status: service.status as ServiceStatus,
           churchBranchId: service.church_branch_id,
           notes: service.notes,
         }}

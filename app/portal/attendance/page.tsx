@@ -1,3 +1,6 @@
+import { readAllPages } from "@/lib/supabase/read-all-pages";
+import { hasPermission } from "@/lib/permissions";
+import { effectiveStoredServiceStatus } from "@/app/portal/services/lifecycle";
 import { loadModuleSummary } from "@/lib/module-summary";
 import { Suspense } from "react";
 import {
@@ -49,21 +52,10 @@ async function AttendanceContent() {
   let rows: ServiceRow[] = [];
 
   if (branchIds.length > 0) {
-    const { data, error } = await admin
-      .from("services")
-      .select(
-        "id, name, service_type, service_date, start_time, status, church_branch_id, notes",
-      )
-      .in("church_branch_id", branchIds)
-      .order("service_date", { ascending: false })
-      .order("start_time", { ascending: false })
-      .limit(100);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    rows = (data ?? []) as ServiceRow[];
+    rows = await readAllPages((from,to) => admin.from("services")
+      .select("id, name, service_type, service_date, start_time, status, church_branch_id, notes")
+      .in("church_branch_id",branchIds).in("status",["scheduled","ongoing"])
+      .order("service_date").order("id").range(from,to)) as ServiceRow[];
   }
   const { data: typeRows, error: typeError } = await admin.from("service_types").select("key,name,is_active").order("name");
   if (typeError) throw new Error("Unable to load service type labels.");
@@ -88,7 +80,7 @@ async function AttendanceContent() {
     serviceType: service.service_type as ServiceRecord["serviceType"],
     serviceDate: service.service_date,
     startTime: service.start_time,
-    status: service.status as ServiceRecord["status"],
+    status: effectiveStoredServiceStatus(service),
     churchBranchId: service.church_branch_id,
     notes: service.notes,
     branch: branchMap.get(service.church_branch_id) ?? null,
@@ -101,7 +93,7 @@ async function AttendanceContent() {
         eyebrow="Attendance Operations"
         eyebrowIcon={<ClipboardCheck className="h-4 w-4" />}
         title="Attendance"
-        description="Choose a service to review attendance and record member participation."
+        description="Record attendance for Ongoing Services and prepare for Upcoming Services. Refresh when a start time is reached."
       />
 
       {branches.length === 0 ? (
@@ -113,6 +105,7 @@ async function AttendanceContent() {
       ) : (
         <AttendanceServicesTable
           dashboard={dashboard}
+          canEditServices={hasPermission(access.permissions,"services.update")}
           services={services}
           branches={branches}
           serviceTypes={serviceTypes}

@@ -6,12 +6,11 @@ import { canRecordServiceAttendance } from "../services/lifecycle";
 
 export const ATTENDANCE_STATUSES = [
   "present",
-  "late",
   "excused",
+  "absent",
 ] as const;
 
 export const QR_SCANNABLE_SERVICE_STATUSES = [
-  "scheduled",
   "ongoing",
 ] as const;
 
@@ -51,7 +50,7 @@ export type AttendanceMemberRow = {
 export type AttendanceSummary = {
   totalEligible: number;
   present: number;
-  late: number;
+  unrecorded: number;
   excused: number;
   absent: number;
   totalRecorded: number;
@@ -109,7 +108,7 @@ export function getAttendanceSummary(
   const summary: AttendanceSummary = {
     totalEligible: rows.filter((row) => row.isCurrentlyEligible).length,
     present: 0,
-    late: 0,
+    unrecorded: 0,
     excused: 0,
     absent: 0,
     totalRecorded: 0,
@@ -118,13 +117,13 @@ export function getAttendanceSummary(
 
   for (const row of rows) {
     if (!row.attendance) {
-      if (row.isCurrentlyEligible) summary.absent += 1;
+      if (row.isCurrentlyEligible) summary.unrecorded += 1;
       continue;
     }
 
     summary[row.attendance.status] += 1;
     summary.totalRecorded += 1;
-    if (row.attendance.status === "present" || row.attendance.status === "late") summary.totalCheckIns += 1;
+    if (row.attendance.status === "present") summary.totalCheckIns += 1;
   }
 
   return summary;

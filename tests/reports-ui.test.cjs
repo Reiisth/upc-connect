@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- CommonJS regression harness */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
@@ -118,7 +119,7 @@ test('dashboard displays DTO states separately: stored status, derived status, l
   assert.equal(stat(html, 'Baptisms in Period'), '0');
   assert.equal(stat(html, 'Undated Baptism Records'), '3');
   assert.ok(html.includes('\u20b199,999,999,999,900.01'));
-  assert.ok(html.includes('present + late') && html.includes('never set administrative Member Status'));
+  assert.ok(html.includes('present only') && html.includes('never set administrative Member Status'));
   assert.ok(html.includes('Branch Comparison') && !html.includes('Inaccessible Branch'));
 });
 

@@ -116,7 +116,7 @@ export function calculateWeeklyInactivity(input: {
   const attendedWeeks = new Map<string, Set<number>>();
   const lastAttendance = new Map<string, InactivityService>();
   for (const attendance of input.attendance) {
-    if (attendance.status !== "present" && attendance.status !== "late") continue;
+    if (attendance.status !== "present") continue;
     const member = members.get(attendance.memberId);
     const service = services.get(attendance.serviceId);
     if (!member || !service) continue;

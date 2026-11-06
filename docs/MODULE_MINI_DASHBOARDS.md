@@ -4,7 +4,7 @@ Implemented locally on 2026-11-06 for Attendance, Baptisms and Contributions.
 
 | Page | KPIs | Primary chart | Secondary chart | Period |
 | --- | --- | --- | --- | --- |
-| Attendance | Attendance records, physical check-ins, average physical check-ins per completed Service | Monthly physical attendance, line | Present / Late / Excused records, horizontal bars | Six calendar months through today |
+| Attendance | Attendance records, physical check-ins, average physical check-ins per completed Service | Monthly physical attendance, line | Present / Excused / Absent records, horizontal bars | Six calendar months through today |
 | Baptisms | Dated records, Water records, Holy Ghost records | Monthly baptism records, bars | Water / Holy Ghost records, horizontal bars | Twelve calendar months through today |
 | Contributions | Total received, contribution records, average amount | Monthly amounts received, bars | Amount by Member / Visitor / Anonymous, horizontal bars | Six calendar months through today |
 
@@ -23,14 +23,13 @@ both charts to that branch's precomputed aggregates. Other operational filters
 (search, table date controls, type/status/payment headers) affect the table only,
 as explicitly stated above the dashboard. No report date-range builder was added.
 
-Attendance uses completed Services and their stored branch/date. Present + Late
+Attendance uses completed Services and their stored branch/date. Present
 are physical attendance; Excused contributes only to recorded status/count. There
 is no inferred Absent population, attendance percentage, or current Member-roster
 join. Inactive and visiting Members count normally at the host Service. Empty
 completed Services contribute zero check-ins to the average denominator. A
 service/member pair is counted once, agreeing with Reports' deduplication; for
-legacy conflicting duplicate statuses the summary favors Present, then Late,
-then Excused. The existing database unique constraint prevents normal duplicates.
+legacy conflicting duplicate statuses the summary favors Present, then other nonphysical records. The existing database unique constraint prevents normal duplicates.
 
 Contribution amounts belong to the stored receiving branch, including gifts
 from Members with another home branch. The explicit contributor_type determines
@@ -88,7 +87,7 @@ or one-month activity. Accessible View chart data tables preserve exact values.
 ## Validation and changed files
 
 - SQL regressions compare overlapping totals with the existing Reports RPC for
-  single and combined branch scopes. They cover Present/Late/Excused, legacy pair
+  single and combined branch scopes. They cover Present/Excused/Absent, legacy pair
   deduplication, status/transfer independence, Water/Holy Ghost/undated records,
   exact receiving money, Visitor/Anonymous distinction, empty scopes and RPC ACLs.
 - Loader tests verify authorized branch parameters, period construction, empty
@@ -113,3 +112,9 @@ verifier; module-summary tests and historical-record harness; this document.
 
 Operational CRUD/actions, permissions, Service lifecycle, Member Status and
 inactivity rules, contributor model, Baptism permissions and Gemini are unchanged.
+
+Follow-up lifecycle migration 20261106100000_attendance_lifecycle.sql supersedes
+the original physical-status definition: Present is physical, and the status
+breakdown includes only explicitly recorded Present/Excused/Absent. The compact
+Attendance dashboard remains a completed-Service historical summary even though
+the operational list below it contains only Ongoing and Upcoming Services.

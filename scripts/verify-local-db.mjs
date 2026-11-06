@@ -76,7 +76,7 @@ assert.equal(rpc.contributions.find(r => r.branchId === null).count, 23);
 for (const branch of rows.church_branches) {
   const exactTotal = sql(`SELECT round(sum(amount),2)::text FROM public.financial_contributions WHERE church_branch_id='${branch.id}';`);
   assert.equal(rpc.contributions.find(r => r.branchId === branch.id).totalAmount, exactTotal);
-  const physical = Number(sql(`SELECT count(*) FROM public.attendance_records a JOIN public.services s ON s.id=a.service_id WHERE s.church_branch_id='${branch.id}' AND s.status='completed' AND a.attendance_status IN ('present','late');`));
+  const physical = Number(sql(`SELECT count(*) FROM public.attendance_records a JOIN public.services s ON s.id=a.service_id WHERE s.church_branch_id='${branch.id}' AND s.status='completed' AND a.attendance_status = 'present';`));
   assert.equal(rpc.attendance.find(r => r.branchId === branch.id).physicalCheckIns, physical);
 }
 assert.deepEqual(Object.fromEntries(['member','visitor','anonymous'].map(type => [type, rows.financial_contributions.filter(r => r.contributor_type === type).length])), { member:21, visitor:1, anonymous:1 });
