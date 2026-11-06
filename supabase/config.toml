@@ -21,8 +21,8 @@ sql_paths = ["./bootstrap/current_reference.sql", "./seed.sql"]
 enabled = true
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["http://localhost:3000/**", "http://127.0.0.1:3000/**"]
-# For LAN email/OAuth testing, add the explicit current laptop origin locally
-# (http://<private-IPv4>:3000/**) and restart the local stack. See LOCAL_SUPABASE.md.
+# LAN password login needs no redirect allowlist change. Email/OAuth callbacks
+# remain canonical localhost; see LOCAL_SUPABASE.md for the phone limitation.
 enable_signup = true
 minimum_password_length = 8
 [auth.email]

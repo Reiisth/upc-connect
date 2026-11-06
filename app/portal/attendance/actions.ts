@@ -166,7 +166,7 @@ export async function recordQrAttendance(
 
   if (
     member.is_archived ||
-    member.member_status !== "active"
+    !["active", "inactive"].includes(member.member_status ?? "")
   ) {
     throw new Error(
       "This member is not eligible for attendance at the selected service.",
@@ -175,6 +175,7 @@ export async function recordQrAttendance(
 
   const memberName = getMemberName(member);
   const identityContext = {
+    memberStatus: member.member_status,
     visitingMember: Boolean(member.church_branch_id && member.church_branch_id !== service.churchBranchId),
     homeBranchName: (member.church_branches as unknown as { name: string } | null)?.name ?? "Unassigned home branch",
   };
@@ -306,8 +307,8 @@ export async function saveAttendanceRecord(
     const { data: member, error: memberError } = await admin.from("members")
       .select("id, church_branch_id, member_status, is_archived").eq("id", memberId).maybeSingle();
     if (memberError) throw new Error(memberError.message);
-    if (!member || member.is_archived || member.member_status !== "active") {
-      throw new Error("New attendance requires an active, non-archived member.");
+    if (!member || member.is_archived || !["active", "inactive"].includes(member.member_status ?? "")) {
+      throw new Error("New attendance requires a non-archived Active or Inactive member.");
     }
   }
   // The record's service is the correction scope. Today's member branch,
@@ -395,8 +396,8 @@ export async function searchAttendanceMembers(serviceId: string, search: string)
   const term = search.trim().replace(/[^\p{L}\p{N} '-]/gu, "").slice(0, 80);
   if (term.length < 2) return [];
   const { data, error } = await admin.from("members")
-    .select("id, first_name, middle_name, last_name, church_branch_id, church_branches(name)")
-    .eq("is_archived", false).eq("member_status", "active")
+    .select("id, first_name, middle_name, last_name, church_branch_id, member_status, church_branches(name)")
+    .eq("is_archived", false).in("member_status", ["active", "inactive"])
     .or(`first_name.ilike.%${term}%,middle_name.ilike.%${term}%,last_name.ilike.%${term}%`)
     .order("last_name").order("id").limit(30);
   if (error) throw new Error("Unable to search member identities.");
@@ -404,6 +405,6 @@ export async function searchAttendanceMembers(serviceId: string, search: string)
     id: member.id, firstName: member.first_name, middleName: member.middle_name,
     lastName: member.last_name, churchBranchId: member.church_branch_id ?? "",
     homeBranchName: (member.church_branches as unknown as { name: string } | null)?.name ?? "Unassigned home branch",
-    memberStatus: "active", isArchived: false,
+    memberStatus: member.member_status, isArchived: false,
   }));
 }

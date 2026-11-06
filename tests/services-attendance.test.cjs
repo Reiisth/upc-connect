@@ -173,7 +173,7 @@ test('inactive managed types remain preservable on edit but cannot be selected f
 test('historical archived/inactive/transferred attendees remain visible without duplicate roster rows', async () => {
   const h = harness(); for (const member of h.db.members) h.record(member.id);
   const rows = await h.rows(); assert.equal(rows.length, 4);
-  assert.equal(rows.filter((row) => row.isCurrentlyEligible).length, 1);
+  assert.equal(rows.filter((row) => row.isCurrentlyEligible).length, 2);
   assert.equal(rows.filter((row) => row.attendance).length, 4);
   assert.ok(rows.some((row) => row.member.firstName === 'Transferred'));
   assert.ok(rows.some((row) => row.member.isArchived));
@@ -207,10 +207,10 @@ test('completed historical corrections work after transfer, archive or stored in
   }
 });
 
-test('new QR and manual attendance reject archived and inactive members', async () => {
-  for (const memberId of [id(13), id(14)]) {
+test('new QR and manual attendance reject archived members', async () => {
+  for (const memberId of [id(13)]) {
     const h = harness();
-    await assert.rejects(h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(memberId)), /active.*non-archived/);
+    await assert.rejects(h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(memberId)), /non-archived/);
     await assert.rejects(h.actions().recordQrAttendance(serviceId, memberId), /not eligible/);
     assert.equal(h.db.attendance_records.length, 0);
   }
@@ -309,9 +309,9 @@ test('unchanged correction time preserves subsecond timestamp rather than shifti
 test('history loading reads beyond API result pages and never labels current unrecorded people as historical absences', async () => {
   const h = harness();
   for (let index = 0; index < 505; index++) h.record(id(1000 + index), 'present');
-  const rows = await h.rows(); assert.equal(rows.length, 506);
+  const rows = await h.rows(); assert.equal(rows.length, 507);
   const summary = h.load('app/portal/attendance/types.ts').getAttendanceSummary(rows);
-  assert.equal(summary.present, 505); assert.equal(summary.absent, 1); assert.equal(summary.totalEligible, 1);
+  assert.equal(summary.present, 505); assert.equal(summary.absent, 2); assert.equal(summary.totalEligible, 2);
 });
 
 test('dependency lookup failures fail closed and invalid source attendance never becomes inferred absence', async () => {
@@ -338,7 +338,7 @@ test('host-only recorder records cross-branch manual and QR attendance without c
   }
 });
 
-test('cross-branch identity lookup is host-authorized, minimal and excludes archived/inactive people', async () => {
+test('cross-branch identity lookup is host-authorized, minimal and includes inactive and excludes archived people', async () => {
   const h = harness({ branchIds: [branch], permissions: ['attendance.record'] });
   Object.assign(h.db.members[1], { email: 'PRIVATE', phone_number: 'PRIVATE', church_branches: { name: 'Other branch' } });
   const matches = await h.actions().searchAttendanceMembers(serviceId, 'Transferred');
@@ -347,7 +347,9 @@ test('cross-branch identity lookup is host-authorized, minimal and excludes arch
   assert.ok(!JSON.stringify(matches).includes('PRIVATE'));
   const selection = h.events.find(event => event.table === 'members').columns;
   assert.ok(!/email|phone|address|birth|account/.test(selection));
-  for (const search of ['Archived', 'Inactive']) assert.equal((await h.actions().searchAttendanceMembers(serviceId, search)).length, 0);
+  assert.equal((await h.actions().searchAttendanceMembers(serviceId, 'Archived')).length, 0);
+  const returning = await h.actions().searchAttendanceMembers(serviceId, 'Inactive');
+  assert.equal(returning.length, 1); assert.equal(returning[0].memberStatus, 'inactive');
   const foreign = harness({ branchIds: [otherBranch], permissions: ['attendance.record'] });
   await assert.rejects(foreign.actions().searchAttendanceMembers(serviceId, 'Current'), /outside your branch/);
   await assert.rejects(foreign.actions().recordQrAttendance(serviceId, id(11)), /outside your branch/);
@@ -355,4 +357,38 @@ test('cross-branch identity lookup is host-authorized, minimal and excludes arch
   const labels = h.load('app/portal/attendance/types.ts');
   assert.equal(labels.isVisitingMember(otherBranch, branch), true);
   assert.equal(labels.isVisitingMember(branch, branch), false);
+});
+
+
+test('inactive returners can receive home/cross-branch manual and QR attendance without membership changes', async () => {
+  for (const method of ['manual', 'qr']) for (const home of [branch, otherBranch]) {
+    const h = harness({ branchIds: [branch], permissions: ['attendance.record'] });
+    const member = h.db.members.find(m => m.id === id(14)); member.church_branch_id = home;
+    const before = JSON.stringify(h.db.members);
+    if (method === 'manual') await h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(member.id));
+    else {
+      const result = await h.actions().recordQrAttendance(serviceId, member.id);
+      assert.equal(result.memberStatus, 'inactive'); assert.equal(result.visitingMember, home !== branch);
+    }
+    assert.equal(JSON.stringify(h.db.members), before);
+    assert.equal(h.db.attendance_records[0].service_id, serviceId);
+    assert.equal(h.db.attendance_records[0].member_id, member.id);
+    const row = (await h.rows()).find(r => r.member.id === member.id);
+    assert.ok(row.attendance); assert.equal(row.member.memberStatus, 'inactive');
+    assert.equal(h.events.some(e => e.table === 'members' && e.operation !== 'read'), false);
+  }
+  for (const method of ['manual', 'qr']) {
+    const h = harness({ branchIds: [otherBranch], permissions: ['attendance.record'] });
+    await assert.rejects(method === 'manual' ? h.actions().saveAttendanceRecord(serviceId, h.attendanceForm(id(14))) : h.actions().recordQrAttendance(serviceId, id(14)), /outside your branch/);
+    assert.equal(h.db.attendance_records.length, 0);
+  }
+});
+
+test('inactive returning members are selectable and clearly identified without offering archived new attendance', async () => {
+  const h = harness(); const rows = await h.rows();
+  assert.equal(rows.find(r => r.member.id === id(14)).isCurrentlyEligible, true);
+  assert.equal(rows.some(r => r.member.id === id(13)), false);
+  const html = renderToStaticMarkup(await h.page());
+  assert.match(html, /Inactive Member/);
+  assert.match(html, /non-archived Active or Inactive member/);
 });

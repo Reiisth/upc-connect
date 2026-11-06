@@ -115,7 +115,7 @@ export async function loadAttendanceRows(
     )
     .eq("church_branch_id", service.churchBranchId)
     .eq("is_archived", false)
-    .eq("member_status", "active")
+    .in("member_status", ["active", "inactive"])
     .order("id"));
 
   const members = (memberData ?? []) as unknown as MemberRow[];

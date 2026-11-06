@@ -136,12 +136,15 @@ test('derived inactivity depends on weekly absence streak and threshold, not sto
   assert.ok(result.every((summary) => summary.consecutiveAbsentWeeks === 3 && summary.needsFollowUp));
   const higherThreshold = await loader(members, { threshold: 4 })('a');
   assert.ok(higherThreshold.every((summary) => summary.consecutiveAbsentWeeks === 3 && !summary.needsFollowUp));
-  const attended = await loader(members, {
-    attendance: [{ member_id: 'inactive', service_id: 's2', attendance_status: 'present' }],
-  })('a');
-  const inactive = attended.find((summary) => summary.memberId === 'inactive');
-  assert.equal(inactive.consecutiveAbsentWeeks, 0);
-  assert.equal(inactive.needsFollowUp, false);
+  for (const status of ['present', 'late']) {
+    const attended = await loader(members, {
+      attendance: [{ member_id: 'inactive', service_id: 's2', attendance_status: status }],
+    })('a');
+    const inactive = attended.find((summary) => summary.memberId === 'inactive');
+    assert.equal(inactive.consecutiveAbsentWeeks, 0);
+    assert.equal(inactive.needsFollowUp, false);
+    assert.equal(members[0].member_status, 'inactive');
+  }
 });
 
 test('loader still rejects branches outside the authenticated scope', async () => {

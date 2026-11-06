@@ -36,6 +36,20 @@ test('analytics RPC against disposable PostgreSQL', { skip: !enabled }, async (t
       assert.equal(overall(data.weeklyAttendance.filter((row) => row.weekStart === '2026-10-05')).uniqueMembers, 1);
       assert.ok(data.weeklyAttendance.every((row) => row.participationRatePercent === null && row.eligibleMemberCount === null));
     });
+    await t.test('recorded Present and Late remain reportable for an administratively inactive member', () => {
+      const before = overall(report().attendance);
+      for (const status of ['present', 'late']) {
+        const result = JSON.parse(sql(`BEGIN;
+          UPDATE members SET member_status='inactive' WHERE id='00000000-0000-0000-0000-000000000011';
+          INSERT INTO attendance_records(service_id,member_id,attendance_status) SELECT id,
+            '00000000-0000-0000-0000-000000000011','${status}' FROM services
+            WHERE church_branch_id='${a}' AND status='completed' AND service_date BETWEEN '2026-10-01' AND '2026-10-25'
+            AND NOT EXISTS(SELECT 1 FROM attendance_records ar WHERE ar.service_id=services.id AND ar.member_id='00000000-0000-0000-0000-000000000011') ORDER BY id LIMIT 1;
+          SELECT get_reports_analytics(ARRAY['${a}'::uuid], '2026-10-01','2026-10-25','week','2026-10-29');
+          ROLLBACK;`));
+        assert.equal(overall(result.attendance).physicalCheckIns, before.physicalCheckIns + 1);
+      }
+    });
     await t.test('branch-scoped totals and cross-branch unique-member rollups do not double count', () => {
       const data = report([a, b]);
       assert.equal(overall(data.attendance).completedServices, 7);

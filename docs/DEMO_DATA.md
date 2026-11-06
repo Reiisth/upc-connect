@@ -126,6 +126,26 @@ local wrappers, never a hosted SQL editor or hosted connection.
 | J: Transfer preservation | Covered by historical correction/transfer regression tests rather than permanently transferring these fixture Members. Original Service and receiving branch remain unchanged. |
 
 The 23 contributions contain 21 Member, one Visitor and one Anonymous record.
-New attendance still excludes archived and stored-inactive Members; new Member
-contributions exclude archived Members but allow stored-inactive Members.
+New Attendance and Member Contributions allow Active and Inactive Members;
+archived Members remain excluded from both new flows.
 See [PHASE_2L_CROSS_BRANCH.md](PHASE_2L_CROSS_BRANCH.md) for implementation and validation.
+
+## Inactive Member Returns
+
+Reuse **Rosa H. Bautista** (North, non-archived, Member Status Inactive). No new
+seed rows are required, so exact fixture counts stay unchanged.
+
+1. Sign in as the North-only demo usher; open North Upcoming Sunday Service.
+2. Select Rosa, labeled Inactive Member, and record Present or Late. The row is
+   visible and counts as a physical check-in. Member Status remains Inactive;
+   home branch and archive state remain unchanged.
+3. With an appropriately scoped recorder, search Rosa on a recordable South
+   Service. She is selectable as Inactive Member and Visiting Member without
+   requiring North access.
+4. A completed Service in an eligible finished week counts for the derived flag
+   at either branch. Recording against the seeded scheduled/ongoing Services does
+   not change finished-week absence flags; existing lifecycle/week rules apply.
+5. Review Member Status / Member Edit remains a separate manual operation.
+
+Real browser QA recorded Rosa as Present at North, checked visible attendance
+and unchanged status/branch/archive/timestamp, then removed only that QA row.

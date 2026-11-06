@@ -66,6 +66,7 @@ export type QrAttendanceResult =
   | {
     outcome: "recorded";
     memberName: string;
+    memberStatus?: string | null;
     homeBranchName?: string;
     visitingMember?: boolean;
     attendanceStatus: AttendanceStatus;
@@ -74,6 +75,7 @@ export type QrAttendanceResult =
   | {
     outcome: "duplicate";
     memberName: string;
+    memberStatus?: string | null;
     homeBranchName?: string;
     visitingMember?: boolean;
     attendanceStatus: AttendanceStatus;

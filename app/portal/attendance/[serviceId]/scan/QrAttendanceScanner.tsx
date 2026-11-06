@@ -303,6 +303,7 @@ export default function QrAttendanceScanner({
           </Button>
         )}
 
+        {result?.memberStatus === "inactive" && <p className="text-sm text-slate-600">Inactive Member</p>}
         {result?.visitingMember && <p className="text-sm text-slate-600">Visiting Member · {result.homeBranchName}</p>}
         {result?.outcome === "recorded" && (
           <div

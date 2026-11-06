@@ -206,9 +206,9 @@ export default function AttendanceView({
           title="Manual Attendance"
           description={
             canRecord && canCorrect
-              ? "Record attendance for an active member or correct an existing record. Manual records use the current account as the recorder."
+              ? "Record attendance for a non-archived Active or Inactive member or correct an existing record. Manual records use the current account as the recorder."
               : canRecord
-                ? "Record attendance for an active member from any home branch. New manual records use the current account as the recorder. Existing records require the attendance.correct permission."
+                ? "Record attendance for a non-archived Active or Inactive member from any home branch. New manual records use the current account as the recorder. Existing records require the attendance.correct permission."
                 : "Correct existing attendance records. New records require the attendance.record permission."
           }
         >
@@ -253,7 +253,7 @@ export default function AttendanceView({
 
                   {recordableRows.map((row) => (
                     <option key={row.member.id} value={row.member.id}>
-                      {formatMemberName(row.member)}{row.member.homeBranchName ? ` · ${row.member.homeBranchName}` : ""}{isVisitingMember(row.member.churchBranchId, serviceBranchId) ? " · Visiting Member" : ""}
+                      {formatMemberName(row.member)}{row.member.memberStatus === "inactive" ? " · Inactive Member" : ""}{row.member.homeBranchName ? ` · ${row.member.homeBranchName}` : ""}{isVisitingMember(row.member.churchBranchId, serviceBranchId) ? " · Visiting Member" : ""}
                     </option>
                   ))}
                 </Select>
@@ -408,7 +408,8 @@ export default function AttendanceView({
                         {formatMemberName(row.member)}
                       </p>
                       {isVisitingMember(row.member.churchBranchId, serviceBranchId) && <p className="text-xs text-slate-500">Visiting Member · {row.member.homeBranchName ?? "Home branch unknown"}</p>}
-                      {!row.isCurrentlyEligible && (row.member.isArchived || row.member.memberStatus !== "active") && <p className="text-xs text-slate-500">Historical attendee{row.member.isArchived ? " · Archived" : ""}</p>}
+                      {row.member.memberStatus === "inactive" && <p className="text-xs text-slate-500">Inactive Member</p>}
+                      {!row.isCurrentlyEligible && (row.member.isArchived || !["active", "inactive"].includes(row.member.memberStatus ?? "")) && <p className="text-xs text-slate-500">Historical attendee{row.member.isArchived ? " · Archived" : ""}</p>}
                     </TableCell>
 
                     <TableCell>

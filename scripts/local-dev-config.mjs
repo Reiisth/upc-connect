@@ -1,17 +1,8 @@
-import { isIP } from 'node:net';
 import { assertLoopback } from './local-env.mjs';
+import { resolveLanHost } from './local-lan-host.mjs';
+export { assertLanHost } from './local-lan-host.mjs';
 
-export function assertLanHost(host) {
-  if (host === 'localhost') return host;
-  if (isIP(host) !== 4) throw new Error('LAN host must be a private IPv4 address or localhost.');
-  const [a, b] = host.split('.').map(Number);
-  if (!(a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168))) {
-    throw new Error('LAN host must be a private IPv4 address or loopback.');
-  }
-  return host;
-}
-
-export function localDevConfig(env, lan = false) {
+export async function localDevConfig(env, lan = false, discovery) {
   const port = Number(env.PORT || 3000);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be an integer from 1 to 65535.');
   const internalUrl = assertLoopback(env.NEXT_PUBLIC_SUPABASE_URL || '');
@@ -20,7 +11,7 @@ export function localDevConfig(env, lan = false) {
   // Only the explicit LAN command may consume the optional host setting.
   delete childEnv.UPC_LOCAL_LAN_HOST;
   if (lan) {
-    const host = assertLanHost(env.UPC_LOCAL_LAN_HOST || '');
+    const host = await resolveLanHost(env.UPC_LOCAL_LAN_HOST, discovery);
     const browserUrl = new URL(internalUrl);
     browserUrl.protocol = 'http:';
     browserUrl.hostname = host;

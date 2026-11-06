@@ -2,7 +2,7 @@
 
 ## Current eligibility versus recorded history
 
-New manual/QR attendance requires an active, non-archived member from any home
+New manual/QR attendance requires a non-archived Active or Inactive member from any home
 branch. Historical attendance is anchored to the recorded service/member
 pair, not today's member roster. The detail loader reads all service records,
 then merges their member identities with the current eligible roster. A person
@@ -98,3 +98,13 @@ access. The focused church-wide lookup returns eligible identity fields only
 two search characters. It grants no members.view access. Search results extend
 the manual selector, not the host roster's no-record denominator. Visiting Member
 is derived from current home branch versus Service branch and is never stored.
+
+## Returning inactive Members
+
+Administratively Inactive Members can receive new manual/QR attendance at home
+or another branch. Lookup and the host roster include Active and Inactive status,
+while archived Members remain excluded. Inactive identity labels appear in the
+selector, recorded table and QR feedback. Recording writes attendance only: it
+never reactivates, transfers or changes archive state. Review Member Status / the
+existing Member edit flow remains the human decision path. Present/Late count
+normally in inactivity and Reports, independently of stored Member Status.

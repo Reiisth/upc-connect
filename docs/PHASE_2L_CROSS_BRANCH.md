@@ -2,6 +2,12 @@
 
 Implemented and validated locally on 2026-11-05. Hosted Supabase was not targeted.
 
+Subsequent product correction: Active and administratively Inactive Members may
+receive new Attendance; archived Members remain excluded. See
+[INACTIVE_MEMBER_ATTENDANCE.md](INACTIVE_MEMBER_ATTENDANCE.md). Eligibility
+statements and the pending product decision below describe the original Phase 2L
+validation snapshot, superseded by that correction.
+
 ## Attendance and authorization
 
 Previously, new manual/QR Attendance required the Member's current home branch
