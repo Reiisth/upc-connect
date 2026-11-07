@@ -28,7 +28,7 @@ export function MemberChurchForm({ action, branches, departments = [], member, e
             {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
           </Select>
         </FormField>
-        <FormField label="First Attendance Date" htmlFor="first_attendance_date" description="Historical reference: the date this person first attended the church. It does not determine UPC Connect attendance monitoring.">
+        <FormField label="First Attendance Date" htmlFor="first_attendance_date">
           <Input id="first_attendance_date" name="first_attendance_date" type="date" max={memberToday()} defaultValue={member?.first_attendance_date ?? ""} />
         </FormField>
         <FormField label="Department" htmlFor="department_id"><Select id="department_id" name="department_id" defaultValue={member?.department_id ?? ""}>
@@ -38,7 +38,7 @@ export function MemberChurchForm({ action, branches, departments = [], member, e
         <FormField label="Zone" htmlFor="zone"><Select id="zone" name="zone" defaultValue={String(member?.zone ?? "")}>
           <option value="">Not assigned</option>{[1, 2, 3, 4, 5].map((zone) => <option key={zone} value={zone}>{zone}</option>)}
         </Select></FormField>
-        {editing && <FormField label="Member Status" htmlFor="member_status" description="Administrative status is separate from calculated inactivity.">
+        {editing && <FormField label="Member Status" htmlFor="member_status">
           <Select id="member_status" name="member_status" defaultValue={member?.member_status ?? "active"}>
             <option value="active">Active</option><option value="inactive">Inactive</option>
           </Select>
