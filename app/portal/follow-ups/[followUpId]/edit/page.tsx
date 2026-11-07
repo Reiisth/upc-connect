@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { ClipboardPen } from "lucide-react";
 import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
@@ -24,7 +25,7 @@ async function EditFollowUpContent({ params, searchParams }: Props) {
   const performers = row.branchIsActive ? await loadFollowUpPerformers(admin) : [];
   const back = hasPermission(access.permissions, "follow_ups.view") ? `/portal/follow-ups/member/${row.memberId}` : "/portal";
   return <PageContainer>
-    <PageHeader title="Edit Follow-up" backHref={back} backLabel="Back"
+    <PageHeader eyebrow="Follow-ups" eyebrowIcon={<ClipboardPen className="h-4 w-4" />} title="Edit Follow-up" backHref={back} backLabel="Back"
       description="Correct this historical action. Its original member, branch and recorder remain unchanged." />
     {(await searchParams).saved === "1" && <p role="status" className="text-sm text-emerald-700">Follow-up updated successfully.</p>}
     {!row.branchIsActive ? <EmptyState title="This branch is inactive" description="History is preserved. Corrections require the record’s stored branch to be active." /> :

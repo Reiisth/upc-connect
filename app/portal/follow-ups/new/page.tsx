@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { ClipboardPen } from "lucide-react";
 import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
@@ -28,6 +29,7 @@ async function NewFollowUpContent({ searchParams }: Props) {
   const canView = hasPermission(access.permissions, "follow_ups.view");
   return <PageContainer>
     <PageHeader backHref={canView ? "/portal/follow-ups" : "/portal"} backLabel={canView ? "Back to Follow-ups" : "Back to Portal"}
+      eyebrow="Follow-ups" eyebrowIcon={<ClipboardPen className="h-4 w-4" />}
       title="Record Follow-up" description="Record a contact or attempted contact that took place. Members do not need to be inactive." />
     {params.saved === "1" && <p role="status" className="text-sm text-emerald-700">Follow-up recorded successfully.</p>}
     {!options.branches.length ? <EmptyState title="No active branch access" description="An accessible active branch is required to record a follow-up." /> :

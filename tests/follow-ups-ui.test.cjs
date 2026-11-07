@@ -54,7 +54,9 @@ test('create page validates query preselection and defaults performer only when 
   h.tables.user_roles.push({ user_id: ids.actor, role_id: id(40), roles: { is_staff: true, is_active: true } });
   const Page = h.load('app/portal/follow-ups/new/page.tsx', withLinks).default;
   const html = await contentHtml(Page, { searchParams: Promise.resolve({ memberId: ids.member, branchId: ids.a }) });
-  assert.ok(html.includes(`value="${ids.member}" selected=""`));
+  assert.ok(html.includes(`name="member_id" value="${ids.member}"`));
+  assert.ok(html.includes('role="combobox"'));
+  assert.ok(html.includes('Follow-ups'));
   assert.ok(html.includes(`value="${ids.a}" selected=""`));
   assert.ok(html.includes(`value="${ids.actor}" selected=""`));
   assert.ok(html.includes('Staff and Member'));

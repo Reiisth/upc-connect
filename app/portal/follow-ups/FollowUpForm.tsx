@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import MemberAutocomplete from "../contributions/MemberAutocomplete";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormActions } from "@/components/ui/form-actions";
@@ -25,7 +26,7 @@ export default function FollowUpForm({ branches, members, performers, initialVal
 
   return (
     <form action={formAction}>
-      <FormSection title="Follow-up Details" description="Record an action that took place. Its outcome does not change attendance-based inactivity.">
+      <FormSection title="Follow-up Details">
         {state.error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{state.error}</p>}
         <fieldset disabled={pending} className="grid gap-5 md:grid-cols-2">
           {immutable ? (
@@ -46,10 +47,12 @@ export default function FollowUpForm({ branches, members, performers, initialVal
                 </Select>
               </FormField>
               <FormField label="Member" htmlFor="follow-up-member" required description="Follow-ups may be recorded regardless of the member’s activity status.">
-                <Select id="follow-up-member" name="member_id" required disabled={!values.branchId} value={values.memberId} onChange={(event) => field("memberId", event.target.value)}>
-                  <option value="" disabled>Select a member</option>
-                  {branchMembers.map((member) => <option key={member.id} value={member.id}>{member.name}{member.isArchived ? " (Archived)" : ""}</option>)}
-                </Select>
+                <MemberAutocomplete key={values.branchId} id="follow-up-member"
+                  members={branchMembers.map(member => ({ id: member.id,
+                    fullName: `${member.name}${member.isArchived ? " (Archived)" : ""}`,
+                    churchBranchId: member.branchId ?? "", isArchived: member.isArchived }))}
+                  value={values.memberId} onChange={memberId => field("memberId", memberId)}
+                  branchId={values.branchId} showContext={false} />
               </FormField>
             </>
           )}
@@ -61,12 +64,12 @@ export default function FollowUpForm({ branches, members, performers, initialVal
               {FOLLOW_UP_METHODS.map((method) => <option key={method} value={method}>{METHOD_LABELS[method]}</option>)}
             </Select>
           </FormField>
-          <FormField label="Outcome" htmlFor="follow-up-outcome" required description="Resolved means no further contact is required for this action; it does not mean the member is active.">
+          <FormField label="Outcome" htmlFor="follow-up-outcome" required>
             <Select id="follow-up-outcome" name="outcome" value={values.outcome} onChange={(event) => field("outcome", event.target.value as FollowUpValues["outcome"])}>
               {FOLLOW_UP_OUTCOMES.map((outcome) => <option key={outcome} value={outcome}>{OUTCOME_LABELS[outcome]}</option>)}
             </Select>
           </FormField>
-          <FormField label="Followed Up By" htmlFor="follow-up-performer" description="The active staff account that performed the contact. This may differ from the account recording it.">
+          <FormField label="Followed Up By" htmlFor="follow-up-performer">
             <Select id="follow-up-performer" name="followed_up_by" value={values.followedUpBy} onChange={(event) => field("followedUpBy", event.target.value)}>
               <option value="">Not specified</option>
               {unavailablePerformer && <option value={values.followedUpBy} disabled>{historicalPerformerName || "Previous performer"} (no longer eligible)</option>}
