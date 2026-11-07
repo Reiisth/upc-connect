@@ -28,3 +28,9 @@ export function relativeMoneyCoordinates(series: readonly (readonly (string | nu
   const largest = cents.flat().reduce((max, value) => value > max ? value : max, BigInt(0));
   return cents.map((values) => values.map((value) => largest === BigInt(0) ? 0 : Number(value * BigInt(10000) / largest) / 100));
 }
+
+/** Keep report-history descriptions brief, including older saved documents. */
+export function briefReportDescription(value: string): string {
+  const text = value.replace(/\s+/g, " ").trim();
+  return text.length <= 120 ? text : `${text.slice(0, 117).trimEnd()}...`;
+}

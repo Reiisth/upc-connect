@@ -1,4 +1,5 @@
 import "server-only";
+import { briefReportDescription } from "@/app/portal/reports/presentation";
 import { requirePermission } from "@/lib/permissions-server";
 import { getAnalyticsBranchOptions } from "@/lib/analytics/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -20,7 +21,7 @@ export async function saveReportDocument(result: SavedReportResult, filters: unk
   const request = validateDecisionSupportFilters(filters);
   const ids = branches.filter(branch => !request.branchId || branch.id === request.branchId).map(branch => branch.id);
   if (!ids.length || ids.length !== result.branchLabels.length || branches.filter(branch => ids.includes(branch.id)).some(branch => !result.branchLabels.some(label => label.displayName === branch.name))) throw new Error("Report scope changed before saving.");
-  const description = `${result.reportingContext.dateRange.from} to ${result.reportingContext.dateRange.to}: ${result.insight.executiveSummary}`.slice(0, 350);
+  const description = briefReportDescription(`${result.reportingContext.dateRange.from} to ${result.reportingContext.dateRange.to}: ${result.insight.executiveSummary}`);
   const { data, error } = await admin.from("ai_report_documents").insert({
     created_by: user.id, branch_ids: ids, description, result,
   }).select("id").single();
