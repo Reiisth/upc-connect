@@ -22,7 +22,7 @@ export function formText(form: FormData, key: string, max = 250): string {
   return value;
 }
 
-export type ProfileOptions = { departments: string[]; branches: string[]; regions: { name: string; regionNumber: number }[] };
+export type ProfileOptions = { departments: string[]; branches: string[] };
 const defaultTypes: Record<string, string> = { birth_date: "date", wedding_anniversary: "date", phone_number: "phone", gender: "select", civil_status: "select" };
 
 function configuredOptions(field: MemberFieldDefinition, catalog: ProfileOptions): string[] {
@@ -30,7 +30,6 @@ function configuredOptions(field: MemberFieldDefinition, catalog: ProfileOptions
     case "custom": return Array.isArray(field.options) ? field.options.filter((value): value is string => typeof value === "string") : [];
     case "departments": return catalog.departments;
     case "church_branches": return catalog.branches;
-    case "psgc_regions": return catalog.regions.map((row) => row.name);
     default: throw new Error(`Unsupported option source for ${field.label}.`);
   }
 }
@@ -82,16 +81,14 @@ export function validateSelfServiceProfile(form: FormData, definitions: MemberFi
     if (!form.has(key)) continue;
     const definition = configured ?? { id: key, field_key: key, label: key, field_type: defaultTypes[key] ?? "text", is_builtin: true, is_visible: true, is_required: false, options_source: "custom", options: key === "gender" ? ["male", "female"] : key === "civil_status" ? ["single", "married", "widowed", "separated", "divorced"] : null, sort_order: 0 };
     const raw = formText(form, key, key.includes("name") ? 120 : key === "phone_number" ? 40 : 250);
-    // Region is a select when in the Philippines, and is omitted abroad.
-    patch[key] = key === "region" && String(form.get("country") ?? current.country) !== "Philippines" ? null : fieldValue(raw, definition, catalog);
+    patch[key] = fieldValue(raw, definition, catalog);
     effective[key] = patch[key];
   }
   if (!String(effective.first_name ?? "").trim() || !String(effective.last_name ?? "").trim()) throw new Error("First name and last name are required.");
   if (effective.civil_status && !["single", "married", "widowed", "separated", "divorced"].includes(String(effective.civil_status))) throw new Error("Select a valid civil status.");
   if (form.has("civil_status") && !["married", "widowed"].includes(String(effective.civil_status))) { patch.wedding_anniversary = null; effective.wedding_anniversary = null; }
-  const ncr = catalog.regions.some((region) => region.regionNumber === 13 && region.name === effective.region);
   for (const field of fields.filter((field) => field.is_builtin && field.is_visible && field.is_required && field.field_key !== "email")) {
-    if (field.field_key === "region" && effective.country !== "Philippines" || field.field_key === "province" && effective.country === "Philippines" && ncr || field.field_key === "wedding_anniversary" && !["married", "widowed"].includes(String(effective.civil_status))) continue;
+    if (field.field_key === "wedding_anniversary" && !["married", "widowed"].includes(String(effective.civil_status))) continue;
     if (!String(effective[field.field_key] ?? "").trim()) throw new Error(`${field.label} is required.`);
     fieldValue(String(effective[field.field_key]), field, catalog);
   }

@@ -11,7 +11,7 @@ self-service. Active-account and active-role permission checks apply to both.
 | Church managed | `church_branch_id`, `first_attendance_date`, `member_status`, `department_id`, `position`, `zone` | `members.update` and target branch scope |
 | Member archive | `is_archived`, `archived_at` | `members.archive` and target branch scope; restore uses the same permission |
 | Registration identity, intentionally shared | `first_name`, `middle_name`, `last_name` | Staff registration/edit and the linked account's Profile |
-| Personal self-service | `nickname`, `birth_date`, `gender`, `civil_status`, `phone_number`, `street_address`, `barangay`, `city`, `province`, `region`, `country`, existing `wedding_anniversary` | `profile.update` and `account_members` ownership |
+| Personal self-service | `nickname`, `birth_date`, `gender`, `civil_status`, `phone_number`, `street_address`, `barangay`, `city`, `province`, `country`, existing `wedding_anniversary` | `profile.update` and `account_members` ownership |
 | Supplemental personal profile | Non-reserved custom field definitions and their JSON values | The linked account's Profile; Profile Fields controls presentation/validation |
 | System maintained | `id`, `created_at`, `updated_at`, `account_status`, invitation/acceptance metadata, `profile_status`, `profile_completed_at`, account relationships | Existing lifecycle actions; Profile sets completion metadata after successful validation/persistence |
 | Account controlled / read only in Profile | `email` | Existing account connection flow; no Profile email mutation |
@@ -112,10 +112,9 @@ Limits are 120 characters for names, 40 for phone input, 250 for other personal
 text, 500 for ordinary supplemental input, and 2,000 for supplemental textarea.
 Birth date and existing anniversary cannot be future dates; custom dates may
 be future dates. Anniversary is cleared when a submitted civil status no longer
-supports it. Required-region and province rules retain the existing foreign
-country/NCR exceptions. Philippine region choices are verified server-side
-against the same PSA catalog used by the form; provider/configuration failure
-stops saving. No provider credential is sent to the form.
+supports it. Province, City / Municipality and Barangay are text fields validated
+locally, with requiredness controlled by Profile Fields. No address API is used.
+Region is no longer collected or stored; there is no NCR-specific Region rule.
 
 Validation and rendering order are separate concerns. Configured sort order and
 labels remain presentation; they cannot expand the server's write allowlist.

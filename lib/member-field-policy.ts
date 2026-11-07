@@ -1,7 +1,7 @@
 export const SELF_SERVICE_FIELDS = [
   "first_name", "middle_name", "last_name", "nickname", "birth_date", "gender",
   "civil_status", "phone_number", "street_address", "barangay", "city", "province",
-  "region", "country", "wedding_anniversary",
+  "country", "wedding_anniversary",
 ] as const;
 
 export const CHURCH_MANAGED_FIELDS = [
@@ -13,7 +13,7 @@ const reservedFields = new Set<string>([
   ...SELF_SERVICE_FIELDS, ...CHURCH_MANAGED_FIELDS, "id", "email", "photo_url", "department",
   "account_status", "profile_status", "invited_at", "invited_by", "accepted_at",
   "profile_completed_at", "created_at", "updated_at", "user_id", "role", "role_id",
-  "roles", "system_role", "account_members",
+  "roles", "system_role", "account_members", "region",
 ]);
 
 export type MemberFieldDefinition = {

@@ -15,7 +15,7 @@ function harness({ permissions = ['members.view', 'members.create', 'members.upd
   const base = { first_name: 'Registered', last_name: 'Person', middle_name: null, nickname: null,
     church_branch_id: 'a', first_attendance_date: null, created_at: '2026-01-05T00:00:00Z', member_status: 'active', is_archived: false,
     archived_at: null, profile_status: 'incomplete', profile_completed_at: null, account_status: 'connected',
-    email: 'owner@example.test', phone_number: null, country: null, region: null, province: null,
+    email: 'owner@example.test', phone_number: null, country: null, province: null,
     city: null, barangay: null, civil_status: null, birth_date: null, department_id: null, position: null, zone: null };
   const db = { members: [{ id: 'owned', ...base }, { id: 'foreign', ...base, church_branch_id: 'b' }],
     church_branches: [{ id: 'a', name: 'Branch A', is_active: true }, { id: 'b', name: 'Branch B', is_active: true }],
@@ -328,13 +328,28 @@ test('self-service preserves hidden values and normalizes optional blanks, confi
   assert.equal(h.db.members[0].phone_number, null); assert.equal(h.db.member_custom_field_values[0].value, true);
 });
 
-test('required Philippine region options and NCR province exception are verified against the server catalog', () => {
-  const h = harness(); const validate = h.load('lib/member-validation.ts').validateSelfServiceProfile;
-  const definitions = [definition('region', 'region', 'select', { is_builtin: true, is_required: true, options_source: 'psgc_regions' }),
-    definition('province', 'province', 'text', { is_builtin: true, is_required: true })];
-  const catalog = { branches: [], departments: [], regions: [{ name: 'NCR', regionNumber: 13 }] };
-  const valid = h.selfForm({ country: 'Philippines', region: 'NCR', province: '' });
-  assert.equal(validate(valid, definitions, h.db.members[0], catalog, '').patch.region, 'NCR');
-  valid.set('region', 'invented');
-  assert.throws(() => validate(valid, definitions, h.db.members[0], catalog, ''), /valid region/);
+test('personal address saves province, city and barangay without a Region or external catalog', async () => {
+  const h = harness();
+  h.db.member_field_definitions.push(...['province', 'city', 'barangay'].map(key => definition(key, key, 'text', { is_builtin: true, is_required: true })));
+  await assert.rejects(h.load('app/portal/profile/actions.ts').saveMemberProfile('owned', h.selfForm({ country: 'Philippines', province: 'Metro Manila', city: 'Quezon City', barangay: 'San Isidro' })), /redirect:/);
+  for (const [key, value] of Object.entries({ province: 'Metro Manila', city: 'Quezon City', barangay: 'San Isidro' })) assert.equal(h.db.members[0][key], value);
+  assert.equal(Object.hasOwn(h.db.members[0], 'region'), false);
+});
+
+test('removed Region cannot be submitted or configured as a supplemental personal field', () => {
+  const h = harness();
+  const policy = h.load('lib/member-field-policy.ts');
+  assert.equal(policy.isSelfServiceField('region'), false);
+  assert.equal(policy.isProfileDefinition({ field_key: 'region', is_builtin: false }), false);
+  const validate = h.load('lib/member-validation.ts').validateSelfServiceProfile;
+  assert.throws(() => validate(h.selfForm({ region: 'NCR' }), [], h.db.members[0], { branches: [], departments: [] }, ''), /cannot be changed/);
+});
+
+test('member detail joins retained address parts without empty separators or Region', async () => {
+  const h = harness();
+  Object.assign(h.db.members[0], { street_address: null, province: 'Metro Manila', city: 'Quezon City', barangay: 'San Isidro', country: null });
+  const html = renderToStaticMarkup(await h.content('app/portal/members/[memberId]/page.tsx'));
+  assert.ok(html.includes('San Isidro, Quezon City, Metro Manila'));
+  assert.ok(!html.includes(', ,'));
+  assert.ok(!html.includes('Region'));
 });

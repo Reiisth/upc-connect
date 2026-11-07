@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { isProfileDefinition, isSelfServiceField } from "@/lib/member-field-policy";
 import { memberToday } from "@/lib/member-validation";
@@ -32,12 +32,6 @@ type FieldDefinition = {
   sort_order: number;
 };
 
-type PSGCRegion = {
-  code: string;
-  name: string;
-  regionNumber: number;
-};
-
 type Department = {
   id: string;
   name: string;
@@ -57,7 +51,6 @@ type MemberProfileFormProps = {
     barangay: string | null;
     city: string | null;
     province: string | null;
-    region: string | null;
     country: string | null;
     wedding_anniversary: string | null;
     civil_status: string | null;
@@ -120,9 +113,6 @@ export default function MemberProfileForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [country, setCountry] = useState(member.country ?? "Philippines");
 
-  const [regions, setRegions] = useState<PSGCRegion[]>([]);
-
-  const [region, setRegion] = useState(member.region ?? "");
   const [province, setProvince] = useState(member.province ?? "");
   const [city, setCity] = useState(member.city ?? "");
   const [barangay, setBarangay] = useState(member.barangay ?? "");
@@ -134,9 +124,6 @@ export default function MemberProfileForm({
   const [lastName, setLastName] = useState(member.last_name ?? "");
   const [birthDate, setBirthDate] = useState(member.birth_date ?? "");
 
-  const selectedRegion = regions.find(
-    (item) => item.name.toLowerCase() === region.toLowerCase(),
-  );
 
   const customFields = fieldDefinitions
     .filter(
@@ -155,7 +142,6 @@ export default function MemberProfileForm({
     return (field?.sort_order ?? 999) * 2 + offset;
   };
 
-  const isNCR = selectedRegion?.regionNumber === 13;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -176,26 +162,6 @@ export default function MemberProfileForm({
           : `custom_field_${field.id}`,
       );
 
-
-    if (country !== "Philippines") {
-      const regionIndex = requiredFields.indexOf("region");
-
-      if (regionIndex !== -1) {
-        requiredFields.splice(regionIndex, 1);
-      }
-    }
-
-    if (
-      country === "Philippines" &&
-      isNCR
-    ) {
-      const provinceIndex =
-        requiredFields.indexOf("province");
-
-      if (provinceIndex !== -1) {
-        requiredFields.splice(provinceIndex, 1);
-      }
-    }
 
     if (
       !["married", "widowed"].includes(civilStatus)
@@ -265,16 +231,6 @@ export default function MemberProfileForm({
     finally { setSaving(false); }
   }
 
-  useEffect(() => {
-    async function loadRegions() {
-      const response = await fetch("/api/psgc/regions");
-      const data = await response.json();
-
-      setRegions(Array.isArray(data) ? data : []);
-    }
-
-    loadRegions();
-  }, []);
 
   const age = useMemo(() => {
     if (!birthDate) return null;
@@ -772,67 +728,7 @@ export default function MemberProfileForm({
 
           {country === "Philippines" ? (
             <>
-              {country === "Philippines" && isFieldVisible("region") && (
-                <FormField
-                  label={getFieldLabel("region", "Region")}
-                  htmlFor="region"
-                  required={isFieldRequired("region")}
-                  error={
-                    fieldErrors.region
-                      ? "This field is required."
-                      : undefined
-                  }
-                  className="sm:col-span-2"
-                  style={{
-                    order: getFieldOrder("region"),
-                  }}
-                >
-                  <Select
-                    id="region"
-                    name="region"
-                    value={region}
-                    required={isFieldRequired("region")}
-                    onChange={(event) => {
-                      const value = event.target.value;
-
-                      setRegion(value);
-                      setProvince("");
-                      setCity("");
-                      setBarangay("");
-
-                      setFieldErrors((current) => ({
-                        ...current,
-                        region: false,
-                        province: false,
-                        city: false,
-                        barangay: false,
-                      }));
-                    }}
-                    className={
-                      fieldErrors.region
-                        ? "border-red-500 focus-visible:ring-red-200"
-                        : undefined
-                    }
-                  >
-                    <option value="">
-                      {getFieldPlaceholder("region", "Select region")}
-                    </option>
-
-                    {regions.map((regionOption) => (
-                      <option
-                        key={regionOption.code}
-                        value={regionOption.name}
-                      >
-                        {regionOption.name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormField>
-              )}
-
-              {country === "Philippines" &&
-                !isNCR &&
-                isFieldVisible("province") && (
+              {isFieldVisible("province") && (
                   <FormField
                     label={getFieldLabel("province", "Province")}
                     htmlFor="province"
@@ -964,7 +860,7 @@ export default function MemberProfileForm({
                 <FormField
                   label={getFieldLabel(
                     "province",
-                    "State / Province / Region",
+                    "State / Province",
                   )}
                   htmlFor="province"
                   required={isFieldRequired("province")}
@@ -983,7 +879,7 @@ export default function MemberProfileForm({
                     value={province}
                     placeholder={getFieldPlaceholder(
                       "province",
-                      "Enter state/province/region",
+                      "Enter state or province",
                     )}
                     required={isFieldRequired("province")}
                     onChange={(event) => {
@@ -1222,13 +1118,6 @@ export default function MemberProfileForm({
                   options = branches.map((branch) => ({
                     value: branch.id,
                     label: branch.name,
-                  }));
-                } else if (
-                  field.options_source === "psgc_regions"
-                ) {
-                  options = regions.map((region) => ({
-                    value: region.name,
-                    label: region.name,
                   }));
                 } else {
                   options = getFieldOptions(field.field_key).map(

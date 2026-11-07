@@ -16,16 +16,7 @@ export async function saveMemberProfile(memberId: string, form: FormData) {
     supabase.from("church_branches").select("id"), supabase.from("departments").select("id"),
   ]);
   if (branchError || departmentError) throw new Error("Unable to verify profile choices.");
-  const catalog: ProfileOptions = { branches: (branches ?? []).map((row) => row.id), departments: (departments ?? []).map((row) => row.id), regions: [] };
-  if (definitions.some((field) => field.is_visible && field.options_source === "psgc_regions" &&
-      (form.get(field.is_builtin ? field.field_key : `custom_field_${field.id}`) || member[field.field_key]))) {
-    const token = process.env.PSA_API_KEY;
-    if (!token) throw new Error("Region choices cannot be verified right now. Please try again later.");
-    const response = await fetch(`https://classification.psa.gov.ph/psgc/Q2_2024/regions?token=${encodeURIComponent(token)}`, { cache: "no-store", signal: AbortSignal.timeout(15000) });
-    if (!response.ok) throw new Error("Region choices cannot be verified right now. Please try again later.");
-    const data = await response.json();
-    catalog.regions = (data.results ?? []).map((row: { area_name: string; reg: number }) => ({ name: row.area_name, regionNumber: row.reg }));
-  }
+  const catalog: ProfileOptions = { branches: (branches ?? []).map((row) => row.id), departments: (departments ?? []).map((row) => row.id) };
   let validated;
   try { validated = validateSelfServiceProfile(form, definitions, member, catalog, user.email ?? ""); }
   catch (validationError) { return { error: validationError instanceof Error ? validationError.message : "Review the profile fields." }; }

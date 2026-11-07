@@ -179,18 +179,6 @@ export async function restoreDefaultFieldConfiguration() {
       sort_order: 2,
     },
     {
-      field_key: "region",
-      label: "Region",
-      field_type: "select",
-      field_group: "address",
-      is_required: true,
-      is_visible: true,
-      placeholder: "Select region",
-      options_source: "psgc_regions",
-      options: null,
-      sort_order: 3,
-    },
-    {
       field_key: "province",
       label: "Province",
       field_type: "text",
@@ -357,7 +345,7 @@ export async function saveFieldConfiguration(
     } else if (existing.is_builtin && existing.field_type !== field.field_type) {
       throw new Error("Built-in profile field types cannot be changed.");
     }
-    if (field.options_source && !["custom", "departments", "church_branches", "psgc_regions"].includes(field.options_source)) throw new Error("Invalid option source.");
+    if (field.options_source && !["custom", "departments", "church_branches"].includes(field.options_source)) throw new Error("Invalid option source.");
   }
 
 

@@ -56,7 +56,7 @@ evangelism get both demo branches, accounting/usher North, ministry South;
 administrator is system-wide and member has linked self-service only.
 
 `dev:local` supplies local variables to Next.js without changing hosted env files.
-Optional PSA_API_KEY/GEMINI_API_KEY integrations remain independent and can make
+Optional GEMINI_API_KEY integrations remain independent and can make
 external requests when those features are used. Stop the local Next process and
 run normal `npm run dev` with the original hosted environment to return to hosted
 Supabase. Do not run both apps on the same port.

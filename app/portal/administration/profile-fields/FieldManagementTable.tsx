@@ -523,7 +523,6 @@ export default function FieldManagementTable({
                             <option value="custom">Custom Options</option>
                             <option value="departments">Departments</option>
                             <option value="church_branches">Church Branches</option>
-                            <option value="psgc_regions">Regions</option>
                           </select>
 
                           {(field.options_source ?? "custom") === "custom" && (

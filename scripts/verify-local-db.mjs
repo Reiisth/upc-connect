@@ -36,16 +36,22 @@ assert.equal(sql("SELECT tgenabled FROM pg_trigger WHERE tgrelid='auth.users'::r
 console.log('PASS schema:', schema);
 const normalize = row => Object.fromEntries(Object.entries(row).map(([k, v]) => [k, /_at$/.test(k) && v ? new Date(v).toISOString() : v]));
 for (const [table, expected] of Object.entries(snapshot)) {
+  const retained = table === 'member_field_definitions' ? expected.filter(row => row.field_key !== 'region') : expected;
   const actual = await all(table);
   const key = row => row.id || (row.role_id ? `${row.role_id}:${row.permission_id}` : row.key);
-  for (const row of expected) assert.deepEqual(normalize(actual.find(r => key(r) === key(row))), normalize(row));
-  if (!['departments', 'service_types'].includes(table)) assert.equal(actual.length, expected.length);
+  for (const row of retained) assert.deepEqual(normalize(actual.find(r => key(r) === key(row))), normalize(row));
+  if (!['departments', 'service_types'].includes(table)) assert.equal(actual.length, retained.length);
 }
 console.log('PASS all captured reference rows, timestamps and exact 70-assignment matrix');
 const counts = { church_branches: 2, members: 30, services: 20, attendance_records: 56, member_follow_ups: 10, financial_contributions: 23, baptism_records: 10, departments: 12, service_types: 6 };
 const rows = {};
 for (const [table, count] of Object.entries(counts)) { rows[table] = await all(table); assert.equal(rows[table].length, count, table); }
 console.log('PASS fixture counts:', counts);
+assert.equal(sql("SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='members' AND column_name='region';"), '0');
+assert.equal(sql("SELECT count(*) FROM public.member_field_definitions WHERE field_key='region' OR options_source='psgc_regions';"), '0');
+assert.ok(rows.members.every(row => !Object.hasOwn(row, 'region')));
+assert.ok(rows.members.every(row => row.province === 'Metro Manila' && row.city && row.barangay));
+console.log('PASS retired Region column/configuration absent; seeded province, city and barangay retained');
 const summaries = calculateWeeklyInactivity({
   today: manilaDate(new Date()),
   thresholds: new Map(rows.church_branches.map(r => [r.id, r.inactivity_threshold_weeks])),
