@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import QRCode from "react-qr-code";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { printMemberCard } from "./print-member-card";
 
 type MemberCardProps = {
   member: {
@@ -65,6 +67,9 @@ export default function MemberCard({
   member,
   showBackToProfiles = false
 }: MemberCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [printing, setPrinting] = useState(false);
+  const [printError, setPrintError] = useState<string | null>(null);
   const [side, setSide] = useState<"front" | "back">("front");
 
   const fullName = [
@@ -98,20 +103,18 @@ export default function MemberCard({
   return (
     <div className="mx-auto w-full max-w-[420px]">
       {/* FRONT / BACK SWITCH */}
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-y-3">
         {showBackToProfiles ? (
           <Link
             href="/portal/profile"
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-medium text-[#203264] shadow-sm transition hover:bg-[#EEF3FB]"
+            className="col-span-3 inline-flex items-center justify-self-start gap-2 rounded-xl bg-white px-3 py-2 text-sm font-medium text-[#203264] shadow-sm transition hover:bg-[#EEF3FB]"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Profiles
           </Link>
-        ) : (
-          <div />
-        )}
+        ) : null}
 
-        <div className="flex rounded-xl bg-white p-1 shadow-sm">
+        <div className="col-start-2 flex rounded-xl bg-white p-1 shadow-sm">
           <button
             type="button"
             onClick={() => setSide("front")}
@@ -134,15 +137,28 @@ export default function MemberCard({
             Back
           </button>
         </div>
+        <Button type="button" variant="outline" size="sm" className="col-start-3 justify-self-end px-2 sm:px-3" aria-label="Print Card" title="Print Card" disabled={printing} onClick={async () => {
+          if (!cardRef.current) return;
+          setPrinting(true);
+          setPrintError(null);
+          try { await printMemberCard(cardRef.current, fullName); }
+          catch { setPrintError("Unable to prepare the card for printing. Please try again."); }
+          finally { setPrinting(false); }
+        }}>
+          <Printer aria-hidden="true" />
+          <span className="hidden sm:inline">{printing ? "Preparing..." : "Print Card"}</span>
+        </Button>
       </div>
-
+      {printError && <p role="alert" className="mb-3 text-sm text-red-700">{printError}</p>}
       <div className="[perspective:1200px]">
         <div
+          ref={cardRef}
+          data-member-card-sides
           className={`grid w-full transition-transform duration-500 [transform-style:preserve-3d] ${side === "back" ? "[transform:rotateY(180deg)]" : ""
             }`}
         >
           {/* FRONT */}
-          <div className="col-start-1 row-start-1 overflow-hidden rounded-3xl border bg-white shadow-lg [backface-visibility:hidden]">
+          <div data-member-card-side className="col-start-1 row-start-1 overflow-hidden rounded-3xl border bg-white shadow-lg [backface-visibility:hidden]">
             <div className="border-b bg-brand-gradient px-5 py-4 text-white">
               <div className="flex items-center gap-3">
                 <div className="rounded-full p-1">
@@ -231,7 +247,7 @@ export default function MemberCard({
           </div>
 
           {/* BACK */}
-          <div className="col-start-1 row-start-1 rounded-3xl border bg-white p-5 shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
+          <div data-member-card-side className="col-start-1 row-start-1 rounded-3xl border bg-white p-5 shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <div className="border-b pb-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-[#5D94E8]">
                 Member Details
