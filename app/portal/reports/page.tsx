@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { analyticsToday } from "@/lib/analytics/date-range";
+import { analyticsToday, validAnalyticsDate } from "@/lib/analytics/date-range";
 import { getAnalyticsBranchOptions, getAnalyticsOverview } from "@/lib/analytics/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { AnalyticsOverview } from "@/lib/analytics/types";
@@ -31,6 +31,17 @@ async function ReportsContent({ searchParams }: PageProps) {
     try { overview = await getAnalyticsOverview(parsed.request); }
     catch { loadFailed = true; }
   }
+  let previous: AnalyticsOverview | null = null;
+  if (overview && parsed.request) {
+    const start = Date.parse(`${overview.range.from}T00:00:00Z`);
+    const duration = Date.parse(`${overview.range.to}T00:00:00Z`) - start + 86400000;
+    const from = new Date(start - duration).toISOString().slice(0, 10);
+    const to = new Date(start - 86400000).toISOString().slice(0, 10);
+    if (validAnalyticsDate(from) && validAnalyticsDate(to)) {
+      try { previous = await getAnalyticsOverview({ ...parsed.request, range: { preset: "custom", from, to } }); }
+      catch { /* Keep current reports usable and show unavailable comparisons. */ }
+    }
+  }
   let serviceTypeNames: Record<string, string> = {};
   if (overview) {
     try {
@@ -54,7 +65,7 @@ async function ReportsContent({ searchParams }: PageProps) {
       <p className="mt-2 text-sm text-slate-600">Your data could not be retrieved. Try again or choose another filter.</p>
       <Button asChild variant="outline" className="mt-4"><a href={reportFilterUrl(parsed.values)}>Try again</a></Button>
     </div> : !branches.length ? <EmptyState title="No branch access" description="Your account has no accessible branches for reporting." /> :
-      overview && <ReportsDashboard overview={overview} serviceTypeNames={serviceTypeNames} />}
+      overview && <ReportsDashboard overview={overview} previous={previous} serviceTypeNames={serviceTypeNames} />}
     </ReportsView>
   </PageContainer>;
 }

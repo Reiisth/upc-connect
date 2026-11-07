@@ -109,7 +109,9 @@ test('money chart geometry is relative, while tooltips and accessible data retai
 });
 
 test('dashboard displays DTO states separately: stored status, derived status, latest resolution and undated baptisms', () => {
-  const Dashboard = loadTypeScript('app/portal/reports/ReportsDashboard.tsx').default;
+  const Dashboard = loadTypeScript('app/portal/reports/ReportsDashboard.tsx', {
+    './ReportDashboardGroups': { __esModule: true, default: ({ groups }) => React.createElement('div', null, ...groups.map(group => group.content)) },
+  }).default;
   const html = renderToStaticMarkup(React.createElement(Dashboard, { overview: overviewFixture() }));
   assert.equal(stat(html, 'Administratively Active Members'), '99');
   assert.equal(stat(html, 'Monitoring'), '7');
@@ -124,7 +126,9 @@ test('dashboard displays DTO states separately: stored status, derived status, l
 });
 
 test('empty reports render zeros, informative chart empty states and unavailable averages/rates', () => {
-  const Dashboard = loadTypeScript('app/portal/reports/ReportsDashboard.tsx').default;
+  const Dashboard = loadTypeScript('app/portal/reports/ReportsDashboard.tsx', {
+    './ReportDashboardGroups': { __esModule: true, default: ({ groups }) => React.createElement('div', null, ...groups.map(group => group.content)) },
+  }).default;
   const overview = assembleAnalytics({ aggregates: emptyAnalyticsAggregates(), branches: [branches[0]], inactivity: [],
     range: dates.resolveAnalyticsDateRange(undefined, today), grouping: 'week', asOfDate: today });
   const html = renderToStaticMarkup(React.createElement(Dashboard, { overview }));
@@ -199,7 +203,12 @@ test('reports.view is required and a custom Reports-only account can use the act
   assert.ok(html.includes('Reports &amp; Analytics'));
   assert.ok(html.includes('AI Decision Support') && html.includes('Generate AI Insights'));
   assert.ok(custom.calls.permission.every((key) => key === 'reports.view'));
-  assert.equal(custom.calls.rpc.length, 1, 'One analytics request supplies every chart');
+  assert.equal(custom.calls.rpc.length, 2, 'One current aggregation and one previous-period aggregation supply all cards');
+  const [current, previous] = custom.calls.rpc.map(call => call.args);
+  const time = date => Date.parse(`${date}T00:00:00Z`);
+  assert.equal(time(current.p_from) - time(previous.p_to), 86400000);
+  assert.equal(time(current.p_to) - time(current.p_from), time(previous.p_to) - time(previous.p_from));
+  assert.deepEqual(Array.from(current.p_branch_ids), Array.from(previous.p_branch_ids));
 });
 
 test('selected and all-branch requests use only scope IDs; system administrator visibility comes exclusively from scope', async () => {
@@ -258,7 +267,7 @@ test('GET filters restore applied values, stack on mobile and enable date contro
   assert.ok(html.includes('sm:grid-cols-2') && html.includes('xl:grid-cols-4'));
   const Dashboard = loadTypeScript('app/portal/reports/ReportsDashboard.tsx').default;
   const dashboardHtml = renderToStaticMarkup(React.createElement(Dashboard, { overview: overviewFixture() }));
-  assert.ok(dashboardHtml.includes('min-w-0') && dashboardHtml.includes('overflow-x-auto'));
+  assert.ok(dashboardHtml.includes('min-w-0') && dashboardHtml.includes('role="tabpanel"'));
   assert.ok(dashboardHtml.includes('aria-label="Report sections"'));
   const loading = loadTypeScript('app/portal/reports/loading.tsx').default;
   assert.ok(renderToStaticMarkup(React.createElement(loading)).includes('Loading reports'));
@@ -267,4 +276,14 @@ test('GET filters restore applied values, stack on mobile and enable date contro
     assert.ok(!source.includes('dark:'));
     assert.ok(!source.includes('system_admin') && !source.includes('pastor'), 'UI must not authorize by role name');
   }
+});
+
+test('report tickers show direction, zero baseline and unavailable comparison without losing exact money', () => {
+  const Ticker = loadTypeScript('app/portal/reports/ReportComparisonTicker.tsx').default;
+  const render = (current, previous) => renderToStaticMarkup(React.createElement(Ticker, { comparison: { current, previous } }));
+  assert.ok(render(20, 10).includes('up 100% vs previous period'));
+  assert.ok(render(5, 10).includes('down 50% vs previous period'));
+  assert.ok(render(1, 0).includes('Previous value was 0'));
+  assert.ok(render(1, null).includes('No previous comparison'));
+  assert.ok(render('99999999999900.02', '99999999999900.01').includes('0% vs previous period'));
 });
