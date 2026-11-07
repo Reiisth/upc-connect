@@ -63,14 +63,14 @@ test('system administrators see All Branches without enumerating assigned branch
   assert.ok(html.includes('All Branches'));
 });
 
-test('portal shell loads and exposes identity context on desktop and from mobile More', () => {
+test('portal shell loads and exposes identity context on desktop and from the mobile header', () => {
   const layout = fs.readFileSync('app/portal/layout.tsx', 'utf8');
   const navigation = fs.readFileSync('app/portal/PortalNavigation.tsx', 'utf8');
   assert.match(layout, /getPortalUserContext\(/);
   assert.match(layout, /user\.id,/);
   assert.match(layout, /<PortalIdentitySummary context=\{identity\}/);
-  assert.match(layout, /identity=\{identity\}/);
-  assert.match(navigation, /<PortalIdentitySummary context=\{identity\}/);
+  assert.match(layout, /<MobileProfileInfo><PortalIdentitySummary context=\{identity\}/);
+  assert.doesNotMatch(navigation, /PortalIdentitySummary/);
 });
 
 test('Members list defaults to active records and offers archived and all filters', () => {

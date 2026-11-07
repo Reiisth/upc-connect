@@ -8,6 +8,7 @@ import { getCurrentUserPermissions } from "@/lib/permissions-server";
 import PortalNavigation from "./PortalNavigation";
 import { getPortalUserContext } from "@/lib/portal-user-context";
 import { PortalIdentitySummary } from "./PortalIdentitySummary";
+import MobileProfileInfo from "./MobileProfileInfo";
 
 export default function PortalLayout({
   children,
@@ -66,7 +67,7 @@ async function PortalShell({
           variant="desktop"
         />
 
-        <div className="border-t p-4">
+        <div className="space-y-4 border-t p-4">
           <PortalIdentitySummary context={identity} />
           <form action={logoutPortal}>
             <button
@@ -103,6 +104,8 @@ async function PortalShell({
             </div>
           </div>
 
+          <div className="flex items-center gap-1">
+            <MobileProfileInfo><PortalIdentitySummary context={identity} /></MobileProfileInfo>
           <form action={logoutPortal}>
             <button
               type="submit"
@@ -113,6 +116,7 @@ async function PortalShell({
               <LogOut className="h-5 w-5" />
             </button>
           </form>
+          </div>
         </div>
 
         <main className="min-w-0 pb-24 md:pb-0">
@@ -126,7 +130,6 @@ async function PortalShell({
       <PortalNavigation
         permissions={permissions}
         variant="mobile"
-        identity={identity}
       />
     </div>
   );

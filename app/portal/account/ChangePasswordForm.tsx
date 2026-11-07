@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { Eye, EyeOff, LockKeyhole } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form-field";
+import { FormActions } from "@/components/ui/form-actions";
 import { changeOwnPassword } from "./actions";
 
 export default function ChangePasswordForm() {
@@ -74,13 +78,11 @@ export default function ChangePasswordForm() {
     }
   }
 
-  const inputClass =
-    "w-full rounded-xl border bg-white px-4 py-3 pr-12 outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10";
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-6 max-w-xl space-y-5"
+      className="max-w-xl space-y-5"
     >
       <PasswordField
         id="current_password"
@@ -89,7 +91,6 @@ export default function ChangePasswordForm() {
         onChange={setCurrentPassword}
         visible={showCurrent}
         onToggle={() => setShowCurrent((current) => !current)}
-        inputClass={inputClass}
       />
 
       <PasswordField
@@ -99,7 +100,6 @@ export default function ChangePasswordForm() {
         onChange={setNewPassword}
         visible={showNew}
         onToggle={() => setShowNew((current) => !current)}
-        inputClass={inputClass}
       />
 
       <PasswordField
@@ -109,25 +109,25 @@ export default function ChangePasswordForm() {
         onChange={setConfirmPassword}
         visible={showConfirm}
         onToggle={() => setShowConfirm((current) => !current)}
-        inputClass={inputClass}
       />
 
       {error && (
-        <p className="text-sm font-medium text-red-600">
+        <p role="alert" className="text-sm font-medium text-red-600">
           {error}
         </p>
       )}
 
       {success && (
-        <p className="text-sm font-medium text-green-600">
+        <p role="status" className="text-sm font-medium text-green-600">
           {success}
         </p>
       )}
 
-      <button
+      <FormActions>
+      <Button
         type="submit"
         disabled={loading}
-        className="inline-flex min-w-[170px] items-center justify-center gap-2 rounded-xl bg-[#5D94E8] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#4B82D6] disabled:cursor-not-allowed disabled:opacity-60"
+        className="min-w-[170px]"
       >
         {loading ? (
           <>
@@ -140,7 +140,8 @@ export default function ChangePasswordForm() {
             Change Password
           </>
         )}
-      </button>
+      </Button>
+      </FormActions>
     </form>
   );
 }
@@ -152,7 +153,6 @@ function PasswordField({
   onChange,
   visible,
   onToggle,
-  inputClass,
 }: {
   id: string;
   label: string;
@@ -160,24 +160,16 @@ function PasswordField({
   onChange: (value: string) => void;
   visible: boolean;
   onToggle: () => void;
-  inputClass: string;
 }) {
   return (
-    <div>
-      <label
-        htmlFor={id}
-        className="mb-2 block text-sm font-medium text-[#203264]"
-      >
-        {label}
-      </label>
-
+    <FormField label={label} htmlFor={id}>
       <div className="relative">
-        <input
+        <Input
           id={id}
           type={visible ? "text" : "password"}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className={inputClass}
+          className="pr-12"
           autoComplete={
             id === "current_password"
               ? "current-password"
@@ -185,19 +177,21 @@ function PasswordField({
           }
         />
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={onToggle}
           aria-label={visible ? "Hide password" : "Show password"}
-          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-[#203264]"
+          className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-slate-400"
         >
           {visible ? (
             <EyeOff className="h-5 w-5" />
           ) : (
             <Eye className="h-5 w-5" />
           )}
-        </button>
+        </Button>
       </div>
-    </div>
+    </FormField>
   );
 }

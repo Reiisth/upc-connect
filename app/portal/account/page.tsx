@@ -1,5 +1,10 @@
 import { Suspense } from "react";
+import { UserRound } from "lucide-react";
 import { requireActiveAccount } from "@/lib/auth";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
+import { FormSection } from "@/components/ui/form-section";
+import { Skeleton } from "@/components/ui/skeleton";
 import ChangePasswordForm from "./ChangePasswordForm";
 
 export default function AccountPage() {
@@ -14,72 +19,48 @@ async function AccountContent() {
   const { user } = await requireActiveAccount();
 
   return (
-    <main className="space-y-6">
-      <div>
-        <p className="text-sm font-medium text-[#5D94E8]">
-          Account
-        </p>
-
-        <h1 className="mt-1 font-body text-3xl font-semibold text-[#203264]">
-          My Account
-        </h1>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          Manage your login and account security.
-        </p>
-      </div>
-
-      <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
-        <h2 className="font-body text-xl font-semibold text-[#203264]">
-          Account Information
-        </h2>
-
-        <div className="mt-6">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-            Email
-          </p>
-
-          <p className="mt-1 text-sm font-medium text-[#203264]">
+    <PageContainer>
+      <PageHeader eyebrow="Account" eyebrowIcon={<UserRound className="h-4 w-4" />}
+        title="My Account" description="Manage your login and account security." />
+      <FormSection title="Account Information">
+        <dl>
+          <dt className="text-sm font-medium text-slate-700">Email</dt>
+          <dd className="mt-1 break-words text-sm text-[#203264]">
             {user.email ?? "No email available"}
-          </p>
-        </div>
-      </section>
-
-      <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
-        <h2 className="font-body text-xl font-semibold text-[#203264]">
-          Security
-        </h2>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          Change your password to keep your account secure.
-        </p>
-
+          </dd>
+        </dl>
+      </FormSection>
+      <FormSection title="Security" description="Change your password to keep your account secure.">
         <ChangePasswordForm />
-      </section>
-    </main>
+      </FormSection>
+    </PageContainer>
   );
 }
 
 function AccountSkeleton() {
   return (
-    <main className="space-y-6 animate-pulse">
-      <div>
-        <div className="h-4 w-20 rounded bg-slate-200" />
-        <div className="mt-3 h-9 w-40 rounded bg-slate-200" />
-        <div className="mt-3 h-4 w-64 rounded bg-slate-200" />
+    <PageContainer>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-4 w-64 max-w-full" />
       </div>
-
-      <div className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
-        <div className="h-6 w-44 rounded bg-slate-200" />
-        <div className="mt-6 h-4 w-20 rounded bg-slate-100" />
-        <div className="mt-2 h-5 w-56 rounded bg-slate-200" />
-      </div>
-
-      <div className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
-        <div className="h-6 w-28 rounded bg-slate-200" />
-        <div className="mt-3 h-4 w-72 max-w-full rounded bg-slate-100" />
-        <div className="mt-6 h-11 w-40 rounded-xl bg-slate-200" />
-      </div>
-    </main>
+      <FormSection>
+        <Skeleton className="h-6 w-44" />
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-5 w-56 max-w-full" />
+      </FormSection>
+      <FormSection>
+        <Skeleton className="h-6 w-28" />
+        <Skeleton className="h-4 w-72 max-w-full" />
+        <div className="max-w-xl space-y-5">
+          {[0, 1, 2].map((field) => <div key={field} className="space-y-2">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-10 w-full" />
+          </div>)}
+          <Skeleton className="h-10 w-40" />
+        </div>
+      </FormSection>
+    </PageContainer>
   );
 }

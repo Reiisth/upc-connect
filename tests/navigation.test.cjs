@@ -182,3 +182,17 @@ test('member and follow-up contextual account/member actions are permission-gate
   assert.ok(followUp.includes('hasPermission(access.permissions, "members.view")') && followUp.includes('Open Member'));
   assert.ok(followUp.includes('canCreate ?'));
 });
+
+test('mobile bar shows every allowed destination through three tabs, then first two plus More', () => {
+  for (const permissions of [[], ['profile.view'], ['members.view', 'services.view']]) {
+    const html = nav('/portal', permissions, 'mobile');
+    assert.ok(!html.includes('<summary'));
+    assert.equal((html.match(/<a /g) || []).length, permissions.length ? permissions.length + 1 : 0);
+  }
+  const html = nav('/portal', ['reports.view', 'members.view', 'services.view'], 'mobile');
+  const bar = html.split('<details')[0];
+  assert.equal((bar.match(/<a /g) || []).length, 2);
+  assert.ok(bar.includes('Reports &amp; Analytics') && bar.includes('Members'));
+  assert.ok(!bar.includes('Services'));
+  assert.ok(html.includes('<summary') && html.includes('Services') && html.includes('My Account'));
+});
