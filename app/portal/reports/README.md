@@ -83,8 +83,9 @@ null evidence stays Unavailable. Model prose renders as escaped text.
 same cooldown. A failed regeneration shows a controlled error while retaining the
 previous valid result. Missing configuration, usage limits, timeout, provider,
 invalid-output and cooldown failures show safe messages; raw errors/payloads are
-never rendered. There is no chat, response history, database or browser storage.
-Refresh may clear results. Editing/submitting any filter immediately discards the
+never rendered. There is no chat or browser storage. Validated report documents
+are saved privately in the database; the inline result may clear on refresh.
+The Report Documents table preserves access to saved snapshots (five per page). Editing/submitting any filter immediately discards the
 AI component/result, including late responses, and disables generation until
 Apply filters. Applying different filters creates a new component too. Existing
 provider work may finish after the result is discarded.

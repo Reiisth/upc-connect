@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Node test runner uses CommonJS. */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync, readdirSync } = require('node:fs');
@@ -134,7 +135,10 @@ test('AI modules are server-only, clients import only AI types/action references
   for (const file of files) {
     const source = readFileSync(`lib/ai/${file}`, 'utf8');
     assert.ok(source.includes('import "server-only"'), file);
-    assert.ok(!source.includes('@/lib/supabase') && !source.includes('.from("'), 'AI code must not access operational tables directly');
+    if (file === 'report-documents.ts') {
+      const tables = [...source.matchAll(/\.from\("([^"]+)"\)/g)].map(match => match[1]);
+      assert.ok(tables.length > 0 && tables.every(table => table === 'ai_report_documents'), 'Document storage may only access its dedicated snapshot table');
+    } else assert.ok(!source.includes('@/lib/supabase') && !source.includes('.from("'), 'AI generation must not access operational tables directly');
     assert.ok(!source.includes('system_admin') && !source.includes('pastor'), 'AI must authorize by Reports permission/scope');
   }
   for (const file of readdirSync('app/portal/reports').filter((name) => name.endsWith('.tsx'))) {
@@ -144,7 +148,7 @@ test('AI modules are server-only, clients import only AI types/action references
   }
   const action = readFileSync('app/portal/reports/actions.ts', 'utf8');
   assert.ok(action.startsWith('"use server";'));
-  assert.ok(action.includes('return generateDecisionSupportInsights(filters)'));
+  assert.ok(action.includes('await generateDecisionSupportInsights(filters)'));
   const example = readFileSync('.env.example', 'utf8');
   assert.ok(/^GEMINI_API_KEY=$/m.test(example));
   assert.ok(!example.includes('NEXT_PUBLIC_GEMINI') && !example.includes('test-placeholder-key-not-real'));
@@ -153,7 +157,7 @@ test('AI modules are server-only, clients import only AI types/action references
 test('the action delegates untrusted input unchanged to the existing validated/authorized entry', async () => {
   await withGeminiEnv({}, async () => {
     const h = aiServerHarness();
-    const action = loadTypeScript('app/portal/reports/actions.ts', { '@/lib/ai/server': h });
+    const action = loadTypeScript('app/portal/reports/actions.ts', { '@/lib/ai/server': h, '@/lib/ai/report-documents': { saveReportDocument: async () => id(99) }, 'next/navigation': { unstable_rethrow() {} } });
     const bad = await action.generateReportInsights({ analytics: { members: ['PRIVATE_MEMBER'] } });
     assert.equal(bad.error.code, 'INVALID_FILTERS');
     assert.equal(h.calls.provider.length, 0);

@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { AnalyticsRequest } from "@/lib/analytics/types";
 import type { DecisionSupportDisplayEvidence, DecisionSupportResult } from "@/lib/ai/types";
+import SavedReportDocuments from "./SavedReportDocuments";
 import { generateReportInsights } from "./actions";
 import { formatReportDate, formatReportMoney, formatReportNumber, formatReportPercent } from "./presentation";
 
@@ -142,7 +143,10 @@ export default function DecisionSupportSection({ filters, filtersChanged = false
         </p>
         {error && <p role="alert" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{error}</p>}
       </div>
+      {result?.documentWarning && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{result.documentWarning}</p>}
+      {result?.documentId && <p role="status" className="text-sm text-emerald-700">Report document saved. <a className="underline" href={`/api/reports/documents/${result.documentId}`} target="_blank" rel="noopener noreferrer">Open / Print report</a></p>}
       {result && <DecisionSupportResults result={result} />}
+      <SavedReportDocuments refreshKey={result?.documentId ?? ""} />
       <p className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm leading-relaxed text-[#203264]">AI insights may be incomplete or incorrect. Verify important conclusions using the underlying Reports data.</p>
     </CardContent></Card>
   </section>;

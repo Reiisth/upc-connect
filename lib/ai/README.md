@@ -10,7 +10,7 @@ The dedicated AI Decision Support section appears after the analytics sections
 on `/portal/reports`, with a link in the section navigation. It is available to
 existing `reports.view` accounts, including custom roles, through the normal
 Reports authorization. There is no chat, free-text prompt, automatic generation,
-background job, response history or operational action.
+background job or operational action. Validated results are now saved as private report documents.
 
 ## Explicit Reports workflow
 
@@ -45,8 +45,9 @@ Exact decimal money stays exact. Null values remain Unavailable.
 grouping and current-state reference date, never model prose. **Regenerate
 Insights** makes another explicit request and replaces the current in-memory
 result on success; a failed regeneration retains the earlier valid result and
-shows the controlled error. There is no history, browser storage or database
-persistence. Refresh may clear the result.
+shows the controlled error. The inline result remains ephemeral, while successful
+results are saved in ai_report_documents and remain accessible after refresh.
+No browser storage is used. See docs/AI_REPORT_DOCUMENTS.md.
 
 Editing any filter or submitting the GET form immediately discards the old AI
 component/result, including late responses from its in-flight request. Generation

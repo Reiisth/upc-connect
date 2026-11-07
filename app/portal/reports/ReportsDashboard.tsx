@@ -80,7 +80,7 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
 <Section id="membership" title="Membership" description="Current member counts and records added during the selected period. Record creation is not a guaranteed official membership start date.">
       <Stats comparisons={comparisons} items={[
         { label: "Non-archived Members", value: count(membership.nonArchivedMembers) },
-        { label: "Administratively Active Members", value: count(membership.storedActiveMembers), note: "Current Member Status" },
+        { label: " Active Members", value: count(membership.storedActiveMembers), note: "Current Member Status" },
         { label: "Member Records Added", value: count(membership.recordsAddedInRange), note: "Based on record creation date" },
         { label: "Archived Members", value: count(membership.archivedMembers), note: "Current archive state" },
       ]} />

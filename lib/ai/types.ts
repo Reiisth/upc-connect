@@ -13,6 +13,8 @@ export type DecisionSupportDisplayEvidence = DecisionSupportEvidence & {
 };
 export type DecisionSupportResult = {
   ok: true;
+  documentId?: string;
+  documentWarning?: string;
   insight: DecisionSupportInsight;
   advisory: true;
   promptVersion: string;

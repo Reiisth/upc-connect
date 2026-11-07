@@ -113,7 +113,7 @@ test('dashboard displays DTO states separately: stored status, derived status, l
     './ReportDashboardGroups': { __esModule: true, default: ({ groups }) => React.createElement('div', null, ...groups.map(group => group.content)) },
   }).default;
   const html = renderToStaticMarkup(React.createElement(Dashboard, { overview: overviewFixture() }));
-  assert.equal(stat(html, 'Administratively Active Members'), '99');
+  assert.equal(stat(html, ' Active Members'), '99');
   assert.equal(stat(html, 'Monitoring'), '7');
   assert.equal(stat(html, 'Needs Follow-up'), '2');
   assert.equal(stat(html, 'Needs Follow-up \u00b7 Current'), '0', 'Historical needs do not override latest resolved state');
