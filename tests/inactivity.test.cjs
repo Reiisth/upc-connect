@@ -74,7 +74,13 @@ test('current week does not create absence or reset completed-week streak; lates
 
 test('Present attends, excused does not; corrections immediately change derived status', () => {
   const services = [service('1', '2026-10-05'), service('2', '2026-10-12'), service('3', '2026-10-19')];
-  for(const status of ['excused','absent']) assert.equal(run(services, [record('3', status)])[0].needsFollowUp, true);
+  assert.equal(run(services, [record('3', 'absent')])[0].needsFollowUp, true);
+  const excused = run(services, [record('3', 'excused')])[0];
+  assert.equal(excused.consecutiveAbsentWeeks, 2);
+  assert.equal(excused.needsFollowUp, false);
+  assert.equal(excused.lastAttendedDate, null);
+  assert.equal(excused.recentAttendedWeeks, 0);
+  assert.equal(excused.recentEligibleWeeks, 2);
   const corrected = run(services, [record('3', 'present')])[0];
   assert.equal(corrected.consecutiveAbsentWeeks, 0);
   assert.equal(corrected.needsFollowUp, false);
@@ -202,4 +208,14 @@ test('foreign-only service weeks do not create home eligibility; registration ru
     members: [{ id:'m', branchId:'a', registrationDate:'2026-10-21' }],
   })[0];
   assert.equal(prior.recentEligibleWeeks, 0);
+});
+
+test('excused home weeks pause the streak, present overrides excuse and absence records count by week', () => {
+  const services = [service('old', '2026-10-05'), service('excuse', '2026-10-12'), service('latest', '2026-10-19'), service('second', '2026-10-20')];
+  const result = run(services, [record('old', 'absent'), record('excuse', 'excused'), record('latest', 'absent'), record('second', 'absent')])[0];
+  assert.equal(result.consecutiveAbsentWeeks, 2);
+  assert.equal(result.needsFollowUp, false);
+  const present = run(services, [record('excuse', 'excused'), record('excuse', 'present')])[0];
+  assert.equal(present.consecutiveAbsentWeeks, 1);
+  assert.equal(present.recentAttendedWeeks, 1);
 });

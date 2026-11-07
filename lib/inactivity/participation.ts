@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { readAllPages } from "@/lib/supabase/read-all-pages";
 
 /** Only call with member IDs selected through authorized HOME-branch scope. */
-export async function loadPhysicalParticipation(
+export async function loadMonitoringParticipation(
   admin: ReturnType<typeof createAdminClient>, memberIds: string[], from: string, to: string,
 ) {
   type Row = {
@@ -16,7 +16,7 @@ export async function loadPhysicalParticipation(
       .select("id, member_id, service_id, attendance_status, services!inner(church_branch_id, status, service_date)")
       .in("member_id", memberIds.slice(offset, offset + 100))
       .eq("services.status", "completed").gte("services.service_date", from).lte("services.service_date", to)
-      .eq("attendance_status", "present").order("id").range(start, end));
+      .in("attendance_status", ["present", "excused"]).order("id").range(start, end));
     rows.push(...page as unknown as Row[]);
   }
   return rows;

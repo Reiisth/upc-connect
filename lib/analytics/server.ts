@@ -1,4 +1,4 @@
-import { loadPhysicalParticipation } from "@/lib/inactivity/participation";
+import { loadMonitoringParticipation } from "@/lib/inactivity/participation";
 import "server-only";
 import { cache } from "react";
 import { requirePermission } from "@/lib/permissions-server";
@@ -54,7 +54,7 @@ async function loadInactivityInputs(admin: ReturnType<typeof createAdminClient>,
   const [homeServices, attendance] = earliest ? await Promise.all([
     allRows((from, to) => admin.from("services").select("id, church_branch_id, service_date, status")
       .in("church_branch_id", ids).eq("status", "completed").gte("service_date", earliest).lte("service_date", today).order("id").range(from, to)),
-    loadPhysicalParticipation(admin, members.map(member => member.id), earliest, today),
+    loadMonitoringParticipation(admin, members.map(member => member.id), earliest, today),
   ]) : [[], []];
   const services = [...homeServices, ...attendance.map(record => {
     const service = record.services as unknown as { church_branch_id: string; status: string; service_date: string };

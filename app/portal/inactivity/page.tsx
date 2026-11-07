@@ -58,7 +58,7 @@ async function InactivityContent({ searchParams }: PageProps) {
                 )}
                 <div className="space-y-2 text-sm text-slate-600">
                   <p>Weeks run Monday–Sunday in Asia/Manila. Only finished weeks with completed services count; weeks without them are ignored.</p>
-                  <p>One Present attendance makes a week present. Excused records do not count as physical attendance. This unfinished week cannot add an absence.</p>
+                  <p>One Present attendance makes a week present. A home-branch Excused week is excluded from the absence count, not counted as physical attendance. This unfinished week cannot add an absence.</p>
                 </div>
               </CardContent>
             </Card>

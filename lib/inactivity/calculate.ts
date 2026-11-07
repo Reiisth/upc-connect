@@ -114,15 +114,25 @@ export function calculateWeeklyInactivity(input: {
   );
   const members = new Map(input.members.map((member) => [member.id, member]));
   const attendedWeeks = new Map<string, Set<number>>();
+  const excusedWeeks = new Map<string, Set<number>>();
   const lastAttendance = new Map<string, InactivityService>();
   for (const attendance of input.attendance) {
-    if (attendance.status !== "present") continue;
+    if (!["present", "excused"].includes(attendance.status)) continue;
     const member = members.get(attendance.memberId);
     const service = services.get(attendance.serviceId);
     if (!member || !service) continue;
     const start = member.registrationDate ? dateNumber(member.registrationDate) : NaN;
     const date = dateNumber(service.serviceDate);
     if (!Number.isFinite(start) || date < start) continue;
+    if (attendance.status === "excused") {
+      // A home-branch excuse exempts this week, but is not physical attendance.
+      if (service.branchId === member.branchId) {
+        const excused = excusedWeeks.get(member.id) ?? new Set<number>();
+        excused.add(monday(date));
+        excusedWeeks.set(member.id, excused);
+      }
+      continue;
+    }
     const weeks = attendedWeeks.get(member.id) ?? new Set<number>();
     weeks.add(monday(date));
     attendedWeeks.set(member.id, weeks);
@@ -154,8 +164,10 @@ export function calculateWeeklyInactivity(input: {
       return { ...base, calculationStatus: "eligibility_unknown",
         consecutiveAbsentWeeks: null, needsFollowUp: null, remainingWeeksBeforeFollowUp: null };
     }
-    const weeks = (sortedWeeks.get(member.branchId) ?? []).filter((week) => week >= monitoringWeek);
     const present = attendedWeeks.get(member.id) ?? new Set<number>();
+    const excused = excusedWeeks.get(member.id) ?? new Set<number>();
+    const weeks = (sortedWeeks.get(member.branchId) ?? []).filter((week) =>
+      week >= monitoringWeek && (!excused.has(week) || present.has(week)));
     let streak = 0;
     for (const week of weeks) {
       if (present.has(week)) break;

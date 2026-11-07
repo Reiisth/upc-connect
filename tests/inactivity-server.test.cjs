@@ -187,3 +187,10 @@ test('home-only inactivity viewer counts foreign physical participation without 
   assert.equal(results[0].recentEligibleWeeks, 3);
   assert.equal(results[0].recentAttendedWeeks, 1);
 });
+
+test('server loads home-branch excuses so missing physical attendance cannot flag an excused week', async () => {
+  const result = await loader([{ id: 'home', first_name: 'Home', last_name: 'Member', church_branch_id: 'a', created_at: '2026-01-05T00:00:00Z', member_status: 'active', is_archived: false }], { attendance: [{ member_id: 'home', service_id: 's1', attendance_status: 'excused' }] })('a');
+  assert.equal(result[0].consecutiveAbsentWeeks, 2);
+  assert.equal(result[0].recentEligibleWeeks, 2);
+  assert.equal(result[0].lastAttendedDate, null);
+});

@@ -54,13 +54,14 @@ test('rendered table shows administrative status separately from attendance flag
   // Counts may exceed the threshold and must remain fully visible.
   data[0].consecutiveAbsentWeeks = 5;
   const html = renderToStaticMarkup(React.createElement(Table, { rows: data }));
-  for (const text of ['Juan Dela Cruz', 'Member Status', 'Attendance Flag', 'Monitoring', 'Needs Follow-up', 'Unknown', '5 / 3 weeks',
+  for (const text of ['Juan Dela Cruz', 'Attendance flag', 'Monitoring', 'Needs Follow-up', 'Unknown', '5 / 3 weeks',
     'Missing or invalid UPC Connect registration date', '33.3% (1/3 weeks)', 'Oct 19, 2026']) assert.ok(html.includes(text), text);
   assert.ok(html.indexOf('Juan Dela Cruz') < html.indexOf('Maria Santos'));
   assert.ok(html.includes('overflow-x-auto'));
   assert.ok(!html.includes('Low attendance'));
   const memberStatusVisible = renderToStaticMarkup(React.createElement(Table, { rows: data, canViewMemberStatus: true, canUpdateMemberStatus: true }));
-  assert.ok(memberStatusVisible.includes('Member Status') && memberStatusVisible.includes('Review Member Status'));
+  assert.ok(memberStatusVisible.includes('aria-label="Member status: active"') && memberStatusVisible.includes('Review Member Status'));
+  for (const heading of ['Member Status', 'Attendance Flag', 'Branch Threshold']) assert.ok(!new RegExp('<th[^>]*>' + heading + '</th>').test(memberStatusVisible));
   assert.ok(memberStatusVisible.includes('active'), 'Administrative status remains visible as its own field');
   assert.ok(!/<th[^>]*>Member Status<\/th>/.test(html) && !html.includes('Review Member Status'));
 });
@@ -139,4 +140,12 @@ test('navigation and default portal routing use inactivity.view without operatio
     '@/lib/permissions-server': { getCurrentUserPermissions: async () => ['inactivity.view'] },
   }).default;
   await assert.rejects(Portal(), /redirect:\/portal\/inactivity/);
+});
+
+test('table initially renders at most ten members and reports pagination', () => {
+  const Table = loadTypeScript('app/portal/inactivity/InactivityTable.tsx').default;
+  const data = Array.from({ length: 23 }, (_, i) => ({ ...rows()[0], memberId: `member-${i}`, memberName: `Member ${String(i).padStart(2, '0')}` }));
+  const html = renderToStaticMarkup(React.createElement(Table, { rows: data }));
+  assert.equal((html.match(/Member \d{2}/g) || []).length, 10);
+  assert.ok(html.includes('Page 1 of 3') && html.includes('Showing 1-10 of 23 members'));
 });

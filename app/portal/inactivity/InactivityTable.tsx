@@ -18,12 +18,16 @@ import {
 export default function InactivityTable({ rows, canCreateFollowUps = false, canViewFollowUps = false, canViewMemberStatus = false, canUpdateMemberStatus = false }: {
   rows: InactivityMemberRow[]; canCreateFollowUps?: boolean; canViewFollowUps?: boolean; canViewMemberStatus?: boolean; canUpdateMemberStatus?: boolean;
 }) {
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<AttendanceFlag | "all">("all");
   const [minimum, setMinimum] = useState("");
   const filtered = useMemo(() => filterInactivityRows(rows, {
     search, status, minimumAbsences: Number(minimum) || 0,
   }), [rows, search, status, minimum]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / 10));
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((currentPage - 1) * 10, currentPage * 10);
   const hasFilters = Boolean(search || status !== "all" || minimum);
 
   return (
@@ -33,11 +37,11 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" aria-hidden="true" />
             <Input id="inactivity-search" type="search" placeholder="Search by member name" className="pl-9"
-              value={search} onChange={(event) => setSearch(event.target.value)} />
+              value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} />
           </div>
         </FormField>
         <FormField label="Attendance flag" htmlFor="inactivity-status">
-          <Select id="inactivity-status" value={status} onChange={(event) => setStatus(event.target.value as AttendanceFlag | "all")}>
+          <Select id="inactivity-status" value={status} onChange={(event) => { setStatus(event.target.value as AttendanceFlag | "all"); setPage(1); }}>
             <option value="all">All statuses</option>
             <option value="monitoring">Monitoring</option>
             <option value="needs_follow_up">Needs Follow-up</option>
@@ -46,16 +50,13 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
         </FormField>
         <FormField label="Minimum absent weeks" htmlFor="inactivity-minimum">
           <Input id="inactivity-minimum" type="number" min={0} step={1} placeholder="Any"
-            value={minimum} onChange={(event) => setMinimum(event.target.value)} />
+            value={minimum} onChange={(event) => { setMinimum(event.target.value); setPage(1); }} />
         </FormField>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p role="status" className="text-sm text-slate-500">
-          Showing {filtered.length.toLocaleString("en-PH")} of {rows.length.toLocaleString("en-PH")} monitored members
-        </p>
         {hasFilters && <Button type="button" variant="ghost" size="sm" onClick={() => {
-          setSearch(""); setStatus("all"); setMinimum("");
+          setSearch(""); setStatus("all"); setMinimum(""); setPage(1);
         }}>Clear filters</Button>}
       </div>
 
@@ -65,26 +66,40 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
       ) : (
         <>
           <p className="text-xs text-slate-500 md:hidden">Swipe the table to see all attendance details.</p>
-          <Table className="min-w-[1000px]" aria-label="Weekly attendance follow-up flags by member">
+          <Table className="min-w-[700px]" aria-label="Weekly attendance follow-up flags by member">
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
-                {canViewMemberStatus && <TableHead>Member Status</TableHead>}
-                <TableHead>Attendance Flag</TableHead>
                 <TableHead>Absent Weeks</TableHead>
-                <TableHead>Branch Threshold</TableHead>
                 <TableHead>Last Attendance</TableHead>
                 <TableHead>Recent Rate</TableHead>
-                {(canCreateFollowUps || canViewFollowUps) && <TableHead>Follow-ups</TableHead>}
+                {(canCreateFollowUps || canViewFollowUps || canUpdateMemberStatus) && <TableHead>Follow-ups</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((row) => {
+              {pageRows.map((row) => {
                 const derivedStatus = getAttendanceFlag(row);
                 return (
                   <TableRow key={row.memberId}>
                     <TableCell className="min-w-48 max-w-xs text-left">
-                      <p className="font-medium text-slate-900">{row.memberName}</p>
+                      <div className="flex items-center gap-2">
+                        {canViewMemberStatus && <span className="group relative flex shrink-0 items-center">
+                          <span role="img" tabIndex={0}
+                            aria-label={`Member status: ${row.memberStatus ?? "unknown"}`}
+                            aria-describedby={`member-status-${row.memberId}`}
+                            className={`h-2.5 w-2.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#5D94E8] focus-visible:ring-offset-2 ${row.memberStatus === "active" ? "bg-emerald-500" : "bg-slate-400"}`} />
+                          <span id={`member-status-${row.memberId}`} role="tooltip"
+                            className={`pointer-events-none absolute left-0 top-full z-50 mt-2 hidden whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-medium text-white shadow-lg group-hover:block group-focus-within:block ${row.memberStatus === "active" ? "bg-emerald-500" : "bg-slate-400"}`}>
+                            {row.memberStatus === "active" ? "Active" : row.memberStatus === "inactive" ? "Inactive" : "Unknown"}
+                          </span>
+                        </span>}
+                        <p className="font-medium text-slate-900">{row.memberName}</p>
+                      </div>
+                      <div className={canViewMemberStatus ? "mt-1 pl-[18px]" : "mt-1"}>
+                        <StatusBadge variant={derivedStatus === "needs_follow_up" ? "warning" : derivedStatus === "monitoring" ? "success" : "muted"}>
+                          {derivedStatus === "needs_follow_up" ? "Needs Follow-up" : derivedStatus === "monitoring" ? "Monitoring" : "Unknown"}
+                        </StatusBadge>
+                      </div>
                       {derivedStatus === "unknown" && (
                         <p className="mt-1 text-xs text-slate-500">Missing or invalid UPC Connect registration date</p>
                       )}
@@ -92,20 +107,9 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
                         <p className="mt-1 text-xs text-slate-500">No eligible completed weeks yet</p>
                       )}
                     </TableCell>
-                    {canViewMemberStatus && <TableCell>
-                      <StatusBadge variant={row.memberStatus === "active" ? "success" : row.memberStatus === "inactive" ? "muted" : "muted"}>
-                        {row.memberStatus ?? "Unknown"}
-                      </StatusBadge>
-                    </TableCell>}
-                    <TableCell>
-                      <StatusBadge variant={derivedStatus === "needs_follow_up" ? "warning" : derivedStatus === "monitoring" ? "success" : "muted"}>
-                        {derivedStatus === "needs_follow_up" ? "Needs Follow-up" : derivedStatus === "monitoring" ? "Monitoring" : "Unknown"}
-                      </StatusBadge>
-                    </TableCell>
                     <TableCell className="whitespace-nowrap tabular-nums">
                       {row.consecutiveAbsentWeeks === null ? "—" : `${row.consecutiveAbsentWeeks} / ${row.inactivityThresholdWeeks} weeks`}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap tabular-nums">{row.inactivityThresholdWeeks} {row.inactivityThresholdWeeks === 1 ? "week" : "weeks"}</TableCell>
                     <TableCell className="whitespace-nowrap">{formatAttendanceDate(row.lastAttendedDate)}</TableCell>
                     <TableCell className="whitespace-nowrap tabular-nums">{formatRecentRate(row)}</TableCell>
                     {(canCreateFollowUps || canViewFollowUps || canUpdateMemberStatus) && <TableCell>
@@ -121,10 +125,18 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
               })}
             </TableBody>
           </Table>
+          <nav aria-label="Inactivity pagination" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p role="status" className="text-sm text-slate-500">Showing {(currentPage - 1) * 10 + 1}-{Math.min(currentPage * 10, filtered.length)} of {filtered.length} members</p>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</Button>
+              <span className="text-sm text-slate-500">Page {currentPage} of {totalPages}</span>
+              <Button type="button" variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>Next</Button>
+            </div>
+          </nav>
         </>
       )}
       <p className="text-xs text-slate-500">
-        Attendance flags use up to 8 eligible finished weeks and never change Member Status. Last attendance can include this week.
+        Attendance flags use consecutive eligible absent weeks; the recent rate uses up to 8 eligible finished weeks and never change Member Status. Last attendance can include this week.
       </p>
     </section>
   );

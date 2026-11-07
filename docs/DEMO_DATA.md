@@ -52,7 +52,7 @@ evangelism/ministry do not receive inactivity or follow-up permissions.
 
 ## Scenario members
 
-The weekly inactivity calculator uses Manila calendar dates, counts only prior Monday–Sunday weeks with at least one completed service, starts monitoring on the first Monday on or after registration, ignores pre-registration attendance, and treats `present` as physical attendance. `excused` does not reset an absence streak. Current-week services are included for service lifecycle display but are not completed historical eligibility weeks.
+The weekly inactivity calculator uses Manila calendar dates, counts only prior Monday–Sunday weeks with at least one completed service, starts monitoring on the first Monday on or after registration, ignores pre-registration attendance, and treats `present` as physical attendance. `excused` skips the home-branch week without adding an absence or resetting the streak. Current-week services are included for service lifecycle display but are not completed historical eligibility weeks.
 
 | Member | Scenario | Expected result |
 | --- | --- | --- |
@@ -65,7 +65,7 @@ The weekly inactivity calculator uses Manila calendar dates, counts only prior M
 | Tomas G. Villanueva | Flagged with a resolved follow-up | Still Needs Follow-up while Member Status remains Active |
 | Rosa H. Bautista | Human-marked Inactive with earlier attendance/follow-up | Inactive status is separate; historical records remain |
 | Dario I. Flores | Present in the latest completed week after prior absences | Streak resets |
-| Elena J. Ramos | Excused in the latest completed week | Excused is not physical attendance and does not reset the streak |
+| Elena J. Ramos | Excused in the latest completed week | Excused is not physical attendance; its home-branch week is skipped without increasing or resetting the streak |
 | Noel K. Aquino | Registered on Monday three weeks ago | Monday registration week is eligible; demonstrates the Monday boundary |
 | Luz L. Castillo | Registered Wednesday three weeks ago | Partial week ignored; monitoring starts the following Monday |
 | Pio M. Domingo | Registered Sunday three weeks ago | Partial week ignored; monitoring starts the following Monday |

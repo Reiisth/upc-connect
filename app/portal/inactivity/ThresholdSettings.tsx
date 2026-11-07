@@ -19,22 +19,20 @@ export default function ThresholdSettings({ branch, canManage }: {
   );
 
   return (
-    <Card>
+    <Card className="border-[#5D94E8]/40 bg-[#F8FAFD]">
       <CardHeader>
         <CardTitle>Absence Follow-up Threshold</CardTitle>
-        <p className="text-sm text-slate-500">
-          A follow-up flag appears after {branch.inactivityThresholdWeeks} consecutive eligible weeks without attendance. It never changes administrative Member Status.
+        <p className="flex items-baseline gap-3 text-[#203264]" aria-label={`Follow-up threshold: ${branch.inactivityThresholdWeeks} weeks`}>
+          <span className="text-6xl font-bold tabular-nums">{branch.inactivityThresholdWeeks}</span>
+          <span className="text-xl font-semibold">{branch.inactivityThresholdWeeks === 1 ? "absent week" : "absent weeks"}</span>
         </p>
+        <p className="text-sm text-slate-600">Consecutive eligible absent weeks before a follow-up flag.</p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-slate-600">
-          A week counts as absent only when the branch held at least one completed service and the member attended none.
-          Attending at least one service resets the consecutive absence count.
-        </p>
         {canManage ? (
           <form action={formAction} className="space-y-3" aria-label="Absence follow-up threshold settings">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <FormField label="Absence Follow-up Threshold (eligible weeks)" htmlFor="inactivity-threshold" className="sm:max-w-56">
+              <FormField label="Absence Follow-up Threshold" htmlFor="inactivity-threshold" className="sm:max-w-56">
                 <Input key={branch.inactivityThresholdWeeks} id="inactivity-threshold" name="inactivity_threshold_weeks"
                   type="number" min={1} max={52} step={1} required defaultValue={branch.inactivityThresholdWeeks}
                   disabled={pending} aria-describedby="threshold-help" />

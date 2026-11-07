@@ -106,7 +106,8 @@ test('Service completion finalization against disposable PostgreSQL',{skip:!proc
    const attendance=JSON.parse(sql(`SELECT json_agg(json_build_object('memberId',member_id,'serviceId',service_id,'status',attendance_status)) FROM attendance_records;`));
    const input={today:'2000-01-03',thresholds:new Map([[id(1),1]]),members:[{id:id(15),branchId:id(1),registrationDate:'1999-01-01'}],services,attendance};
    const result=calculateWeeklyInactivity(input)[0];assert.equal(result.consecutiveAbsentWeeks,0);
-   const withoutVisit=calculateWeeklyInactivity({...input,attendance:attendance.filter(a=>a.serviceId!==id(109))})[0];assert.equal(withoutVisit.consecutiveAbsentWeeks,1);
+   const withoutVisit=calculateWeeklyInactivity({...input,attendance:attendance.filter(a=>a.serviceId!==id(109))})[0];assert.equal(withoutVisit.consecutiveAbsentWeeks,0, 'Home Excused exempts the week even without visiting Present');
+   const withoutExcuse=calculateWeeklyInactivity({...input,attendance:attendance.filter(a=>a.serviceId!==id(109)&&a.status!=='excused')})[0];assert.equal(withoutExcuse.consecutiveAbsentWeeks,1);
   });
  }finally{sql('DROP DATABASE '+db+' WITH (FORCE)','postgres');}
 });

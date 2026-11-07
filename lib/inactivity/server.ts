@@ -1,4 +1,4 @@
-import { loadPhysicalParticipation } from "@/lib/inactivity/participation";
+import { loadMonitoringParticipation } from "@/lib/inactivity/participation";
 import "server-only";
 
 import { getUserBranchScope } from "@/lib/branch-access";
@@ -60,7 +60,7 @@ export async function getBranchMemberInactivity(branchId: string): Promise<Inact
       .select("id, church_branch_id, service_date, status")
       .eq("church_branch_id", branchId).eq("status", "completed")
       .gte("service_date", earliestRegistrationDate).lte("service_date", today).order("id").range(from, to)),
-    loadPhysicalParticipation(admin, members.map(member => member.id), earliestRegistrationDate, today),
+    loadMonitoringParticipation(admin, members.map(member => member.id), earliestRegistrationDate, today),
   ]) : [[], []];
 
   // Read only participation facts for already-authorized home members, not foreign rosters.
