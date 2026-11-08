@@ -10,12 +10,55 @@ function definition(id, field_key, field_type = 'text', extra = {}) {
   return { id, field_key, label: field_key, field_type, field_group: 'additional', is_builtin: false,
     is_visible: true, is_required: false, options_source: null, options: null, sort_order: 1, placeholder: null, ...extra };
 }
+
+test('Member Detail derives fresh canonical Auth email through its account link and unlinked members have none', async () => {
+  const h = harness();
+  let email = 'current@example.test';
+  h.client.auth.admin.listUsers = async () => ({ data: { users: [{ id: 'actor', email }] }, error: null });
+  const api = h.load('app/portal/members/account-email.ts');
+  const linked = await api.loadMemberAccountEmail(h.client, 'owned');
+  assert.equal(linked.email, email);
+  assert.equal(linked.userId, 'actor');
+  email = 'changed@example.test';
+  assert.equal((await api.loadMemberAccountEmail(h.client, 'owned')).email, email);
+  assert.equal(await api.loadMemberAccountEmail(h.client, 'missing'), null);
+  const markup = renderToStaticMarkup(await h.content('app/portal/members/[memberId]/page.tsx'));
+  assert.ok(markup.includes('Account Email: ') && markup.includes('changed@example.test'));
+  assert.ok(!markup.includes('owner@example.test'));
+});
+
+test('Member and Profile writes reject account email while creation remains account-free', async () => {
+  const h = harness();
+  await assert.rejects(h.load('app/portal/members/actions.ts').createMember(h.staffForm()), /redirect:/);
+  assert.equal(h.writes.find(w => w.table === 'members').payload.email, undefined);
+  assert.ok(!h.events.some(e => e.invite));
+  const self = await h.load('app/portal/profile/actions.ts').saveMemberProfile('owned', h.selfForm({ email: 'owner@example.test' }));
+  assert.ok(self.error);
+  await assert.rejects(h.load('app/portal/members/actions.ts').updateMember('owned', h.staffForm({ email: 'changed@example.test' })));
+  assert.ok(h.writes.every(w => w.payload?.email === undefined));
+});
+
+test('member-facing active sources, seed and generated types contain no duplicate member email', () => {
+  const { readFileSync } = require('node:fs');
+  const sources = ['app/portal/members/page.tsx', 'app/portal/members/MembersTable.tsx', 'app/portal/members/[memberId]/page.tsx',
+    'app/portal/components/MemberCard.tsx', 'app/portal/components/MemberProfileForm.tsx', 'app/portal/members/actions.ts',
+    'scripts/setup-local-auth.mjs', 'scripts/hosted-demo-data.mjs', 'scripts/seed-hosted-demo.mjs', 'supabase/seed.sql'];
+  for (const path of sources) assert.doesNotMatch(readFileSync(path, 'utf8'), /members\.email|member\.email/, path);
+  const table = readFileSync('app/portal/members/MembersTable.tsx', 'utf8');
+  assert.doesNotMatch(table, /<TableHead>Email<\/TableHead>|email:\s*string/);
+  const seed = readFileSync('supabase/seed.sql', 'utf8');
+  assert.doesNotMatch(seed.slice(seed.indexOf('INSERT INTO public.members'), seed.indexOf('-- Five completed Sundays')), /\bemail\b/);
+  const types = readFileSync('lib/database.types.ts', 'utf8');
+  const memberTypes = types.slice(types.indexOf('"members": {'), types.indexOf('"permissions": {'));
+  assert.ok(memberTypes.includes('first_name'));
+  assert.doesNotMatch(memberTypes, /"email"\??:/);
+});
 function harness({ permissions = ['members.view', 'members.create', 'members.update', 'members.archive', 'members.link_account', 'profile.view', 'profile.update', 'administration.view'],
   branchIds = ['a'], isSystemAdmin = false, failWrite, beforeWrite } = {}) {
   const base = { first_name: 'Registered', last_name: 'Person', middle_name: null, nickname: null,
     church_branch_id: 'a', first_attendance_date: null, created_at: '2026-01-05T00:00:00Z', member_status: 'active', is_archived: false,
     archived_at: null, profile_status: 'incomplete', profile_completed_at: null, account_status: 'connected',
-    email: 'owner@example.test', phone_number: null, country: null, province: null,
+    phone_number: null, country: null, province: null,
     city: null, barangay: null, civil_status: null, birth_date: null, department_id: null, position: null, zone: null };
   const db = { members: [{ id: 'owned', ...base }, { id: 'foreign', ...base, church_branch_id: 'b' }],
     church_branches: [{ id: 'a', name: 'Branch A', is_active: true }, { id: 'b', name: 'Branch B', is_active: true }],

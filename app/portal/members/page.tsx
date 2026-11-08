@@ -59,7 +59,6 @@ async function MembersPageContent() {
       birth_date,
       gender,
       phone_number,
-      email,
       zone,
       civil_status,
       street_address,

@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { hasPermission } from "@/lib/permissions";
 import { requireStaffMember } from "../data";
 import { MemberArchiveControl } from "../MemberArchiveControl";
+import { loadMemberAccountEmail } from "../account-email";
 
 export default function MemberPage(props: { params: Promise<{ memberId: string }> }) {
   return <Suspense fallback={<MemberDetailLoading />}><Content {...props} /></Suspense>;
@@ -24,10 +25,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
     member.church_branch_id ? admin.from("church_branches").select("name").eq("id", member.church_branch_id).maybeSingle() : Promise.resolve({ data: null }),
     member.department_id ? admin.from("departments").select("name").eq("id", member.department_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
-  const accountLink = member.account_status !== "no_account" && can("accounts.view")
-    ? await admin.from("account_members").select("user_id").eq("member_id", memberId).eq("relationship", "member").maybeSingle()
-    : { data: null, error: null };
-  if (accountLink.error) throw new Error("Unable to load account connection.");
+  const account = await loadMemberAccountEmail(admin, memberId);
 
   const fullName = [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" ");
   const accountStatus = member.account_status === "connected" ? "Connected" : member.account_status === "invited" ? "Invited" : "No Account";
@@ -47,8 +45,8 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
         {!member.is_archived && can("members.update") && <Button asChild><Link href={editHref}>Edit Member</Link></Button>}
         {member.account_status === "no_account" && !member.is_archived && can("members.link_account") &&
           <Button variant="outline" asChild><Link href={`/portal/members/invite?memberId=${memberId}`}>Connect Account</Link></Button>}
-        {accountLink.data?.user_id && can("accounts.view") &&
-          <Button variant="outline" asChild><Link href={`/portal/accounts/${accountLink.data.user_id}`}>Manage Account</Link></Button>}
+        {account && can("accounts.view") &&
+          <Button variant="outline" asChild><Link href={`/portal/accounts/${account.userId}`}>Manage Account</Link></Button>}
       </div>}
     />
 
@@ -81,7 +79,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
           <span>Profile completion:</span>
           <StatusBadge variant={member.profile_status === "completed" ? "info" : "muted"}>{profileStatus}</StatusBadge>
         </div>
-        {member.account_status === "connected" && member.email && <p className="mt-3 break-all text-sm text-slate-600">Account email: {member.email}</p>}
+        <p className="mt-3 break-all text-sm text-slate-600">Account Email: {account ? account.email ?? "No email available" : "No linked account"}</p>
         {member.account_status === "invited" && <p className="mt-3 text-sm text-slate-600">The invitation is pending.</p>}
         {member.account_status === "no_account" && <p className="mt-3 text-sm text-slate-600">No account is connected to this member.</p>}
       </CardContent>
@@ -91,7 +89,6 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
       <CardContent className="p-5 sm:p-6">
         <h2 className="font-semibold text-[#203264]">Personal Information</h2>
         <dl className="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-2">
-          <Info label="Email" value={member.email ?? "Not provided"} />
           <Info label="Phone" value={member.phone_number ?? "Not provided"} />
           <Info label="Birthday" value={member.birth_date ?? "Not provided"} />
           <Info label="Gender" value={member.gender ?? "Not provided"} />

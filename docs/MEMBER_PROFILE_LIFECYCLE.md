@@ -14,7 +14,7 @@ self-service. Active-account and active-role permission checks apply to both.
 | Personal self-service | `nickname`, `birth_date`, `gender`, `civil_status`, `phone_number`, `street_address`, `barangay`, `city`, `province`, `country`, existing `wedding_anniversary` | `profile.update` and `account_members` ownership |
 | Supplemental personal profile | Non-reserved custom field definitions and their JSON values | The linked account's Profile; Profile Fields controls presentation/validation |
 | System maintained | `id`, `created_at`, `updated_at`, `account_status`, invitation/acceptance metadata, `profile_status`, `profile_completed_at`, account relationships | Existing lifecycle actions; Profile sets completion metadata after successful validation/persistence |
-| Account controlled / read only in Profile | `email` | Existing account connection flow; no Profile email mutation |
+| Account controlled / read only in Profile | Account Email from authenticated Auth user | `auth.users.email` via `account_members`; no Member email column or Profile email mutation |
 | Legacy / outside this editor | `department` (text), `photo_url` | Preserved; staff uses `department_id`. No new photo workflow. |
 | Separate operational records | Baptisms, attendance, follow-ups, contributions | Their existing modules and permissions |
 

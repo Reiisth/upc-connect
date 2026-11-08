@@ -8,7 +8,7 @@ import { isProfileDefinition } from "@/lib/member-field-policy";
 import { validateSelfServiceProfile, type ProfileOptions } from "@/lib/member-validation";
 
 export async function saveMemberProfile(memberId: string, form: FormData) {
-  const { supabase, user, permissions } = await requireOwnedProfile(memberId, "profile.update");
+  const { supabase, permissions } = await requireOwnedProfile(memberId, "profile.update");
   const { data: member, error } = await supabase.from("members").select("*").eq("id", memberId).single();
   if (error || !member || member.is_archived) throw new Error("This member profile is unavailable for editing.");
   const definitions = (await getMemberFieldDefinitions()).filter(isProfileDefinition);
@@ -18,7 +18,7 @@ export async function saveMemberProfile(memberId: string, form: FormData) {
   if (branchError || departmentError) throw new Error("Unable to verify profile choices.");
   const catalog: ProfileOptions = { branches: (branches ?? []).map((row) => row.id), departments: (departments ?? []).map((row) => row.id) };
   let validated;
-  try { validated = validateSelfServiceProfile(form, definitions, member, catalog, user.email ?? ""); }
+  try { validated = validateSelfServiceProfile(form, definitions, member, catalog); }
   catch (validationError) { return { error: validationError instanceof Error ? validationError.message : "Review the profile fields." }; }
   // Validate all fields first; mark the base profile complete only after every
   // supplemental value was saved. These remain two requests, not a transaction.

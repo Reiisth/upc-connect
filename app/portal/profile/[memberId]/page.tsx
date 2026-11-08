@@ -121,6 +121,7 @@ async function MemberProfileContent({
 
       <div className="flex flex-col items-center">
         <MemberCard
+          accountEmail={user.email ?? null}
           showBackToProfiles={false}
           member={{
             ...member,

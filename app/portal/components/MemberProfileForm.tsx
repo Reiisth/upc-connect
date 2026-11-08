@@ -46,7 +46,6 @@ type MemberProfileFormProps = {
     phone_number: string | null;
     birth_date: string | null;
     gender: string | null;
-    email: string | null;
     street_address: string | null;
     barangay: string | null;
     city: string | null;
@@ -81,7 +80,7 @@ export default function MemberProfileForm({
     );
 
   const isFieldVisible = (fieldKey: string) =>
-    (isSelfServiceField(fieldKey) || fieldKey === "email") && (getFieldDefinition(fieldKey)?.is_visible ?? true);
+    isSelfServiceField(fieldKey) && (getFieldDefinition(fieldKey)?.is_visible ?? true);
 
   const isFieldRequired = (fieldKey: string) =>
     getFieldDefinition(fieldKey)?.is_required ?? false;
@@ -153,8 +152,7 @@ export default function MemberProfileForm({
       .filter(
         (field) =>
           field.is_visible &&
-          field.is_required &&
-          field.field_key !== "email",
+          field.is_required,
       )
       .map((field) =>
         field.is_builtin
@@ -601,19 +599,19 @@ export default function MemberProfileForm({
             </FormField>
           )}
 
-          {isFieldVisible("email") && (
+          {(
             <FormField
-              label={getFieldLabel("email", "Email")}
-              htmlFor="email"
+              label="Account Email"
+              htmlFor="account-email"
               description="Email is managed through the connected account."
               style={{
-                order: getFieldOrder("email"),
+                order: 100,
               }}
             >
               <Input
-                id="email"
+                id="account-email"
                 type="email"
-                value={member.email ?? accountEmail}
+                value={accountEmail}
                 readOnly
                 disabled
               />

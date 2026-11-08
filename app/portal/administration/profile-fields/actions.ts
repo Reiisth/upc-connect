@@ -140,18 +140,6 @@ export async function restoreDefaultFieldConfiguration() {
       options: null,
       sort_order: 9,
     },
-    {
-      field_key: "email",
-      label: "Email",
-      field_type: "email",
-      field_group: "personal",
-      is_required: false,
-      is_visible: true,
-      placeholder: "Enter email address",
-      options_source: null,
-      options: null,
-      sort_order: 10,
-    },
 
     // ADDRESS
     {

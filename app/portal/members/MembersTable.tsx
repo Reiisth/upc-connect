@@ -40,7 +40,6 @@ type Member = {
   birth_date: string | null;
   gender: string | null;
   phone_number: string | null;
-  email: string | null;
   zone: number | null;
   civil_status: string | null;
   street_address: string | null;
@@ -108,7 +107,6 @@ export default function MembersTable({
       const matchesSearch =
         !query ||
         fullName.includes(query) ||
-        member.email?.toLowerCase().includes(query) ||
         member.member_status.toLowerCase().includes(query) ||
         member.account_status.toLowerCase().includes(query) ||
         member.profile_status.toLowerCase().includes(query);
@@ -269,7 +267,6 @@ export default function MembersTable({
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead><ColumnHeading label="Member Status"><TableColumnFilter label="Member Status" value={memberStatusFilter} onChange={setMemberStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }]} /></ColumnHeading></TableHead>
                 <TableHead><ColumnHeading label="Account Status"><TableColumnFilter label="Account Status" value={accountStatusFilter} onChange={setAccountStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "connected", label: "Connected" }, { value: "invited", label: "Invited" }, { value: "no_account", label: "No Account" }]} /></ColumnHeading></TableHead>
                 <TableHead><ColumnHeading label="Profile Status"><TableColumnFilter label="Profile Status" value={profileStatusFilter} onChange={setProfileStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "completed", label: "Completed" }, { value: "incomplete", label: "Incomplete" }]} /></ColumnHeading></TableHead>
@@ -283,7 +280,7 @@ export default function MembersTable({
             <TableBody>
               {filteredMembers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={hasActions ? 6 : 5}>
+                  <TableCell colSpan={hasActions ? 5 : 4}>
                     <p role="status" className="py-3 text-center text-sm text-slate-500">
                       No members match the current filters.
                     </p>
@@ -310,10 +307,6 @@ export default function MembersTable({
                           {member.is_archived && <StatusBadge variant="muted">Archived</StatusBadge>}
                         </span>
                       </button>
-                    </TableCell>
-
-                    <TableCell>
-                      {member.email ?? "—"}
                     </TableCell>
 
                     <TableCell>

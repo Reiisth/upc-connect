@@ -18,7 +18,8 @@
     "hosted:demo:scrub": "node scripts/scrub-hosted-demo.mjs",
     "hosted:demo:seed": "node scripts/seed-hosted-demo.mjs",
     "hosted:demo:verify": "node scripts/verify-hosted-demo.mjs",
-    "hosted:demo:rename-members": "node scripts/rename-hosted-demo-members.mjs"
+    "hosted:demo:rename-members": "node scripts/rename-hosted-demo-members.mjs",
+    "db:local:types": "node scripts/generate-db-types.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",

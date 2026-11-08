@@ -51,7 +51,7 @@ test('actual MembersTable preserves headers and all filter buttons for a nonempt
   }).default;
   const archivedMember = {
     id: 'archived', first_name: 'A', middle_name: null, last_name: 'Member', nickname: null,
-    birth_date: null, gender: null, phone_number: null, email: null, zone: null, civil_status: null,
+    birth_date: null, gender: null, phone_number: null, zone: null, civil_status: null,
     street_address: null, barangay: null, city: null, province: null, country: null, photo_url: null,
     position: null, member_status: 'active', account_status: 'connected', profile_status: 'completed',
     created_at: '2026-01-01', is_archived: true, department: null, church_branch: null,

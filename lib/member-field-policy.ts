@@ -32,6 +32,6 @@ export function isReservedMemberField(key: string) {
 
 export function isProfileDefinition(field: Pick<MemberFieldDefinition, "field_key" | "is_builtin">) {
   return field.is_builtin
-    ? isSelfServiceField(field.field_key) || field.field_key === "email"
+    ? isSelfServiceField(field.field_key)
     : !isReservedMemberField(field.field_key);
 }

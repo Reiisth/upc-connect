@@ -242,16 +242,6 @@ export async function inviteMembers(memberIds: string[], email: string, returnMe
       throw new Error(statusError.message);
     }
 
-    const { error: emailError } = await admin
-      .from("members")
-      .update({
-        email: normalizedEmail,
-      })
-      .eq("id", memberId);
-
-    if (emailError) {
-      throw new Error(emailError.message);
-    }
   }
 
   revalidatePath("/portal/accounts/members");
@@ -319,7 +309,6 @@ export async function disconnectMember(memberId: string) {
   const { error: memberUpdateError } = await admin
     .from("members")
     .update({
-      email: null,
       account_status: "no_account",
       invited_at: null,
       invited_by: null,

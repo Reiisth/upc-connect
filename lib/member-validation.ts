@@ -62,13 +62,12 @@ function fieldValue(raw: string, field: MemberFieldDefinition, catalog: ProfileO
 }
 
 /** Validate every submitted field before either base or supplemental writes. */
-export function validateSelfServiceProfile(form: FormData, definitions: MemberFieldDefinition[], current: Record<string, unknown>, catalog: ProfileOptions, accountEmail: string) {
+export function validateSelfServiceProfile(form: FormData, definitions: MemberFieldDefinition[], current: Record<string, unknown>, catalog: ProfileOptions) {
   const fields = definitions.filter(isProfileDefinition);
   const custom = fields.filter((field) => !field.is_builtin && field.is_visible);
   const customByName = new Map(custom.map((field) => [`custom_field_${field.id}`, field]));
   for (const key of form.keys()) {
     if (key.startsWith("$ACTION_")) continue;
-    if (key === "email") { if (formText(form, key) !== accountEmail) throw new Error("Account email is managed through account connection."); continue; }
     if (key.startsWith("custom_field_")) { if (!customByName.has(key)) throw new Error("Unknown or unavailable custom field."); }
     else if (!isSelfServiceField(key)) throw new Error("Church and system information cannot be changed through Profile.");
     else if (fields.some((field) => field.is_builtin && field.field_key === key && !field.is_visible)) throw new Error("A hidden profile field cannot be changed.");
@@ -87,7 +86,7 @@ export function validateSelfServiceProfile(form: FormData, definitions: MemberFi
   if (!String(effective.first_name ?? "").trim() || !String(effective.last_name ?? "").trim()) throw new Error("First name and last name are required.");
   if (effective.civil_status && !["single", "married", "widowed", "separated", "divorced"].includes(String(effective.civil_status))) throw new Error("Select a valid civil status.");
   if (form.has("civil_status") && !["married", "widowed"].includes(String(effective.civil_status))) { patch.wedding_anniversary = null; effective.wedding_anniversary = null; }
-  for (const field of fields.filter((field) => field.is_builtin && field.is_visible && field.is_required && field.field_key !== "email")) {
+  for (const field of fields.filter((field) => field.is_builtin && field.is_visible && field.is_required)) {
     if (field.field_key === "wedding_anniversary" && !["married", "widowed"].includes(String(effective.civil_status))) continue;
     if (!String(effective[field.field_key] ?? "").trim()) throw new Error(`${field.label} is required.`);
     fieldValue(String(effective[field.field_key]), field, catalog);

@@ -65,7 +65,7 @@ export async function setupLocalAuth() {
       if (link && link.user_id !== user.id) throw new Error('Demo member is already linked to another account.');
       checked(await admin.from('account_members').upsert({ user_id: user.id, member_id: memberId, relationship: 'member', can_view: true, can_edit: true }, { onConflict: 'user_id,member_id' }));
       const member = checked(await admin.from('members').select('accepted_at').eq('id', memberId).single());
-      checked(await admin.from('members').update({ account_status: 'connected', email, accepted_at: member.accepted_at || new Date().toISOString() }).eq('id', memberId));
+      checked(await admin.from('members').update({ account_status: 'connected', accepted_at: member.accepted_at || new Date().toISOString() }).eq('id', memberId));
     }
     console.log(`Ready: ${email} (${roleKey})`);
   }

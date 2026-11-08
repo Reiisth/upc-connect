@@ -18,7 +18,6 @@ type MemberCardProps = {
     birth_date: string | null;
     gender: string | null;
     phone_number: string | null;
-    email: string | null;
     zone: number | null;
     civil_status: string | null;
     street_address: string | null;
@@ -42,6 +41,7 @@ type MemberCardProps = {
     | null;
   };
   showBackToProfiles?: boolean;
+  accountEmail?: string | null;
 };
 
 function calculateAge(birthDate: string | null) {
@@ -65,6 +65,7 @@ function calculateAge(birthDate: string | null) {
 
 export default function MemberCard({
   member,
+  accountEmail,
   showBackToProfiles = false
 }: MemberCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -300,10 +301,7 @@ export default function MemberCard({
                     value={member.phone_number || "—"}
                   />
 
-                  <InfoItem
-                    label="Email"
-                    value={member.email || "—"}
-                  />
+                  {accountEmail !== undefined && <InfoItem label="Account Email" value={accountEmail || "No email available"} />}
 
                   <InfoItem
                     label="Address"
