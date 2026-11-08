@@ -375,14 +375,14 @@ isOneToOne: false
                   ]
                 },"services": {
                   Row: {
-                    "church_branch_id": string,"created_at": string,"id": string,"name": string,"notes": string | null,"service_date": string,"service_type": string,"start_time": string | null,"status": string,"updated_at": string
+                    "church_branch_id": string,"created_at": string,"ended_at": string | null,"id": string,"name": string,"notes": string | null,"service_date": string,"service_type": string,"start_time": string | null,"status": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "church_branch_id": string,"created_at"?: string,"id"?: string,"name": string,"notes"?: string | null,"service_date": string,"service_type": string,"start_time"?: string | null,"status"?: string,"updated_at"?: string
+                    "church_branch_id": string,"created_at"?: string,"ended_at"?: string | null,"id"?: string,"name": string,"notes"?: string | null,"service_date": string,"service_type": string,"start_time"?: string | null,"status"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "church_branch_id"?: string,"created_at"?: string,"id"?: string,"name"?: string,"notes"?: string | null,"service_date"?: string,"service_type"?: string,"start_time"?: string | null,"status"?: string,"updated_at"?: string
+                    "church_branch_id"?: string,"created_at"?: string,"ended_at"?: string | null,"id"?: string,"name"?: string,"notes"?: string | null,"service_date"?: string,"service_type"?: string,"start_time"?: string | null,"status"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {

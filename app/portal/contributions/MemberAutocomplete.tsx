@@ -12,6 +12,8 @@ export default function MemberAutocomplete({members,value,onChange,branchId,id="
  const [open,setOpen]=useState(false);
  const [active,setActive]=useState(0);
  const input=useRef<HTMLInputElement>(null);
+ const selectedName=selected?.fullName;
+ useEffect(()=>{if(selectedName){setQuery(selectedName);input.current?.setCustomValidity("");}},[selectedName]);
  const term=query.trim().toLocaleLowerCase();
  const matches=members.filter(member=>!term||member.fullName.toLocaleLowerCase().includes(term));
  const options=matches.slice(0,10);

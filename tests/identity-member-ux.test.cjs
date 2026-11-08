@@ -114,11 +114,11 @@ test('Member detail prioritizes church information and gates secondary actions b
   const archive = detail.indexOf('Member Record Actions');
   assert.ok(church >= 0 && church < account && account < personal && personal < care && care < archive);
   assert.match(detail, /Member Status:/);
-  assert.match(detail, /Attendance Flag/);
+  assert.match(detail, /View Attendance History/);
   assert.match(detail, /can\("members\.update"\)/);
   assert.match(detail, /can\("members\.link_account"\)/);
   assert.match(detail, /can\("members\.archive"\)/);
-  assert.match(detail, /can\("inactivity\.view"\)/);
+  assert.match(detail, /can\("attendance\.view"\)/);
   assert.match(detail, /can\("follow_ups\.view"\)/);
   assert.match(detail, /can\("follow_ups\.create"\)/);
   assert.match(detail, /grid gap-x-8 gap-y-4 sm:grid-cols-2/);

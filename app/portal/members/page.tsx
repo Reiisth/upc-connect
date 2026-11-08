@@ -77,6 +77,7 @@ async function MembersPageContent() {
         name
       ),
       church_branch:church_branches (
+        id,
         name
       )
     `);

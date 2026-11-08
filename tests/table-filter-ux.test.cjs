@@ -84,8 +84,8 @@ test('Phase 2F tables retain headers when their nonempty source dataset filters 
   const cases = [
     ['app/portal/accounts/members/MemberAccountsTable.tsx', 'displayedAccounts', 5, 'filteredAccounts'],
     ['app/portal/accounts/staff/StaffAccountsTable.tsx', 'accounts', 8, 'filteredAccounts'],
-    ['app/portal/services/ServicesTable.tsx', 'services', 4, 'filteredServices'],
-    ['app/portal/attendance/AttendanceServicesTable.tsx', 'services', 3, 'filteredServices'],
+    ['app/portal/services/ServicesTable.tsx', 'services', 2, 'filteredServices'],
+    ['app/portal/attendance/AttendanceServicesTable.tsx', 'services', 2, 'filteredServices'],
     ['app/portal/attendance/AttendanceView.tsx', 'rows', 6, 'filteredRows'],
     ['app/portal/follow-ups/FollowUpsTable.tsx', 'rows', 7, 'filtered'],
     ['app/portal/contributions/ContributionsTable.tsx', 'records', 9, 'filteredRecords'],
@@ -161,7 +161,7 @@ test('filtered tables share the Services clear action and preserve broader conte
     assert.match(source(file), /hasClearableFilters|hasFilters/ , `${file} should show the action only when filters are active`);
   }
   const members = source('app/portal/members/MembersTable.tsx');
-  assert.match(members, /function clearFilters\(\)\s*\{\s*setSearch\(""\);\s*setMemberStatusFilter\("all"\);\s*setAccountStatusFilter\("all"\);\s*setProfileStatusFilter\("all"\);/);
+  assert.match(members, /function clearFilters\(\)\s*\{\s*setSearch\(""\);\s*setBranchFilter\("all"\);\s*setMemberStatusFilter\("all"\);\s*setAccountStatusFilter\("all"\);\s*setProfileStatusFilter\("all"\);/);
   assert.match(members, /archiveFilter,\s*sortBy/);
   const memberAccounts = source('app/portal/accounts/members/MemberAccountsTable.tsx');
   assert.match(memberAccounts, /const hasClearableFilters = search\.trim\(\) !== "" \|\| memberCountFilter !== "all"/);

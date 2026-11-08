@@ -353,17 +353,19 @@ test('host-only recorder records cross-branch manual and QR attendance without c
 test('cross-branch identity lookup is host-authorized, minimal and includes inactive and excludes archived people', async () => {
   const h = harness({ branchIds: [branch], permissions: ['attendance.record'] });
   Object.assign(h.db.members[1], { email: 'PRIVATE', phone_number: 'PRIVATE', church_branches: { name: 'Other branch' } });
-  const matches = await h.actions().searchAttendanceMembers(serviceId, 'Transferred');
+  const matches = await h.actions().searchAttendanceMembers(serviceId, 'Transferred', otherBranch);
   assert.equal(matches.length, 1);
+  assert.equal((await h.actions().searchAttendanceMembers(serviceId, 'Transferred', branch)).length, 0);
+  assert.equal((await h.actions().searchAttendanceMembers(serviceId, 'Transferred', '')).length, 0);
   assert.equal(matches[0].homeBranchName, 'Other branch');
   assert.ok(!JSON.stringify(matches).includes('PRIVATE'));
   const selection = h.events.find(event => event.table === 'members').columns;
   assert.ok(!/email|phone|address|birth|account/.test(selection));
-  assert.equal((await h.actions().searchAttendanceMembers(serviceId, 'Archived')).length, 0);
-  const returning = await h.actions().searchAttendanceMembers(serviceId, 'Inactive');
+  assert.equal((await h.actions().searchAttendanceMembers(serviceId, 'Archived', branch)).length, 0);
+  const returning = await h.actions().searchAttendanceMembers(serviceId, 'Inactive', branch);
   assert.equal(returning.length, 1); assert.equal(returning[0].memberStatus, 'inactive');
   const foreign = harness({ branchIds: [otherBranch], permissions: ['attendance.record'] });
-  await assert.rejects(foreign.actions().searchAttendanceMembers(serviceId, 'Current'), /outside your branch/);
+  await assert.rejects(foreign.actions().searchAttendanceMembers(serviceId, 'Current', branch), /outside your branch/);
   await assert.rejects(foreign.actions().recordQrAttendance(serviceId, id(11)), /outside your branch/);
   assert.equal(foreign.events.some(e => e.table === 'members'), false);
   const labels = h.load('app/portal/attendance/types.ts');
@@ -450,7 +452,9 @@ test('Attendance landing groups ongoing first, keeps upcoming read-only and omit
  for(const [n,status,date] of [[2,'scheduled','2026-10-26'],[3,'completed','2026-10-24'],[4,'cancelled','2026-10-24']]) h.db.services.push({...h.db.services[0],id:id(n+100),status,service_date:date,name:status+' fixture'});
  const wrapper=h.load('app/portal/attendance/page.tsx').default();const content=await wrapper.props.children.type(wrapper.props.children.props);const html=renderToStaticMarkup(content);
  assert.ok(html.indexOf('Ongoing Services')<html.indexOf('Upcoming Services'));
- assert.ok(html.includes('Open Attendance')&&html.includes('Edit Service')&&html.includes('Oct 25, 2026'));
+ assert.ok(html.includes(`href="/portal/attendance/${serviceId}"`) && html.includes('Oct 25, 2026'));
+ assert.ok(!html.includes('Open Attendance') && !html.includes('Edit Service') && !html.includes('>Actions<'));
+ assert.ok(html.includes('lucide-external-link'));
  assert.equal(html.includes('completed fixture'),false);assert.equal(html.includes('cancelled fixture'),false);
  const form=renderToStaticMarkup(React.createElement(h.load('app/portal/services/ServiceForm.tsx').ServiceForm,{branches:[],serviceTypes:[],action(){},submitLabel:'Save'}));
  assert.equal(form.includes('name="status"'),false);
@@ -480,4 +484,21 @@ test('completion preview enforces update permission, active account and host bra
  for(const options of [{permissions:['attendance.record']},{archivedAccount:true},{branchIds:[otherBranch]}]){
   const h=harness(options);await assert.rejects(h.load('app/portal/services/actions.ts').previewServiceCompletion(serviceId),/redirect:|access|assigned/);assert.equal(h.db.attendance_records.length,0);
  }
+});
+
+test('service detail requires service view and branch scope, and preserves permission-gated management controls', async () => {
+ const page='app/portal/services/[serviceId]/page.tsx';
+ const htmlFor=async h=>{const wrapper=h.load(page).default({params:Promise.resolve({serviceId})});return renderToStaticMarkup(await wrapper.props.children.type(wrapper.props.children.props));};
+ const view=harness({permissions:['services.view']});
+ const html=await htmlFor(view);
+ assert.ok(html.includes('Worship') && html.includes('Sunday Morning'));
+ assert.ok(!html.includes('Edit Service') && !html.includes('Cancel Service') && !html.includes('Manage Attendance'));
+ for(const options of [{permissions:[]},{permissions:['services.view'],branchIds:[otherBranch]},{permissions:['services.view'],archivedAccount:true}]) await assert.rejects(htmlFor(harness(options)),/access-denied|not-found/);
+ const manager=harness({permissions:['services.view','services.update','attendance.view']});
+ manager.record(id(11),'present');manager.record(id(12),'excused');manager.record(id(13),'absent');
+ manager.db.services[0].ended_at='2026-10-25T03:30:00Z';
+ const manage=await htmlFor(manager);
+ assert.ok(manage.includes('Attended (Present)') && manage.includes('>1</dd>') && manage.includes('2h 30m'));
+ assert.ok(!html.includes('Attended (Present)'));
+ assert.ok(manage.includes('Cancel Service') && manage.includes('Manage Attendance'));
 });

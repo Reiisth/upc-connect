@@ -1,12 +1,12 @@
 "use client";
+import Link from "next/link";
 import ServiceLifecycleActions from "./ServiceLifecycleActions";
+import ServiceStatusIcon from "./ServiceStatusIcon";
 
 import { serviceTimestamp } from "@/lib/manila-time";
 
 import {
-  CalendarClock,
-  ClipboardCheck,
-  Pencil,
+  ExternalLink,
   Search,
   SearchX,
 } from "lucide-react";
@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { Select } from "@/components/ui/select";
-import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -26,7 +25,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TableActionButton } from "@/components/ui/table-action-button";
 import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import {
@@ -36,7 +34,6 @@ import {
   type ServiceTypeOption,
   type ServiceBranch,
   type ServiceRecord,
-  type ServiceStatus,
 } from "./types";
 
 type ServicesTableProps = {
@@ -48,23 +45,12 @@ type ServicesTableProps = {
   canManageAttendance: boolean;
 };
 
-const statusVariants: Record<
-  ServiceStatus,
-  "success" | "warning" | "danger" | "muted"
-> = {
-  scheduled: "warning",
-  ongoing: "success",
-  completed: "muted",
-  cancelled: "danger",
-};
-
 export default function ServicesTable({
   services,
   serviceTypes,
   serviceTypeNames,
   branches,
   canEdit,
-  canManageAttendance,
 }: ServicesTableProps) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -175,28 +161,21 @@ export default function ServicesTable({
         <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
-              <TableHead>Service</TableHead>
+              <TableHead><div className="flex items-center gap-1">Service<TableColumnFilter label="Service Status" value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={[{ value: "all", label: "All statuses" }, ...SERVICE_STATUSES.map((status) => ({ value: status, label: formatServiceStatus(status) }))]} /></div></TableHead>
               <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={(value) => { setTypeFilter(value); setPage(1); }} options={[{ value: "all", label: "All types" }, ...serviceTypes.map((type) => ({ value: type.key, label: type.name }))]} /></div></TableHead>
-              <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Service Status" value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={[{ value: "all", label: "All statuses" }, ...SERVICE_STATUSES.map((status) => ({ value: status, label: formatServiceStatus(status) }))]} /></div></TableHead>
-              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {filteredServices.length === 0 ? (
-              <TableRow><TableCell colSpan={4}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
+              <TableRow><TableCell colSpan={2}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
             ) : paginatedServices.map((service) => (
               <TableRow key={service.id}>
                 <TableCell>
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 rounded-xl bg-[#EEF3FB] p-2 text-[#203264]">
-                      <CalendarClock className="h-4 w-4" />
-                    </div>
-
+                    <div className="shrink-0">{canEdit && (service.status === "ongoing" || service.status === "scheduled") ? <ServiceLifecycleActions id={service.id} status={service.status} iconOnly /> : <ServiceStatusIcon status={service.status} />}</div>
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-900">
-                        {service.name}
-                      </p>
+                      <Link href={`/portal/services/${service.id}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">{service.name}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link>
 
                       <p className="mt-1 text-xs text-slate-500">{service.branch?.name ?? "Unknown branch"}</p>
                       <p className="mt-1 text-xs text-slate-500">{formatServiceDate(service.serviceDate)} · {formatStartTime(service.startTime)}</p>
@@ -208,32 +187,6 @@ export default function ServicesTable({
                   {formatServiceType(service.serviceType, serviceTypeNames)}
                 </TableCell>
 
-                <TableCell>
-                  <StatusBadge
-                    variant={statusVariants[service.status]}
-                  >
-                    {formatServiceStatus(service.status)}
-                  </StatusBadge>
-                </TableCell>
-
-                <TableCell>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {canEdit && service.status === "scheduled" && <TableActionButton
-                      href={`/portal/services/${service.id}/edit`}
-                      icon={<Pencil />}
-                    >Edit</TableActionButton>}
-                    {canEdit && <ServiceLifecycleActions id={service.id} status={service.status} />}
-                    {canManageAttendance && <TableActionButton
-                      href={service.status === "ongoing" ? `/portal/attendance/${service.id}` : `/portal/services/${service.id}/attendance`}
-                      icon={<ClipboardCheck />}
-                    >{service.status === "ongoing" ? "Manage Attendance" : "View Attendance History"}</TableActionButton>}
-                  </div>
-                  {!canEdit && !canManageAttendance && (
-                    <span className="text-sm text-slate-400">
-                      View only
-                    </span>
-                  )}
-                </TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -400,16 +400,18 @@ export async function saveAttendanceRecord(
 }
 
 /** Purpose-limited identity lookup; no members.view or home-branch grant is implied. */
-export async function searchAttendanceMembers(serviceId: string, search: string) {
+export async function searchAttendanceMembers(serviceId: string, search: string, branchId: string) {
   const access = await requireAttendancePermission("attendance.record");
   const admin = createAdminClient();
   const service = await loadAccessibleService(access, admin, serviceId);
   if (!service) throw new Error("Service is outside your branch access.");
   assertServiceAttendance(service.status, "record");
+  if (!memberQrIdPattern.test(branchId)) return [];
   const term = search.trim().replace(/[^\p{L}\p{N} '-]/gu, "").slice(0, 80);
   if (term.length < 2) return [];
   const { data, error } = await admin.from("members")
     .select("id, first_name, middle_name, last_name, church_branch_id, member_status, church_branches(name)")
+    .eq("church_branch_id", branchId)
     .eq("is_archived", false).in("member_status", ["active", "inactive"])
     .or(`first_name.ilike.%${term}%,middle_name.ilike.%${term}%,last_name.ilike.%${term}%`)
     .order("last_name").order("id").limit(30);

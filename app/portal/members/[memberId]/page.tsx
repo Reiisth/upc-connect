@@ -99,11 +99,11 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
       </CardContent>
     </Card>
 
-    {(can("inactivity.view") || can("follow_ups.view") || can("follow_ups.create")) && <Card>
+    {(can("attendance.view") || can("follow_ups.view") || can("follow_ups.create")) && <Card>
       <CardContent className="p-5 sm:p-6">
         <h2 className="font-semibold text-[#203264]">Care and Activity</h2>
         <div className="mt-4 flex flex-wrap gap-3">
-          {can("inactivity.view") && <Button type="button" variant="outline"><HeartPulse />View Attendance History</Button>}
+          {can("attendance.view") && <Button variant="outline" asChild><Link href={`/portal/attendance/member/${memberId}`}><HeartPulse />View Attendance History</Link></Button>}
           {can("follow_ups.view") && <Button variant="outline" asChild><Link href={`/portal/follow-ups/member/${memberId}`}><ClipboardPen />Follow-up History</Link></Button>}
           {can("follow_ups.create") && <Button variant="outline" asChild><Link href={`/portal/follow-ups/new?memberId=${memberId}`}><ArrowUpRight />Record Follow-up</Link></Button>}
         </div>

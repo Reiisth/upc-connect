@@ -206,6 +206,7 @@ export async function updateService(
 
   revalidatePath(servicesPath);
   revalidatePath(`${servicesPath}/${serviceId}/edit`);
+  revalidatePath(`${servicesPath}/${serviceId}`);
   revalidatePath("/portal/attendance");
   revalidatePath(`/portal/attendance/${serviceId}`);
 
@@ -233,7 +234,7 @@ export async function finishService(serviceId: string, target: "completed" | "ca
     .select("id").maybeSingle();
   if (writeError || !changed) throw new Error("The service changed. Refresh before trying again.");
   }
-  for (const path of [servicesPath,"/portal/attendance",`/portal/attendance/${serviceId}`,`/portal/services/${serviceId}/edit`,`/portal/services/${serviceId}/attendance`,`/portal/attendance/${serviceId}/scan`,"/portal/reports","/portal/inactivity"]) revalidatePath(path);
+  for (const path of [servicesPath,`${servicesPath}/${serviceId}`,"/portal/attendance",`/portal/attendance/${serviceId}`,`/portal/services/${serviceId}/edit`,`/portal/services/${serviceId}/attendance`,`/portal/attendance/${serviceId}/scan`,"/portal/reports","/portal/inactivity"]) revalidatePath(path);
   return {success:true,generatedAbsent};
 }
 

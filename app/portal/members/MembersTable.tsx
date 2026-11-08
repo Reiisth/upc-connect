@@ -65,6 +65,7 @@ type Member = {
 
   church_branch:
   | {
+    id: string;
     name: string;
   }
   | null;
@@ -85,10 +86,13 @@ export default function MembersTable({
   const [memberStatusFilter, setMemberStatusFilter] = useState("all");
   const [accountStatusFilter, setAccountStatusFilter] = useState("all");
   const [profileStatusFilter, setProfileStatusFilter] = useState("all");
+  const [branchFilter, setBranchFilter] = useState("all");
   const [archiveFilter, setArchiveFilter] = useState("active");
   const [sortBy, setSortBy] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const branchOptions = useMemo(() => [...new Map(members.flatMap(member => member.church_branch ? [[member.church_branch.id, member.church_branch] as const] : [])).values()].sort((a, b) => a.name.localeCompare(b.name)), [members]);
 
   const filteredMembers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -120,6 +124,7 @@ export default function MembersTable({
         (archiveFilter === "archived" && member.is_archived);
 
       return (
+        (branchFilter === "all" || member.church_branch?.id === branchFilter) &&
         matchesSearch &&
         matchesMemberStatus &&
         matchesAccountStatus &&
@@ -178,6 +183,7 @@ export default function MembersTable({
     memberStatusFilter,
     accountStatusFilter,
     profileStatusFilter,
+    branchFilter,
     archiveFilter,
     sortBy,
   ]);
@@ -194,11 +200,12 @@ export default function MembersTable({
 
   const hasActions = canArchive || canLinkAccount;
   const hasClearableFilters = Boolean(
-    search.trim() || memberStatusFilter !== "all" || accountStatusFilter !== "all" || profileStatusFilter !== "all",
+    search.trim() || branchFilter !== "all" || memberStatusFilter !== "all" || accountStatusFilter !== "all" || profileStatusFilter !== "all",
   );
 
   function clearFilters() {
     setSearch("");
+    setBranchFilter("all");
     setMemberStatusFilter("all");
     setAccountStatusFilter("all");
     setProfileStatusFilter("all");
@@ -211,6 +218,7 @@ export default function MembersTable({
     memberStatusFilter,
     accountStatusFilter,
     profileStatusFilter,
+    branchFilter,
     archiveFilter,
     sortBy,
   ]);
@@ -230,7 +238,11 @@ export default function MembersTable({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
+        <div className="grid grid-cols-2 items-center gap-3 sm:grid-cols-3 lg:flex">
+          <Select value={branchFilter} onChange={event => setBranchFilter(event.target.value)} className="lg:w-44" aria-label="Filter members by branch">
+            <option value="all">All branches</option>
+            {branchOptions.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+          </Select>
           <Select value={archiveFilter} onChange={(event) => setArchiveFilter(event.target.value)} className="lg:w-36" aria-label="Filter by archive status">
             <option value="active">Active Members</option>
             <option value="archived">Archived Members</option>
@@ -251,7 +263,7 @@ export default function MembersTable({
           </Select>
 
         </div>
-        {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} className="self-start" />}
+        {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} className="self-center" />}
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border bg-white shadow-sm">
@@ -305,6 +317,7 @@ export default function MembersTable({
                           {member.is_archived && <StatusBadge variant="muted">Archived</StatusBadge>}
                         </span>
                       </Link>
+                      <p className="mt-1 text-xs text-slate-500">{member.church_branch?.name ?? "Not assigned"}</p>
                     </TableCell>
 
                     <TableCell>

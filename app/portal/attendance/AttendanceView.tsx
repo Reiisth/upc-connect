@@ -1,15 +1,18 @@
 "use client";
 
 import {
+  ExternalLink,
   CheckCircle2,
   Pencil,
   Plus,
   Search,
   SearchX,
 } from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import MemberAutocomplete from "../contributions/MemberAutocomplete";
 import { Button } from "@/components/ui/button";
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +47,7 @@ import {
 
 type AttendanceViewProps = {
   serviceId: string;
+  visitingBranches?: { id: string; name: string }[];
   serviceBranchId?: string;
   rows: AttendanceMemberRow[];
   summary: AttendanceSummary;
@@ -65,6 +69,7 @@ const statusVariants: Record<
 
 export default function AttendanceView({
   serviceId,
+  visitingBranches = [],
   serviceBranchId = "",
   rows,
   summary,
@@ -72,8 +77,29 @@ export default function AttendanceView({
   canCorrect,
 }: AttendanceViewProps) {
   const router = useRouter();
+  const [lookupBranch, setLookupBranch] = useState("");
+  const [lookupMessage, setLookupMessage] = useState("");
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [lookupOpen, setLookupOpen] = useState(false);
   const [lookup, setLookup] = useState("");
   const [lookupRows, setLookupRows] = useState<AttendanceMemberRow[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    if (!canRecord || !lookupBranch || lookup.trim().length < 2 || !lookupOpen) return;
+    const timer = setTimeout(async () => {
+      setLookupBusy(true);
+      try {
+        const members = await searchAttendanceMembers(serviceId, lookup, lookupBranch);
+        if (!cancelled) {
+          setLookupRows(members.map(member => ({ member, attendance: null, isCurrentlyEligible: true })));
+          setLookupMessage(members.length ? "" : "No eligible members found.");
+        }
+      } catch (error) {
+        if (!cancelled) setLookupMessage(error instanceof Error ? error.message : "Unable to search members.");
+      } finally { if (!cancelled) setLookupBusy(false); }
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [lookup, lookupBranch, serviceId, canRecord, lookupOpen]);
   const selectionRows = useMemo(() => [...rows, ...lookupRows.filter(found => !rows.some(row => row.member.id === found.member.id))], [rows, lookupRows]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] =
@@ -214,48 +240,47 @@ export default function AttendanceView({
           <form onSubmit={handleSubmit} className="space-y-5">
             <input type="hidden" name="attendance_record_id"
               value={selectionRows.find((row) => row.member.id === selectedMemberId)?.attendance?.id ?? ""} />
-            {canRecord && <FormField label="Find Visiting Member" htmlFor="attendance-lookup" description="Search member names church-wide (up to 30 matches). Only identity and home branch are shown.">
-              <div className="flex gap-2">
-                <Input id="attendance-lookup" type="search" value={lookup} onChange={event => setLookup(event.target.value)} placeholder="At least two characters" />
-                <Button type="button" variant="outline" disabled={isPending || lookup.trim().length < 2} onClick={() => startTransition(async () => {
-                  try {
-                    const members = await searchAttendanceMembers(serviceId, lookup);
-                    setLookupRows(members.map(member => ({ member, attendance: null, isCurrentlyEligible: true })));
-                    setErrorMessage(members.length ? null : "No eligible members found.");
-                  } catch (error) { setErrorMessage(error instanceof Error ? error.message : "Unable to search members."); }
-                })}>Find Members</Button>
-              </div>
-            </FormField>}
+            {canRecord && <div className="grid gap-5 md:grid-cols-2">
+              <FormField label="Visiting Member Branch" htmlFor="attendance-lookup-branch">
+                <Select id="attendance-lookup-branch" value={lookupBranch} disabled={isPending} onChange={event => {
+                  setLookupBranch(event.target.value); setLookup(""); setLookupRows([]); setLookupMessage(""); setLookupBusy(false); setLookupOpen(false); setSelectedMemberId("");
+                }}>
+                  <option value="">Select a branch</option>
+                  {visitingBranches.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+                </Select>
+              </FormField>
+              <FormField label="Find Visiting Member" htmlFor="attendance-lookup" description="Select a branch, then type at least two characters to search.">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Input id="attendance-lookup" type="search" className="pl-9" value={lookup} autoComplete="off" disabled={!lookupBranch || isPending}
+                    onChange={event => { setLookup(event.target.value); setLookupRows([]); setLookupMessage(""); setLookupBusy(false); setLookupOpen(true); }}
+                    onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); if (event.key === "Escape") setLookupOpen(false); }}
+                    placeholder={lookupBranch ? "Search member name..." : "Select a branch first"} />
+                  {lookupOpen && lookupBranch && lookup.trim().length >= 2 && <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                    {lookupBusy && <p role="status" className="p-3 text-sm text-slate-500">Searching...</p>}
+                    {!lookupBusy && lookupRows.map(row => <button key={row.member.id} type="button" className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[#EEF3FB] focus:bg-[#EEF3FB]" onClick={() => {
+                      selectMember(selectionRows.find(item => item.member.id === row.member.id) ?? row); setLookup(formatMemberName(row.member)); setLookupOpen(false);
+                    }}>{formatMemberName(row.member)}</button>)}
+                    {!lookupBusy && lookupMessage && <p role="status" className="p-3 text-sm text-slate-500">{lookupMessage}</p>}
+                  </div>}
+                </div>
+              </FormField>
+            </div>}
             <div className="grid gap-5 md:grid-cols-3">
               <FormField
                 label="Member"
                 htmlFor="attendance-member"
                 required
               >
-                <Select
-                  id="attendance-member"
-                  name="member_id"
-                  value={selectedMemberId}
-                  onChange={(event) => {
-                    const row = selectionRows.find(
-                      (item) => item.member.id === event.target.value,
-                    );
-
-                    if (row) selectMember(row);
-                  }}
-                  disabled={isPending || recordableRows.length === 0}
-                  required
-                >
-                  <option value="" disabled>
-                    Select a member
-                  </option>
-
-                  {recordableRows.map((row) => (
-                    <option key={row.member.id} value={row.member.id}>
-                      {formatMemberName(row.member)}{row.member.memberStatus === "inactive" ? " · Inactive Member" : ""}{row.member.homeBranchName ? ` · ${row.member.homeBranchName}` : ""}{isVisitingMember(row.member.churchBranchId, serviceBranchId) ? " · Visiting Member" : ""}
-                    </option>
-                  ))}
-                </Select>
+                <fieldset disabled={isPending || recordableRows.length === 0}>
+                  <MemberAutocomplete id="attendance-member" branchId={serviceBranchId}
+                    members={recordableRows.map(row => ({ id: row.member.id, fullName: formatMemberName(row.member),
+                      churchBranchId: row.member.churchBranchId, homeBranchName: row.member.homeBranchName ?? undefined, isArchived: row.member.isArchived }))}
+                    value={selectedMemberId} onChange={memberId => {
+                      const row = recordableRows.find(item => item.member.id === memberId);
+                      if (row) selectMember(row); else setSelectedMemberId("");
+                    }} />
+                </fieldset>
               </FormField>
 
               <FormField
@@ -403,9 +428,9 @@ export default function AttendanceView({
                 return (
                   <TableRow key={row.member.id}>
                     <TableCell>
-                      <p className="font-medium text-slate-900">
-                        {formatMemberName(row.member)}
-                      </p>
+                      <Link href={`/portal/attendance/member/${row.member.id}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">
+                        {formatMemberName(row.member)}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      </Link>
                       {isVisitingMember(row.member.churchBranchId, serviceBranchId) && <p className="text-xs text-slate-500">Visiting Member · {row.member.homeBranchName ?? "Home branch unknown"}</p>}
                       {row.member.memberStatus === "inactive" && <p className="text-xs text-slate-500">Inactive Member</p>}
                       {!row.isCurrentlyEligible && (row.member.isArchived || !["active", "inactive"].includes(row.member.memberStatus ?? "")) && <p className="text-xs text-slate-500">Historical attendee{row.member.isArchived ? " · Archived" : ""}</p>}

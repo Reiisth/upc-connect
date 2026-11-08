@@ -72,6 +72,10 @@ async function AttendanceServiceContent({
     access.permissions,
     "attendance.correct",
   );
+  const { data: visitingBranches, error: branchError } = canRecord
+    ? await admin.from("church_branches").select("id,name").order("name")
+    : { data: [], error: null };
+  if (branchError) throw new Error("Unable to load visiting member branches.");
   const canScan =
     canRecord &&
     canScanServiceStatus(service.status);
@@ -79,8 +83,8 @@ async function AttendanceServiceContent({
   return (
     <PageContainer>
       <PageHeader
-        backHref={hasPermission(access.permissions, "services.view") ? "/portal/services" : "/portal/attendance"}
-        backLabel={hasPermission(access.permissions, "services.view") ? "Back to Services" : "Back to Attendance"}
+        backHref="/portal/attendance"
+        backLabel="Back to Attendance"
         eyebrow="Attendance"
         eyebrowIcon={<ClipboardCheck className="h-4 w-4" />}
         title={service.name}
@@ -157,6 +161,7 @@ async function AttendanceServiceContent({
 
       {service.status === "scheduled" ? <p role="status" className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">This Service has not started. Attendance opens at its Manila start time; refresh then to open the roster.</p> : <AttendanceView
         serviceId={service.id}
+        visitingBranches={visitingBranches ?? []}
         serviceBranchId={service.churchBranchId}
         rows={rows}
         summary={summary}

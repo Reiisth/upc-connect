@@ -156,9 +156,7 @@ test('Profile Fields is linked only from Administration and old route redirects 
 test('service attendance action is explicit and gated by attendance.view', () => {
   const table = require('node:fs').readFileSync('app/portal/services/ServicesTable.tsx', 'utf8');
   const page = require('node:fs').readFileSync('app/portal/services/page.tsx', 'utf8');
-  assert.ok(table.includes('canManageAttendance &&'));
-  assert.ok(table.includes('Manage Attendance'));
-  assert.ok(table.includes('/portal/attendance/${service.id}'));
+  assert.ok(table.includes('/portal/services/${service.id}'));
   assert.ok(page.includes('"attendance.view"'));
 
   const ServicesTable = loadTypeScript('app/portal/services/ServicesTable.tsx', { 'next/link': link, './ServiceLifecycleActions': {__esModule:true,default:()=>null} }).default;
@@ -169,8 +167,12 @@ test('service attendance action is explicit and gated by attendance.view', () =>
   const props = { services: [service], branches, serviceTypes: [{key:'sunday_morning',name:'Sunday Morning',isActive:true}], serviceTypeNames: {sunday_morning:'Sunday Morning'}, canEdit: false };
   const allowed = renderToStaticMarkup(React.createElement(ServicesTable, { ...props, canManageAttendance: true }));
   const denied = renderToStaticMarkup(React.createElement(ServicesTable, { ...props, canManageAttendance: false }));
-  assert.ok(allowed.includes('Manage Attendance') && allowed.includes('/portal/attendance/service-1'));
-  assert.ok(!denied.includes('Manage Attendance') && denied.includes('View only'));
+  for (const html of [allowed, denied]) {
+    assert.ok(html.includes('/portal/services/service-1') && html.includes('Sunday Service'));
+    assert.ok(!html.includes('Manage Attendance') && !html.includes('>Actions<'));
+  }
+  const detail = require('node:fs').readFileSync('app/portal/services/[serviceId]/page.tsx', 'utf8');
+  assert.ok(detail.includes('hasPermission(access.permissions, "attendance.view")'));
 });
 
 test('member and follow-up contextual account/member actions are permission-gated', () => {

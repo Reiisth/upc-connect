@@ -1,12 +1,13 @@
 "use client";
+import ServiceLifecycleActions from "../services/ServiceLifecycleActions";
+import ServiceStatusIcon from "../services/ServiceStatusIcon";
 import AttendanceMiniDashboard from "./AttendanceMiniDashboard";
 import type { AttendanceDashboardData } from "@/lib/attendance-dashboard-model";
 
 import { serviceTimestamp } from "@/lib/manila-time";
 
 import {
-  ClipboardCheck,
-  Pencil,
+  ExternalLink,
   Search,
   SearchX,
 } from "lucide-react";
@@ -25,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TableActionButton } from "@/components/ui/table-action-button";
+import Link from "next/link";
 import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import {
@@ -137,30 +138,26 @@ export default function AttendanceServicesTable({
       {(["ongoing","scheduled"] as const).map(group => <section key={group} className="space-y-3">
         <div className="flex flex-wrap items-center gap-3"><h2 className={`text-lg font-semibold ${group === "ongoing" ? "text-[#203264]" : "text-slate-600"}`}>{group === "ongoing" ? "Ongoing Services" : "Upcoming Services"}</h2><StatusBadge variant={group === "ongoing" ? "success" : "muted"}>{group === "ongoing" ? "Attendance Open" : "Preparation Only"}</StatusBadge></div>
         {!services.some(service => service.status === group) ? <EmptyState icon={<SearchX className="h-5 w-5" />} title={group === "ongoing" ? "No services are currently ongoing." : "No upcoming services."} description="No Services match this section and the current filters." /> : (
-        <Table className="min-w-[700px]">
+        <Table className="min-w-[500px]">
           <TableHeader>
             <TableRow>
               <TableHead>Service</TableHead>
               <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...serviceTypes.map((type) => ({ value: type.key, label: type.name }))]} /></div></TableHead>
-              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {filteredServices.filter(service => service.status === group).length === 0 ? (
-              <TableRow><TableCell colSpan={3}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
+              <TableRow><TableCell colSpan={2}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
             ) : filteredServices.filter(service => service.status === group).map((service) => (
               <TableRow key={service.id}>
                 <TableCell>
                   <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 rounded-xl p-2 ${service.status === "ongoing" ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"}`}>
-                      <ClipboardCheck className="h-4 w-4" />
-                    </div>
-
+                    <div className="shrink-0">{canEditServices ? <ServiceLifecycleActions id={service.id} status={service.status} iconOnly /> : <ServiceStatusIcon status={service.status} />}</div>
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-900">
-                        {service.name}
-                      </p>
+                      <Link href={`/portal/attendance/${service.id}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline">
+                        {service.name}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      </Link>
 
                       <p className="mt-1 text-xs text-slate-500">{service.branch?.name ?? "Unknown branch"}</p>
                       <p className="mt-1 text-xs text-slate-500">{formatServiceDate(service.serviceDate)} · {formatStartTime(service.startTime)}</p>
@@ -173,17 +170,7 @@ export default function AttendanceServicesTable({
                 </TableCell>
 
 
-                <TableCell>
-                  <div className="flex flex-col items-start gap-2">
-                  <TableActionButton
-                    href={`/portal/attendance/${service.id}`}
-                    icon={<ClipboardCheck />}
-                  >
-                    {service.status === "ongoing" ? "Open Attendance" : "View Service"}
-                  </TableActionButton>
-                  {service.status === "scheduled" && canEditServices && <TableActionButton href={`/portal/services/${service.id}/edit`} icon={<Pencil />}>Edit Service</TableActionButton>}
-                  </div>
-                </TableCell>
+
               </TableRow>
             ))}
           </TableBody>

@@ -40,7 +40,9 @@ test('Service completion finalization against disposable PostgreSQL',{skip:!proc
     ('${id(100)}','${id(13)}','absent','manual',NULL),('${id(100)}','${id(17)}','present','qr','2000-01-01T01:01:00Z');
    GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;`);
   sql(readFileSync('supabase/migrations/20261107090000_finalize_service_attendance.sql','utf8'));
+  sql(readFileSync('supabase/migrations/20261109090000_service_end_time.sql','utf8'));
   await t.test('preview is aggregate-only and preserves all recorded facts',()=>{
+   assert.equal(sql(`SELECT count(*) FROM services WHERE ended_at IS NOT NULL`),'0');
    const preview=JSON.parse(sql(call(100,true)));assert.deepEqual(preview,{present:2,excused:1,absent:1,missing:2});
    assert.equal(sql(`SELECT status FROM services WHERE id='${id(100)}'`),'ongoing');assert.equal(sql('SELECT count(*) FROM attendance_records'),'4');
   });
@@ -49,6 +51,10 @@ test('Service completion finalization against disposable PostgreSQL',{skip:!proc
    sql(`SET ROLE service_role;INSERT INTO attendance_records(service_id,member_id,attendance_status,method) VALUES('${id(100)}','${id(14)}','present','qr');`);
    const result=JSON.parse(sql(call()));assert.equal(result.generatedAbsent,1);assert.equal(result.missing,1);
    assert.equal(sql(`SELECT status FROM services WHERE id='${id(100)}'`),'completed');
+   assert.equal(sql(`SELECT ended_at IS NOT NULL AND ended_at >= (service_date + start_time) AT TIME ZONE 'Asia/Manila' FROM services WHERE id='${id(100)}'`),'t');
+   const end=sql(`SELECT ended_at FROM services WHERE id='${id(100)}'`);
+   sql(`UPDATE services SET ended_at=NULL WHERE id='${id(100)}'`);
+   assert.equal(sql(`SELECT ended_at FROM services WHERE id='${id(100)}'`),end);
    assert.equal(sql(`SELECT attendance_status FROM attendance_records WHERE service_id='${id(100)}' AND member_id='${id(15)}'`),'absent');
    assert.equal(sql(`SELECT attendance_status FROM attendance_records WHERE service_id='${id(100)}' AND member_id='${id(14)}'`),'present');
    for(const row of JSON.parse(before))assert.deepEqual(JSON.parse(sql(`SELECT to_jsonb(a) FROM attendance_records a WHERE id='${row.id}'`)),row,'existing row preserved');
@@ -68,6 +74,7 @@ test('Service completion finalization against disposable PostgreSQL',{skip:!proc
    CREATE TRIGGER z_fail_completion_test BEFORE UPDATE ON services FOR EACH ROW EXECUTE FUNCTION fail_completion_test();`);
    assert.match(sql(call(101),db,true),/forced failure/);
    assert.equal(sql(`SELECT count(*) FROM attendance_records WHERE service_id='${id(101)}'`),'0');assert.equal(sql(`SELECT status FROM services WHERE id='${id(101)}'`),'ongoing');
+   assert.equal(sql(`SELECT ended_at IS NULL FROM services WHERE id='${id(101)}'`),'t');
    sql('DROP TRIGGER z_fail_completion_test ON services;DROP FUNCTION fail_completion_test();');
   });
   await t.test('concurrent completions serialize; a queued late QR cannot replace generated Absent',async()=>{
