@@ -223,14 +223,14 @@ isOneToOne: false
                   ]
                 },"member_follow_ups": {
                   Row: {
-                    "church_branch_id": string,"created_at": string,"created_by": string | null,"follow_up_date": string,"followed_up_by": string | null,"id": string,"member_id": string,"method": string,"next_follow_up_date": string | null,"notes": string | null,"outcome": string,"updated_at": string
+                    "church_branch_id": string,"created_at": string,"created_by": string | null,"follow_up_date": string,"followed_up_by": string | null,"followed_up_by_name": string | null,"id": string,"member_id": string,"method": string,"next_follow_up_date": string | null,"notes": string | null,"outcome": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "church_branch_id": string,"created_at"?: string,"created_by"?: string | null,"follow_up_date": string,"followed_up_by"?: string | null,"id"?: string,"member_id": string,"method": string,"next_follow_up_date"?: string | null,"notes"?: string | null,"outcome": string,"updated_at"?: string
+                    "church_branch_id": string,"created_at"?: string,"created_by"?: string | null,"follow_up_date": string,"followed_up_by"?: string | null,"followed_up_by_name"?: string | null,"id"?: string,"member_id": string,"method": string,"next_follow_up_date"?: string | null,"notes"?: string | null,"outcome": string,"updated_at"?: string
                   }
                   Update: {
-                    "church_branch_id"?: string,"created_at"?: string,"created_by"?: string | null,"follow_up_date"?: string,"followed_up_by"?: string | null,"id"?: string,"member_id"?: string,"method"?: string,"next_follow_up_date"?: string | null,"notes"?: string | null,"outcome"?: string,"updated_at"?: string
+                    "church_branch_id"?: string,"created_at"?: string,"created_by"?: string | null,"follow_up_date"?: string,"followed_up_by"?: string | null,"followed_up_by_name"?: string | null,"id"?: string,"member_id"?: string,"method"?: string,"next_follow_up_date"?: string | null,"notes"?: string | null,"outcome"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {

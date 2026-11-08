@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { hasPermission } from "@/lib/permissions";
 import { requireStaffMember } from "../data";
 import { MemberArchiveControl } from "../MemberArchiveControl";
+import MemberCardButton from "../MemberCardButton";
 import { loadMemberAccountEmail } from "../account-email";
 
 export default function MemberPage(props: { params: Promise<{ memberId: string }> }) {
@@ -42,6 +43,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
       backHref="/portal/members"
       backLabel="Back to Members"
       action={<div className="flex flex-wrap gap-2">
+        <MemberCardButton member={{ ...member, department, church_branch: branch }} />
         {!member.is_archived && can("members.update") && <Button asChild><Link href={editHref}>Edit Member</Link></Button>}
         {member.account_status === "no_account" && !member.is_archived && can("members.link_account") &&
           <Button variant="outline" asChild><Link href={`/portal/members/invite?memberId=${memberId}`}>Connect Account</Link></Button>}
@@ -101,7 +103,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
       <CardContent className="p-5 sm:p-6">
         <h2 className="font-semibold text-[#203264]">Care and Activity</h2>
         <div className="mt-4 flex flex-wrap gap-3">
-          {can("inactivity.view") && <Button variant="outline" asChild><Link href="/portal/inactivity"><HeartPulse />View Attendance Flag</Link></Button>}
+          {can("inactivity.view") && <Button type="button" variant="outline"><HeartPulse />View Attendance History</Button>}
           {can("follow_ups.view") && <Button variant="outline" asChild><Link href={`/portal/follow-ups/member/${memberId}`}><ClipboardPen />Follow-up History</Link></Button>}
           {can("follow_ups.create") && <Button variant="outline" asChild><Link href={`/portal/follow-ups/new?memberId=${memberId}`}><ArrowUpRight />Record Follow-up</Link></Button>}
         </div>

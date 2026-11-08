@@ -395,4 +395,6 @@ test('member detail joins retained address parts without empty separators or Reg
   assert.ok(html.includes('San Isidro, Quezon City, Metro Manila'));
   assert.ok(!html.includes(', ,'));
   assert.ok(!html.includes('Region'));
+  assert.ok(html.includes('Show Card'));
+  assert.ok(!html.includes('View Attendance Flag'));
 });

@@ -5,12 +5,13 @@ import type { ReactNode } from "react";
 import { disconnectMember } from "./actions";
 import { MemberArchiveControl } from "./MemberArchiveControl";
 import {
+  ExternalLink,
   MailPlus,
   Search,
   SearchX,
   Unplug,
 } from "lucide-react";
-import MemberCardModal from "./MemberCardModal";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { Select } from "@/components/ui/select";
@@ -85,8 +86,6 @@ export default function MembersTable({
   const [accountStatusFilter, setAccountStatusFilter] = useState("all");
   const [profileStatusFilter, setProfileStatusFilter] = useState("all");
   const [archiveFilter, setArchiveFilter] = useState("active");
-  const [selectedMember, setSelectedMember] =
-    useState<Member | null>(null);
   const [sortBy, setSortBy] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -193,7 +192,7 @@ export default function MembersTable({
     currentPage * itemsPerPage,
   );
 
-  const hasActions = true;
+  const hasActions = canArchive || canLinkAccount;
   const hasClearableFilters = Boolean(
     search.trim() || memberStatusFilter !== "all" || accountStatusFilter !== "all" || profileStatusFilter !== "all",
   );
@@ -298,15 +297,14 @@ export default function MembersTable({
                 return (
                   <TableRow key={member.id}>
                     <TableCell>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedMember(member)}
+                      <Link
+                        href={`/portal/members/${member.id}`}
                         className="block w-full text-left font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline"
                       >
-                        <span className="flex w-full flex-col items-start gap-1 text-left">{fullName}
+                        <span className="flex w-full flex-col items-start gap-1 text-left"><span className="inline-flex items-center gap-1.5">{fullName}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></span>
                           {member.is_archived && <StatusBadge variant="muted">Archived</StatusBadge>}
                         </span>
-                      </button>
+                      </Link>
                     </TableCell>
 
                     <TableCell>
@@ -358,7 +356,6 @@ export default function MembersTable({
                     {hasActions && (
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                          <TableActionButton href={`/portal/members/${member.id}`}>Member Details</TableActionButton>
                           {!member.is_archived && canLinkAccount && (
                             member.account_status === "no_account" ? (
                               <TableActionButton
@@ -393,12 +390,6 @@ export default function MembersTable({
           </Table>
         )}
       </div>
-      {selectedMember && (
-        <MemberCardModal
-          member={selectedMember}
-          onClose={() => setSelectedMember(null)}
-        />
-      )}
       {filteredMembers.length > 0 && (
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-slate-500">

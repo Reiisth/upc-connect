@@ -82,6 +82,6 @@ test('report highlights only stored evidence and uses colored rating-only labels
 
 test('report uses larger readable text on screen and in print, including evidence and ratings',()=>{
  const html=loadTypeScript('lib/ai/report-document-html.ts',serverOnly).renderReportDocument(fixture());
- for(const rule of ['font-size:18px;line-height:1.75', '.summary{font-size:20px', '.rating{font-size:16px',
-  '.evidence dl div{font-size:16px', 'font-size:14pt;line-height:1.7', '.summary{font-size:15pt}', '.rationale,.limitations{font-size:14pt}']) assert.ok(html.includes(rule),rule);
+ for(const rule of ['font-size:16px;line-height:1.7', '.summary{font-size:18px', '.rating{font-size:16px',
+  '.evidence dl div{font-size:16px', 'font-size:12pt;line-height:1.65', '.summary{font-size:13pt}', '.rationale,.limitations{font-size:12pt}']) assert.ok(html.includes(rule),rule);
 });

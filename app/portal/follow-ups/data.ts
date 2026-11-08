@@ -43,21 +43,19 @@ export async function loadFollowUpPerformers(admin: Admin): Promise<FollowUpPerf
 
 export async function loadFollowUpFormOptions(access: FollowUpAccess, admin: Admin) {
   const branches = (await loadFollowUpBranches(access, admin)).filter((branch) => branch.isActive);
-  const [members, performers] = await Promise.all([
+  const members = await (
     branches.length ? allRows((from, to) => admin.from("members")
       .select("id, first_name, middle_name, last_name, church_branch_id, is_archived")
-      .in("church_branch_id", branches.map((branch) => branch.id)).order("id").range(from, to)) : [],
-    loadFollowUpPerformers(admin),
-  ]);
+      .in("church_branch_id", branches.map((branch) => branch.id)).order("id").range(from, to)) : []);
   return {
-    branches, performers,
+    branches,
     members: members.map((member) => ({ id: member.id, name: memberName(member),
       branchId: member.church_branch_id, isArchived: member.is_archived } satisfies FollowUpMember)),
   };
 }
 
 const recordSelect = `id, church_branch_id, member_id, follow_up_date, method, outcome,
-  followed_up_by, notes, next_follow_up_date, created_by,
+  followed_up_by, followed_up_by_name, notes, next_follow_up_date, created_by,
   member:members!member_follow_ups_member_id_fkey(first_name, middle_name, last_name),
   branch:church_branches!member_follow_ups_church_branch_id_fkey(name, is_active),
   performer:profiles!member_follow_ups_followed_up_by_fkey(display_name)`;
@@ -66,7 +64,7 @@ type Related<T> = T | T[] | null;
 type RecordRow = {
   id: string; church_branch_id: string; member_id: string; follow_up_date: string;
   method: FollowUpRecord["method"]; outcome: FollowUpRecord["outcome"];
-  followed_up_by: string | null; notes: string | null; next_follow_up_date: string | null; created_by: string | null;
+  followed_up_by: string | null; followed_up_by_name: string | null; notes: string | null; next_follow_up_date: string | null; created_by: string | null;
   member: Related<{ first_name: string | null; middle_name: string | null; last_name: string | null }>;
   branch: Related<{ name: string; is_active: boolean }>;
   performer: Related<{ display_name: string | null }>;
@@ -78,7 +76,7 @@ function mapRecord(row: RecordRow): FollowUpRecord {
     id: row.id, memberId: row.member_id, memberName: member ? memberName(member) : "Unknown member",
     branchId: row.church_branch_id, branchName: branch?.name ?? "Unknown branch", branchIsActive: branch?.is_active ?? false,
     followUpDate: row.follow_up_date, method: row.method, outcome: row.outcome, followedUpBy: row.followed_up_by,
-    performerName: performer?.display_name ?? null, notes: row.notes, nextFollowUpDate: row.next_follow_up_date, createdBy: row.created_by,
+    performerName: row.followed_up_by_name ?? performer?.display_name ?? null, notes: row.notes, nextFollowUpDate: row.next_follow_up_date, createdBy: row.created_by,
   };
 }
 

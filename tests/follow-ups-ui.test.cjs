@@ -48,7 +48,7 @@ test('list renders joined history, useful filters and permission-gated edit acti
   }
 });
 
-test('create page validates query preselection and defaults performer only when current account qualifies', async () => {
+test('create page validates query preselection and offers a simple optional performer name', async () => {
   const h = followUpsHarness();
   h.tables.profiles.push({ id: ids.actor, display_name: 'Current Staff', archived_at: null });
   h.tables.user_roles.push({ user_id: ids.actor, role_id: id(40), roles: { is_staff: true, is_active: true } });
@@ -58,8 +58,9 @@ test('create page validates query preselection and defaults performer only when 
   assert.ok(html.includes('role="combobox"'));
   assert.ok(html.includes('Follow-ups'));
   assert.ok(html.includes(`value="${ids.a}" selected=""`));
-  assert.ok(html.includes(`value="${ids.actor}" selected=""`));
-  assert.ok(html.includes('Staff and Member'));
+  assert.ok(html.includes('name="followed_up_by"'));
+  assert.ok(!html.includes('<select id="follow-up-performer"'));
+  assert.ok(!html.includes('Staff and Member'));
   await assert.rejects(contentHtml(Page, { searchParams: Promise.resolve({ memberId: ids.member, branchId: ids.b }) }), /not-found/);
   await assert.rejects(contentHtml(Page, { searchParams: Promise.resolve({ memberId: id(999) }) }), /not-found/);
 });
@@ -73,6 +74,8 @@ test('edit renders immutable historical identity after a transfer', async () => 
   assert.ok(html.includes('Historical member and branch cannot be changed'));
   assert.ok(html.includes(`name="church_branch_id" value="${ids.a}"`));
   assert.ok(!html.includes('>Delete<'));
+  assert.ok(html.includes('name="followed_up_by"'));
+  assert.ok(html.includes('value="Staff Performer"'));
 });
 
 test('history uses the existing derived inactivity loader; a resolved outcome does not imply activity', async () => {

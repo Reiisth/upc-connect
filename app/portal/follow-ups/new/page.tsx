@@ -35,6 +35,6 @@ async function NewFollowUpContent({ searchParams }: Props) {
     {!options.branches.length ? <EmptyState title="No active branch access" description="An accessible active branch is required to record a follow-up." /> :
       <FollowUpForm {...options} action={createFollowUp} cancelHref={canView ? "/portal/follow-ups" : "/portal"}
         initialValues={{ branchId, memberId: member?.id ?? "", followUpDate: manilaDate(new Date()), method: "call", outcome: "contacted",
-          followedUpBy: options.performers.some((p) => p.id === access.user.id) ? access.user.id : "", notes: "", nextFollowUpDate: "" }} />}
+          followedUpBy: "", notes: "", nextFollowUpDate: "" }} />}
   </PageContainer>;
 }

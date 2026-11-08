@@ -11,18 +11,17 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FOLLOW_UP_METHODS, FOLLOW_UP_OUTCOMES, METHOD_LABELS, OUTCOME_LABELS,
-  type FollowUpAction, type FollowUpBranch, type FollowUpMember, type FollowUpPerformer, type FollowUpValues } from "./types";
+  type FollowUpAction, type FollowUpBranch, type FollowUpMember, type FollowUpValues } from "./types";
 
-export default function FollowUpForm({ branches, members, performers, initialValues, action, immutable = false, historicalPerformerName, cancelHref }: {
-  branches: FollowUpBranch[]; members: FollowUpMember[]; performers: FollowUpPerformer[];
+export default function FollowUpForm({ branches, members, initialValues, action, immutable = false, cancelHref }: {
+  branches: FollowUpBranch[]; members: FollowUpMember[];
   initialValues: FollowUpValues; action: FollowUpAction; immutable?: boolean;
-  historicalPerformerName?: string | null; cancelHref: string;
+  cancelHref: string;
 }) {
   const [values, setValues] = useState(initialValues);
   const [state, formAction, pending] = useActionState(action, { error: null });
   function field<K extends keyof FollowUpValues>(key: K, value: FollowUpValues[K]) { setValues((current) => ({ ...current, [key]: value })); }
   const branchMembers = members.filter((member) => member.branchId === values.branchId);
-  const unavailablePerformer = Boolean(values.followedUpBy && !performers.some((person) => person.id === values.followedUpBy));
 
   return (
     <form action={formAction}>
@@ -70,12 +69,7 @@ export default function FollowUpForm({ branches, members, performers, initialVal
             </Select>
           </FormField>
           <FormField label="Followed Up By" htmlFor="follow-up-performer">
-            <Select id="follow-up-performer" name="followed_up_by" value={values.followedUpBy} onChange={(event) => field("followedUpBy", event.target.value)}>
-              <option value="">Not specified</option>
-              {unavailablePerformer && <option value={values.followedUpBy} disabled>{historicalPerformerName || "Previous performer"} (no longer eligible)</option>}
-              {performers.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
-            </Select>
-            {unavailablePerformer && <p className="text-xs text-amber-700">Choose an active staff account or Not specified before saving this correction.</p>}
+            <Input id="follow-up-performer" name="followed_up_by" maxLength={120} placeholder="Name of the person who followed up" value={values.followedUpBy} onChange={(event) => field("followedUpBy", event.target.value)} />
           </FormField>
           <FormField label="Next Follow-up Date" htmlFor="follow-up-next" description="Optional for any outcome. Must be on or after the follow-up date.">
             <Input id="follow-up-next" name="next_follow_up_date" type="date" min={values.followUpDate || undefined} value={values.nextFollowUpDate} onChange={(event) => field("nextFollowUpDate", event.target.value)} />
@@ -86,7 +80,7 @@ export default function FollowUpForm({ branches, members, performers, initialVal
         </fieldset>
         <FormActions>
           <Button variant="outline" asChild><Link href={cancelHref}>Cancel</Link></Button>
-          <Button type="submit" disabled={pending || !values.memberId || unavailablePerformer}>{pending ? "Saving…" : immutable ? "Save Changes" : "Record Follow-up"}</Button>
+          <Button type="submit" disabled={pending || !values.memberId}>{pending ? "Saving…" : immutable ? "Save Changes" : "Record Follow-up"}</Button>
         </FormActions>
       </FormSection>
     </form>

@@ -42,18 +42,18 @@ test('create rejects inaccessible/inactive branches, missing members and member/
   assert.equal(h.writes.length, 0);
 });
 
-test('performer must exist, be non-archived and have an active staff role', async () => {
+test('performer accepts a trimmed optional name, rejects oversized names and preserves recorder identity', async () => {
   const h = followUpsHarness();
-  for (const performer of [ids.archived, ids.inactiveRole, ids.nonstaff, id(999), 'invalid']) {
-    const result = await h.actions().createFollowUp(initial, h.form({ followed_up_by: performer }));
-    assert.ok(result.error, performer);
-  }
+  assert.ok((await h.actions().createFollowUp(initial, h.form({ followed_up_by: 'x'.repeat(121) }))).error);
   assert.equal(h.writes.length, 0);
-  await succeeds(h.actions().createFollowUp(initial, h.form({ followed_up_by: ids.overlap })));
-  assert.equal(h.writes[0].payload.followed_up_by, ids.overlap);
-  // Performer has no follow_ups.create account capability in this fixture.
+  await succeeds(h.actions().createFollowUp(initial, h.form({ followed_up_by: '  Maria Santos  ' })));
+  assert.equal(h.writes[0].payload.followed_up_by_name, 'Maria Santos');
+  assert.equal(h.writes[0].payload.created_by, ids.actor);
+  assert.ok(!Object.hasOwn(h.writes[0].payload, 'followed_up_by'));
+  await succeeds(h.actions().updateFollowUp(ids.record, initial, h.form({ followed_up_by: 'Juan Cruz' })));
+  assert.equal(h.writes[1].payload.followed_up_by_name, 'Juan Cruz');
   await succeeds(h.actions().createFollowUp(initial, h.form({ followed_up_by: '' })));
-  assert.equal(h.writes[1].payload.followed_up_by, null);
+  assert.equal(h.writes[2].payload.followed_up_by_name, null);
 });
 
 test('date, method and outcome validation rejects bad values without leaking database details', async () => {
