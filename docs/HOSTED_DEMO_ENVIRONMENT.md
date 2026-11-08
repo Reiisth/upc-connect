@@ -1,0 +1,296 @@
+# Hosted QA/demo environment
+
+The owner confirmed on November 8, 2026 that hosted project `uuionqwconjeguxcwnla`
+contains only dummy/test data. It is now intentionally a QA/capstone demo project,
+even though the Supabase CLI labels it `production`. Never reuse this authorization
+after real church data enters the project.
+
+## Preserved and replaced data
+
+Preserved byte-for-byte reference row fingerprints: 7 roles, 48 permissions,
+69 role-permission assignments, 5 service types, 4 departments, and 21 member
+field definitions. The live permission assignments are authoritative. No default
+RBAC matrix is restored. Schema, eight-entry migration history, functions, RLS,
+triggers, indexes, constraints and grants remain unchanged.
+
+Removed all previous operational records from `ai_report_documents`,
+`attendance_records`, `financial_contributions`, `baptism_records`,
+`member_follow_ups`, `member_custom_field_values`, `account_members`, `members`,
+`services`, `user_branch_access`, `user_roles`, and `profiles`, plus all eight old
+Auth users using the Admin Auth API. Auth deletion cascades to profiles through
+the existing FK. There are no household tables or storage buckets to scrub.
+
+The three old testing branches are replaced by **exactly Batangas City and Bauan**,
+as explicitly requested. Each has an inactivity threshold of three eligible
+absent weeks. No fictional street addresses are presented as real church sites.
+Ordinary scrub preserves branch configuration; seed replaces branches only after
+the operational/Auth environment is empty.
+
+## Commands and guards
+
+Copy `.env.hosted-demo.example` to ignored `.env.hosted-demo.local` and supply the
+hosted project's server secret and public publishable key. Do not put privileged
+keys in browser variables. The scripts load only this dedicated configuration;
+they never read/change `.env.local` or `.env.supabase.local`. Existing process
+variables take precedence. Set `UPC_ALLOW_HOSTED_DEMO_RESET=true` explicitly.
+
+From the inner `upc-connect` repository:
+
+```powershell
+# Read-only plan; requires explicit target/configuration opt-in.
+npm.cmd run hosted:demo:scrub
+# Destructive: all operational rows and ALL Auth accounts, including demo admin.
+npm.cmd run hosted:demo:scrub -- --execute --confirm=uuionqwconjeguxcwnla
+# Read-only seed plan; refuses any remaining operational/Auth accounts.
+npm.cmd run hosted:demo:seed
+npm.cmd run hosted:demo:seed -- --execute --confirm=uuionqwconjeguxcwnla
+npm.cmd run hosted:demo:verify
+```
+
+The exact HTTPS origin `https://uuionqwconjeguxcwnla.supabase.co`, explicit opt-in,
+and typed project confirmation are checked before writes. No other project,
+loopback target, URL path or redirect is accepted. CLI queries/dumps explicitly
+name the pinned project and CLI version 3.0.0. No migration/reset command is used.
+Default execution is dry-run. Unknown arguments fail closed.
+
+Every mutation run first creates private timestamped schema and data dumps under
+`supabase/.temp/hosted-demo/<timestamp>/`, explicitly including `public,auth`.
+The data dump must contain `auth.users.encrypted_password` before mutation may
+proceed. SHA-256 hashes and preservation snapshots are recorded. **These backups
+contain sensitive Auth data, password hashes and tokens; keep them private.**
+Do not publish the backup directory or credentials file as demo assets.
+
+Operational deletion is a FK-ordered transaction with an exclusive table lock.
+Profiles are archived first to deny portal access. Auth removal follows through
+the supported API, with a durable receipt updated after each deletion. SQL and
+Auth APIs cannot form one atomic transaction: on interruption, inspect the
+private receipt, rerun scrub to finish, then seed. Seed refuses a partially
+populated environment and never silently merges fixtures over existing rows.
+
+Seed creates Auth accounts through Admin Auth (confirmed individually), checks
+that the existing profile trigger worked, then imports historical operational
+data in one owner SQL transaction. This is the historical-import path explicitly
+supported by the existing attendance guards. Triggers are never disabled. It
+does not attempt API writes into completed services or reopen completed services.
+Do not use this owner import pattern in ordinary application request handlers.
+
+For recovery, retain the schema/data dump pair, manifest, original Auth inventory,
+and scrub receipt. Restore first into an isolated compatible Supabase project
+under maintenance, verifying the Auth-managed schema/version and FK ordering.
+The data dump includes password hashes/identities; Admin Auth alone cannot restore
+original IDs and password hashes. Do not blindly replay a full Auth/schema dump
+over a live managed Auth schema. A supervised compatible database restore is
+required; no destructive automatic restore command is provided.
+
+## Dataset and accounts
+
+Fixture IDs and records are deterministic for the recorded Manila seed date.
+Auth UUIDs/passwords are intentionally generated by Auth/cryptographic randomness.
+The latest seed receipt is ignored `supabase/.temp/hosted-demo/latest-seed.json`.
+Reseeding on another day adjusts the live QR service date and historical window.
+
+For the November 8 seed: 180 members (90 per branch), January 1–November 8, 2026
+history; 182 services, 11,588 attendance rows, 700 contributions, 80 baptisms and
+90 follow-ups. Each branch has 82 active, 4 administratively inactive, and 4
+archived members. Departments are evenly distributed overall. New registrations
+increase through the year; the newest members have no finished eligible weeks.
+Of the services, 174 are completed, 2 ongoing, 4 scheduled and 2 cancelled.
+
+Passwords are written only to ignored `.env.hosted-demo-accounts.local` before
+account creation; partial creation updates the same private file. Never commit
+or paste its password values. Each account has one existing role:
+
+| Email | Role | Branch access |
+| --- | --- | --- |
+| demo.admin@example.com | system_admin | Both |
+| demo.pastor@example.com | pastor | Both |
+| demo.accounting@example.com | accounting_officer | Batangas City |
+| demo.evangelism@example.com | evangelism_officer | Both |
+| demo.ministry@example.com | spiritual_ministry_officer | Bauan |
+| demo.usher@example.com | usher | Batangas City |
+| demo.member@example.com | member | Own linked member; no staff branch grants |
+
+Existing permissions are intentionally preserved: system_admin can view reports
+and administer accounts but does not gain attendance recording/service completion.
+Use usher or pastor for recording, pastor for service management/follow-ups,
+accounting for contributions, and the relevant baptism officer for each type.
+
+## QR and analytics demonstration
+
+Use the **Batangas City Live QR Demo** ongoing service, signed in as usher/pastor.
+At seed time it has no attendance, so these codes produce fresh Present records:
+
+| Scenario | Member | QR payload (UUID) |
+| --- | --- | --- |
+| Home member; linked demo.member profile | Jose Miguel Flores Mendoza | d8010000-0000-4000-8000-000000000001 |
+| Visiting member from Bauan | Julius Santos Hernandez | d8010000-0000-4000-8000-000000000091 |
+| Administratively inactive returner | John Paul Gonzales Atienza | d8010000-0000-4000-8000-000000000003 |
+
+The QR payload is the raw UUID. Member cards can be opened/printed through the
+existing UI. Ongoing service dates are the seed day: reseed a disposable demo
+environment for another presentation day rather than changing final historical
+services. Physical camera operation still requires browser camera permissions
+and HTTPS (or localhost).
+
+Completed services contain one Present/Excused/Absent record for every eligible
+home member, plus explicit visitors. No rows precede registration or follow
+archive. Batangas City's physical attendance improves over the historical period;
+Bauan is initially stable with a mild recent decline. Counts grow with membership,
+so compare rates and branch/service/week denominators as well as check-ins.
+Cross-branch participation protects weekly status without changing membership.
+Members 005/006 and 095/096 have at least four absent eligible weeks; 007/008 and
+097/098 have two. Members 009/099 have one absent week plus a latest excused week:
+Excused pauses absence counting and does not count as physical attendance.
+Members 010/100 have a latest Present reset. Members 011/101 demonstrate a resolved
+follow-up superseding an earlier needs-follow-up action. Follow-up outcomes do
+not change stored member status or attendance-derived inactivity.
+
+Contributions use exact decimal strings and PostgreSQL NUMERIC: linked members,
+anonymous/visitor entries, cross-branch members, cash/GCash/bank transfers and
+service links. August is the strong month, September the dip, October the recovery
+for this seed. The current partial month has no financial fixtures; do not mistake
+that for a decline. Use January–October for complete-month comparisons.
+
+Baptisms include Water and Holy Ghost with no duplicate member/type pair: six
+combined records monthly initially, then sixteen monthly in September/October.
+Choose the full history/custom reporting range to show growth, improvements,
+financial dip/recovery and recent baptism increases together. The default recent
+range will naturally show only part of this story.
+
+Gemini receives the existing validated aggregate payload, with anonymized branch
+labels and no private member names. Its output is generated live, validated and
+stored through the normal report-document action; no AI text is seeded. Describe
+observations as advisory and avoid causal claims from these fictional trends.
+
+## November 8, 2026 validation results
+
+- All expected hosted fixture counts matched. Attendance: 8,062 Present, 705
+  Excused and 2,821 Absent, including 22 historical visiting Present records.
+  No completed service was missing an eligible home roster row; no attendance
+  preceded registration or followed archive.
+- Contributions: 600 member, 40 visitor and 60 anonymous records; exact total
+  **PHP 311,355.00**. August/September/October totals were PHP 43,012.50 /
+  18,037.50 / 34,687.50, demonstrating the intended dip and recovery.
+- Baptisms: 48 Water and 32 Holy Ghost; six monthly initially and sixteen in
+  each of September/October. Member/type uniqueness is enforced by the unchanged
+  existing database constraint and checked in fixture tests.
+- Both branch analytics rollups and the real weekly inactivity calculator passed.
+  Every demo account signed in through both the Auth API and Chrome. All existing
+  permission keys and branch scopes matched the preserved live role matrix.
+  Unauthorized page access was denied. Role writes and direct browser calls to
+  the privileged analytics RPC failed specifically with authorization error 42501.
+- Chrome fed real QR images through the scanner's camera decoder and existing
+  server action for home, visiting and inactive members. All three saved Present
+  successfully. Only those three verification rows were then removed, leaving
+  the designated ongoing service fresh for the live demo. A physical phone camera
+  was not tested.
+- A live Gemini result was generated through the app, validated, saved to hosted
+  report history, downloaded as HTML and printed to PDF using Chrome. The final
+  environment includes **one genuine AI report document**, owned by demo.admin.
+  Two earlier UI attempts were rejected by existing response validation and were
+  not saved; a direct live-provider diagnostic and subsequent UI generation
+  passed. Generation remains nondeterministic and may require retry. No prompt,
+  validation, model setting or application authorization rule was changed for
+  this task, and no canned report text was inserted.
+- Browser checks used `http://localhost:3001` backed by the real hosted Supabase
+  project. This does not constitute verification of a separately deployed web
+  host or a physical mobile device.
+- Full suite: **419 passed, zero failed/skipped**; production build, TypeScript,
+  targeted ESLint and `git diff --check` passed. The build retains an existing
+  warning about the outer workspace's package-lock; it is unrelated to this task.
+
+Private original pre-scrub backup:
+`supabase/.temp/hosted-demo/2026-11-07T18-30-08-576Z-12820/`.
+Successful seed receipt/backups:
+`supabase/.temp/hosted-demo/2026-11-07T21-11-18-392Z-11364/`.
+Private browser evidence, QR screenshots, genuine generated HTML/PDF and provider
+diagnostic files are in `supabase/.temp/hosted-demo-audit/`. Final preservation
+was compared with the original pre-scrub snapshot, not just an intermediate seed.
+
+New source files are `scripts/hosted-demo-env.mjs` (guards, private backups,
+catalog snapshots and bound CLI), `scripts/hosted-demo-data.mjs` (pure fixtures),
+`scripts/scrub-hosted-demo.mjs`, `scripts/seed-hosted-demo.mjs`,
+`scripts/verify-hosted-demo.mjs`, `tests/hosted-demo.test.cjs`, and the dedicated
+`.env.hosted-demo.example`. `package.json` adds the three hosted commands.
+No application code, migration, normal local seed, `.env.local`, or
+`.env.supabase.local` was modified.
+
+## Filipino member names: in-place update, November 8, 2026
+
+`scripts/hosted-demo-names.mjs` now supplies deterministic curated combinations
+from **48 male first names, 48 female first names and 64 Filipino surnames**.
+First names vary between single and compound names and follow each fixture's
+existing gender. Both middle and last names are full surnames, including natural
+multiword surnames; initials are never generated. The 180 complete combinations
+are unique (62 distinct last surnames used). Examples include Jose Miguel Flores
+Mendoza, Maria Angela Manalo Santiago and John Paul Gonzales Atienza. These are
+fictional combinations, not imported identities.
+
+The shared name generator is used by `generateDemo()` and therefore by
+`scripts/seed-hosted-demo.mjs`; future scrub/seed cycles retain the realistic
+names. No households exist in this schema, so no household naming convention or
+relationship was invented. The existing demo Member account remains linked to
+Jose Miguel Flores Mendoza (`d8010000-0000-4000-8000-000000000001`). Its Auth
+email, user ID, password, profile display name and account link were preserved.
+The three QR scenarios above retain their original UUID payloads.
+
+Current hosted rows were updated through a guarded **name-only UPDATE**, with no
+scrub or reseed:
+
+```powershell
+# Same private hosted configuration and opt-in as the other hosted commands.
+npm.cmd run hosted:demo:rename-members
+npm.cmd run hosted:demo:rename-members -- --execute --confirm=uuionqwconjeguxcwnla
+```
+
+The command requires the exact project, explicit reset opt-in, expected counts,
+all 180 deterministic IDs, recognized old/new demo names, the two named branches,
+the seven expected Auth IDs/emails, and the original Member account link. It
+aborts on unexpected names or demographics rather than overwriting possible real
+edits. An already-renamed dataset is valid and does not cause redundant updates.
+The private name backup, mapping, protected-data fingerprints and receipt are in
+`supabase/.temp/hosted-demo/2026-11-08T02-49-31-815Z-49244/`.
+
+The transaction locks the checked tables, revalidates preflight fingerprints and
+names, and sets **only `first_name`, `middle_name`, `last_name`**. Fingerprints of
+every other public table, Auth users/identities and all remaining member fields
+must match before commit or the transaction rolls back. The existing member
+trigger naturally refreshes `updated_at` on changed rows; that is the sole
+non-name member metadata change. It was not disabled or modified. The local
+credential file hash, schema/security/reference fingerprints, all IDs, account
+links, branches, departments, demographics, registration/archive dates and every
+operational row were verified unchanged.
+
+Validated counts remain **180 members, 182 services, 11,588 attendance rows,
+700 contributions, 80 baptisms, 90 follow-ups and 7 Auth accounts**. All 180
+members have non-empty first/middle/last names, no middle initials and no full-name
+duplicates. Analytics inputs and trends are unchanged because all non-name data
+is preserved.
+
+Chrome checks against hosted data passed for four member detail pages, first-name
+and middle-surname search, linked contribution/baptism names, attendance history,
+follow-up history and the original member login/owned profile. The three QR
+images were decoded with ZXing and their unchanged UUIDs resolved to the new
+hosted names. This check deliberately did not invoke attendance recording or
+write any attendance rows. Private UI evidence is
+`supabase/.temp/hosted-demo-audit/name-ui-verification.json` and the accompanying
+`renamed-member-*.png` screenshots. No physical mobile camera was tested.
+
+Validation: **420 tests passed, zero failed/skipped**; production build,
+TypeScript, targeted ESLint and diff whitespace checks passed. Only name tooling,
+seed name generation, tests, package command and this documentation changed; no
+schema, migration, RBAC, operational record or credential was changed.
+
+## Before real church use
+
+1. Take new verified backups and run the same guarded hosted scrub workflow.
+2. **Do not run the demo seed again.** Verify all operational tables/Auth accounts
+   are empty and references/security/migration history are preserved.
+3. Create only the real initial system administrator, reviewed real branch
+   configuration, and required staff accounts through the approved administration
+   workflow. Existing demo branch labels alone are not verified real configuration.
+4. Remove private demo password files, disable the reset opt-in and retain backups
+   according to the church's retention policy. Verify no demo rows, accounts or AI
+   report documents remain before accepting real records.
+
+The blanket dummy-data deletion authorization ends when real use starts.

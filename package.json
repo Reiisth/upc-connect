@@ -14,7 +14,11 @@
     "test": "node --test tests/*.test.cjs",
     "db:local:reseed": "node scripts/reseed-local.mjs",
     "db:local:verify": "node scripts/verify-local-db.mjs",
-    "app:local:verify": "node scripts/verify-local-app.mjs"
+    "app:local:verify": "node scripts/verify-local-app.mjs",
+    "hosted:demo:scrub": "node scripts/scrub-hosted-demo.mjs",
+    "hosted:demo:seed": "node scripts/seed-hosted-demo.mjs",
+    "hosted:demo:verify": "node scripts/verify-hosted-demo.mjs",
+    "hosted:demo:rename-members": "node scripts/rename-hosted-demo-members.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
