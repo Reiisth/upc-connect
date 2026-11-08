@@ -283,6 +283,15 @@ schema, migration, RBAC, operational record or credential was changed.
 
 ## Before real church use
 
+The November 8 email-normalization release subsequently removed the redundant
+Member email column and its built-in field definition through new migration
+`20261108090000_remove_member_email.sql`. Current reference count is **20 Member
+field definitions**, with **nine applied migrations**; the earlier 21-definition,
+eight-migration snapshots above describe the original seed audit. Operational
+counts, realistic Member names, Auth identities/credentials and links are
+unchanged. Account email is derived from linked Auth users, never copied to
+Members. See [the email-normalization audit](MEMBER_EMAIL_NORMALIZATION.md).
+
 1. Take new verified backups and run the same guarded hosted scrub workflow.
 2. **Do not run the demo seed again.** Verify all operational tables/Auth accounts
    are empty and references/security/migration history are preserved.

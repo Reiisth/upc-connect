@@ -127,3 +127,45 @@ targeted ESLint, regenerated schema types and diff checks passed. The updated
 local SQL seed also ran successfully against the migrated schema. Hosted history
 and dry run confirmed exactly this one pending migration, with no seeds/roles.
 Hosted application/migration verification is recorded after the release below.
+
+## Hosted release completed
+
+The user confirmed Vercel deploys `Reiisth/upc-connect` from `master` and explicitly
+authorized committing/pushing this change. Application commit `851b5fe` and the
+generated-whitespace normalization `54fbdd6` were pushed; Vercel reported success
+for `54fbdd6`. Production browser checks passed **before** the hosted column drop,
+then passed again **after** the migration at `https://upc-connect.vercel.app/`:
+
+- Member list contains no Email column.
+- The linked Member shows `demo.member@example.com` from Auth despite its former
+  Member email being NULL.
+- An unlinked Member shows “No linked account”.
+- The original demo Member credentials still sign in, and the owned Profile form
+  shows a disabled/read-only canonical Account Email.
+
+Hosted migration `20261108090000` is applied exactly once; Member email column
+count and obsolete Email field-definition count are both zero. Field definitions
+decreased intentionally from 21 to 20. Current counts remain 180 members,
+182 services, 11,588 attendance records, 700 contributions, 80 baptisms,
+90 follow-ups, 7 profiles/Auth accounts, 1 account-member link, 7 user-role links,
+9 branch-access links, 69 role-permission assignments and 1 saved AI document.
+
+Pre/post fingerprints matched for all Member data excluding the deliberately
+removed column, all other operational rows, remaining field definitions, links,
+roles/permissions, branches, RLS policies, all other functions, Auth rows during
+the migration, and all previous migration-history rows. Before deployment,
+Auth user IDs/emails/password hashes and identity links were also compared with
+the private backup; normal verification sign-ins can update Auth activity
+timestamps. The local demo credential file hash remained unchanged.
+
+Private schema/public/Auth backup:
+`supabase/.temp/hosted-demo/2026-11-08T03-38-14-676Z-33068/`.
+Private deployment/preservation receipt:
+`supabase/.temp/hosted-demo/2026-11-08T03-43-20-108Z-38400/`.
+The ignored latest-seed receipt records this approved schema update and retains
+the previous preservation baseline in its history; it does not pretend the
+original seed schema was unchanged. All backups and credentials remain ignored.
+
+No competing Member/account email source remains in the deployed application or
+hosted schema. Historical baseline/dumps intentionally still mention the removed
+column and must not be edited or replayed over the current schema.
