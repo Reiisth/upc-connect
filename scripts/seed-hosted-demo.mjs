@@ -48,7 +48,7 @@ async function main() {
     // Historical imports may have no known recorder; never attribute them to an out-of-scope demo actor.
     insert('financial_contributions', data.contributions.map(c => ({ ...c, recorded_by: c.church_branch_id === data.branches[0].id ? accountId('accounting') : null }))),
     insert('baptism_records', data.baptisms.map(b => ({ ...b, recorded_by: b.baptism_type === 'water' ? accountId('evangelism') : b.church_branch_id === data.branches[1].id ? accountId('ministry') : null }))),
-    insert('member_follow_ups', data.followUps.map(f => ({ ...f, followed_up_by: accountId('pastor'), created_by: accountId('pastor') }))),
+    insert('member_follow_ups', data.followUps.map(f => ({ ...f, followed_up_by: 'Demo Pastor', created_by: accountId('pastor') }))),
   ];
   // Owner SQL import is the existing migration's explicit historical-import path.
   // Triggers remain enabled; no REST service_role bypass or schema changes.

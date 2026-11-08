@@ -47,13 +47,16 @@ test('performer accepts a trimmed optional name, rejects oversized names and pre
   assert.ok((await h.actions().createFollowUp(initial, h.form({ followed_up_by: 'x'.repeat(121) }))).error);
   assert.equal(h.writes.length, 0);
   await succeeds(h.actions().createFollowUp(initial, h.form({ followed_up_by: '  Maria Santos  ' })));
-  assert.equal(h.writes[0].payload.followed_up_by_name, 'Maria Santos');
+  assert.equal(h.writes[0].payload.followed_up_by, 'Maria Santos');
   assert.equal(h.writes[0].payload.created_by, ids.actor);
-  assert.ok(!Object.hasOwn(h.writes[0].payload, 'followed_up_by'));
+  assert.ok(!Object.hasOwn(h.writes[0].payload, 'followed_up_by_name'));
   await succeeds(h.actions().updateFollowUp(ids.record, initial, h.form({ followed_up_by: 'Juan Cruz' })));
-  assert.equal(h.writes[1].payload.followed_up_by_name, 'Juan Cruz');
+  assert.equal(h.writes[1].payload.followed_up_by, 'Juan Cruz');
   await succeeds(h.actions().createFollowUp(initial, h.form({ followed_up_by: '' })));
-  assert.equal(h.writes[2].payload.followed_up_by_name, null);
+  assert.equal(h.writes[2].payload.followed_up_by, 'Current Recorder');
+  await succeeds(h.actions().updateFollowUp(ids.record, initial, h.form({ followed_up_by: '' })));
+  assert.equal(h.writes[3].payload.followed_up_by, 'Original Recorder');
+  assert.equal(h.tables.member_follow_ups[0].created_by, ids.creator);
 });
 
 test('date, method and outcome validation rejects bad values without leaking database details', async () => {

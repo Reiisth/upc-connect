@@ -42,9 +42,9 @@ test('history remains readable after transfer through original record scope; out
   assert.equal(await outside.data().loadFollowUpForEdit(outside.access, outside.admin, ids.record), null);
 });
 
- test('recorded performer names override legacy account display names', async () => {
+ test('recorded performer names are read directly from the text field', async () => {
   const h = followUpsHarness();
-  h.tables.member_follow_ups[0].followed_up_by_name = 'Maria Santos';
+  h.tables.member_follow_ups[0].followed_up_by = 'Maria Santos';
   const [row] = await h.data().loadFollowUpRecords(h.access, h.admin);
   assert.equal(row.performerName, 'Maria Santos');
 });

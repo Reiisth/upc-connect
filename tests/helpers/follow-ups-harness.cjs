@@ -16,6 +16,8 @@ function followUpsHarness(options = {}) {
     members: [{ id: ids.member, first_name: 'Juan', middle_name: null, last_name: 'Cruz',
       church_branch_id: options.transferred ? ids.b : ids.a, member_status: options.memberStatus ?? 'inactive', is_archived: false, first_attendance_date: '2026-01-05' }],
     profiles: [
+      { id: ids.actor, display_name: "Current Recorder", archived_at: null },
+      { id: ids.creator, display_name: "Original Recorder", archived_at: null },
       { id: ids.staff, display_name: 'Staff Performer', archived_at: null },
       { id: ids.overlap, display_name: 'Staff and Member', archived_at: null },
       { id: ids.archived, display_name: 'Archived Staff', archived_at: '2026-01-01' },
@@ -31,7 +33,7 @@ function followUpsHarness(options = {}) {
       { user_id: ids.nonstaff, role_id: id(41), roles: { is_staff: false, is_active: true } },
     ],
     member_follow_ups: [{ id: ids.record, member_id: ids.member, church_branch_id: ids.a, follow_up_date: '2026-10-25',
-      method: 'call', outcome: 'no_response', followed_up_by: ids.staff, notes: 'Original notes', next_follow_up_date: '2026-10-27',
+      method: 'call', outcome: 'no_response', followed_up_by: "Staff Performer", notes: 'Original notes', next_follow_up_date: '2026-10-27',
       created_by: ids.creator, created_at: '2026-10-25T00:00:00Z', updated_at: '2026-10-25T00:00:00Z' }],
   };
 
@@ -96,7 +98,7 @@ function followUpsHarness(options = {}) {
   function form(overrides = {}) {
     const data = new FormData();
     for (const [key, value] of Object.entries({ church_branch_id: ids.a, member_id: ids.member, follow_up_date: '2026-10-27',
-      method: 'visit', outcome: 'resolved', followed_up_by: ids.staff, notes: 'Contact made', next_follow_up_date: '2026-11-01', ...overrides })) data.set(key, value);
+      method: 'visit', outcome: 'resolved', followed_up_by: "Staff Performer", notes: 'Contact made', next_follow_up_date: '2026-11-01', ...overrides })) data.set(key, value);
     return data;
   }
   return { access, admin, tables, writes, reads, revalidated, form, stubs,

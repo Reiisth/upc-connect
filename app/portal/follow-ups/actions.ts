@@ -23,7 +23,17 @@ function validate(form: FormData) {
   if (performer.length > 120) throw new FollowUpValidationError("Followed up by must be 120 characters or fewer.");
   if (notes.length > 5000) throw new FollowUpValidationError("Notes must be 5,000 characters or fewer.");
   return { branchId, memberId, fields: { follow_up_date: followUpDate, method, outcome,
-    followed_up_by_name: performer || null, notes: notes || null, next_follow_up_date: nextDate || null } };
+    followed_up_by: performer || null, notes: notes || null, next_follow_up_date: nextDate || null } };
+}
+
+async function performerName(admin: Admin, supplied: string | null, creatorId: string | null) {
+  if (supplied) return supplied;
+  if (!creatorId) throw new FollowUpValidationError("Enter the name of the person who followed up; the original recorder is unavailable.");
+  const { data, error } = await admin.from("profiles").select("display_name").eq("id", creatorId).maybeSingle();
+  if (error) throw error;
+  const name = data?.display_name?.trim();
+  if (!name) throw new FollowUpValidationError("Enter the name of the person who followed up; the recorder has no display name.");
+  return name;
 }
 
 async function assertBranch(admin: Admin, access: FollowUpAccess, id: string) {
@@ -58,6 +68,7 @@ export async function createFollowUp(_state: FollowUpActionState, form: FormData
     const { data: member, error } = await admin.from("members").select("id, church_branch_id").eq("id", payload.memberId).maybeSingle();
     if (error) throw error;
     if (!member || member.church_branch_id !== payload.branchId) throw new FollowUpValidationError("The selected member must belong to the selected branch.");
+    payload.fields.followed_up_by = await performerName(admin, payload.fields.followed_up_by, access.user.id);
     const result = await admin.from("member_follow_ups").insert({ ...payload.fields,
       member_id: payload.memberId, church_branch_id: payload.branchId, created_by: access.user.id,
     }).select("id").single();
@@ -75,7 +86,7 @@ export async function updateFollowUp(id: string, _state: FollowUpActionState, fo
   try {
     if (!isUuid(id)) throw new FollowUpValidationError("The requested follow-up could not be found.");
     const { data: existing, error } = await admin.from("member_follow_ups")
-      .select("id, member_id, church_branch_id").eq("id", id).in("church_branch_id", access.branchIds).maybeSingle();
+      .select("id, member_id, church_branch_id, created_by").eq("id", id).in("church_branch_id", access.branchIds).maybeSingle();
     if (error) throw error;
     if (!existing) throw new FollowUpValidationError("The requested follow-up could not be found or is outside your branch access.");
     const payload = validate(form);
@@ -84,8 +95,9 @@ export async function updateFollowUp(id: string, _state: FollowUpActionState, fo
     }
     await assertBranch(admin, access, existing.church_branch_id);
     // Do not re-check the member's current branch: historical links survive transfers.
+    payload.fields.followed_up_by = await performerName(admin, payload.fields.followed_up_by, existing.created_by);
     const result = await admin.from("member_follow_ups")
-      .update({ ...payload.fields, followed_up_by: null, updated_at: new Date().toISOString() })
+      .update({ ...payload.fields, updated_at: new Date().toISOString() })
       .eq("id", id).eq("member_id", existing.member_id).eq("church_branch_id", existing.church_branch_id).select("id").maybeSingle();
     if (result.error) throw result.error;
     if (!result.data) throw new FollowUpValidationError("This follow-up is no longer available. Reload the page and try again.");

@@ -68,7 +68,7 @@ export default function FollowUpForm({ branches, members, initialValues, action,
               {FOLLOW_UP_OUTCOMES.map((outcome) => <option key={outcome} value={outcome}>{OUTCOME_LABELS[outcome]}</option>)}
             </Select>
           </FormField>
-          <FormField label="Followed Up By" htmlFor="follow-up-performer">
+          <FormField label="Followed Up By" htmlFor="follow-up-performer" description="Leave blank to use the original recorder?s display name.">
             <Input id="follow-up-performer" name="followed_up_by" maxLength={120} placeholder="Name of the person who followed up" value={values.followedUpBy} onChange={(event) => field("followedUpBy", event.target.value)} />
           </FormField>
           <FormField label="Next Follow-up Date" htmlFor="follow-up-next" description="Optional for any outcome. Must be on or after the follow-up date.">
