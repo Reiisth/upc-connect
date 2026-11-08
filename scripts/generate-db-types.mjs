@@ -8,5 +8,6 @@ const result = spawnSync('cmd.exe', ['/d', '/s', '/c', 'npx.cmd --yes supabase@3
   cwd: fileURLToPath(new URL('../', import.meta.url)), env, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024,
 });
 if (result.error || result.status !== 0 || !result.stdout.includes('export type Database')) throw new Error('Local Supabase type generation failed.');
-writeFileSync(new URL('../lib/database.types.ts', import.meta.url), result.stdout);
+// Normalize CLI whitespace as part of generation; never hand-edit schema types.
+writeFileSync(new URL('../lib/database.types.ts', import.meta.url), result.stdout.replace(/[\t ]+$/gm, ''));
 console.log('Generated lib/database.types.ts from local Supabase.');

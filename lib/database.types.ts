@@ -2,7 +2,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  
+
   "public": {
           Tables: {
             "account_members": {
@@ -127,7 +127,7 @@ isOneToOne: false
                     "barangay"?: string | null,"city"?: string | null,"code"?: string | null,"country"?: string | null,"created_at"?: string | null,"id"?: string,"inactivity_threshold_weeks"?: number,"is_active"?: boolean,"name"?: string,"province"?: string | null,"street_address"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
-                    
+
                   ]
                 },"departments": {
                   Row: {
@@ -141,7 +141,7 @@ isOneToOne: false
                     "created_at"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"updated_at"?: string
                   }
                   Relationships: [
-                    
+
                   ]
                 },"financial_contributions": {
                   Row: {
@@ -219,7 +219,7 @@ isOneToOne: false
                     "created_at"?: string,"field_group"?: string | null,"field_key"?: string,"field_type"?: string,"id"?: string,"is_builtin"?: boolean,"is_required"?: boolean,"is_visible"?: boolean,"label"?: string,"options"?: Json | null,"options_source"?: string | null,"placeholder"?: string | null,"sort_order"?: number,"updated_at"?: string
                   }
                   Relationships: [
-                    
+
                   ]
                 },"member_follow_ups": {
                   Row: {
@@ -303,7 +303,7 @@ isOneToOne: false
                     "created_at"?: string,"description"?: string | null,"id"?: string,"is_active"?: boolean,"key"?: string,"name"?: string,"updated_at"?: string
                   }
                   Relationships: [
-                    
+
                   ]
                 },"profiles": {
                   Row: {
@@ -317,7 +317,7 @@ isOneToOne: false
                     "archived_at"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"id"?: string
                   }
                   Relationships: [
-                    
+
                   ]
                 },"role_permissions": {
                   Row: {
@@ -357,7 +357,7 @@ isOneToOne: false
                     "created_at"?: string,"description"?: string | null,"display_name"?: string,"id"?: string,"is_active"?: boolean,"is_staff"?: boolean,"is_system"?: boolean,"key"?: string,"name"?: string,"updated_at"?: string
                   }
                   Relationships: [
-                    
+
                   ]
                 },"service_types": {
                   Row: {
@@ -371,7 +371,7 @@ isOneToOne: false
                     "created_at"?: string,"is_active"?: boolean,"key"?: string,"name"?: string,"updated_at"?: string
                   }
                   Relationships: [
-                    
+
                   ]
                 },"services": {
                   Row: {
@@ -608,7 +608,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            
+
           }
         }
 } as const
