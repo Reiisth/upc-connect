@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- CommonJS client test harness. */
 const React = require('react');
 const { loadTypeScript } = require('./load-typescript.cjs');
 
@@ -7,6 +8,7 @@ exports.clientHooks = function clientHooks(entry, stubs = {}) {
   const work = [];
   let cursor = 0, pending = 0;
   const hooks = { ...React,
+    useMemo(factory) { return factory(); },
     useState(initial) {
       const slot = cursor++;
       if (!(slot in slots)) slots[slot] = typeof initial === 'function' ? initial() : initial;

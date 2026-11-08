@@ -69,9 +69,9 @@ export const decisionSupportInputSchema = z.strictObject({
 const text = (max: number) => z.string().trim().min(1).max(max);
 const evidence = z.array(text(200)).min(1).max(4).describe("Exact dot paths to supplied aggregate scalar values, e.g. followUps.overdueLatestNextFollowUps; not invented prose.");
 export const decisionSupportInsightSchema = z.strictObject({
-  executiveSummary: text(1200),
-  keyFindings: z.array(z.strictObject({ title: text(100), observation: text(600), evidence, severity: z.enum(["info", "attention", "important"]) })).max(5),
-  recommendations: z.array(z.strictObject({ title: text(100), recommendation: text(500), rationale: text(500), evidence, priority: z.enum(["low", "medium", "high"]) })).max(4),
+  executiveSummary: text(1200).describe("Lead with the main supported implication for church care or planning and what needs human attention; use a few relevant supplied facts rather than reciting all totals."),
+  keyFindings: z.array(z.strictObject({ title: text(100).describe("A clear takeaway, not merely a metric name."), observation: text(600).describe("Explain the cited pattern, why it matters for a concrete church responsibility, and a relevant uncertainty or question to verify. Separate interpretation from established fact."), evidence, severity: z.enum(["info", "attention", "important"]) })).max(5),
+  recommendations: z.array(z.strictObject({ title: text(100), recommendation: text(500).describe("A specific optional human review motivated by a key insight; do not claim an action has been taken."), rationale: text(500).describe("Explain why the cited evidence makes the review useful and what staff should verify before deciding."), evidence, priority: z.enum(["low", "medium", "high"]) })).max(4),
   limitations: z.array(text(350)).min(1).max(6),
 });
 // The same schema drives provider JSON output and local validation. Length limits are enforced locally too.

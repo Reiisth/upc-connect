@@ -21,7 +21,7 @@ test('reports.view is required before filters, configuration, analytics or Gemin
     const result = await custom.generateDecisionSupportInsights();
     assert.equal(result.ok, true);
     assert.equal(result.advisory, true);
-    assert.equal(result.promptVersion, '3');
+    assert.equal(result.promptVersion, '4');
     assert.equal(result.reportingContext.asOfDate, today);
     assert.equal(result.branchLabels[0].displayName, 'Private Church 1');
   });

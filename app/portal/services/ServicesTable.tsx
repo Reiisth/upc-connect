@@ -13,6 +13,7 @@ import {
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { Select } from "@/components/ui/select";
@@ -65,6 +66,7 @@ export default function ServicesTable({
   canEdit,
   canManageAttendance,
 }: ServicesTableProps) {
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -101,6 +103,11 @@ export default function ServicesTable({
       .sort(compareServices);
   }, [services, search, branchFilter, typeFilter, statusFilter]);
 
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredServices.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedServices = filteredServices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const hasFilters =
     search.trim() !== "" ||
     branchFilter !== "all" ||
@@ -108,6 +115,7 @@ export default function ServicesTable({
     statusFilter !== "all";
 
   function clearFilters() {
+    setPage(1);
     setSearch("");
     setBranchFilter("all");
     setTypeFilter("all");
@@ -123,7 +131,7 @@ export default function ServicesTable({
           <Input
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => { setSearch(event.target.value); setPage(1); }}
             placeholder="Search by service name..."
             className="pl-9"
             aria-label="Search services"
@@ -133,7 +141,7 @@ export default function ServicesTable({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
           <Select
             value={branchFilter}
-            onChange={(event) => setBranchFilter(event.target.value)}
+            onChange={(event) => { setBranchFilter(event.target.value); setPage(1); }}
             className="lg:w-48"
             aria-label="Filter by branch"
           >
@@ -168,8 +176,8 @@ export default function ServicesTable({
           <TableHeader>
             <TableRow>
               <TableHead>Service</TableHead>
-              <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...serviceTypes.map((type) => ({ value: type.key, label: type.name }))]} /></div></TableHead>
-              <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Service Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "All statuses" }, ...SERVICE_STATUSES.map((status) => ({ value: status, label: formatServiceStatus(status) }))]} /></div></TableHead>
+              <TableHead><div className="flex items-center gap-1">Type<TableColumnFilter label="Service Type" value={typeFilter} onChange={(value) => { setTypeFilter(value); setPage(1); }} options={[{ value: "all", label: "All types" }, ...serviceTypes.map((type) => ({ value: type.key, label: type.name }))]} /></div></TableHead>
+              <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Service Status" value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={[{ value: "all", label: "All statuses" }, ...SERVICE_STATUSES.map((status) => ({ value: status, label: formatServiceStatus(status) }))]} /></div></TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -177,7 +185,7 @@ export default function ServicesTable({
           <TableBody>
             {filteredServices.length === 0 ? (
               <TableRow><TableCell colSpan={4}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
-            ) : filteredServices.map((service) => (
+            ) : paginatedServices.map((service) => (
               <TableRow key={service.id}>
                 <TableCell>
                   <div className="flex items-start gap-3">
@@ -230,6 +238,16 @@ export default function ServicesTable({
             ))}
           </TableBody>
         </Table>
+      )}
+      {filteredServices.length > 0 && (
+        <nav aria-label="Services pagination" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p role="status" className="text-sm text-slate-500">Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredServices.length)} of {filteredServices.length} services</p>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</Button>
+            <span className="text-sm text-slate-500">Page {currentPage} of {totalPages}</span>
+            <Button type="button" variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>Next</Button>
+          </div>
+        </nav>
       )}
     </div>
   );

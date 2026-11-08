@@ -135,7 +135,7 @@ test('invalid structure, extra fields, empty/oversized prose, bad enums, unknown
 });
 
 test('central versioned prompt binds observations and cautious recommendations to supplied evidence and definitions', () => {
-  assert.equal(DECISION_SUPPORT_PROMPT_VERSION, '3');
+  assert.equal(DECISION_SUPPORT_PROMPT_VERSION, '4');
   for (const rule of ['Use ONLY the supplied analytics', 'Do not invent', 'Do not claim causation', 'Every number', 'Preserve decimal money strings exactly',
     'private attributes', 'Do not name individual', 'theological judgments', 'financial promises', 'best or worst', 'mandatory decisions', 'irreversible changes',
     'latestNeedsFollowUpMembers', 'Unknown', 'registration timestamp is missing or invalid', 'First attendance dates are historical reference information', 'Null eligibility', 'undatedRecords', 'NOT verified official membership growth', 'human review']) {
@@ -145,6 +145,11 @@ test('central versioned prompt binds observations and cautious recommendations t
   const prompt = buildDecisionSupportPrompt(input);
   assert.ok(prompt.userContent.includes(JSON.stringify(input)));
   assert.equal(prompt.systemInstruction, DECISION_SUPPORT_SYSTEM_INSTRUCTION);
+  for (const focus of ['Insight-first purpose', 'why that pattern matters', 'concrete church responsibility',
+    'current review need', 'cash-flow timing', 'Aggregates do not prove', 'specific optional human review']) {
+    assert.ok(DECISION_SUPPORT_SYSTEM_INSTRUCTION.includes(focus) || focus === 'current review need' && DECISION_SUPPORT_SYSTEM_INSTRUCTION.includes('current need for human attention'), focus);
+  }
+  assert.ok(prompt.userContent.includes('Emphasize the practical insights'));
 });
 
 test('Visitor identities on source objects never enter Gemini aggregates', () => {
