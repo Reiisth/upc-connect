@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
@@ -7,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import MemberAccountsTable from "./MemberAccountsTable";
 import {
+  UserPlus,
   UserRoundCog,
   UsersRound,
 } from "lucide-react";
@@ -151,6 +154,7 @@ async function MemberAccountsContent() {
         eyebrow="Account Management"
         eyebrowIcon={<UserRoundCog className="h-4 w-4" />}
         title="Member Accounts"
+        action={canLinkAccount ? <Button asChild><Link href="/portal/members/invite"><UserPlus aria-hidden="true" />New Member Account</Link></Button> : undefined}
         description="View member accounts, review their linked profiles, and connect additional members to existing accounts."
       />
 

@@ -82,7 +82,7 @@ test('true zero-record Members dataset still uses the ordinary empty state', () 
 
 test('Phase 2F tables retain headers when their nonempty source dataset filters to zero rows', () => {
   const cases = [
-    ['app/portal/accounts/members/MemberAccountsTable.tsx', 'displayedAccounts', 5, 'filteredAccounts'],
+    ['app/portal/accounts/members/MemberAccountsTable.tsx', 'displayedAccounts', 4, 'filteredAccounts'],
     ['app/portal/accounts/staff/StaffAccountsTable.tsx', 'accounts', 8, 'filteredAccounts'],
     ['app/portal/services/ServicesTable.tsx', 'services', 2, 'filteredServices'],
     ['app/portal/attendance/AttendanceServicesTable.tsx', 'services', 2, 'filteredServices'],
@@ -165,7 +165,7 @@ test('filtered tables share the Services clear action and preserve broader conte
   assert.match(members, /archiveFilter,\s*sortBy/);
   const memberAccounts = source('app/portal/accounts/members/MemberAccountsTable.tsx');
   assert.match(memberAccounts, /const hasClearableFilters = search\.trim\(\) !== "" \|\| memberCountFilter !== "all"/);
-  assert.doesNotMatch(memberAccounts.slice(memberAccounts.indexOf('function clearFilters'), memberAccounts.indexOf('\n  }', memberAccounts.indexOf('function clearFilters'))), /setStatusFilter/);
+  assert.match(memberAccounts.slice(memberAccounts.indexOf('function clearFilters'), memberAccounts.indexOf('\n  }', memberAccounts.indexOf('function clearFilters'))), /setStatusFilter/);
   for (const file of ['app/portal/contributions/ContributionsTable.tsx', 'app/portal/baptisms/BaptismsTable.tsx']) {
     const text = source(file);
     assert.match(text, /setDateFrom\(event\.target\.value\)/);

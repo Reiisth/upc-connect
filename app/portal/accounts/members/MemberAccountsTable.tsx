@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { Select } from "@/components/ui/select";
 import { useEffect, useMemo, useState } from "react";
 import {
   Archive,
@@ -55,6 +57,7 @@ export default function MemberAccountsTable({
 }: MemberAccountsTableProps) {
   const [search, setSearch] = useState("");
   const [memberCountFilter, setMemberCountFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("email-asc");
   const [statusFilter, setStatusFilter] = useState("active");
   const [selectedAccount, setSelectedAccount] = useState<{
     account: Account;
@@ -92,8 +95,14 @@ export default function MemberAccountsTable({
         (statusFilter === "archived" && !!account.archivedAt);
 
       return matchesSearch && matchesMemberCount && matchesStatus;
+    }).sort((a, b) => {
+      const emailOrder = a.email.localeCompare(b.email, "en", { sensitivity: "base", numeric: true });
+      if (sortBy === "email-desc") return -emailOrder || a.userId.localeCompare(b.userId);
+      if (sortBy === "members-desc") return b.members.length - a.members.length || emailOrder || a.userId.localeCompare(b.userId);
+      if (sortBy === "members-asc") return a.members.length - b.members.length || emailOrder || a.userId.localeCompare(b.userId);
+      return emailOrder || a.userId.localeCompare(b.userId);
     });
-  }, [displayedAccounts, search, memberCountFilter, statusFilter]);
+  }, [displayedAccounts, search, memberCountFilter, statusFilter, sortBy]);
 
   async function handleAccountAction() {
     if (!selectedAccount) return;
@@ -140,11 +149,13 @@ export default function MemberAccountsTable({
     search.trim() !== "" ||
     memberCountFilter !== "all" ||
     statusFilter !== "active";
-  const hasClearableFilters = search.trim() !== "" || memberCountFilter !== "all";
+  const hasClearableFilters = search.trim() !== "" || memberCountFilter !== "all" || statusFilter !== "active" || sortBy !== "email-asc";
 
   function clearFilters() {
     setSearch("");
     setMemberCountFilter("all");
+    setStatusFilter("active");
+    setSortBy("email-asc");
   }
 
   return (
@@ -156,11 +167,18 @@ export default function MemberAccountsTable({
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
+            aria-label="Search member accounts"
             placeholder="Search by email or member name..."
             className="pl-9"
           />
         </div>
 
+        <Select aria-label="Sort member accounts" value={sortBy} onChange={event => setSortBy(event.target.value)} className="sm:w-52">
+          <option value="email-asc">Email: A to Z</option>
+          <option value="email-desc">Email: Z to A</option>
+          <option value="members-desc">Most linked members</option>
+          <option value="members-asc">Fewest linked members</option>
+        </Select>
         {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} />}
       </div>
 
@@ -182,26 +200,29 @@ export default function MemberAccountsTable({
         <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow>
-              <TableHead>Email</TableHead>
+              <TableHead><div className="flex items-center gap-1">Email<TableColumnFilter label="Account Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "active", label: "Active" }, { value: "archived", label: "Archived" }, { value: "all", label: "All statuses" }]} /></div></TableHead>
               <TableHead>Linked Members</TableHead>
               <TableHead><div className="flex items-center gap-1">Count<TableColumnFilter label="Linked Member Count" value={memberCountFilter} onChange={setMemberCountFilter} options={[{ value: "all", label: "All accounts" }, { value: "single", label: "1 linked member" }, { value: "multiple", label: "Multiple linked members" }]} /></div></TableHead>
-              <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Account Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "active", label: "Active" }, { value: "archived", label: "Archived" }, { value: "all", label: "All statuses" }]} /></div></TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {filteredAccounts.length === 0 ? (
-              <TableRow><TableCell colSpan={5}><p role="status" className="py-3 text-center text-sm text-slate-500">No accounts match the current filters.</p></TableCell></TableRow>
+              <TableRow><TableCell colSpan={4}><p role="status" className="py-3 text-center text-sm text-slate-500">No accounts match the current filters.</p></TableCell></TableRow>
             ) : filteredAccounts.map((account) => (
               <TableRow key={account.userId}>
                 <TableCell>
-                  <TableActionButton
-                    href={`/portal/accounts/${account.userId}`}
-                    icon={<ExternalLink />}
-                  >
-                    {account.email}
-                  </TableActionButton>
+                  <div className="flex items-center gap-2">
+                    <span tabIndex={0} aria-label={`Account status: ${account.archivedAt ? "Archived" : "Active"}`}
+                      className={`group inline-flex h-3 shrink-0 items-center rounded-full transition-all hover:h-6 focus:h-6 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${account.archivedAt ? "bg-slate-400 focus-visible:ring-slate-400" : "bg-emerald-500 focus-visible:ring-emerald-500"}`}>
+                      <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" />
+                      <span aria-hidden="true" className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium text-white opacity-0 transition-all group-hover:max-w-24 group-hover:pr-2 group-hover:opacity-100 group-focus:max-w-24 group-focus:pr-2 group-focus:opacity-100">{account.archivedAt ? "Archived" : "Active"}</span>
+                    </span>
+                    <Link href={`/portal/accounts/${account.userId}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:underline focus-visible:underline">
+                      {account.email}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    </Link>
+                  </div>
                 </TableCell>
 
                 <TableCell>
@@ -223,13 +244,6 @@ export default function MemberAccountsTable({
                   </StatusBadge>
                 </TableCell>
 
-                <TableCell>
-                  <StatusBadge
-                    variant={account.archivedAt ? "muted" : "success"}
-                  >
-                    {account.archivedAt ? "Archived" : "Active"}
-                  </StatusBadge>
-                </TableCell>
 
                 <TableCell>
                   <div className="flex items-center gap-3">
