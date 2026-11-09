@@ -11,7 +11,7 @@ export default function CreateMemberButton() {
   return (
     <Button
       type="submit"
-      disabled={pending}
+      loading={pending} disabled={pending}
     >
       {pending ? (
         <>

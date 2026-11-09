@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { UserRound } from "lucide-react";
@@ -11,7 +12,6 @@ import MemberProfileForm from "../../../components/MemberProfileForm";
 
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type PageProps = {
   params: Promise<{
@@ -23,7 +23,7 @@ export default function EditMemberProfilePage(
   props: PageProps,
 ) {
   return (
-    <Suspense fallback={<EditProfileLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={8} sections={2} metrics={0} columns={5} label="profile edit" />}>
       <EditMemberProfileContent {...props} />
     </Suspense>
   );
@@ -102,24 +102,6 @@ async function EditMemberProfileContent({
         customFieldValues={customFieldValueMap}
         action={updateProfile}
       />
-    </PageContainer>
-  );
-}
-
-function EditProfileLoading() {
-  return (
-    <PageContainer className="max-w-5xl">
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-36" />
-        <Skeleton className="h-9 w-44" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <div className="space-y-5">
-        <Skeleton className="h-64 rounded-2xl" />
-        <Skeleton className="h-64 rounded-2xl" />
-        <Skeleton className="h-64 rounded-2xl" />
-      </div>
     </PageContainer>
   );
 }

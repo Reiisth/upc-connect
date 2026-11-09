@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
 import {
@@ -7,7 +8,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasPermission } from "@/lib/permissions";
@@ -54,7 +54,7 @@ type StaffRoleRow = {
 
 export default function StaffAccountsPage() {
   return (
-    <Suspense fallback={<StaffAccountsSkeleton />}>
+    <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="accounts staff" />}>
       <StaffAccountsContent />
     </Suspense>
   );
@@ -335,73 +335,4 @@ function getAccountStatus({
   if (!emailConfirmedAt) return "unconfirmed";
 
   return "active";
-}
-
-function StaffAccountsSkeleton() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-9 w-52" />
-        <Skeleton className="h-4 w-80 max-w-full" />
-      </div>
-
-      <Skeleton className="h-11 w-72 rounded-xl" />
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {Array.from({ length: 2 }).map((_, index) => (
-          <Card key={index}>
-            <CardContent className="p-5">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="mt-3 h-9 w-16" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="min-w-[1200px]">
-          <div className="border-b border-slate-200 px-4 py-3">
-            <div className="grid grid-cols-8 gap-4">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="ml-auto h-4 w-16" />
-            </div>
-          </div>
-
-          <div className="divide-y divide-slate-200">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-8 items-center gap-4 px-4 py-4"
-              >
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-44" />
-
-                <div className="flex gap-2">
-                  <Skeleton className="h-6 w-24 rounded-full" />
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                </div>
-
-                <div className="flex gap-2">
-                  <Skeleton className="h-6 w-24 rounded-full" />
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                </div>
-
-                <Skeleton className="h-6 w-20 rounded-full" />
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="ml-auto h-4 w-24" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </PageContainer>
-  );
 }

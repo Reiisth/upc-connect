@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { UserRoundCog } from "lucide-react";
@@ -8,7 +9,6 @@ import {
 } from "@/components/ui/card";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 import { hasPermission } from "@/lib/permissions";
@@ -66,7 +66,7 @@ export default function StaffAccountDetailsPage(
   props: PageProps,
 ) {
   return (
-    <Suspense fallback={<StaffAccountDetailsSkeleton />}>
+    <Suspense fallback={<PageSkeleton kind="detail" fields={4} metrics={0} columns={5} label="accounts staff" />}>
       <StaffAccountDetailsContent {...props} />
     </Suspense>
   );
@@ -479,21 +479,4 @@ function formatDate(value: string | null) {
     day: "numeric",
     year: "numeric",
   });
-}
-
-function StaffAccountDetailsSkeleton() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-9 w-72 max-w-full" />
-        <Skeleton className="h-4 w-80 max-w-full" />
-      </div>
-
-      <Skeleton className="h-64 rounded-2xl" />
-      <Skeleton className="h-36 rounded-2xl" />
-      <Skeleton className="h-72 rounded-2xl" />
-      <Skeleton className="h-36 rounded-2xl" />
-    </PageContainer>
-  );
 }

@@ -1,10 +1,10 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { ShieldPlus } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { hasPermission } from "@/lib/permissions";
 import { isGrantableStaffRole } from "../../target-scope";
@@ -29,7 +29,7 @@ type RoleRow = {
 
 export default function NewStaffAccountPage() {
   return (
-    <Suspense fallback={<NewStaffAccountLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={5} metrics={0} columns={5} label="accounts staff new" />}>
       <NewStaffAccountContent />
     </Suspense>
   );
@@ -111,18 +111,4 @@ function formatRole(role: string) {
         word.charAt(0).toUpperCase() + word.slice(1),
     )
     .join(" ");
-}
-
-function NewStaffAccountLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <Skeleton className="h-[520px] rounded-2xl" />
-    </PageContainer>
-  );
 }

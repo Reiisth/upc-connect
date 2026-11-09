@@ -1,3 +1,5 @@
+import { PortalLoading } from "@/components/ui/portal-loading";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Suspense } from "react";
 import { LogOut } from "lucide-react";
@@ -70,13 +72,14 @@ async function PortalShell({
         <div className="space-y-4 border-t p-4">
           <PortalIdentitySummary context={identity} />
           <form action={logoutPortal}>
-            <button
+            <Button
+              variant="ghost" pendingLabel="Signing out..."
               type="submit"
               className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
             >
               <LogOut className="h-5 w-5" />
               Logout
-            </button>
+            </Button>
           </form>
         </div>
       </aside>
@@ -107,14 +110,15 @@ async function PortalShell({
           <div className="flex items-center gap-1">
             <MobileProfileInfo><PortalIdentitySummary context={identity} /></MobileProfileInfo>
           <form action={logoutPortal}>
-            <button
+            <Button
+              variant="ghost" pendingLabel="Signing out..."
               type="submit"
               aria-label="Logout"
               title="Logout"
               className="flex h-10 w-10 items-center justify-center rounded-xl text-red-600 transition hover:bg-red-50"
             >
               <LogOut className="h-5 w-5" />
-            </button>
+            </Button>
           </form>
           </div>
         </div>
@@ -131,16 +135,6 @@ async function PortalShell({
         permissions={permissions}
         variant="mobile"
       />
-    </div>
-  );
-}
-
-function PortalLoading() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#EEF3FB]">
-      <p className="text-sm text-muted-foreground">
-        Loading portal...
-      </p>
     </div>
   );
 }

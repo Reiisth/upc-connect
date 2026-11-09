@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
 import {
@@ -8,7 +9,6 @@ import {
   UsersRound,
 } from "lucide-react";
 
-import MembersSkeleton from "./MembersSkeleton";
 import MembersTable from "./MembersTable";
 import { requireMembersPermission } from "./access";
 
@@ -24,7 +24,7 @@ import { PageHeader } from "@/components/ui/page-header";
 
 export default function PortalMembersPage() {
   return (
-    <Suspense fallback={<MembersSkeleton />}>
+    <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="members" />}>
       <MembersPageContent />
     </Suspense>
   );

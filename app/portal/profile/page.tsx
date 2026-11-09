@@ -1,5 +1,5 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
-import ProfileSkeleton from "./ProfileSkeleton";
 import { requirePermission } from "@/lib/permissions-server";
 import { createClient } from "@/lib/supabase/server";
 import ProfileSelector from "./ProfileSelector";
@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<ProfileSkeleton />}>
+    <Suspense fallback={<PageSkeleton kind="profiles" fields={6} metrics={0} columns={5} label="profile" />}>
       <ProfileContent />
     </Suspense>
   );

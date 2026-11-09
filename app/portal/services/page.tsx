@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { effectiveStoredServiceStatus } from "@/app/portal/services/lifecycle";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -13,7 +14,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -39,7 +39,7 @@ type ServiceRow = {
 
 export default function ServicesPage() {
   return (
-    <Suspense fallback={<ServicesLoading />}>
+    <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="services" />}>
       <ServicesContent />
     </Suspense>
   );
@@ -203,35 +203,5 @@ function ServiceSummaryCard({
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function ServicesLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-56" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <Card key={index}>
-            <CardContent className="p-5">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="mt-3 h-9 w-16" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="space-y-3">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-      </div>
-    </PageContainer>
   );
 }

@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ClipboardPen, Plus } from "lucide-react";
@@ -11,10 +12,9 @@ import { manilaDate } from "@/lib/inactivity/calculate";
 import { requireFollowUpsPermission } from "./access";
 import { loadFollowUpBranches, loadFollowUpRecords } from "./data";
 import FollowUpsTable from "./FollowUpsTable";
-import FollowUpsLoading from "./loading";
 
 export default function FollowUpsPage() {
-  return <Suspense fallback={<FollowUpsLoading />}><FollowUpsContent /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="follow ups" />}><FollowUpsContent /></Suspense>;
 }
 async function FollowUpsContent() {
   const access = await requireFollowUpsPermission("follow_ups.view");

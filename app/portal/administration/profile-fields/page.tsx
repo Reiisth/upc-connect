@@ -1,4 +1,5 @@
-import { isProfileDefinition } from "@/lib/member-field-policy";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { isProfileDefinition, orderPersonalAnniversary } from "@/lib/member-field-policy";
 import { Suspense } from "react";
 import { SlidersHorizontal } from "lucide-react";
 
@@ -6,12 +7,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdministrationPermission } from "@/app/portal/administration/access";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import FieldManagementTable from "./FieldManagementTable";
 
 export default function FieldManagementPage() {
   return (
-    <Suspense fallback={<FieldManagementLoading />}>
+    <Suspense fallback={<PageSkeleton kind="settings" fields={6} metrics={0} columns={8} label="administration profile fields" />}>
       <FieldManagementContent />
     </Suspense>
   );
@@ -49,13 +49,7 @@ async function FieldManagementContent() {
       <PageHeader backHref="/portal/administration" backLabel="Back to Administration"
         eyebrow="Administration" eyebrowIcon={<SlidersHorizontal className="h-4 w-4" />}
         title="Profile Fields" description="Configure the fields used in member profiles." />
-      <FieldManagementTable fields={(fields ?? []).filter(isProfileDefinition)} />
+      <FieldManagementTable fields={orderPersonalAnniversary((fields ?? []).filter(isProfileDefinition))} />
     </PageContainer>
-  );
-}
-
-function FieldManagementLoading() {
-  return (
-    <PageContainer><div className="space-y-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-9 w-48" /><Skeleton className="h-4 w-96 max-w-full" /></div><Skeleton className="h-64 rounded-2xl" /></PageContainer>
   );
 }

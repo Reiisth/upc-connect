@@ -401,3 +401,73 @@ test('member detail joins retained address parts without empty separators or Reg
   assert.ok(html.includes('Show member card'));
   assert.ok(!html.includes('View Attendance Flag'));
 });
+
+
+test('wedding anniversary saves as personal information and clears when civil status no longer applies', async () => {
+  const h = harness();
+  h.db.member_field_definitions.push(definition('anniversary', 'wedding_anniversary', 'date', {
+    is_builtin: true, field_group: 'personal', sort_order: 8,
+  }));
+  const api = h.load('app/portal/profile/actions.ts');
+  await assert.rejects(api.saveMemberProfile('owned', h.selfForm({ civil_status: 'married', wedding_anniversary: '2010-06-12' })), /redirect:/);
+  assert.equal(h.db.members[0].wedding_anniversary, '2010-06-12');
+  await assert.rejects(api.saveMemberProfile('owned', h.selfForm({ civil_status: 'single' })), /redirect:/);
+  assert.equal(h.db.members[0].wedding_anniversary, null);
+});
+
+
+test('legacy anniversary configuration is shown last under personal information without losing preferences', () => {
+  const { orderPersonalAnniversary } = loadTypeScript('lib/member-field-policy.ts');
+  const legacy = [definition('birthday', 'birth_date', 'date', {field_group: 'personal', sort_order: 5}),
+    definition('anniversary', 'wedding_anniversary', 'date', {field_group: 'church', sort_order: 5, is_required: true}),
+    definition('phone', 'phone_number', 'phone', {field_group: 'personal', sort_order: 12})];
+  const result = orderPersonalAnniversary(legacy);
+  const anniversary = result.find(field => field.field_key === 'wedding_anniversary');
+  assert.equal(anniversary.field_group, 'personal');
+  assert.equal(anniversary.sort_order, 13);
+  assert.equal(anniversary.is_required, true);
+  assert.equal(legacy[1].field_group, 'church');
+});
+
+
+test('Restore Defaults moves legacy wedding anniversary into personal information after the other personal fields', async () => {
+  const h = harness();
+  h.db.member_field_definitions.push(
+    definition('anniversary', 'wedding_anniversary', 'date', { is_builtin: true, field_group: 'church', sort_order: 5, is_required: true, is_visible: false }),
+    definition('civil', 'civil_status', 'select', { is_builtin: true, field_group: 'personal', sort_order: 90 }),
+    definition('phone', 'phone_number', 'phone', { is_builtin: true, field_group: 'personal', sort_order: 99 }),
+  );
+  await h.load('app/portal/administration/profile-fields/actions.ts').restoreDefaultFieldConfiguration();
+  const anniversary = h.db.member_field_definitions[0];
+  assert.equal(anniversary.field_group, 'personal');
+  assert.equal(anniversary.is_required, false);
+  assert.equal(anniversary.is_visible, true);
+  assert.equal(anniversary.field_type, 'date');
+  assert.ok(h.db.member_field_definitions.slice(1).every(field => field.sort_order < anniversary.sort_order));
+});
+
+
+test('default configuration detection tracks editable built-in settings and order but preserves custom fields', () => {
+  const { PROFILE_FIELD_DEFAULTS, isDefaultProfileConfiguration } = loadTypeScript('lib/profile-field-defaults.ts');
+  const { isProfileDefinition } = loadTypeScript('lib/member-field-policy.ts');
+  const defaults = PROFILE_FIELD_DEFAULTS.filter(field => isProfileDefinition({...field, is_builtin: true})).map(field => ({...field, is_builtin: true}));
+  assert.equal(isDefaultProfileConfiguration(defaults), true);
+  for (const patch of [{label: 'Changed'}, {is_visible: false}, {is_required: false}, {placeholder: 'Other'}, {field_group: 'church'}]) {
+    assert.equal(isDefaultProfileConfiguration(defaults.map((field,i) => i ? field : {...field, ...patch})), false);
+  }
+  const reversed = defaults.map(field => ({...field, sort_order: -field.sort_order}));
+  assert.equal(isDefaultProfileConfiguration(reversed), false);
+  assert.equal(isDefaultProfileConfiguration([...defaults, definition('custom', 'hobby')]), true);
+  const changedOptions = defaults.map(field => field.field_key === 'gender' ? {...field, options: ['Other']} : field);
+  assert.equal(isDefaultProfileConfiguration(changedOptions), false);
+});
+
+test('404 and access-denied pages provide readable branded recovery links', () => {
+  for (const route of ['app/not-found.tsx', 'app/access-denied/page.tsx']) {
+    const Page = loadTypeScript(route, {'next/link': {__esModule: true, default: ({children, ...props}) => React.createElement('a',props,children)}}).default;
+    const html = renderToStaticMarkup(React.createElement(Page));
+    assert.match(html, /href="\/portal"/);
+    assert.match(html, /href="\/login"/);
+    assert.match(html, /<h1/);
+  }
+});

@@ -137,6 +137,9 @@ export default function MemberProfileForm({
     offset = 0,
   ) => {
     const field = getFieldDefinition(fieldKey);
+    if (fieldKey === "wedding_anniversary") {
+      return Math.max(100, ...fieldDefinitions.filter(item => item.field_key !== fieldKey).map(item => item.sort_order * 2 + 1)) + 1;
+    }
 
     return (field?.sort_order ?? 999) * 2 + offset;
   };
@@ -617,6 +620,48 @@ export default function MemberProfileForm({
               />
             </FormField>
           )}
+          {["married", "widowed"].includes(civilStatus) &&
+            isFieldVisible("wedding_anniversary") && (
+              <FormField
+                label={getFieldLabel(
+                  "wedding_anniversary",
+                  "Wedding Anniversary",
+                )}
+                htmlFor="wedding_anniversary"
+                required={isFieldRequired("wedding_anniversary")}
+                error={
+                  fieldErrors.wedding_anniversary
+                    ? "This field is required."
+                    : undefined
+                }
+                style={{
+                  order: getFieldOrder("wedding_anniversary"),
+                }}
+              >
+                <Input
+                  id="wedding_anniversary"
+                  name="wedding_anniversary"
+                  type="date"
+                  defaultValue={member.wedding_anniversary ?? ""}
+                  required={isFieldRequired("wedding_anniversary")}
+                  onClick={(event) => {
+                    event.currentTarget.showPicker?.();
+                  }}
+                  onChange={() => {
+                    setFieldErrors((current) => ({
+                      ...current,
+                      wedding_anniversary: false,
+                    }));
+                  }}
+                  className={
+                    fieldErrors.wedding_anniversary
+                      ? "border-red-500 focus-visible:ring-red-200"
+                      : undefined
+                  }
+                />
+              </FormField>
+            )}
+
         </div>
       </FormSection>
 
@@ -991,55 +1036,7 @@ export default function MemberProfileForm({
         </div>
       </FormSection>
 
-      <FormSection
-        title="Personal Dates"
-        description="Church information is maintained by authorized staff."
-      >
-        <div className="grid gap-5 sm:grid-cols-2">
 
-          {["married", "widowed"].includes(civilStatus) &&
-            isFieldVisible("wedding_anniversary") && (
-              <FormField
-                label={getFieldLabel(
-                  "wedding_anniversary",
-                  "Wedding Anniversary",
-                )}
-                htmlFor="wedding_anniversary"
-                required={isFieldRequired("wedding_anniversary")}
-                error={
-                  fieldErrors.wedding_anniversary
-                    ? "This field is required."
-                    : undefined
-                }
-                style={{
-                  order: getFieldOrder("wedding_anniversary"),
-                }}
-              >
-                <Input
-                  id="wedding_anniversary"
-                  name="wedding_anniversary"
-                  type="date"
-                  defaultValue={member.wedding_anniversary ?? ""}
-                  required={isFieldRequired("wedding_anniversary")}
-                  onClick={(event) => {
-                    event.currentTarget.showPicker?.();
-                  }}
-                  onChange={() => {
-                    setFieldErrors((current) => ({
-                      ...current,
-                      wedding_anniversary: false,
-                    }));
-                  }}
-                  className={
-                    fieldErrors.wedding_anniversary
-                      ? "border-red-500 focus-visible:ring-red-200"
-                      : undefined
-                  }
-                />
-              </FormField>
-            )}
-        </div>
-      </FormSection>
 
       {customFields.length > 0 && (
         <FormSection
@@ -1245,7 +1242,7 @@ function SaveProfileButton({ pending }: { pending: boolean }) {
   return (
     <Button
       type="submit"
-      disabled={pending}
+      loading={pending} disabled={pending}
     >
       {pending ? (
         <>

@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Activity, CircleAlert, CircleCheck, CircleHelp, UsersRound } from "lucide-react";
@@ -12,12 +13,11 @@ import { getBranchMemberInactivity, getInactivityBranchOptions } from "@/lib/ina
 import { getMonitoringCounts } from "@/lib/inactivity/presentation";
 import InactivityTable from "./InactivityTable";
 import ThresholdSettings from "./ThresholdSettings";
-import InactivityLoading from "./loading";
 
 type PageProps = { searchParams: Promise<{ branch?: string | string[] }> };
 
 export default function InactivityPage(props: PageProps) {
-  return <Suspense fallback={<InactivityLoading />}><InactivityContent {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={2} columns={5} label="inactivity" />}><InactivityContent {...props} /></Suspense>;
 }
 
 async function InactivityContent({ searchParams }: PageProps) {

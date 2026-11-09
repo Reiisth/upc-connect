@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -18,11 +19,10 @@ import { requireFollowUpsPermission } from "../../access";
 import { loadFollowUpBranches, loadFollowUpMember, loadFollowUpRecords } from "../../data";
 import { FollowUpOutcomeBadge } from "../../FollowUpOutcomeBadge";
 import { isUuid, METHOD_LABELS } from "../../types";
-import FollowUpsLoading from "../../loading";
 
 type Props = { params: Promise<{ memberId: string }>; searchParams: Promise<{ saved?: string; returnTo?: string | string[] }> };
 export default function MemberFollowUpPage(props: Props) {
-  return <Suspense fallback={<FollowUpsLoading />}><MemberFollowUpContent {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="history" fields={6} metrics={4} columns={5} label="follow ups member" />}><MemberFollowUpContent {...props} /></Suspense>;
 }
 async function MemberFollowUpContent({ params, searchParams }: Props) {
   const access = await requireFollowUpsPermission("follow_ups.view");

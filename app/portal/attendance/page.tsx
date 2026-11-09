@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { readAllPages } from "@/lib/supabase/read-all-pages";
 import { hasPermission } from "@/lib/permissions";
 import { effectiveStoredServiceStatus } from "@/app/portal/services/lifecycle";
@@ -6,12 +7,9 @@ import { Suspense } from "react";
 import {
   ClipboardCheck,
 } from "lucide-react";
-
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -33,7 +31,7 @@ type ServiceRow = {
 
 export default function AttendancePage() {
   return (
-    <Suspense fallback={<AttendanceLoading />}>
+    <Suspense fallback={<PageSkeleton kind="dashboard" fields={6} metrics={4} columns={5} label="attendance" />}>
       <AttendanceContent />
     </Suspense>
   );
@@ -112,36 +110,6 @@ async function AttendanceContent() {
           serviceTypeNames={serviceTypeNames}
         />
       )}
-    </PageContainer>
-  );
-}
-
-function AttendanceLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-56" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <Card key={index}>
-            <CardContent className="p-5">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="mt-3 h-9 w-16" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="space-y-3">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-      </div>
     </PageContainer>
   );
 }

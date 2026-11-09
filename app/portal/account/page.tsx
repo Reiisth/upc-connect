@@ -1,15 +1,15 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { UserRound } from "lucide-react";
 import { requireActiveAccount } from "@/lib/auth";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { FormSection } from "@/components/ui/form-section";
-import { Skeleton } from "@/components/ui/skeleton";
 import ChangePasswordForm from "./ChangePasswordForm";
 
 export default function AccountPage() {
   return (
-    <Suspense fallback={<AccountSkeleton />}>
+    <Suspense fallback={<PageSkeleton kind="detail" fields={3} metrics={0} columns={5} label="account" />}>
       <AccountContent />
     </Suspense>
   );
@@ -32,34 +32,6 @@ async function AccountContent() {
       </FormSection>
       <FormSection title="Security" description="Change your password to keep your account secure.">
         <ChangePasswordForm />
-      </FormSection>
-    </PageContainer>
-  );
-}
-
-function AccountSkeleton() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-9 w-40" />
-        <Skeleton className="h-4 w-64 max-w-full" />
-      </div>
-      <FormSection>
-        <Skeleton className="h-6 w-44" />
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-5 w-56 max-w-full" />
-      </FormSection>
-      <FormSection>
-        <Skeleton className="h-6 w-28" />
-        <Skeleton className="h-4 w-72 max-w-full" />
-        <div className="max-w-xl space-y-5">
-          {[0, 1, 2].map((field) => <div key={field} className="space-y-2">
-            <Skeleton className="h-4 w-36" />
-            <Skeleton className="h-10 w-full" />
-          </div>)}
-          <Skeleton className="h-10 w-40" />
-        </div>
       </FormSection>
     </PageContainer>
   );

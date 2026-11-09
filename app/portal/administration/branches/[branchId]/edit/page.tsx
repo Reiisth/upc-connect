@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -14,7 +15,6 @@ import { FormSection } from "@/components/ui/form-section";
 import { Input } from "@/components/ui/input";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type EditBranchPageProps = {
   params: Promise<{
@@ -26,7 +26,7 @@ export default function EditBranchPage(
   props: EditBranchPageProps,
 ) {
   return (
-    <Suspense fallback={<EditBranchLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={8} metrics={0} columns={5} label="administration branches edit" />}>
       <EditBranchContent {...props} />
     </Suspense>
   );
@@ -188,20 +188,6 @@ async function EditBranchContent({
           </FormActions>
         </FormSection>
       </form>
-    </PageContainer>
-  );
-}
-
-function EditBranchLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-56" />
-        <Skeleton className="h-4 w-80 max-w-full" />
-      </div>
-
-      <Skeleton className="h-[430px] rounded-2xl" />
     </PageContainer>
   );
 }

@@ -22,6 +22,14 @@ export type MemberFieldDefinition = {
   options_source: string | null; options: unknown; sort_order: number;
 };
 
+/** Keep the personal date last, including while older field settings are loaded. */
+export function orderPersonalAnniversary<T extends { field_key: string; field_group?: string | null; sort_order: number }>(fields: T[]): T[] {
+  const lastOrder = Math.max(0, ...fields.filter(field => field.field_key !== "wedding_anniversary" && field.field_group === "personal").map(field => field.sort_order));
+  return fields.map(field => field.field_key === "wedding_anniversary"
+    ? { ...field, field_group: "personal", sort_order: lastOrder + 1 }
+    : field);
+}
+
 export function isSelfServiceField(key: string) {
   return (SELF_SERVICE_FIELDS as readonly string[]).includes(key);
 }

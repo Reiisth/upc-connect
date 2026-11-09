@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { ShieldCheck } from "lucide-react";
 
@@ -5,7 +6,6 @@ import { hasPermission } from "@/lib/permissions";
 
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { requireAdministrationPermission } from "../../access";
 import RoleCreateForm from "../RoleCreateForm";
@@ -13,7 +13,7 @@ import { getActivePermissions } from "../data";
 
 export default function NewRolePage() {
   return (
-    <Suspense fallback={<NewRoleLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={5} metrics={0} columns={5} label="administration roles new" />}>
       <NewRoleContent />
     </Suspense>
   );
@@ -45,20 +45,6 @@ async function NewRoleContent() {
         canManagePermissions={canManagePermissions}
       />
 
-    </PageContainer>
-  );
-}
-
-function NewRoleLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-4 w-[30rem] max-w-full" />
-      </div>
-
-      <Skeleton className="h-[720px] rounded-2xl" />
     </PageContainer>
   );
 }

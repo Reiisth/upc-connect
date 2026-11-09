@@ -1,15 +1,15 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { requireStaffMember } from "../../data";
 import { updateMember } from "../../actions";
 import { MemberChurchForm } from "../../MemberChurchForm";
 import { getAccessibleActiveBranches } from "../../../services/access";
 
 export default function EditMemberPage(props: { params: Promise<{ memberId: string }> }) {
-  return <Suspense fallback={<Skeleton className="h-96" />}><Content {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="form" fields={5} metrics={0} columns={5} label="members edit" />}><Content {...props} /></Suspense>;
 }
 async function Content({ params }: { params: Promise<{ memberId: string }> }) {
   const { memberId } = await params;

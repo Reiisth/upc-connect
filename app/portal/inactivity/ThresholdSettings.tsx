@@ -37,7 +37,7 @@ export default function ThresholdSettings({ branch, canManage }: {
                   type="number" min={1} max={52} step={1} required defaultValue={branch.inactivityThresholdWeeks}
                   disabled={pending} aria-describedby="threshold-help" />
               </FormField>
-              <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save rule"}</Button>
+              <Button type="submit" loading={pending} disabled={pending}>{pending ? "Saving…" : "Save rule"}</Button>
             </div>
             <p id="threshold-help" className="text-xs text-slate-500">
               Choose 1–52 weeks. Saving recalculates this branch’s results immediately.

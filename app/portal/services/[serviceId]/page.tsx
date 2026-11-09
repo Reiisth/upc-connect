@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -6,7 +7,6 @@ import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasPermission } from "@/lib/permissions";
 import { requireServicesPermission } from "../access";
@@ -16,7 +16,7 @@ import ServiceStatusIcon from "../ServiceStatusIcon";
 
 type Props = { params: Promise<{ serviceId: string }> };
 export default function ServicePage(props: Props) {
-  return <Suspense fallback={<Skeleton className="h-64" />}><Content {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="detail" fields={4} metrics={0} columns={5} label="services" />}><Content {...props} /></Suspense>;
 }
 
 async function Content({ params }: Props) {

@@ -321,7 +321,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                disabled={loading}
+                loading={loading} disabled={loading}
                 className="h-11 w-full px-4 py-3 font-semibold"
               >
                 {loading ? (

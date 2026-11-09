@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Building2 } from "lucide-react";
@@ -12,11 +13,10 @@ import { FormSection } from "@/components/ui/form-section";
 import { Input } from "@/components/ui/input";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NewBranchPage() {
   return (
-    <Suspense fallback={<NewBranchLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={8} metrics={0} columns={5} label="administration branches new" />}>
       <NewBranchContent />
     </Suspense>
   );
@@ -145,20 +145,6 @@ async function NewBranchContent() {
           </FormActions>
         </FormSection>
       </form>
-    </PageContainer>
-  );
-}
-
-function NewBranchLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-4 w-80 max-w-full" />
-      </div>
-
-      <Skeleton className="h-[430px] rounded-2xl" />
     </PageContainer>
   );
 }

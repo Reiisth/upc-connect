@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
@@ -6,7 +7,6 @@ import { hasPermission } from "@/lib/permissions";
 
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { requireAdministrationPermission } from "../../access";
 import RoleDetailEditor from "../RoleDetailEditor";
@@ -20,7 +20,7 @@ type RoleDetailPageProps = {
 
 export default function RoleDetailPage(props: RoleDetailPageProps) {
   return (
-    <Suspense fallback={<RoleDetailLoading />}>
+    <Suspense fallback={<PageSkeleton kind="detail" fields={4} metrics={0} columns={5} label="administration roles" />}>
       <RoleDetailContent {...props} />
     </Suspense>
   );
@@ -69,21 +69,6 @@ async function RoleDetailContent({
         canDeactivate={canDeactivate}
         canDelete={canDelete}
       />
-    </PageContainer>
-  );
-}
-
-function RoleDetailLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-72" />
-        <Skeleton className="h-4 w-[30rem] max-w-full" />
-      </div>
-
-      <Skeleton className="h-80 rounded-2xl" />
-      <Skeleton className="h-[560px] rounded-2xl" />
     </PageContainer>
   );
 }

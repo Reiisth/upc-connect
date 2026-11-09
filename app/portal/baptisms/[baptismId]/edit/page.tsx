@@ -1,10 +1,10 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Droplets } from "lucide-react";
 
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getHistoricalRecordBranches } from "@/lib/historical-records";
@@ -31,7 +31,7 @@ export default function EditBaptismPage(
   props: EditBaptismPageProps,
 ) {
   return (
-    <Suspense fallback={<EditBaptismLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={8} metrics={0} columns={5} label="baptisms edit" />}>
       <EditBaptismContent {...props} />
     </Suspense>
   );
@@ -97,20 +97,6 @@ async function EditBaptismContent({
           notes: baptism.notes ?? "",
         }}
       />
-    </PageContainer>
-  );
-}
-
-function EditBaptismLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="h-9 w-72 max-w-full" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <Skeleton className="h-[760px] rounded-2xl" />
     </PageContainer>
   );
 }

@@ -308,7 +308,7 @@ function BaptismSubmitButton({
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" loading={pending} disabled={pending}>
       {pending ? "Saving..." : label}
     </Button>
   );

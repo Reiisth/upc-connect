@@ -1,5 +1,6 @@
 "use client";
 
+import { LoaderCircle } from "lucide-react";
 import * as React from "react";
 import { useFormStatus } from "react-dom";
 
@@ -44,13 +45,14 @@ export function TableActionSubmit({
     <button
       type="submit"
       disabled={pending}
+      aria-busy={pending}
       className={cn(
         baseClasses,
         variantClasses[variant],
         className,
       )}
     >
-      {icon}
+      {pending ? <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : icon}
 
       {pending ? pendingLabel : children}
     </button>

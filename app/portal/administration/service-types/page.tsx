@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -13,7 +14,7 @@ import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { StatusAction } from "./StatusAction";
 
-export default function ServiceTypesPage() { return <Suspense fallback={<PageContainer><p>Loading service types…</p></PageContainer>}><Content /></Suspense>; }
+export default function ServiceTypesPage() { return <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="administration service types" />}><Content /></Suspense>; }
 async function Content() {
   const access = await requireAdministrationPermission("service_types.view");
   const admin = createAdminClient();

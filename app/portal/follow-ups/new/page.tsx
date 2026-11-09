@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { ClipboardPen } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -11,11 +12,10 @@ import { requireFollowUpsPermission } from "../access";
 import { createFollowUp } from "../actions";
 import { loadFollowUpFormOptions } from "../data";
 import FollowUpForm from "../FollowUpForm";
-import FollowUpsLoading from "../loading";
 
 type Props = { searchParams: Promise<{ memberId?: string | string[]; branchId?: string | string[]; saved?: string }> };
 export default function NewFollowUpPage(props: Props) {
-  return <Suspense fallback={<FollowUpsLoading />}><NewFollowUpContent {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="form" fields={8} metrics={0} columns={5} label="follow ups new" />}><NewFollowUpContent {...props} /></Suspense>;
 }
 async function NewFollowUpContent({ searchParams }: Props) {
   const access = await requireFollowUpsPermission("follow_ups.create");

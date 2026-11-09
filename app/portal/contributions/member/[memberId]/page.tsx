@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -8,7 +9,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableActionButton } from "@/components/ui/table-action-button";
 import { hasPermission } from "@/lib/permissions";
@@ -19,7 +19,7 @@ import { contributionAmountToCents, formatContributionAmount, formatContribution
 
 type Props = { params: Promise<{ memberId: string }>; searchParams: Promise<{ page?: string | string[]; returnTo?: string | string[] }> };
 export default function MemberContributionsPage(props: Props) {
-  return <Suspense fallback={<Skeleton className="h-64" />}><Content {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="history" fields={6} metrics={4} columns={5} label="contributions member" />}><Content {...props} /></Suspense>;
 }
 function money(cents: bigint) {
   return `₱${(cents / BigInt(100)).toLocaleString("en-PH")}.${(cents % BigInt(100)).toString().padStart(2, "0")}`;

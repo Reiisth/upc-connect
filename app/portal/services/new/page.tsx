@@ -1,10 +1,10 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { CalendarPlus } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -17,7 +17,7 @@ import { ServiceForm } from "../ServiceForm";
 
 export default function NewServicePage() {
   return (
-    <Suspense fallback={<NewServiceLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={5} metrics={0} columns={5} label="services new" />}>
       <NewServiceContent />
     </Suspense>
   );
@@ -59,20 +59,6 @@ async function NewServiceContent() {
           submitLabel="Create Service"
         />
       )}
-    </PageContainer>
-  );
-}
-
-function NewServiceLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-56" />
-        <Skeleton className="h-4 w-80 max-w-full" />
-      </div>
-
-      <Skeleton className="h-[520px] rounded-2xl" />
     </PageContainer>
   );
 }

@@ -183,7 +183,7 @@ export function ServiceForm({
             <Link href="/portal/services">Cancel</Link>
           </Button>
 
-          <Button type="submit" disabled={pending || branches.length === 0 || serviceTypes.length === 0}>
+          <Button type="submit" loading={pending} pendingLabel="Saving service..." disabled={pending || branches.length === 0 || serviceTypes.length === 0}>
             {submitLabel}
           </Button>
         </FormActions>

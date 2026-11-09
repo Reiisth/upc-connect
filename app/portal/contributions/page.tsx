@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { loadModuleSummary } from "@/lib/module-summary";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -7,11 +8,9 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getHistoricalRecordBranches } from "@/lib/historical-records";
@@ -25,7 +24,7 @@ import ContributionsTable from "./ContributionsTable";
 
 export default function ContributionsPage() {
   return (
-    <Suspense fallback={<ContributionsLoading />}>
+    <Suspense fallback={<PageSkeleton kind="dashboard" fields={6} metrics={4} columns={5} label="contributions" />}>
       <ContributionsContent />
     </Suspense>
   );
@@ -84,36 +83,6 @@ async function ContributionsContent() {
           canUpdate={canUpdate}
         />
       )}
-    </PageContainer>
-  );
-}
-
-function ContributionsLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Card key={index}>
-            <CardContent className="p-5">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="mt-3 h-8 w-28" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="space-y-3">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-      </div>
     </PageContainer>
   );
 }

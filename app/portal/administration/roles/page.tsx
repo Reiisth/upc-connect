@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Plus, ShieldCheck } from "lucide-react";
@@ -8,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -26,7 +26,7 @@ import { RoleLifecycleActions } from "./RoleLifecycleActions";
 
 export default function RolesPage() {
   return (
-    <Suspense fallback={<RolesLoading />}>
+    <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="administration roles" />}>
       <RolesContent />
     </Suspense>
   );
@@ -155,25 +155,6 @@ async function RolesContent() {
           </TableBody>
         </Table>
       )}
-    </PageContainer>
-  );
-}
-
-function RolesLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-4 w-[30rem] max-w-full" />
-      </div>
-
-      <div className="space-y-3">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-      </div>
     </PageContainer>
   );
 }

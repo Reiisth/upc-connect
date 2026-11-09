@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowUpRight, ClipboardPen, HeartPulse, HandCoins, Droplets, UsersRound, MapPin, UserRound, Activity } from "lucide-react";
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { hasPermission } from "@/lib/permissions";
 import { requireStaffMember } from "../data";
@@ -19,7 +19,7 @@ import MemberCardButton from "../MemberCardButton";
 import { loadMemberAccountEmail } from "../account-email";
 
 export default function MemberPage(props: { params: Promise<{ memberId: string }> }) {
-  return <Suspense fallback={<MemberDetailLoading />}><Content {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="detail" fields={4} metrics={0} columns={5} label="members" />}><Content {...props} /></Suspense>;
 }
 
 async function Content({ params }: { params: Promise<{ memberId: string }> }) {
@@ -132,8 +132,4 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
 
 function Info({ label, value, className = "" }: { label: string; value: string; className?: string }) {
   return <div className={className}><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 break-words text-sm font-medium text-slate-800">{value}</dd></div>;
-}
-
-function MemberDetailLoading() {
-  return <div className="space-y-5"><Skeleton className="h-24" /><Skeleton className="h-48" /><Skeleton className="h-40" /></div>;
 }

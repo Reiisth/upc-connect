@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import {
@@ -14,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -29,7 +29,7 @@ import { BranchLifecycleAction } from "./BranchLifecycleAction";
 
 export default function BranchesPage() {
   return (
-    <Suspense fallback={<BranchesLoading />}>
+    <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="administration branches" />}>
       <BranchesContent />
     </Suspense>
   );
@@ -180,24 +180,6 @@ async function BranchesContent() {
           </TableBody>
         </Table>
       )}
-    </PageContainer>
-  );
-}
-
-function BranchesLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-80 max-w-full" />
-      </div>
-
-      <div className="space-y-3">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-      </div>
     </PageContainer>
   );
 }

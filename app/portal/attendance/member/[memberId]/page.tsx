@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -8,7 +9,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { hasPermission } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -18,7 +18,7 @@ import { requireAttendancePermission } from "../../access";
 
 type Props = { params: Promise<{ memberId: string }>; searchParams: Promise<{ page?: string | string[]; returnTo?: string | string[] }> };
 export default function MemberAttendancePage(props: Props) {
-  return <Suspense fallback={<Skeleton className="h-64" />}><Content {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="history" fields={6} metrics={4} columns={5} label="attendance member" />}><Content {...props} /></Suspense>;
 }
 
 async function Content({ params, searchParams }: Props) {

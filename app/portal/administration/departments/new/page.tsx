@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Network } from "lucide-react";
@@ -11,10 +12,9 @@ import { FormSection } from "@/components/ui/form-section";
 import { Input } from "@/components/ui/input";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NewDepartmentPage() {
-  return <Suspense fallback={<PageContainer><Skeleton className="h-64 rounded-2xl" /></PageContainer>}><NewDepartmentContent /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="form" fields={5} metrics={0} columns={5} label="administration departments new" />}><NewDepartmentContent /></Suspense>;
 }
 
 async function NewDepartmentContent() {

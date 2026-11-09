@@ -1,5 +1,13 @@
 "use client";
 
+import { PROFILE_FIELD_DEFAULTS, isDefaultProfileConfiguration } from "@/lib/profile-field-defaults";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card } from "@/components/ui/card";
+import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import { useEffect, useState } from "react";
 import {
   deleteCustomField,
@@ -54,6 +62,9 @@ export default function FieldManagementTable({
   const [restoringDefaults, setRestoringDefaults] =
     useState(false);
   const router = useRouter();
+
+  const defaultsMatch = isDefaultProfileConfiguration(items);
+  const busy = saving || restoringDefaults || deleting;
 
   const groupedFields = {
     personal: items
@@ -321,12 +332,17 @@ export default function FieldManagementTable({
   }
 
   async function handleRestoreDefaults() {
+    if (defaultsMatch || busy) return;
     setRestoringDefaults(true);
     setErrorMessage(null);
     setSuccessMessage(null);
 
     try {
       await restoreDefaultFieldConfiguration();
+      setItems(current => current.map(field => {
+        const defaults = field.is_builtin && PROFILE_FIELD_DEFAULTS.find(item => item.field_key === field.field_key);
+        return defaults ? { ...field, ...defaults } : field;
+      }));
 
       setShowRestoreDefaults(false);
 
@@ -348,7 +364,7 @@ export default function FieldManagementTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         {errorMessage && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {errorMessage}
@@ -360,51 +376,51 @@ export default function FieldManagementTable({
             {successMessage}
           </div>
         )}
-        <div className="flex justify-end gap-3">
-          <button
+        <div className="ml-auto flex flex-wrap justify-end gap-3">
+          <Button
             type="button"
             onClick={() => setShowRestoreDefaults(true)}
-            disabled={restoringDefaults}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={busy || defaultsMatch}
+            variant="outline"
           >
             Restore Defaults
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            disabled={busy}
             onClick={() => setShowAddField(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#203264] px-4 py-2.5 text-sm font-medium text-[#203264] transition hover:bg-[#EEF3FB]"
+            variant="outline"
           >
             <Plus className="h-4 w-4" />
             Add Field
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
             onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#203264] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#18264D] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={busy}
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : "Save Config"}
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border bg-white shadow-sm">
-        <table className="w-full min-w-[1100px] text-sm">
-          <thead className="border-b bg-[#F8FAFD] text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="px-4 py-4">Order</th>
-              <th className="px-4 py-4">Field</th>
-              <th className="px-4 py-4">Input Type</th>
-              <th className="px-4 py-4">Options</th>
-              <th className="px-4 py-4">Placeholder</th>
-              <th className="px-4 py-4">Required</th>
-              <th className="px-4 py-4">Visible</th>
-              <th className="px-4 py-4">Actions</th>
-            </tr>
-          </thead>
+      <div>
+        <Table className="w-full min-w-[1100px] text-sm">
+          <TableHeader className="border-b bg-[#F8FAFD] text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <TableRow>
+              <TableHead className="px-4 py-4">Order</TableHead>
+              <TableHead className="px-4 py-4">Field</TableHead>
+              <TableHead className="px-4 py-4">Input Type</TableHead>
+              <TableHead className="px-4 py-4">Options</TableHead>
+              <TableHead className="px-4 py-4">Placeholder</TableHead>
+              <TableHead className="px-4 py-4">Required</TableHead>
+              <TableHead className="px-4 py-4">Visible</TableHead>
+              <TableHead className="px-4 py-4">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
 
           {fieldGroups.map(({ key, label }) => {
             const groupItems = groupedFields[key];
@@ -414,38 +430,38 @@ export default function FieldManagementTable({
             }
 
             return (
-              <tbody
+              <TableBody
                 key={key}
                 className="divide-y"
               >
-                <tr className="bg-[#EEF3FB]">
-                  <td
+                <TableRow className="bg-[#EEF3FB]">
+                  <TableCell
                     colSpan={8}
                     className="px-4 py-3 font-semibold text-[#203264]"
                   >
                     {label}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
 
                 {groupItems.map((field, index) => (
-                  <tr
+                  <TableRow
                     key={field.id}
                     className="align-top transition hover:bg-[#F8FAFD]"
                   >
-                    <td className="px-4 py-4">
+                    <TableCell className="px-4 py-4">
                       <div className="flex items-center gap-1">
-                        <button
+                        <Button
                           type="button"
                           onClick={() =>
                             moveField(field.id, "up")
                           }
                           disabled={index === 0}
-                          className="rounded-lg border p-1.5 text-slate-500 transition hover:bg-slate-50 disabled:opacity-30"
+                          variant="ghost" size="icon"
                         >
-                          <ArrowUp className="h-4 w-4" />
-                        </button>
+                          <ArrowUp aria-label="Move field up" className="h-4 w-4" />
+                        </Button>
 
-                        <button
+                        <Button
                           type="button"
                           onClick={() =>
                             moveField(field.id, "down")
@@ -453,16 +469,16 @@ export default function FieldManagementTable({
                           disabled={
                             index === groupItems.length - 1
                           }
-                          className="rounded-lg border p-1.5 text-slate-500 transition hover:bg-slate-50 disabled:opacity-30"
+                          variant="ghost" size="icon"
                         >
-                          <ArrowDown className="h-4 w-4" />
-                        </button>
+                          <ArrowDown aria-label="Move field down" className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </td>
+                    </TableCell>
 
-                    <td className="px-4 py-4">
+                    <TableCell className="px-4 py-4">
                       <div className="min-w-[220px] space-y-2">
-                        <input
+                        <Input
                           value={field.label}
                           onChange={(event) =>
                             updateField(field.id, {
@@ -484,10 +500,10 @@ export default function FieldManagementTable({
                           )}
                         </div>
                       </div>
-                    </td>
+                    </TableCell>
 
-                    <td className="px-4 py-4">
-                      <select
+                    <TableCell className="px-4 py-4">
+                      <Select
                         value={field.field_type}
                         disabled={field.is_builtin}
                         onChange={(event) =>
@@ -505,13 +521,13 @@ export default function FieldManagementTable({
                         <option value="select">Dropdown</option>
                         <option value="textarea">Textarea</option>
                         <option value="checkbox">Checkbox</option>
-                      </select>
-                    </td>
+                      </Select>
+                    </TableCell>
 
-                    <td className="px-4 py-4">
+                    <TableCell className="px-4 py-4">
                       {field.field_type === "select" ? (
                         <div className="min-w-[220px] space-y-2">
-                          <select
+                          <Select
                             value={field.options_source ?? "custom"}
                             onChange={(event) =>
                               updateField(field.id, {
@@ -523,10 +539,10 @@ export default function FieldManagementTable({
                             <option value="custom">Custom Options</option>
                             <option value="departments">Departments</option>
                             <option value="church_branches">Church Branches</option>
-                          </select>
+                          </Select>
 
                           {(field.options_source ?? "custom") === "custom" && (
-                            <textarea
+                            <Textarea
                               value={
                                 Array.isArray(field.options)
                                   ? field.options.join("\n")
@@ -551,10 +567,10 @@ export default function FieldManagementTable({
                           Not applicable
                         </span>
                       )}
-                    </td>
+                    </TableCell>
 
-                    <td className="px-4 py-4">
-                      <input
+                    <TableCell className="px-4 py-4">
+                      <Input
                         value={field.placeholder ?? ""}
                         onChange={(event) =>
                           updateField(field.id, {
@@ -564,10 +580,11 @@ export default function FieldManagementTable({
                         placeholder="Enter placeholder"
                         className="min-w-[220px] rounded-xl border px-3 py-2 outline-none transition focus:border-[#5D94E8]"
                       />
-                    </td>
+                    </TableCell>
 
-                    <td className="px-4 py-4">
+                    <TableCell className="px-4 py-4">
                       <Toggle
+                        label={field.label + " required"}
                         checked={field.is_required}
                         onChange={(checked) =>
                           updateField(field.id, {
@@ -575,10 +592,11 @@ export default function FieldManagementTable({
                           })
                         }
                       />
-                    </td>
+                    </TableCell>
 
-                    <td className="px-4 py-4">
+                    <TableCell className="px-4 py-4">
                       <Toggle
+                        label={field.label + " visible"}
                         checked={field.is_visible}
                         onChange={(checked) =>
                           updateField(field.id, {
@@ -586,37 +604,37 @@ export default function FieldManagementTable({
                           })
                         }
                       />
-                    </td>
+                    </TableCell>
 
-                    <td className="px-4 py-4">
+                    <TableCell className="px-4 py-4">
                       {!field.is_builtin ? (
-                        <button
+                        <Button
                           type="button"
                           onClick={() => setFieldToDelete(field)}
-                          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                          variant="ghost" className="text-red-600 hover:bg-red-50"
                         >
                           <Trash2 className="h-4 w-4" />
                           Delete
-                        </button>
+                        </Button>
                       ) : (
                         <span className="text-xs text-muted-foreground">
                           Protected
                         </span>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
+              </TableBody>
             );
           })}
-        </table>
+        </Table>
       </div>
       {showAddField && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
+          <Card role="dialog" aria-modal="true" aria-labelledby="add-field-title" className="w-full max-w-lg p-6 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="font-body text-xl font-semibold text-[#203264]">
+                <h2 id="add-field-title" className="font-body text-xl font-semibold text-[#203264]">
                   Add Custom Field
                 </h2>
 
@@ -625,13 +643,13 @@ export default function FieldManagementTable({
                 </p>
               </div>
 
-              <button
+              <Button
                 type="button"
                 onClick={() => setShowAddField(false)}
-                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"
+                variant="ghost" size="icon" aria-label="Close add field"
               >
                 <X className="h-5 w-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="mt-6 space-y-4">
@@ -640,7 +658,7 @@ export default function FieldManagementTable({
                   Field Label
                 </label>
 
-                <input
+                <Input
                   type="text"
                   value={newFieldLabel}
                   onChange={(event) => setNewFieldLabel(event.target.value)}
@@ -654,7 +672,7 @@ export default function FieldManagementTable({
                   Input Type
                 </label>
 
-                <select
+                <Select
                   value={newFieldType}
                   onChange={(event) => setNewFieldType(event.target.value)}
                   className="w-full rounded-xl border bg-white px-3 py-2.5 outline-none transition focus:border-[#5D94E8]"
@@ -667,28 +685,28 @@ export default function FieldManagementTable({
                   <option value="select">Dropdown</option>
                   <option value="textarea">Textarea</option>
                   <option value="checkbox">Checkbox</option>
-                </select>
+                </Select>
               </div>
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button
+              <Button
                 type="button"
                 onClick={() => setShowAddField(false)}
-                className="rounded-xl border px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                variant="outline"
               >
                 Cancel
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
                 onClick={handleAddField}
-                className="rounded-xl bg-[#203264] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#18264D]"
+
               >
                 Add Field
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
@@ -731,25 +749,13 @@ export default function FieldManagementTable({
 }
 
 function Toggle({
+  label,
   checked,
   onChange,
 }: {
+  label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 rounded-full transition ${checked
-        ? "bg-[#5D94E8]"
-        : "bg-slate-300"
-        }`}
-    >
-      <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${checked ? "left-5" : "left-0.5"
-          }`}
-      />
-    </button>
-  );
+  return <Checkbox aria-label={label} checked={checked} onCheckedChange={value => onChange(value === true)} />;
 }

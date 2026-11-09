@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { effectiveStoredServiceStatus } from "../../lifecycle";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Suspense } from "react";
@@ -6,7 +7,6 @@ import { CalendarDays } from "lucide-react";
 
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -41,7 +41,7 @@ export default function EditServicePage(
   props: EditServicePageProps,
 ) {
   return (
-    <Suspense fallback={<EditServiceLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={5} metrics={0} columns={5} label="services edit" />}>
       <EditServiceContent {...props} />
     </Suspense>
   );
@@ -118,20 +118,6 @@ async function EditServiceContent({
           notes: service.notes,
         }}
       />
-    </PageContainer>
-  );
-}
-
-function EditServiceLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-56" />
-        <Skeleton className="h-4 w-80 max-w-full" />
-      </div>
-
-      <Skeleton className="h-[520px] rounded-2xl" />
     </PageContainer>
   );
 }

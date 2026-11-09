@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import {
   Building2,
@@ -14,11 +15,10 @@ import { getAdministrationHubPermissions } from "./access";
 import { ClickableCard } from "@/components/ui/clickable-card";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdministrationPage() {
   return (
-    <Suspense fallback={<AdministrationLoading />}>
+    <Suspense fallback={<PageSkeleton kind="profiles" fields={6} metrics={0} columns={5} label="administration" />}>
       <AdministrationContent />
     </Suspense>
   );
@@ -118,22 +118,6 @@ async function AdministrationContent() {
             </div>
           </ClickableCard>
         )}
-      </div>
-    </PageContainer>
-  );
-}
-
-function AdministrationLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-36" />
-        <Skeleton className="h-9 w-48" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Skeleton className="h-32 rounded-2xl" />
       </div>
     </PageContainer>
   );

@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -12,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 import { hasPermission } from "@/lib/permissions";
@@ -37,7 +37,7 @@ export default function AttendanceServicePage(
   props: AttendanceServicePageProps,
 ) {
   return (
-    <Suspense fallback={<AttendanceServiceLoading />}>
+    <Suspense fallback={<PageSkeleton kind="table" fields={4} metrics={3} columns={5} label="attendance" />}>
       <AttendanceServiceContent {...props} />
     </Suspense>
   );
@@ -239,21 +239,5 @@ function formatStartTime(value: string | null) {
       hour: "numeric",
       minute: "2-digit",
     },
-  );
-}
-
-function AttendanceServiceLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-3">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-72 max-w-full" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <Skeleton className="h-48 rounded-2xl" />
-      <Skeleton className="h-24 rounded-2xl" />
-      <Skeleton className="h-[420px] rounded-2xl" />
-    </PageContainer>
   );
 }

@@ -188,7 +188,7 @@ export default function RoleCreateForm({
           <Link href="/portal/administration/roles">Cancel</Link>
         </Button>
 
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" loading={isPending} disabled={isPending}>
           {isPending ? "Creating Role..." : "Create Role"}
         </Button>
       </FormActions>

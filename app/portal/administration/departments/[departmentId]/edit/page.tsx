@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -12,11 +13,10 @@ import { FormSection } from "@/components/ui/form-section";
 import { Input } from "@/components/ui/input";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default function EditDepartmentPage(props: { params: Promise<{ departmentId: string }> }) {
-  return <Suspense fallback={<PageContainer><Skeleton className="h-64 rounded-2xl" /></PageContainer>}><EditDepartmentContent {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="form" fields={5} metrics={0} columns={5} label="administration departments edit" />}><EditDepartmentContent {...props} /></Suspense>;
 }
 
 async function EditDepartmentContent({ params }: { params: Promise<{ departmentId: string }> }) {

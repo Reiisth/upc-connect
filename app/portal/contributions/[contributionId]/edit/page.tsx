@@ -1,10 +1,10 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { HandCoins } from "lucide-react";
 
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getHistoricalRecordBranches } from "@/lib/historical-records";
@@ -27,7 +27,7 @@ export default function EditContributionPage(
   props: EditContributionPageProps,
 ) {
   return (
-    <Suspense fallback={<EditContributionLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={8} metrics={0} columns={5} label="contributions edit" />}>
       <EditContributionContent {...props} />
     </Suspense>
   );
@@ -89,20 +89,6 @@ async function EditContributionContent({
           notes: contribution.notes,
         }}
       />
-    </PageContainer>
-  );
-}
-
-function EditContributionLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="h-9 w-64 max-w-full" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <Skeleton className="h-[620px] rounded-2xl" />
     </PageContainer>
   );
 }

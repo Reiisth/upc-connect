@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Network, Pencil, Plus } from "lucide-react";
@@ -7,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableActionButton } from "@/components/ui/table-action-button";
@@ -18,7 +18,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { DepartmentLifecycleAction } from "./DepartmentLifecycleAction";
 
 export default function DepartmentsPage() {
-  return <Suspense fallback={<DepartmentsLoading />}><DepartmentsContent /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="administration departments" />}><DepartmentsContent /></Suspense>;
 }
 
 async function DepartmentsContent() {
@@ -66,8 +66,4 @@ async function DepartmentsContent() {
       )}
     </PageContainer>
   );
-}
-
-function DepartmentsLoading() {
-  return <PageContainer><div className="space-y-2"><Skeleton className="h-8 w-56" /><Skeleton className="h-4 w-96 max-w-full" /></div><div className="space-y-3"><Skeleton className="h-12 w-full" /><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div></PageContainer>;
 }

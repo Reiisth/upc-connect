@@ -1,10 +1,10 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { HandCoins } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -15,7 +15,7 @@ import { ContributionForm } from "../ContributionForm";
 
 export default function NewContributionPage() {
   return (
-    <Suspense fallback={<NewContributionLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={8} metrics={0} columns={5} label="contributions new" />}>
       <NewContributionContent />
     </Suspense>
   );
@@ -55,20 +55,6 @@ async function NewContributionContent() {
           submitLabel="Save Contribution"
         />
       )}
-    </PageContainer>
-  );
-}
-
-function NewContributionLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="h-9 w-64 max-w-full" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <Skeleton className="h-[620px] rounded-2xl" />
     </PageContainer>
   );
 }

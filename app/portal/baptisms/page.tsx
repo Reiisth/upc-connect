@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { loadModuleSummary } from "@/lib/module-summary";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -7,11 +8,9 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getHistoricalRecordBranches } from "@/lib/historical-records";
@@ -31,7 +30,7 @@ import {
 
 export default function BaptismsPage() {
   return (
-    <Suspense fallback={<BaptismsLoading />}>
+    <Suspense fallback={<PageSkeleton kind="dashboard" fields={6} metrics={4} columns={5} label="baptisms" />}>
       <BaptismsContent />
     </Suspense>
   );
@@ -93,36 +92,6 @@ async function BaptismsContent() {
           canUpdateHolyGhost={canUpdateHolyGhost}
         />
       )}
-    </PageContainer>
-  );
-}
-
-function BaptismsLoading() {
-  return (
-    <PageContainer>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-72 max-w-full" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <Card key={index}>
-            <CardContent className="p-5">
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="mt-3 h-9 w-16" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="space-y-3">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-      </div>
     </PageContainer>
   );
 }

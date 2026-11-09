@@ -171,7 +171,7 @@ export default function ContributionsTable({
             <FormField label="Period" htmlFor="contribution-period" className="col-span-2 lg:col-span-1"><Select id="contribution-period" value={preset} onChange={e=>choosePreset(e.target.value)}><option value="recent">Recent 6 months</option><option value="month">This month</option><option value="last_30_days">Last 30 days</option><option value="year_to_date">Year to date</option><option value="all">All time</option><option value="custom">Custom range</option></Select></FormField>
             <FormField label="From" htmlFor="contributions-from"><Input id="contributions-from" type="date" value={dateFrom} max={dateTo||undefined} onChange={(event)=>{setDateFrom(event.target.value);setPreset("custom");}} aria-label="Contributions from date" aria-invalid={Boolean(rangeError)||undefined}/></FormField>
             <FormField label="To" htmlFor="contributions-to"><Input id="contributions-to" type="date" value={dateTo} min={dateFrom||undefined} onChange={(event)=>{setDateTo(event.target.value);setPreset("custom");}} aria-label="Contributions to date" aria-invalid={Boolean(rangeError)||undefined}/></FormField>
-            <Button type="submit" className="col-span-2 lg:col-span-1" disabled={pending}>{pending?"Applying...":"Apply range"}</Button>
+            <Button type="submit" className="col-span-2 lg:col-span-1" loading={pending} disabled={pending}>{pending?"Applying...":"Apply range"}</Button>
           </div>
           {rangeError&&<p role="alert" className="mt-2 text-sm text-red-700">{rangeError}</p>}
         </fieldset>

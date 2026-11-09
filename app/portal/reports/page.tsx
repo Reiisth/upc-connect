@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { ChartNoAxesCombined, CircleAlert } from "lucide-react";
@@ -12,11 +13,10 @@ import type { AnalyticsOverview } from "@/lib/analytics/types";
 import { parseReportFilters, reportFilterUrl, type ReportSearchParams } from "./filters";
 import ReportsDashboard from "./ReportsDashboard";
 import ReportsView from "./ReportsView";
-import ReportsLoading from "./loading";
 
 type PageProps = { searchParams: Promise<ReportSearchParams> };
 export default function ReportsPage(props: PageProps) {
-  return <Suspense fallback={<ReportsLoading />}><ReportsContent {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="dashboard" fields={6} metrics={4} columns={5} label="reports" />}><ReportsContent {...props} /></Suspense>;
 }
 
 async function ReportsContent({ searchParams }: PageProps) {

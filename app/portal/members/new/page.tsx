@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { UserPlus } from "lucide-react";
 
@@ -8,13 +9,12 @@ import { MemberChurchForm } from "../MemberChurchForm";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAccessibleActiveBranches } from "../../services/access";
 
 export default function NewMemberPage(props: { searchParams: Promise<{ created?: string }> }) {
   return (
-    <Suspense fallback={<NewMemberLoading />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={5} metrics={0} columns={5} label="members new" />}>
       <NewMemberContent {...props} />
     </Suspense>
   );
@@ -51,20 +51,6 @@ async function NewMemberContent({ searchParams }: { searchParams: Promise<{ crea
       ) : (
         <MemberChurchForm action={createMember} branches={branches} departments={departmentsResult.data ?? []} cancelHref="/portal/members" />
       )}
-    </PageContainer>
-  );
-}
-
-function NewMemberLoading() {
-  return (
-    <PageContainer className="max-w-3xl">
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-9 w-56" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-
-      <Skeleton className="h-[360px] rounded-2xl" />
     </PageContainer>
   );
 }

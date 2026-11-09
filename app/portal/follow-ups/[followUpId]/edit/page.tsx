@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { ClipboardPen } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -10,11 +11,10 @@ import { requireFollowUpsPermission } from "../../access";
 import { updateFollowUp } from "../../actions";
 import { loadFollowUpForEdit } from "../../data";
 import FollowUpForm from "../../FollowUpForm";
-import FollowUpsLoading from "../../loading";
 
 type Props = { params: Promise<{ followUpId: string }>; searchParams: Promise<{ saved?: string }> };
 export default function EditFollowUpPage(props: Props) {
-  return <Suspense fallback={<FollowUpsLoading />}><EditFollowUpContent {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton kind="form" fields={8} metrics={0} columns={5} label="follow ups edit" />}><EditFollowUpContent {...props} /></Suspense>;
 }
 async function EditFollowUpContent({ params, searchParams }: Props) {
   const access = await requireFollowUpsPermission("follow_ups.update");

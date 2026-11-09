@@ -285,7 +285,7 @@ export default function RoleDetailEditor({
 
             {canUpdate && (
               <FormActions>
-                <Button type="submit" disabled={isPending}>
+                <Button type="submit" loading={isPending} disabled={isPending}>
                   {isPending ? "Saving..." : "Save Role Details"}
                 </Button>
               </FormActions>
@@ -332,6 +332,7 @@ export default function RoleDetailEditor({
               <Button
                 type="button"
                 onClick={handlePermissionSave}
+                loading={isPending}
                 disabled={isPending}
               >
                 {isPending ? "Saving..." : "Save Permissions"}

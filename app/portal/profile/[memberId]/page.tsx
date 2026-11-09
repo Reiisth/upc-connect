@@ -1,6 +1,6 @@
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import ProfileMemberSkeleton from "./ProfileMemberSkeleton";
 import MemberCard from "../../components/MemberCard";
 import EditProfileButton from "./EditProfileButton";
 import { UserRound } from "lucide-react";
@@ -25,7 +25,7 @@ export default async function MemberProfilePage({
   params,
 }: PageProps) {
   return (
-    <Suspense fallback={<ProfileMemberSkeleton />}>
+    <Suspense fallback={<PageSkeleton kind="form" fields={8} sections={2} metrics={0} columns={5} label="profile" />}>
       <MemberProfileContent params={params} />
     </Suspense>
   );

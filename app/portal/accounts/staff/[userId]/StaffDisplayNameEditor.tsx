@@ -139,7 +139,7 @@ export function StaffDisplayNameEditor({
               Cancel
             </Button>
 
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" loading={isPending} disabled={isPending}>
               {isPending ? "Saving..." : "Save Display Name"}
             </Button>
           </FormActions>

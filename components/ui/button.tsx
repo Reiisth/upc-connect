@@ -1,3 +1,7 @@
+"use client";
+
+import { useFormStatus } from "react-dom";
+import { LoaderCircle } from "lucide-react";
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -47,17 +51,32 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
   VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  loading?: boolean;
+  pendingLabel?: string;
+}
+
+function containsSpinner(children: React.ReactNode): boolean {
+  return React.Children.toArray(children).some(child => {
+    if (!React.isValidElement<{className?: string; children?: React.ReactNode}>(child)) return false;
+    return Boolean(child.props.className?.includes("animate-spin")) || containsSpinner(child.props.children);
+  });
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading = false, pendingLabel, children, disabled, ...props }, ref) => {
+    const { pending } = useFormStatus();
+    const busy = loading || (props.type === "submit" && pending);
     const Comp = asChild ? Slot : "button";
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
-      />
+        disabled={disabled || busy}
+        aria-busy={busy || undefined}
+      >
+        {asChild ? children : <>{busy && !containsSpinner(children) && <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" />}{busy ? pendingLabel ?? children : children}</>}
+      </Comp>
     );
   },
 );

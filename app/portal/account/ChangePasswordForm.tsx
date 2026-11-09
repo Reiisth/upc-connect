@@ -126,7 +126,7 @@ export default function ChangePasswordForm() {
       <FormActions>
       <Button
         type="submit"
-        disabled={loading}
+        loading={loading} disabled={loading}
         className="min-w-[170px]"
       >
         {loading ? (
