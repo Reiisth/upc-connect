@@ -35,13 +35,13 @@ export async function requestGeminiDecisionSupport(input: DecisionSupportInput, 
   } catch (error) {
     if (timedOut) throw new DecisionSupportError("TIMEOUT");
     if (error instanceof DecisionSupportError) throw error;
-    const details = error && typeof error === "object" ? error as { status?: unknown; statusCode?: unknown; name?: unknown; message?: unknown; code?: unknown; error?: unknown } : {};
+    const details = error && typeof error === "object" ? error as { status?: unknown; statusCode?: unknown; name?: unknown; message?: unknown; code?: unknown; error?: unknown; body?: unknown } : {};
     if (details.status === 429 || details.statusCode === 429) throw new DecisionSupportError("RATE_LIMITED");
     if (details.status === 408 || details.statusCode === 408 || ["TimeoutError", "APIConnectionTimeoutError", "RequestTimeoutError"].includes(String(details.name))) throw new DecisionSupportError("TIMEOUT");
     // Match only known categories; never log or return the raw upstream message.
-    const body = details.error && typeof details.error === "object" ? details.error as { message?: unknown; error?: unknown } : {};
+    const body = details.error && typeof details.error === "object" ? details.error as { message?: unknown; error?: unknown; body?: unknown } : {};
     const nested = body.error && typeof body.error === "object" ? body.error as { message?: unknown } : {};
-    const message = [details.message, body.message, nested.message].filter((value): value is string => typeof value === "string").join(" ");
+    const message = [details.message, body.message, nested.message, details.body, typeof details.error === "string" ? details.error : JSON.stringify(details.error)].filter((value): value is string => typeof value === "string").join(" ");
     if (/location.*not supported|unsupported.*location|country.*not supported|not available.*(region|country)|region.*not supported/i.test(message)) throw new DecisionSupportError("PROVIDER_REGION");
     if ([401, 403].includes(Number(details.status ?? details.statusCode)) || /api.?key|api_key|authentication|credential/i.test(message)) throw new DecisionSupportError("PROVIDER_AUTHENTICATION");
     if (Number(details.status ?? details.statusCode) === 404) throw new DecisionSupportError("MODEL_UNAVAILABLE");
