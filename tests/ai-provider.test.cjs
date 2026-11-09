@@ -70,7 +70,9 @@ test('rate limits, SDK timeouts and generic provider failures become fixed contr
     [{ status: 429 }, 'RATE_LIMITED'], [{ statusCode: 429 }, 'RATE_LIMITED'],
     [{ status: 408 }, 'TIMEOUT'], [{ name: 'APIConnectionTimeoutError' }, 'TIMEOUT'],
     [{ name: 'RequestTimeoutError' }, 'TIMEOUT'], [{ status: 500 }, 'PROVIDER_UNAVAILABLE'],
-    [{ status: 401 }, 'PROVIDER_UNAVAILABLE'],
+    [{ status: 401 }, 'PROVIDER_AUTHENTICATION'],
+    [{ status: 403 }, 'PROVIDER_AUTHENTICATION'], [{ status: 404 }, 'MODEL_UNAVAILABLE'],
+    [{ status: 400 }, 'PROVIDER_REJECTED'],
   ]) {
     const raw = Object.assign(new Error('PRIVATE_PROVIDER_ERROR API_KEY FULL_PROMPT'), details);
     const h = providerHarness(async () => { throw raw; });
