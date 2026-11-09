@@ -140,7 +140,7 @@ export default function LoginPage() {
         </div>
 
         <div className="max-w-lg">
-          <h1 className="font-heading text-4xl font-semibold leading-tight">
+          <h1 className="font-body text-4xl font-semibold leading-tight">
             One church.
             <br />
             One connected community.

@@ -1,6 +1,8 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useMemo, useState, useRef } from "react";
+import { UserRound, MapPin, Church, ListPlus } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { isProfileDefinition, isSelfServiceField } from "@/lib/member-field-policy";
 import { memberToday } from "@/lib/member-validation";
@@ -53,6 +55,13 @@ type MemberProfileFormProps = {
     country: string | null;
     wedding_anniversary: string | null;
     civil_status: string | null;
+    church_branch_id?: string | null;
+    department_id?: string | null;
+    department?: string | null;
+    member_status?: string | null;
+    first_attendance_date?: string | null;
+    position?: string | null;
+    zone?: number | null;
   };
   accountEmail: string;
   branches: Branch[];
@@ -228,7 +237,10 @@ export default function MemberProfileForm({
 
     setSaving(true); setSaveError(null);
     try { const result = await action(formData); if (result?.error) setSaveError(result.error); }
-    catch { setSaveError("Your profile could not be saved. Review the fields and try again."); }
+    catch (error) {
+      unstable_rethrow(error);
+      setSaveError("Your profile could not be saved. Review the fields and try again.");
+    }
     finally { setSaving(false); }
   }
 
@@ -263,6 +275,7 @@ export default function MemberProfileForm({
     >
       <FormSection
         title="Personal Information"
+        icon={<UserRound />}
         description="Update your personal and contact information."
       >
         <div className="grid gap-5 sm:grid-cols-2">
@@ -667,6 +680,7 @@ export default function MemberProfileForm({
 
       <FormSection
         title="Address"
+        icon={<MapPin />}
         description="Update your current residential address."
       >
         <div className="grid gap-5 sm:grid-cols-2">
@@ -1041,6 +1055,7 @@ export default function MemberProfileForm({
       {customFields.length > 0 && (
         <FormSection
           title="Additional Information"
+          icon={<ListPlus />}
           description="Additional information configured for member profiles."
         >
           <div className="grid gap-5 sm:grid-cols-2">
@@ -1230,6 +1245,20 @@ export default function MemberProfileForm({
       )}
 
       {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
+      <FormSection title="Church Information" icon={<Church />} description="Your current church information is shown below.">
+        <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          {[
+            ["Church Branch", branches.find(branch => branch.id === member.church_branch_id)?.name ?? "Not assigned"],
+            ["Department", departments.find(department => department.id === member.department_id)?.name ?? member.department ?? "Not assigned"],
+            ["Member Status", member.member_status ? member.member_status.charAt(0).toUpperCase() + member.member_status.slice(1) : "Not provided"],
+            ["First Attendance Date", member.first_attendance_date ? new Intl.DateTimeFormat("en-PH", { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Manila" }).format(new Date(member.first_attendance_date + "T00:00:00+08:00")) : "Not provided"],
+            ["Position", member.position || "Not assigned"],
+            ["Zone", member.zone != null ? String(member.zone) : "Not assigned"],
+          ].map(([label, value]) => <div key={label}><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 break-words text-sm font-medium text-slate-800">{value}</dd></div>)}
+        </dl>
+        <p className="border-t border-slate-200 pt-4 text-sm text-slate-500">To change your church information, please contact an admin.</p>
+      </FormSection>
+
       <FormActions>
         <SaveProfileButton pending={saving} />
       </FormActions>

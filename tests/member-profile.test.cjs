@@ -471,3 +471,20 @@ test('404 and access-denied pages provide readable branded recovery links', () =
     assert.match(html, /<h1/);
   }
 });
+
+
+test('profile form displays church information as read-only values after address with admin guidance', () => {
+  const h = harness();
+  const Form = h.load('app/portal/components/MemberProfileForm.tsx').default;
+  const html = renderToStaticMarkup(React.createElement(Form, {
+    member: {...h.db.members[0], department_id: 'dept', member_status: 'active', position: 'Volunteer', zone: 2},
+    accountEmail: 'owner@example.test', branches: [{id:'a',name:'Branch A'}],
+    departments: [{id:'dept',name:'Ministry'}], fieldDefinitions: [], customFieldValues: {}, action: async () => {},
+  }));
+  const start = html.indexOf('Church Information');
+  const church = html.slice(start, html.indexOf('</section>',start));
+  assert.ok(start > html.indexOf('>Address</h2>'));
+  assert.match(church,/Branch A/); assert.match(church,/Ministry/); assert.match(church,/Volunteer/);
+  assert.match(church,/please contact an admin/);
+  assert.doesNotMatch(church,/<input|<select|<textarea|<button/);
+});

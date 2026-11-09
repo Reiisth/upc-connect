@@ -5,6 +5,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
+import { Card, CardContent } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
 import { setAccountPassword } from "./actions";
 
 export default function SetPasswordPage() {
@@ -21,6 +26,7 @@ export default function SetPasswordPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loading) return;
     setError(null);
 
     if (password.length < 8) {
@@ -57,9 +63,9 @@ export default function SetPasswordPage() {
     <main className="min-h-screen bg-[#EEF3FB]">
       <div className="grid min-h-screen lg:grid-cols-2">
         {/* BRANDING SIDE */}
-        <section className="hidden bg-brand-gradient p-10 text-white lg:flex lg:flex-col lg:justify-between">
+        <section className="hidden bg-gradient-to-br from-[#5D94E8] to-[#203264] p-12 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="flex items-center gap-3">
-            <div className="rounded-full bg-white p-1">
+            <div className="shrink-0">
               <Image
                 src="/upc-logo.png"
                 alt="UPC Connect"
@@ -99,10 +105,10 @@ export default function SetPasswordPage() {
         </section>
 
         {/* FORM SIDE */}
-        <section className="flex items-center justify-center px-5 py-8 sm:px-8">
+        <section className="flex min-h-screen items-center justify-center bg-[#EEF3FB] px-5 py-10 sm:px-8">
           <div className="w-full max-w-md">
             {/* MOBILE BRAND */}
-            <div className="mb-8 flex justify-center lg:hidden">
+            <div className="mb-8 flex lg:hidden">
               <div className="flex items-center gap-3">
                 <Image
                   src="/upc-logo.png"
@@ -123,7 +129,7 @@ export default function SetPasswordPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border bg-white p-6 shadow-sm sm:p-8">
+            <Card className="rounded-3xl"><CardContent className="p-6 sm:p-8">
               <div>
                 <p className="text-sm font-medium text-[#5D94E8]">
                   Account Setup
@@ -140,26 +146,22 @@ export default function SetPasswordPage() {
 
               <form onSubmit={handleSubmit} className="mt-7 space-y-5">
                 {/* PASSWORD */}
-                <div>
-                  <label
-                    htmlFor="password"
-                    className="mb-2 block text-sm font-medium text-[#203264]"
-                  >
-                    Password
-                  </label>
+                <FormField label="Password" htmlFor="password" required>
 
                   <div className="relative">
-                    <input
+                    <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       autoComplete="new-password"
                       required
-                      className="w-full rounded-xl border bg-white px-4 py-3 pr-12 outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
+                      disabled={loading}
+                      minLength={8}
+                      className="pr-12"
                     />
 
-                    <button
+                    <Button
                       type="button"
                       onClick={() =>
                         setShowPassword((current) => !current)
@@ -167,28 +169,24 @@ export default function SetPasswordPage() {
                       aria-label={
                         showPassword ? "Hide password" : "Show password"
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-[#203264]"
+                      variant="ghost" size="icon" disabled={loading}
+                      aria-pressed={showPassword}
+                      className="absolute right-1 top-1/2 -translate-y-1/2"
                     >
                       {showPassword ? (
                         <EyeOff className="h-5 w-5" />
                       ) : (
                         <Eye className="h-5 w-5" />
                       )}
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </FormField>
 
                 {/* CONFIRM PASSWORD */}
-                <div>
-                  <label
-                    htmlFor="confirm-password"
-                    className="mb-2 block text-sm font-medium text-[#203264]"
-                  >
-                    Confirm Password
-                  </label>
+                <FormField label="Confirm Password" htmlFor="confirm-password" required>
 
                   <div className="relative">
-                    <input
+                    <Input
                       id="confirm-password"
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
@@ -197,10 +195,12 @@ export default function SetPasswordPage() {
                       }
                       autoComplete="new-password"
                       required
-                      className="w-full rounded-xl border bg-white px-4 py-3 pr-12 outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
+                      disabled={loading}
+                      minLength={8}
+                      className="pr-12"
                     />
 
-                    <button
+                    <Button
                       type="button"
                       onClick={() =>
                         setShowConfirmPassword((current) => !current)
@@ -210,41 +210,30 @@ export default function SetPasswordPage() {
                           ? "Hide confirmed password"
                           : "Show confirmed password"
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-[#203264]"
+                      variant="ghost" size="icon" disabled={loading}
+                      aria-pressed={showConfirmPassword}
+                      className="absolute right-1 top-1/2 -translate-y-1/2"
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-5 w-5" />
                       ) : (
                         <Eye className="h-5 w-5" />
                       )}
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </FormField>
 
                 {/* ERROR */}
                 {error && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     {error}
                   </div>
                 )}
 
                 {/* SUBMIT */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Creating password...
-                    </>
-                  ) : (
-                    "Create Password"
-                  )}
-                </button>
+                <Button type="submit" loading={loading} pendingLabel="Creating password..." className="w-full">Create Password</Button>
               </form>
-            </div>
+            </CardContent></Card>
           </div>
         </section>
       </div>

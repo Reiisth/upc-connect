@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 
 type FormSectionProps = {
   title?: string;
+  icon?: React.ReactNode;
   description?: string;
   children: React.ReactNode;
   className?: string;
@@ -11,6 +12,7 @@ type FormSectionProps = {
 
 export function FormSection({
   title,
+  icon,
   description,
   children,
   className,
@@ -25,7 +27,8 @@ export function FormSection({
       {(title || description) && (
         <div>
           {title && (
-            <h2 className="font-prompt text-lg font-semibold text-[#203264]">
+            <h2 className="flex items-center gap-2 font-prompt text-lg font-semibold text-[#203264]">
+              {icon && <span aria-hidden="true" className="shrink-0 text-[#5D94E8] [&_svg]:h-5 [&_svg]:w-5">{icon}</span>}
               {title}
             </h2>
           )}
