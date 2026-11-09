@@ -1,7 +1,9 @@
 "use client";
+import Link from "next/link";
 import ModuleMiniDashboard, { type ModuleSummary } from "@/components/module-summary";
 
 import {
+  ExternalLink,
   Pencil,
   Search,
   SearchX,
@@ -242,9 +244,7 @@ export default function ContributionsTable({
                   <div className="flex items-start gap-3">
 
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-900">
-                        {contributorName(record)}
-                      </p>
+                      {record.contributorType === "member" && record.memberId ? <Link href={`/portal/contributions/member/${record.memberId}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">{contributorName(record)}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link> : <p className="font-medium text-slate-900">{contributorName(record)}</p>}
 
                       <p className="text-xs text-slate-500">{formatContributionType(record.contributorType)}{record.contributorType === "member" && record.memberHomeBranchName ? ` · ${record.memberHomeBranchName}` : ""}</p>
                       {record.notes && (

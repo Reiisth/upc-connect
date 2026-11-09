@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowUpRight, ClipboardPen, HeartPulse, UsersRound } from "lucide-react";
+import { ArrowUpRight, ClipboardPen, HeartPulse, HandCoins, Droplets, UsersRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -99,10 +99,12 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
       </CardContent>
     </Card>
 
-    {(can("attendance.view") || can("follow_ups.view") || can("follow_ups.create")) && <Card>
+    {(can("baptisms.view") || can("contributions.view") || can("attendance.view") || can("follow_ups.view") || can("follow_ups.create")) && <Card>
       <CardContent className="p-5 sm:p-6">
         <h2 className="font-semibold text-[#203264]">Care and Activity</h2>
         <div className="mt-4 flex flex-wrap gap-3">
+          {can("baptisms.view") && <Button variant="outline" asChild><Link href={`/portal/baptisms/member/${memberId}`}><Droplets />View Baptism Records</Link></Button>}
+          {can("contributions.view") && <Button variant="outline" asChild><Link href={`/portal/contributions/member/${memberId}`}><HandCoins />View Contribution History</Link></Button>}
           {can("attendance.view") && <Button variant="outline" asChild><Link href={`/portal/attendance/member/${memberId}`}><HeartPulse />View Attendance History</Link></Button>}
           {can("follow_ups.view") && <Button variant="outline" asChild><Link href={`/portal/follow-ups/member/${memberId}`}><ClipboardPen />Follow-up History</Link></Button>}
           {can("follow_ups.create") && <Button variant="outline" asChild><Link href={`/portal/follow-ups/new?memberId=${memberId}`}><ArrowUpRight />Record Follow-up</Link></Button>}
