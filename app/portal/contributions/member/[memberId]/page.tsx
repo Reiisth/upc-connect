@@ -1,3 +1,4 @@
+import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,7 +17,7 @@ import { getAccessibleActiveBranches } from "../../../services/access";
 import { requireContributionsPermission } from "../../access";
 import { contributionAmountToCents, formatContributionAmount, formatContributionType } from "../../types";
 
-type Props = { params: Promise<{ memberId: string }>; searchParams: Promise<{ page?: string | string[] }> };
+type Props = { params: Promise<{ memberId: string }>; searchParams: Promise<{ page?: string | string[]; returnTo?: string | string[] }> };
 export default function MemberContributionsPage(props: Props) {
   return <Suspense fallback={<Skeleton className="h-64" />}><Content {...props} /></Suspense>;
 }
@@ -26,6 +27,8 @@ function money(cents: bigint) {
 async function Content({ params, searchParams }: Props) {
   const access = await requireContributionsPermission("contributions.view");
   const { memberId } = await params;
+  const navigationParams = await searchParams;
+  const navigation = memberHistoryNavigation(memberId, navigationParams?.returnTo, "/portal/contributions", "Back to Contributions");
   if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(memberId)) notFound();
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(access, admin);
@@ -61,7 +64,7 @@ async function Content({ params, searchParams }: Props) {
   const page = Math.min(pages, typeof rawPage === "string" && /^\d{1,6}$/.test(rawPage) ? Math.max(1, Number(rawPage)) : 1);
   const name = [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" ");
   return <PageContainer>
-    <PageHeader eyebrow="Contributions" eyebrowIcon={<HandCoins className="h-4 w-4" />} title="Member Contribution History" description="Recorded contributions within your branch access." backHref="/portal/contributions" backLabel="Back to Contributions" />
+    <PageHeader eyebrow="Contributions" eyebrowIcon={<HandCoins className="h-4 w-4" />} title="Member Contribution History" description="Recorded contributions within your branch access." backHref={navigation.backHref} backLabel={navigation.backLabel} />
     <Card><CardContent className="space-y-4 p-5 sm:p-6">
       <div><div className="flex items-center gap-3">
         {showStatus && <span tabIndex={0} aria-label={`Member status: ${member.member_status ?? "unknown"}`} className={`group inline-flex h-3 shrink-0 items-center rounded-full outline-none transition-all hover:h-6 focus:h-6 focus-visible:ring-2 focus-visible:ring-[#5D94E8] ${member.member_status === "active" ? "bg-emerald-500" : "bg-slate-400"}`}>
@@ -83,7 +86,7 @@ async function Content({ params, searchParams }: Props) {
         </div>{record.notes && <p className="whitespace-pre-wrap break-words text-sm text-slate-600">{record.notes}</p>}
       </CardContent></Card>)}
       <nav aria-label="Contribution history pagination" className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-500">Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, history.length)} of {history.length} records</p><div className="flex items-center gap-2">
-        {page > 1 ? <Button variant="outline" size="sm" asChild><Link href={`?page=${page - 1}`}>Previous</Link></Button> : <Button variant="outline" size="sm" disabled>Previous</Button>}<span className="text-sm text-slate-500">Page {page} of {pages}</span>{page < pages ? <Button variant="outline" size="sm" asChild><Link href={`?page=${page + 1}`}>Next</Link></Button> : <Button variant="outline" size="sm" disabled>Next</Button>}
+        {page > 1 ? <Button variant="outline" size="sm" asChild><Link href={navigation.pageHref(page - 1)}>Previous</Link></Button> : <Button variant="outline" size="sm" disabled>Previous</Button>}<span className="text-sm text-slate-500">Page {page} of {pages}</span>{page < pages ? <Button variant="outline" size="sm" asChild><Link href={navigation.pageHref(page + 1)}>Next</Link></Button> : <Button variant="outline" size="sm" disabled>Next</Button>}
       </div></nav>
     </section>}
   </PageContainer>;

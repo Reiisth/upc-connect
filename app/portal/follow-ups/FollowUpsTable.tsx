@@ -94,7 +94,7 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
               <TableCell>{row.performerName || "Not specified / account removed"}</TableCell>
               <TableCell className="whitespace-nowrap">{formatAttendanceDate(row.nextFollowUpDate)}{due && <p className="mt-1 text-xs text-slate-500">{due === "today" ? "Due Today" : due === "overdue" ? "Overdue" : "Upcoming"}</p>}</TableCell>
               <TableCell><div className="flex flex-wrap gap-3">
-                <TableActionButton href={`/portal/follow-ups/member/${row.memberId}`} icon={<History />}>History</TableActionButton>
+                <TableActionButton href={`/portal/follow-ups/member/${row.memberId}?returnTo=/portal/follow-ups`} icon={<History />}>History</TableActionButton>
                 {canUpdate && row.branchIsActive && <TableActionButton href={`/portal/follow-ups/${row.id}/edit`} icon={<Pencil />}>Edit</TableActionButton>}
               </div></TableCell>
             </TableRow>;

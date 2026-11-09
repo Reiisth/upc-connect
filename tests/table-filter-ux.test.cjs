@@ -18,7 +18,7 @@ test('Members keeps search, sort and archive state global while status filters l
   for (const label of ['Member Status', 'Account Status', 'Profile Status']) {
     assert.match(table, new RegExp(`<TableColumnFilter label="${label}"`));
   }
-  assert.match(table, /<TableHead><ColumnHeading label="Member Status"/);
+  assert.match(table, /<TableHead><ColumnHeading label="Name"/);
   assert.match(table, /archiveFilter,\s*sortBy/);
 });
 

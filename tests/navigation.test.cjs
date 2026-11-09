@@ -179,7 +179,8 @@ test('member and follow-up contextual account/member actions are permission-gate
   const member = require('node:fs').readFileSync('app/portal/members/[memberId]/page.tsx', 'utf8');
   const account = require('node:fs').readFileSync('app/portal/accounts/[userId]/page.tsx', 'utf8');
   const followUp = require('node:fs').readFileSync('app/portal/follow-ups/member/[memberId]/page.tsx', 'utf8');
-  assert.ok(member.includes('can("accounts.view")') && member.includes('Manage Account'));
+  assert.ok(member.includes('can("accounts.update_display_name")') && member.includes('target?.canChangeAccount'));
+  assert.ok(!member.includes('Manage Account'));
   assert.ok(account.includes('hasPermission(access.permissions, "members.view")') && account.includes('/portal/members/${member.id}'));
   assert.ok(followUp.includes('hasPermission(access.permissions, "members.view")') && followUp.includes('Open Member'));
   assert.ok(followUp.includes('canCreate ?'));

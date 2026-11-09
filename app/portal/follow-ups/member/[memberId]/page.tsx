@@ -1,3 +1,4 @@
+import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -19,13 +20,15 @@ import { FollowUpOutcomeBadge } from "../../FollowUpOutcomeBadge";
 import { isUuid, METHOD_LABELS } from "../../types";
 import FollowUpsLoading from "../../loading";
 
-type Props = { params: Promise<{ memberId: string }>; searchParams: Promise<{ saved?: string }> };
+type Props = { params: Promise<{ memberId: string }>; searchParams: Promise<{ saved?: string; returnTo?: string | string[] }> };
 export default function MemberFollowUpPage(props: Props) {
   return <Suspense fallback={<FollowUpsLoading />}><MemberFollowUpContent {...props} /></Suspense>;
 }
 async function MemberFollowUpContent({ params, searchParams }: Props) {
   const access = await requireFollowUpsPermission("follow_ups.view");
   const { memberId } = await params;
+  const navigationParams = await searchParams;
+  const navigation = memberHistoryNavigation(memberId, navigationParams?.returnTo, "/portal/follow-ups", "Back to Follow-ups");
   if (!isUuid(memberId)) notFound();
   const admin = createAdminClient();
   const [branches, history] = await Promise.all([loadFollowUpBranches(access, admin), loadFollowUpRecords(access, admin, memberId)]);
@@ -38,7 +41,7 @@ async function MemberFollowUpContent({ params, searchParams }: Props) {
   const status = summary ? getAttendanceFlag(summary) : null;
 
   return <PageContainer>
-    <PageHeader backHref="/portal/follow-ups" backLabel="Back to Follow-ups" eyebrow="Follow-ups" eyebrowIcon={<ClipboardPen className="h-4 w-4" />} title="Follow-up History"
+    <PageHeader backHref={navigation.backHref} backLabel={navigation.backLabel} eyebrow="Follow-ups" eyebrowIcon={<ClipboardPen className="h-4 w-4" />} title="Follow-up History"
       description="Recorded staff actions, newest first. History stays with its original branch after a member transfers."
       action={<>
         {hasPermission(access.permissions, "members.view") && member.branchId && access.branchIds.includes(member.branchId) && <Button asChild variant="outline"><Link href={`/portal/members/${member.id}`}>Open Member</Link></Button>}

@@ -64,6 +64,7 @@ export default function BaptismsTable({
   canUpdateHolyGhost,
 }: BaptismsTableProps) {
   const [page,setPage]=useState(1);
+  const [sortBy, setSortBy] = useState("newest");
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -118,8 +119,12 @@ export default function BaptismsTable({
           matchesDateTo
         );
       })
-      .sort(compareBaptisms);
-  }, [records, search, branchFilter, typeFilter, range]);
+      .sort((a, b) => {
+        if (sortBy === "name_asc" || sortBy === "name_desc") return (sortBy === "name_desc" ? -1 : 1) * a.memberName.localeCompare(b.memberName) || a.id.localeCompare(b.id);
+        if (!a.baptismDate || !b.baptismDate) return compareBaptisms(a, b) || a.id.localeCompare(b.id);
+        return (sortBy === "oldest" ? -1 : 1) * compareBaptisms(a, b) || a.id.localeCompare(b.id);
+      });
+  }, [records, search, branchFilter, typeFilter, range, sortBy]);
 
   const pageSize=10,totalPages=Math.max(1,Math.ceil(filteredRecords.length/pageSize));
   const currentPage=Math.min(page,totalPages);
@@ -186,6 +191,7 @@ export default function BaptismsTable({
 
         </div>
 
+        <Select aria-label="Sort baptisms" value={sortBy} onChange={event => { setSortBy(event.target.value); setPage(1); }} className="w-full sm:w-52"><option value="newest">Date: newest first</option><option value="oldest">Date: oldest first</option><option value="name_asc">Name: A-Z</option><option value="name_desc">Name: Z-A</option></Select>
         {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} className="self-start sm:self-center" />}
       </div>
 
@@ -229,7 +235,7 @@ export default function BaptismsTable({
                     </div>
 
                     <div className="min-w-0">
-                      <Link href={`/portal/baptisms/member/${record.memberId}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">{record.memberName}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link>
+                      <Link href={`/portal/baptisms/member/${record.memberId}?returnTo=/portal/baptisms`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">{record.memberName}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link>
 
                       <p className="mt-1 text-xs text-slate-500">{formatBaptismDate(record.baptismDate)}</p>
                     </div>

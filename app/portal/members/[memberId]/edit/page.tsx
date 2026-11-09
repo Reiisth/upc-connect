@@ -20,7 +20,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
   if (error) throw new Error("Unable to load departments.");
   const departmentOptions = (departments ?? []).filter((department) => department.is_active || department.id === member.department_id);
   return <PageContainer className="max-w-4xl">
-    <PageHeader title="Edit Member" description="Maintain registration identity and church-controlled information."
+    <PageHeader title="Edit Church Information" description="Maintain church-controlled information."
       backHref={access.permissions.includes("members.view") ? `/portal/members/${memberId}` : "/portal/members"} backLabel="Back to Member" />
     <MemberChurchForm action={updateMember.bind(null, memberId)} branches={branches} departments={departmentOptions} member={member} editing
       cancelHref={access.permissions.includes("members.view") ? `/portal/members/${memberId}` : "/portal/members"} />

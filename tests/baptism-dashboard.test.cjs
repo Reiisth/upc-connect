@@ -36,7 +36,7 @@ test('Baptism table has date-under-name, distinct icons, 10-row pages and a labe
  const Table=loadTypeScript('app/portal/baptisms/BaptismsTable.tsx',{'./dashboard-actions':{}}).default;
  const records=Array.from({length:12},(_,index)=>({id:String(index),memberId:String(index),memberName:`Member ${index}`,churchBranchId:'a',baptismType:index%2?'holy_ghost':'water',baptismDate:'2026-02-21',memberStatus:'inactive',memberIsArchived:false,notes:'Do not show this note',officiatedBy:null,location:null,recordedBy:null,recordedByName:null,branch:{id:'a',name:'Stored Branch'}}));
  const html=renderToStaticMarkup(React.createElement(Table,{records,branches:[],canUpdateWater:false,canUpdateHolyGhost:false}));
- assert.match(html,/Page 1 of 2/);assert.match(html,/Showing 1-10 of 12 baptism records/);assert.equal((html.match(/font-medium text-slate-900/g)||[]).length,10);
+ assert.match(html,/Page 1 of 2/);assert.match(html,/Showing 1-10 of 12 baptism records/);assert.equal((html.match(/href="\/portal\/baptisms\/member\//g)||[]).length,10);
  assert.match(html,/lucide-droplets/);assert.match(html,/lucide-flame/);assert.doesNotMatch(html,/Historical member link|Do not show this note|>Baptism Date<\/th>/);
  assert.match(html,/Feb 21, 2026/);assert.match(html,/<h2 id="baptism-range-title"/);assert.match(html,/Recent 12 months/);assert.match(html,/All time/);assert.match(html,/Apply range/);
  const unknown=renderToStaticMarkup(React.createElement(Table,{records:[{...records[0],baptismDate:null}],branches:[],canUpdateWater:false,canUpdateHolyGhost:false}));assert.match(unknown,/Date unknown/);

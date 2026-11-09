@@ -1,3 +1,4 @@
+import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { CalendarDays, Droplets, Flame, MapPin, UserRound, Pencil } from "lucide-react";
@@ -15,13 +16,15 @@ import { requireBaptismPermission } from "../../access";
 import { BAPTISM_TYPES, formatBaptismType } from "../../types";
 import { getBaptismUpdatePermission } from "../../access";
 
-type Props = { params: Promise<{ memberId: string }> };
+type Props = { params: Promise<{ memberId: string }>; searchParams: Promise<{ returnTo?: string | string[] }> };
 export default function MemberBaptismRecordsPage(props: Props) {
   return <Suspense fallback={<Skeleton className="h-64" />}><Content {...props} /></Suspense>;
 }
-async function Content({ params }: Props) {
+async function Content({ params, searchParams }: Props) {
   const access = await requireBaptismPermission("baptisms.view");
   const { memberId } = await params;
+  const navigationParams = await searchParams;
+  const navigation = memberHistoryNavigation(memberId, navigationParams?.returnTo, "/portal/baptisms", "Back to Baptisms");
   if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(memberId)) notFound();
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(access, admin);
@@ -41,7 +44,7 @@ async function Content({ params }: Props) {
   const showStatus = Boolean(currentBranch) && hasPermission(access.permissions, "members.view");
   const name = [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" ");
   return <PageContainer>
-    <PageHeader eyebrow="Baptisms" eyebrowIcon={<Droplets className="h-4 w-4" />} title="Member Baptism Records" description="Water and Holy Ghost baptism records within your branch access." backHref="/portal/baptisms" backLabel="Back to Baptisms" />
+    <PageHeader eyebrow="Baptisms" eyebrowIcon={<Droplets className="h-4 w-4" />} title="Member Baptism Records" description="Water and Holy Ghost baptism records within your branch access." backHref={navigation.backHref} backLabel={navigation.backLabel} />
     <Card><CardContent className="space-y-4 p-5 sm:p-6">
       <div><div className="flex items-center gap-3">
         {showStatus && <span tabIndex={0} aria-label={`Member status: ${member.member_status ?? "unknown"}`} className={`group inline-flex h-3 shrink-0 items-center rounded-full outline-none transition-all hover:h-6 focus:h-6 focus-visible:ring-2 focus-visible:ring-[#5D94E8] ${member.member_status === "active" ? "bg-emerald-500" : "bg-slate-400"}`}>

@@ -64,6 +64,7 @@ export default function ContributionsTable({
   canUpdate,
 }: ContributionsTableProps) {
   const [page,setPage]=useState(1);
+  const [sortBy, setSortBy] = useState("newest");
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -124,7 +125,11 @@ export default function ContributionsTable({
           matchesDateTo
         );
       })
-      .sort(compareContributions);
+      .sort((a, b) => {
+        if (sortBy === "name_asc" || sortBy === "name_desc") return (sortBy === "name_desc" ? -1 : 1) * contributorName(a).localeCompare(contributorName(b)) || a.id.localeCompare(b.id);
+        if (sortBy === "amount_asc" || sortBy === "amount_desc") return (sortBy === "amount_desc" ? -1 : 1) * (Number(a.amount) - Number(b.amount)) || compareContributions(a, b) || a.id.localeCompare(b.id);
+        return (sortBy === "oldest" ? -1 : 1) * compareContributions(a, b) || a.id.localeCompare(b.id);
+      });
   }, [
     records,
     search,
@@ -132,6 +137,7 @@ export default function ContributionsTable({
     typeFilter,
     paymentFilter,
     range,
+    sortBy,
   ]);
 
   const pageSize=10;
@@ -202,6 +208,7 @@ export default function ContributionsTable({
 
         </div>
 
+        <Select aria-label="Sort contributions" value={sortBy} onChange={event => { setSortBy(event.target.value); setPage(1); }} className="w-full sm:w-52"><option value="newest">Date: newest first</option><option value="oldest">Date: oldest first</option><option value="name_asc">Name: A-Z</option><option value="name_desc">Name: Z-A</option><option value="amount_desc">Amount: highest first</option><option value="amount_asc">Amount: lowest first</option></Select>
         {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} className="self-start sm:self-center" />}
       </div>
 
@@ -244,7 +251,7 @@ export default function ContributionsTable({
                   <div className="flex items-start gap-3">
 
                     <div className="min-w-0">
-                      {record.contributorType === "member" && record.memberId ? <Link href={`/portal/contributions/member/${record.memberId}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">{contributorName(record)}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link> : <p className="font-medium text-slate-900">{contributorName(record)}</p>}
+                      {record.contributorType === "member" && record.memberId ? <Link href={`/portal/contributions/member/${record.memberId}?returnTo=/portal/contributions`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">{contributorName(record)}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link> : <p className="font-medium text-slate-900">{contributorName(record)}</p>}
 
                       <p className="text-xs text-slate-500">{formatContributionType(record.contributorType)}{record.contributorType === "member" && record.memberHomeBranchName ? ` · ${record.memberHomeBranchName}` : ""}</p>
                       {record.notes && (

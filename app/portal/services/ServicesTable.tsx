@@ -53,6 +53,7 @@ export default function ServicesTable({
   canEdit,
 }: ServicesTableProps) {
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState("schedule");
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -86,8 +87,12 @@ export default function ServicesTable({
           matchesStatus
         );
       })
-      .sort(compareServices);
-  }, [services, search, branchFilter, typeFilter, statusFilter]);
+      .sort((a, b) => {
+        if (sortBy === "name_asc" || sortBy === "name_desc") return (sortBy === "name_desc" ? -1 : 1) * a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+        if (sortBy === "schedule") return compareServices(a, b) || a.id.localeCompare(b.id);
+        return (sortBy === "oldest" ? 1 : -1) * (getServiceTimestamp(a) - getServiceTimestamp(b)) || a.id.localeCompare(b.id);
+      });
+  }, [services, search, branchFilter, typeFilter, statusFilter, sortBy]);
 
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(filteredServices.length / pageSize));
@@ -139,7 +144,8 @@ export default function ServicesTable({
             ))}
           </Select>
 
-          {hasFilters && <ClearFiltersButton onClick={clearFilters} />}
+          <Select aria-label="Sort services" value={sortBy} onChange={event => { setSortBy(event.target.value); setPage(1); }} className="w-full sm:w-52"><option value="schedule">Schedule order</option><option value="newest">Date: newest first</option><option value="oldest">Date: oldest first</option><option value="name_asc">Name: A-Z</option><option value="name_desc">Name: Z-A</option></Select>
+        {hasFilters && <ClearFiltersButton onClick={clearFilters} />}
         </div>
       </div>
 

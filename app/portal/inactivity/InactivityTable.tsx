@@ -116,7 +116,7 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
                       <div className="flex min-w-44 flex-col items-start gap-2">
                         {canCreateFollowUps && derivedStatus === "needs_follow_up" && <TableActionButton href={`/portal/follow-ups/new?memberId=${row.memberId}&branchId=${row.branchId}`}
                           icon={<ClipboardPen />} className="text-[#203264]">Record Follow-up</TableActionButton>}
-                        {canViewFollowUps && <TableActionButton href={`/portal/follow-ups/member/${row.memberId}`} icon={<History />}>View Follow-ups</TableActionButton>}
+                        {canViewFollowUps && <TableActionButton href={`/portal/follow-ups/member/${row.memberId}?returnTo=/portal/inactivity`} icon={<History />}>View Follow-ups</TableActionButton>}
                         {canUpdateMemberStatus && <TableActionButton href={`/portal/members/${row.memberId}/edit`} icon={<UserRoundCog />}>Review Member Status</TableActionButton>}
                       </div>
                     </TableCell>}

@@ -23,7 +23,7 @@ test('Member Detail derives fresh canonical Auth email through its account link 
   assert.equal((await api.loadMemberAccountEmail(h.client, 'owned')).email, email);
   assert.equal(await api.loadMemberAccountEmail(h.client, 'missing'), null);
   const markup = renderToStaticMarkup(await h.content('app/portal/members/[memberId]/page.tsx'));
-  assert.ok(markup.includes('Account Email: ') && markup.includes('changed@example.test'));
+  assert.ok(markup.includes('Account Email') && markup.includes('changed@example.test'));
   assert.ok(!markup.includes('owner@example.test'));
 });
 
@@ -145,7 +145,10 @@ function harness({ permissions = ['members.view', 'members.create', 'members.upd
 
 test('custom-role staff can update church fields for a scoped target without profile authority', async () => {
   const h = harness({ permissions: ['members.view', 'members.update'] });
-  await assert.rejects(h.load('app/portal/members/actions.ts').updateMember('owned', h.staffForm({ first_attendance_date: '2000-01-01', member_status: 'inactive', zone: '3', department_id: 'dept' })), /redirect:\/portal\/members\/owned/);
+  await assert.rejects(h.load('app/portal/members/actions.ts').updateMember('owned', h.staffForm({ first_name: 'Tampered', last_name: 'Changed', first_attendance_date: '2000-01-01', member_status: 'inactive', zone: '3', department_id: 'dept' })), /redirect:\/portal\/members\/owned/);
+  assert.equal(h.db.members[0].first_name, 'Registered');
+  assert.equal(h.db.members[0].last_name, 'Person');
+  assert.ok(!Object.hasOwn(h.writes[0].payload, 'first_name'));
   assert.equal(h.db.members[0].first_attendance_date, '2000-01-01'); assert.equal(h.db.members[0].zone, 3);
   assert.ok(h.events.some((event) => event.revalidate === '/portal/inactivity'));
 });
@@ -313,7 +316,7 @@ test('inactivity uses system registration despite missing or edited first attend
 test('staff detail links reuse canonical account/follow-up workflows and the Members list retains a detail destination', async () => {
   const h = harness({ permissions: ['members.view', 'members.update', 'members.link_account', 'follow_ups.view'] }); h.db.members[0].account_status = 'no_account';
   const html = renderToStaticMarkup(await h.content('app/portal/members/[memberId]/page.tsx'));
-  assert.ok(html.includes('/portal/members/owned/edit')); assert.ok(html.includes('/portal/members/invite?memberId=owned'));
+  assert.ok(html.includes('Edit church information')); assert.ok(html.includes('/portal/members/invite?memberId=owned'));
   assert.ok(html.includes('/portal/follow-ups/member/owned')); assert.ok(html.includes('Unknown'));
 });
 
@@ -395,6 +398,6 @@ test('member detail joins retained address parts without empty separators or Reg
   assert.ok(html.includes('San Isidro, Quezon City, Metro Manila'));
   assert.ok(!html.includes(', ,'));
   assert.ok(!html.includes('Region'));
-  assert.ok(html.includes('Show Card'));
+  assert.ok(html.includes('Show member card'));
   assert.ok(!html.includes('View Attendance Flag'));
 });

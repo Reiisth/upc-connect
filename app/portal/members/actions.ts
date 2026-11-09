@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 import { assertActiveServiceBranch } from "../services/access";
 import { requireMembersPermission } from "./access";
@@ -46,10 +46,12 @@ function refreshMember(memberId: string) {
     "/portal/profile", `/portal/profile/${memberId}`, "/portal/inactivity", "/portal/reports", "/portal/attendance"]) revalidatePath(path);
 }
 
-export async function updateMember(memberId: string, form: FormData) {
+async function saveChurchInformation(memberId: string, form: FormData) {
   const { member, access, admin } = await requireStaffMember(memberId, "members.update");
   if (member.is_archived) throw new Error("Restore the member before editing church information.");
-  const payload = validateChurchMember(form);
+  const validated = validateChurchMember(form, { identity: member });
+  const payload = { church_branch_id: validated.church_branch_id, first_attendance_date: validated.first_attendance_date,
+    member_status: validated.member_status, department_id: validated.department_id, position: validated.position, zone: validated.zone };
   if (member.church_branch_id || !access.isSystemAdmin) await assertActiveServiceBranch(admin, access, member.church_branch_id ?? "");
   await assertActiveServiceBranch(admin, access, payload.church_branch_id);
   await validateDepartment(admin, payload.department_id, payload.department_id === member.department_id);
@@ -59,7 +61,17 @@ export async function updateMember(memberId: string, form: FormData) {
   const { data: saved, error } = await query.select("id").maybeSingle();
   if (error || !saved) throw new Error("The member could not be updated. Reload the record and try again.");
   refreshMember(memberId);
+  return access;
+}
+
+export async function updateMember(memberId: string, form: FormData) {
+  const access = await saveChurchInformation(memberId, form);
   redirect(hasPermission(access.permissions, "members.view") ? `/portal/members/${memberId}` : `/portal/members/${memberId}/edit`);
+}
+
+export async function saveMemberChurchInformation(memberId: string, _state: { error: string | null; saved?: boolean }, form: FormData): Promise<{ error: string | null; saved?: boolean }> {
+  try { await saveChurchInformation(memberId, form); return { error: null, saved: true }; }
+  catch (error) { unstable_rethrow(error); return { error: error instanceof Error ? error.message : "Unable to save church information." }; }
 }
 
 export async function restoreMember(memberId: string) {

@@ -1,3 +1,4 @@
+import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -15,7 +16,7 @@ import { formatManilaTimestamp } from "@/lib/manila-time";
 import { getAccessibleActiveBranches } from "../../../services/access";
 import { requireAttendancePermission } from "../../access";
 
-type Props = { params: Promise<{ memberId: string }>; searchParams: Promise<{ page?: string | string[] }> };
+type Props = { params: Promise<{ memberId: string }>; searchParams: Promise<{ page?: string | string[]; returnTo?: string | string[] }> };
 export default function MemberAttendancePage(props: Props) {
   return <Suspense fallback={<Skeleton className="h-64" />}><Content {...props} /></Suspense>;
 }
@@ -23,6 +24,8 @@ export default function MemberAttendancePage(props: Props) {
 async function Content({ params, searchParams }: Props) {
   const access = await requireAttendancePermission("attendance.view");
   const { memberId } = await params;
+  const navigationParams = await searchParams;
+  const navigation = memberHistoryNavigation(memberId, navigationParams?.returnTo, "/portal/attendance", "Back to Attendance");
   if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(memberId)) notFound();
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(access, admin);
@@ -58,7 +61,7 @@ async function Content({ params, searchParams }: Props) {
   const showMemberStatus = Boolean(currentBranch) && hasPermission(access.permissions ?? [], "members.view");
   const name = [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" ");
   return <PageContainer>
-    <PageHeader eyebrow="Attendance" eyebrowIcon={<ClipboardCheck className="h-4 w-4" />} title="Member Attendance History" description="Recorded service attendance within your branch access." backHref="/portal/attendance" backLabel="Back to Attendance" />
+    <PageHeader eyebrow="Attendance" eyebrowIcon={<ClipboardCheck className="h-4 w-4" />} title="Member Attendance History" description="Recorded service attendance within your branch access." backHref={navigation.backHref} backLabel={navigation.backLabel} />
     <Card><CardContent className="space-y-4 p-5 sm:p-6">
       <div>
         <div className="flex items-center gap-3">
@@ -102,9 +105,9 @@ async function Content({ params, searchParams }: Props) {
         <nav aria-label="Attendance history pagination" className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-500">Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, total)} of {total} records</p>
           <div className="flex items-center gap-2">
-            {page > 1 ? <Button variant="outline" size="sm" asChild><Link href={`?page=${page - 1}`}>Previous</Link></Button> : <Button variant="outline" size="sm" disabled>Previous</Button>}
+            {page > 1 ? <Button variant="outline" size="sm" asChild><Link href={navigation.pageHref(page - 1)}>Previous</Link></Button> : <Button variant="outline" size="sm" disabled>Previous</Button>}
             <span className="text-sm text-slate-500">Page {page} of {totalPages}</span>
-            {page < totalPages ? <Button variant="outline" size="sm" asChild><Link href={`?page=${page + 1}`}>Next</Link></Button> : <Button variant="outline" size="sm" disabled>Next</Button>}
+            {page < totalPages ? <Button variant="outline" size="sm" asChild><Link href={navigation.pageHref(page + 1)}>Next</Link></Button> : <Button variant="outline" size="sm" disabled>Next</Button>}
           </div>
         </nav>
     </section>}

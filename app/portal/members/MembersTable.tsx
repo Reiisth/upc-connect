@@ -277,8 +277,7 @@ export default function MembersTable({
           <Table className="min-w-[850px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead><ColumnHeading label="Member Status"><TableColumnFilter label="Member Status" value={memberStatusFilter} onChange={setMemberStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }]} /></ColumnHeading></TableHead>
+                <TableHead><ColumnHeading label="Name"><TableColumnFilter label="Member Status" value={memberStatusFilter} onChange={setMemberStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }]} /></ColumnHeading></TableHead>
                 <TableHead><ColumnHeading label="Account Status"><TableColumnFilter label="Account Status" value={accountStatusFilter} onChange={setAccountStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "connected", label: "Connected" }, { value: "invited", label: "Invited" }, { value: "no_account", label: "No Account" }]} /></ColumnHeading></TableHead>
                 <TableHead><ColumnHeading label="Profile Status"><TableColumnFilter label="Profile Status" value={profileStatusFilter} onChange={setProfileStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "completed", label: "Completed" }, { value: "incomplete", label: "Incomplete" }]} /></ColumnHeading></TableHead>
 
@@ -291,7 +290,7 @@ export default function MembersTable({
             <TableBody>
               {filteredMembers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={hasActions ? 5 : 4}>
+                  <TableCell colSpan={hasActions ? 4 : 3}>
                     <p role="status" className="py-3 text-center text-sm text-slate-500">
                       No members match the current filters.
                     </p>
@@ -309,6 +308,13 @@ export default function MembersTable({
                 return (
                   <TableRow key={member.id}>
                     <TableCell>
+                      <div className="flex items-start gap-3">
+                        <span tabIndex={0} aria-label={`Member status: ${member.member_status === "active" ? "Active" : "Inactive"}`}
+                          className={`group mt-1 inline-flex h-3 shrink-0 items-center rounded-full outline-none transition-all hover:h-6 focus:h-6 focus-visible:ring-2 focus-visible:ring-[#5D94E8] focus-visible:ring-offset-2 ${member.member_status === "active" ? "bg-emerald-500" : "bg-slate-400"}`}>
+                          <span className="h-3 w-3 rounded-full" aria-hidden="true" />
+                          <span aria-hidden="true" className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium text-white opacity-0 transition-all group-hover:max-w-24 group-hover:pr-2 group-hover:opacity-100 group-focus:max-w-24 group-focus:pr-2 group-focus:opacity-100">{member.member_status === "active" ? "Active" : "Inactive"}</span>
+                        </span>
+                        <div className="min-w-0">
                       <Link
                         href={`/portal/members/${member.id}`}
                         className="block w-full text-left font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline"
@@ -318,21 +324,11 @@ export default function MembersTable({
                         </span>
                       </Link>
                       <p className="mt-1 text-xs text-slate-500">{member.church_branch?.name ?? "Not assigned"}</p>
+                        </div>
+                      </div>
                     </TableCell>
 
-                    <TableCell>
-                      <StatusBadge
-                        variant={
-                          member.member_status === "active"
-                            ? "success"
-                            : "muted"
-                        }
-                      >
-                        {member.member_status === "active"
-                          ? "Active"
-                          : "Inactive"}
-                      </StatusBadge>
-                    </TableCell>
+
 
                     <TableCell>
                       <StatusBadge

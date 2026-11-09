@@ -428,7 +428,7 @@ export default function AttendanceView({
                 return (
                   <TableRow key={row.member.id}>
                     <TableCell>
-                      <Link href={`/portal/attendance/member/${row.member.id}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">
+                      <Link href={`/portal/attendance/member/${row.member.id}?returnTo=${encodeURIComponent(`/portal/attendance/${serviceId}`)}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">
                         {formatMemberName(row.member)}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       </Link>
                       {isVisitingMember(row.member.churchBranchId, serviceBranchId) && <p className="text-xs text-slate-500">Visiting Member · {row.member.homeBranchName ?? "Home branch unknown"}</p>}

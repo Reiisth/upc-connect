@@ -107,8 +107,8 @@ test('New Member form omits initial status, retains attendance and church fields
 
 test('Member detail prioritizes church information and gates secondary actions by permission', () => {
   const detail = fs.readFileSync('app/portal/members/[memberId]/page.tsx', 'utf8');
-  const church = detail.indexOf('Church Information');
-  const account = detail.indexOf('>Account</h2>');
+  const church = detail.indexOf('<MemberChurchEditor memberId');
+  const account = detail.indexOf('<MemberAccountEditor memberId');
   const personal = detail.indexOf('Personal Information');
   const care = detail.indexOf('Care and Activity');
   const archive = detail.indexOf('Member Record Actions');
