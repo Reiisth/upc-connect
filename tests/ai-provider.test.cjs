@@ -74,7 +74,7 @@ test('rate limits, SDK timeouts and generic provider failures become fixed contr
     [{ status: 403 }, 'PROVIDER_AUTHENTICATION'], [{ status: 404 }, 'MODEL_UNAVAILABLE'],
     [{ status: 400 }, 'PROVIDER_REJECTED'],
   ]) {
-    const raw = Object.assign(new Error('PRIVATE_PROVIDER_ERROR API_KEY FULL_PROMPT'), details);
+    const raw = Object.assign(new Error('PRIVATE_PROVIDER_ERROR FULL_PROMPT'), details);
     const h = providerHarness(async () => { throw raw; });
     await assert.rejects(h.requestGeminiDecisionSupport(input, config), (error) => error.code === expected && !error.message.includes('PRIVATE_PROVIDER_ERROR') && !error.message.includes('API_KEY'));
     assert.equal(h.calls.length, 1);

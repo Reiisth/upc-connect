@@ -13,6 +13,7 @@ export const DECISION_SUPPORT_ERRORS = {
   PROVIDER_AUTHENTICATION: "The AI provider rejected the server API key or its access restrictions. Contact your administrator.",
   MODEL_UNAVAILABLE: "The configured AI model is unavailable to this deployment. Contact your administrator.",
   PROVIDER_REGION: "The AI provider does not support this server location. Contact your administrator.",
+  PROVIDER_SCHEMA: "The AI provider rejected the report response schema. Contact your administrator.",
   PROVIDER_REJECTED: "The AI provider rejected the server request configuration. Contact your administrator.",
   PROVIDER_CONNECTION: "The server could not connect to the AI provider. Please try again later.",
   PROVIDER_UNAVAILABLE: "AI insights could not be generated. Please try again later.",
