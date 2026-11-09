@@ -43,6 +43,10 @@ export async function requestGeminiDecisionSupport(input: DecisionSupportInput, 
     const nested = body.error && typeof body.error === "object" ? body.error as { message?: unknown } : {};
     const message = [details.message, body.message, nested.message, details.body, typeof details.error === "string" ? details.error : JSON.stringify(details.error)].filter((value): value is string => typeof value === "string").join(" ");
     if (/location.*not supported|unsupported.*location|country.*not supported|not available.*(region|country)|region.*not supported/i.test(message)) throw new DecisionSupportError("PROVIDER_REGION");
+    if (/leaked|compromised/i.test(message)) throw new DecisionSupportError("PROVIDER_KEY_LEAKED");
+    if (/api.?key.*expired|API_KEY_EXPIRED/i.test(message)) throw new DecisionSupportError("PROVIDER_KEY_EXPIRED");
+    if (/API_KEY_INVALID|api.?key.*(not valid|invalid|not found)|invalid api.?key/i.test(message)) throw new DecisionSupportError("PROVIDER_KEY_INVALID");
+    if (/API_KEY_SERVICE_BLOCKED|API_KEY_HTTP_REFERRER_BLOCKED|API_KEY_IP_ADDRESS_BLOCKED|API_KEY_ANDROID_APP_BLOCKED|API_KEY_IOS_APP_BLOCKED|referer|referrer|ip address.*blocked|api.*restriction/i.test(message)) throw new DecisionSupportError("PROVIDER_KEY_RESTRICTED");
     if ([401, 403].includes(Number(details.status ?? details.statusCode)) || /api.?key|api_key|authentication|credential/i.test(message)) throw new DecisionSupportError("PROVIDER_AUTHENTICATION");
     if (Number(details.status ?? details.statusCode) === 404) throw new DecisionSupportError("MODEL_UNAVAILABLE");
     if (Number(details.status ?? details.statusCode) === 400) {

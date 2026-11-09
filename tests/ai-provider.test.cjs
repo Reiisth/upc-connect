@@ -73,7 +73,7 @@ test('rate limits, SDK timeouts and generic provider failures become fixed contr
     [{ status: 401 }, 'PROVIDER_AUTHENTICATION'],
     [{ status: 403 }, 'PROVIDER_AUTHENTICATION'], [{ status: 404 }, 'MODEL_UNAVAILABLE'],
     [{ status: 400 }, 'PROVIDER_REJECTED'],
-    [{ status: 400, error: { error: { message: 'API key not valid' } } }, 'PROVIDER_AUTHENTICATION'],
+    [{ status: 400, error: { error: { message: 'API key not valid' } } }, 'PROVIDER_KEY_INVALID'],
     [{ status: 400, error: { error: { message: 'User location is not supported' } } }, 'PROVIDER_REGION'],
   ]) {
     const raw = Object.assign(new Error('PRIVATE_PROVIDER_ERROR FULL_PROMPT'), details);
