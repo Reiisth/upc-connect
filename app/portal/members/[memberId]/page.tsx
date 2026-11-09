@@ -103,7 +103,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
         <dl className="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-2">
           <Info label="Phone" value={member.phone_number ?? "Not provided"} />
           <Info label="Birthday" value={member.birth_date ?? "Not provided"} />
-          <Info label="Gender" value={member.gender ?? "Not provided"} />
+          <Info label="Gender" value={member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : "Not provided"} />
           <Info label="Address" value={address || "Not provided"} className="sm:col-span-2" />
         </dl>
       </CardContent>
