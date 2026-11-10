@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { requirePermission } from "@/lib/permissions-server";
@@ -17,6 +18,9 @@ export default function ProfilePage() {
 }
 
 async function ProfileContent() {
+  "use cache: private";
+  cacheLife({ stale: 120 });
+  cacheTag("portal:profile");
   const { user } = await requirePermission("profile.view");
   const supabase = await createClient();
 

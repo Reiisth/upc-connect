@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 import { redirect } from "next/navigation";
 
 import { requireAdministrationPermission } from "../access";

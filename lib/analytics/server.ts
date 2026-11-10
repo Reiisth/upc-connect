@@ -43,7 +43,7 @@ export async function getAnalyticsBranchOptions(): Promise<readonly AnalyticsBra
 }
 
 /** No module-specific permission gates: Reports permission and scope are validated by the public entry points. */
-async function loadInactivityInputs(admin: ReturnType<typeof createAdminClient>, branches: readonly AnalyticsBranch[], today: string): Promise<MemberInactivitySummary[]> {
+const loadInactivityInputs = cache(async function loadInactivityInputs(admin: ReturnType<typeof createAdminClient>, branches: readonly AnalyticsBranch[], today: string): Promise<MemberInactivitySummary[]> {
   const ids = branches.filter((branch) => branch.isActive).map((branch) => branch.id);
   if (!ids.length) return [];
   const members = await allRows((from, to) => admin.from("members").select("id, church_branch_id, created_at")
@@ -67,7 +67,7 @@ async function loadInactivityInputs(admin: ReturnType<typeof createAdminClient>,
     attendance: attendance.map((row) => ({ memberId: row.member_id, serviceId: row.service_id, status: row.attendance_status })),
     thresholds: new Map(branches.map((branch) => [branch.id, branch.inactivityThresholdWeeks])), today,
   });
-}
+});
 
 export async function getAnalyticsOverview(request: AnalyticsRequest = {}): Promise<AnalyticsOverview> {
   const context = await getAnalyticsContext();

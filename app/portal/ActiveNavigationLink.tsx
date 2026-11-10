@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import { usePathname } from "next/navigation";
 
 /** Small client island for segment-safe current-page state. */
@@ -18,7 +18,8 @@ export default function ActiveNavigationLink({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const active = pathname === href || pathname.startsWith(`${href}/`);
+  const activeHref = href.startsWith("/portal/accounts/") ? "/portal/accounts" : href;
+  const active = pathname === activeHref || pathname.startsWith(`${activeHref}/`);
 
   return (
     <Link
@@ -30,3 +31,4 @@ export default function ActiveNavigationLink({
     </Link>
   );
 }
+

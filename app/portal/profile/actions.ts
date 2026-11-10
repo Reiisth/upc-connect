@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 import { redirect } from "next/navigation";
 import { requireOwnedProfile } from "./access";
 import { getMemberFieldDefinitions } from "@/lib/member-fields";
@@ -37,5 +37,7 @@ export async function saveMemberProfile(memberId: string, form: FormData) {
   revalidatePath(`/portal/profile/${memberId}`);
   revalidatePath("/portal/members");
   revalidatePath(`/portal/members/${memberId}`);
+  revalidatePath("/portal/reports");
+  revalidatePath("/portal/inactivity");
   redirect(permissions.includes("profile.view") ? `/portal/profile/${memberId}` : `/portal/profile/${memberId}/edit`);
 }

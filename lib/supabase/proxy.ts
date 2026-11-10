@@ -49,6 +49,8 @@ export async function updateSession(request: NextRequest) {
 
   if (
     request.nextUrl.pathname !== "/" &&
+    // This endpoint returns its own 401 JSON for the client session guard.
+    request.nextUrl.pathname !== "/api/portal/session" &&
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/forgot-password") &&

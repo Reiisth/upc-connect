@@ -78,7 +78,7 @@ test('Members list defaults to active records and offers archived and all filter
   const table = fs.readFileSync('app/portal/members/MembersTable.tsx', 'utf8');
   assert.match(page, /is_archived,/);
   assert.doesNotMatch(page, /\.eq\("is_archived", false\)/);
-  assert.match(table, /useState\("active"\)/);
+  assert.match(table, /useState\(paging\?\.filters.archive \?\? "active"\)/);
   assert.match(table, /value="archived">Archived Members/);
   assert.match(table, /value="all">All Members/);
   assert.match(table, /<StatusBadge variant="muted">Archived<\/StatusBadge>/);

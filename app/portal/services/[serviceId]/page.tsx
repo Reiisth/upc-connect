@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -20,6 +21,9 @@ export default function ServicePage(props: Props) {
 }
 
 async function Content({ params }: Props) {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:services");
   const access = await requireServicesPermission("services.view");
   const { serviceId } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(serviceId)) notFound();

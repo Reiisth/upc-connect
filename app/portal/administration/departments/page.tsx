@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -22,6 +23,9 @@ export default function DepartmentsPage() {
 }
 
 async function DepartmentsContent() {
+  "use cache: private";
+  cacheLife({ stale: 300 });
+  cacheTag("portal:administration-departments");
   const { user } = await requireActiveAccount();
   const permissions = await getCurrentUserPermissions(user.id);
   if (!hasAnyPermission(permissions, ["departments.view", "departments.manage"])) redirect("/access-denied");

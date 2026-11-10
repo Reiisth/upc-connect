@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import { analyticsToday, validAnalyticsDate } from "@/lib/analytics/date-range";
+import { analyticsToday, validAnalyticsDate, resolveAnalyticsDateRange } from "@/lib/analytics/date-range";
 import { getAnalyticsBranchOptions, getAnalyticsOverview } from "@/lib/analytics/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { AnalyticsOverview } from "@/lib/analytics/types";
@@ -20,35 +21,39 @@ export default function ReportsPage(props: PageProps) {
 }
 
 async function ReportsContent({ searchParams }: PageProps) {
+  return CachedReportsContent({ searchParams: await searchParams });
+}
+
+async function CachedReportsContent({ searchParams }: { searchParams: ReportSearchParams }) {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:reports");
   // This read requires reports.view before accessing request filters or branch metadata.
   // Its request-scoped context is reused by getAnalyticsOverview below.
   const branches = await getAnalyticsBranchOptions();
-  const parsed = parseReportFilters(await searchParams, analyticsToday(new Date()));
+  const parsed = parseReportFilters(searchParams, analyticsToday(new Date()));
   if (parsed.values.branch && !branches.some((branch) => branch.id === parsed.values.branch)) redirect("/access-denied");
   let overview: AnalyticsOverview | null = null;
+  let previous: AnalyticsOverview | null = null;
+  let serviceTypeNames: Record<string, string> = {};
   let loadFailed = false;
   if (parsed.request && branches.length) {
-    try { overview = await getAnalyticsOverview(parsed.request); }
-    catch { loadFailed = true; }
-  }
-  let previous: AnalyticsOverview | null = null;
-  if (overview && parsed.request) {
-    const start = Date.parse(`${overview.range.from}T00:00:00Z`);
-    const duration = Date.parse(`${overview.range.to}T00:00:00Z`) - start + 86400000;
+    const range = resolveAnalyticsDateRange(parsed.request.range, analyticsToday(new Date()));
+    const start = Date.parse(`${range.from}T00:00:00Z`);
+    const duration = Date.parse(`${range.to}T00:00:00Z`) - start + 86400000;
     const from = new Date(start - duration).toISOString().slice(0, 10);
     const to = new Date(start - 86400000).toISOString().slice(0, 10);
-    if (validAnalyticsDate(from) && validAnalyticsDate(to)) {
-      try { previous = await getAnalyticsOverview({ ...parsed.request, range: { preset: "custom", from, to } }); }
-      catch { /* Keep current reports usable and show unavailable comparisons. */ }
-    }
-  }
-  let serviceTypeNames: Record<string, string> = {};
-  if (overview) {
-    try {
-      const typeAdmin = createAdminClient();
-      const { data } = await typeAdmin.from("service_types").select("key,name");
-      serviceTypeNames = Object.fromEntries((data ?? []).map((row) => [row.key, row.name]));
-    } catch { /* Fall back to readable key formatting when labels are unavailable. */ }
+    const [currentResult, previousResult, typesResult] = await Promise.allSettled([
+      getAnalyticsOverview(parsed.request),
+      validAnalyticsDate(from) && validAnalyticsDate(to)
+        ? getAnalyticsOverview({ ...parsed.request, range: { preset: "custom", from, to } })
+        : Promise.resolve(null),
+      createAdminClient().from("service_types").select("key,name"),
+    ]);
+    if (currentResult.status === "fulfilled") overview = currentResult.value;
+    else loadFailed = true;
+    if (previousResult.status === "fulfilled") previous = previousResult.value;
+    if (typesResult.status === "fulfilled") serviceTypeNames = Object.fromEntries((typesResult.value.data ?? []).map(row => [row.key, row.name]));
   }
   return <PageContainer className="min-w-0">
     <PageHeader eyebrow="Insights" eyebrowIcon={<ChartNoAxesCombined className="h-4 w-4" />} title="Reports & Analytics"

@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
@@ -21,8 +22,15 @@ export default function InactivityPage(props: PageProps) {
 }
 
 async function InactivityContent({ searchParams }: PageProps) {
+  return CachedInactivityContent({ searchParams: await searchParams });
+}
+
+async function CachedInactivityContent({ searchParams }: { searchParams: Awaited<PageProps["searchParams"]> }) {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:inactivity");
   const { branches, canManageSettings, canCreateFollowUps, canViewFollowUps, canViewMemberStatus, canUpdateMemberStatus } = await getInactivityBranchOptions();
-  const params = await searchParams;
+  const params = searchParams;
   const requestedBranch = Array.isArray(params.branch) ? params.branch[0] : params.branch;
   const branch = requestedBranch ? branches.find((item) => item.id === requestedBranch) : branches[0];
   if (requestedBranch && !branch) redirect("/access-denied");

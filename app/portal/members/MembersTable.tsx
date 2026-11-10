@@ -1,4 +1,7 @@
 "use client";
+import { useRouter } from "next/navigation";
+import { useRef, useTransition } from "react";
+import { memberListUrl, type MemberListFilters } from "./list-filters";
 
 import { useMemo, useState, useEffect } from "react";
 import type { ReactNode } from "react";
@@ -11,7 +14,7 @@ import {
   SearchX,
   Unplug,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import { Input } from "@/components/ui/input";
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { Select } from "@/components/ui/select";
@@ -37,31 +40,11 @@ type Member = {
   first_name: string;
   middle_name: string | null;
   last_name: string;
-  nickname: string | null;
-  birth_date: string | null;
-  gender: string | null;
-  phone_number: string | null;
-  zone: number | null;
-  civil_status: string | null;
-  street_address: string | null;
-  barangay: string | null;
-  city: string | null;
-  province: string | null;
-  country: string | null;
-  photo_url: string | null;
-  position: string | null;
-
   member_status: string;
   account_status: string;
   profile_status: string;
   created_at: string;
   is_archived: boolean;
-
-  department:
-  | {
-    name: string;
-  }
-  | null;
 
   church_branch:
   | {
@@ -73,28 +56,44 @@ type Member = {
 
 type MembersTableProps = {
   members: Member[];
+  paging?: {total: number; sourceCount: number; filters: MemberListFilters; branches: {id:string;name:string}[]};
   canArchive: boolean;
   canLinkAccount: boolean;
 };
 
 export default function MembersTable({
   members,
+  paging,
   canArchive,
   canLinkAccount,
 }: MembersTableProps) {
-  const [search, setSearch] = useState("");
-  const [memberStatusFilter, setMemberStatusFilter] = useState("all");
-  const [accountStatusFilter, setAccountStatusFilter] = useState("all");
-  const [profileStatusFilter, setProfileStatusFilter] = useState("all");
-  const [branchFilter, setBranchFilter] = useState("all");
-  const [archiveFilter, setArchiveFilter] = useState("active");
-  const [sortBy, setSortBy] = useState("newest");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState(paging?.filters.search ?? "");
+  const [memberStatusFilter, setMemberStatusFilter] = useState(paging?.filters.status ?? "all");
+  const [accountStatusFilter, setAccountStatusFilter] = useState(paging?.filters.account ?? "all");
+  const [profileStatusFilter, setProfileStatusFilter] = useState(paging?.filters.profile ?? "all");
+  const [branchFilter, setBranchFilter] = useState(paging?.filters.branch ?? "all");
+  const [archiveFilter, setArchiveFilter] = useState(paging?.filters.archive ?? "active");
+  const [sortBy, setSortBy] = useState(paging?.filters.sort ?? "newest");
+  const [currentPage, setCurrentPage] = useState(paging?.filters.page ?? 1);
   const itemsPerPage = 10;
+  const router = useRouter();
+  const [refreshing, startTransition] = useTransition();
+  const firstFilters = useRef(true);
+  const queryKey = JSON.stringify([search,memberStatusFilter,accountStatusFilter,profileStatusFilter,branchFilter,archiveFilter,sortBy,currentPage]);
+  useEffect(() => {
+    if (!paging) return;
+    if (firstFilters.current) { firstFilters.current = false; return; }
+    const timeout = setTimeout(() => startTransition(() => router.replace(memberListUrl({search, status: memberStatusFilter, account: accountStatusFilter, profile: profileStatusFilter, branch: branchFilter, archive: archiveFilter, sort: sortBy, page: currentPage}), {scroll:false})), 250);
+    return () => clearTimeout(timeout);
+    // The stable filter key includes every control; server props must not retrigger navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryKey, router]);
 
-  const branchOptions = useMemo(() => [...new Map(members.flatMap(member => member.church_branch ? [[member.church_branch.id, member.church_branch] as const] : [])).values()].sort((a, b) => a.name.localeCompare(b.name)), [members]);
+
+  const branchOptions = useMemo(() => paging?.branches ?? [...new Map(members.flatMap(member => member.church_branch ? [[member.church_branch.id, member.church_branch] as const] : [])).values()].sort((a, b) => a.name.localeCompare(b.name)), [members, paging?.branches]);
 
   const filteredMembers = useMemo(() => {
+    if (paging) return members;
     const query = search.trim().toLowerCase();
 
     const filtered = members.filter((member) => {
@@ -179,6 +178,7 @@ export default function MembersTable({
     });
   }, [
     members,
+    paging,
     search,
     memberStatusFilter,
     accountStatusFilter,
@@ -190,10 +190,10 @@ export default function MembersTable({
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredMembers.length / itemsPerPage),
+    Math.ceil((paging?.total ?? filteredMembers.length) / itemsPerPage),
   );
 
-  const paginatedMembers = filteredMembers.slice(
+  const paginatedMembers = paging ? members : filteredMembers.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
@@ -211,7 +211,11 @@ export default function MembersTable({
     setProfileStatusFilter("all");
   }
 
+  const previousFilters = useRef(JSON.stringify([search,memberStatusFilter,accountStatusFilter,profileStatusFilter,branchFilter,archiveFilter,sortBy]));
   useEffect(() => {
+    const next = JSON.stringify([search,memberStatusFilter,accountStatusFilter,profileStatusFilter,branchFilter,archiveFilter,sortBy]);
+    if (paging && previousFilters.current === next) return;
+    previousFilters.current = next;
     setCurrentPage(1);
   }, [
     search,
@@ -221,10 +225,12 @@ export default function MembersTable({
     branchFilter,
     archiveFilter,
     sortBy,
+    paging,
   ]);
 
   return (
     <>
+      {refreshing && <p role="status" className="text-xs text-slate-500">Updating members...</p>}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -267,7 +273,7 @@ export default function MembersTable({
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border bg-white shadow-sm">
-        {members.length === 0 ? (
+        {(paging?.sourceCount ?? members.length) === 0 ? (
           <EmptyState
             icon={<SearchX className="h-5 w-5" />}
             title="No members found"
@@ -399,7 +405,7 @@ export default function MembersTable({
           </Table>
         )}
       </div>
-      {filteredMembers.length > 0 && (
+      {(paging?.total ?? filteredMembers.length) > 0 && (
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-slate-500">
             Showing{" "}
@@ -407,9 +413,9 @@ export default function MembersTable({
             {"–"}
             {Math.min(
               currentPage * itemsPerPage,
-              filteredMembers.length,
+              paging?.total ?? filteredMembers.length,
             )}{" "}
-            of {filteredMembers.length} members
+            of {paging?.total ?? filteredMembers.length} members
           </p>
 
           <div className="flex items-center gap-2">

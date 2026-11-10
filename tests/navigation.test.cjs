@@ -78,11 +78,11 @@ test('mobile navigation uses a compact bar and More contains permission-filtered
 
 test('segment-safe active matching distinguishes account from accounts', () => {
   const onAccounts = nav('/portal/accounts', ['accounts.view']);
-  assert.match(onAccounts, /href="\/portal\/accounts" aria-current="page"/);
+  assert.match(onAccounts, /href="\/portal\/accounts\/members" aria-current="page"/);
   assert.doesNotMatch(onAccounts, /href="\/portal\/account" aria-current="page"/);
   const onAccount = nav('/portal/account', ['accounts.view']);
   assert.match(onAccount, /href="\/portal\/account" aria-current="page"/);
-  assert.doesNotMatch(onAccount, /href="\/portal\/accounts" aria-current="page"/);
+  assert.doesNotMatch(onAccount, /href="\/portal\/accounts\/members" aria-current="page"/);
 });
 
 test('Administration hub admits specific child permissions and shows only permitted cards', async () => {

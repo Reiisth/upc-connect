@@ -148,7 +148,7 @@ test('comparison edge cases never invent percent from missing/zero baselines',()
  assert.equal(c(5,0,'vs previous').percent,null);assert.equal(c(5,0,'vs previous').label,'Previous value was 0');assert.equal(c(0,0,'vs previous').percent,0);assert.equal(c(0,5,'vs previous').percent,-100);assert.equal(c(5,5,'vs previous').percent,0);
 });
 test('scanner page uses actual shared PageHeader and primary-blue guides without manual input',async()=>{
- const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+ const {renderToStaticMarkup}=require('react-dom/server');
  const Page=loadTypeScript('app/portal/attendance/[serviceId]/scan/page.tsx',{'../../access':{requireAttendancePermission:async()=>({permissions:['attendance.record']})},'@/lib/supabase/admin':{createAdminClient:()=>({})},'../../data':{loadAccessibleService:async()=>({id:'current',name:'Sunday Service',status:'ongoing',branch:{name:'North'},serviceDate:'2026-11-07',startTime:'09:00'}),loadRecentQrScans:async()=>[]},'./QrAttendanceScanner':{__esModule:true,default:()=>null}}).default;
  const tree=Page({params:Promise.resolve({serviceId:'current'})});const content=await tree.props.children.type(tree.props.children.props);const html=renderToStaticMarkup(content);
  assert.match(html,/QR Attendance Scanner/);assert.match(html,/Attendance<\/span>/);assert.match(html,/Back to Service Attendance/);assert.match(html,/href="\/portal\/attendance\/current"/);assert.match(html,/font-radio-canada/);

@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -36,6 +37,9 @@ export default function BranchesPage() {
 }
 
 async function BranchesContent() {
+  "use cache: private";
+  cacheLife({ stale: 300 });
+  cacheTag("portal:administration-branches");
   const { permissions } = await requireAdministrationPermission(
     "branches.view",
   );

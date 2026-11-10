@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,7 +16,7 @@ export type BranchScope = {
  * has global branch scope. Operational authorization remains permission-based
  * in the modules that have migrated to permissions.
  */
-export async function getUserBranchScope(
+export const getUserBranchScope = cache(async function getUserBranchScope(
   userId: string,
 ): Promise<BranchScope> {
   const supabase = await createClient();
@@ -73,4 +74,4 @@ export async function getUserBranchScope(
     ),
     isSystemAdmin: false,
   };
-}
+});

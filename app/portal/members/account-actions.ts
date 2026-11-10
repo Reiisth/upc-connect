@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 import { unstable_rethrow } from "next/navigation";
 import { requireStaffMember } from "./data";
 import { requireAccountsPermission } from "../accounts/access";

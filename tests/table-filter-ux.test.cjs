@@ -72,7 +72,7 @@ test('actual MembersTable preserves headers and all filter buttons for a nonempt
 
 test('true zero-record Members dataset still uses the ordinary empty state', () => {
   const table = source('app/portal/members/MembersTable.tsx');
-  assert.match(table, /members\.length === 0 \? \(/);
+  assert.match(table, /paging\?\.sourceCount \?\? members.length/);
   assert.match(table, /filteredMembers\.length === 0 \? \(/);
   assert.match(table, /No members match the current filters\./);
   assert.match(table, /title="No members found"/);

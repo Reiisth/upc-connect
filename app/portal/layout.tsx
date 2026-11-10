@@ -7,10 +7,16 @@ import { logoutPortal } from "./actions";
 
 import { requireActiveAccount } from "@/lib/auth";
 import { getCurrentUserPermissions } from "@/lib/permissions-server";
-import PortalNavigation from "./PortalNavigation";
+import { getUserBranchScope } from "@/lib/branch-access";
+import { portalSessionRevision } from "@/lib/portal-session-revision";
+import PortalRuntime from "./PortalRuntime";
+import PortalNavigation, { getPortalNavigationRoutes } from "./PortalNavigation";
 import { getPortalUserContext } from "@/lib/portal-user-context";
 import { PortalIdentitySummary } from "./PortalIdentitySummary";
 import MobileProfileInfo from "./MobileProfileInfo";
+
+// Limit partial-prefetch adoption to the authenticated portal route tree.
+export const prefetch = "partial";
 
 export default function PortalLayout({
   children,
@@ -33,14 +39,15 @@ async function PortalShell({
 
   const permissions = await getCurrentUserPermissions(user.id);
   const metadataName = user.user_metadata?.display_name ?? user.user_metadata?.full_name;
-  const identity = await getPortalUserContext(
+  const [identity, scope] = await Promise.all([getPortalUserContext(
     user.id,
     typeof metadataName === "string" && metadataName.trim()
       ? metadataName.trim()
       : user.email ?? "Account",
-  );
+  ), getUserBranchScope(user.id)]);
 
   return (
+    <PortalRuntime userId={user.id} revision={portalSessionRevision(user.id, permissions, scope.branchIds, scope.isSystemAdmin)} routes={getPortalNavigationRoutes(permissions)}>
     <div className="min-h-screen bg-[#EEF3FB] md:flex">
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden h-screen w-64 shrink-0 flex-col border-r bg-white md:sticky md:top-0 md:flex">
@@ -136,5 +143,6 @@ async function PortalShell({
         variant="mobile"
       />
     </div>
+    </PortalRuntime>
   );
 }

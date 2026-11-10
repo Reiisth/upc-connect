@@ -12,16 +12,18 @@ export async function loadModuleSummary(admin: ReturnType<typeof createAdminClie
   let from = end.toISOString().slice(0,10);
   if(range){({from,to}=resolveAnalyticsDateRange({preset:"custom",...range}));}
   if (!branchIds.length) return { module, from, to, totals: [], trend: [], breakdown: [] };
-  const { data, error } = await admin.rpc(module==="baptisms"?"get_baptism_module_summary":"get_module_summary", {...(module==="baptisms"?{}:{p_module:module}),p_branch_ids: branchIds, p_from: from, p_to: to});
-  if (error) throw new Error("Unable to load module summary.");
-  let comparison: ModuleSummary["comparison"];
-  if(module==="contributions"||module==="baptisms"){
-    const duration=Date.parse(`${to}T00:00:00Z`)-Date.parse(`${from}T00:00:00Z`)+86400000;
-    const previousTo=new Date(Date.parse(`${from}T00:00:00Z`)-86400000).toISOString().slice(0,10);
-    const previousFrom=new Date(Date.parse(`${from}T00:00:00Z`)-duration).toISOString().slice(0,10);
-    const previous=validAnalyticsDate(previousFrom)&&validAnalyticsDate(previousTo)?await admin.rpc("get_module_summary",{p_module:module,p_branch_ids:branchIds,p_from:previousFrom,p_to:previousTo}):{data:{totals:[]},error:null};
-    if(previous.error)throw new Error("Unable to load module comparison.");
-    comparison={from:previousFrom,to:previousTo,totals:previous.data.totals};
-  }
-  return { ...data, module, from, to, comparison } as ModuleSummary;
+  const duration=Date.parse(`${to}T00:00:00Z`)-Date.parse(`${from}T00:00:00Z`)+86400000;
+  const previousTo=new Date(Date.parse(`${from}T00:00:00Z`)-86400000).toISOString().slice(0,10);
+  const previousFrom=new Date(Date.parse(`${from}T00:00:00Z`)-duration).toISOString().slice(0,10);
+  const compare = module === "contributions" || module === "baptisms";
+  const [current, previous] = await Promise.all([
+    admin.rpc(module==="baptisms"?"get_baptism_module_summary":"get_module_summary", {...(module==="baptisms"?{}:{p_module:module}),p_branch_ids: branchIds, p_from: from, p_to: to}),
+    compare && validAnalyticsDate(previousFrom) && validAnalyticsDate(previousTo)
+      ? admin.rpc("get_module_summary",{p_module:module,p_branch_ids:branchIds,p_from:previousFrom,p_to:previousTo})
+      : Promise.resolve({data:{totals:[]},error:null}),
+  ]);
+  if (current.error) throw new Error("Unable to load module summary.");
+  if (previous.error) throw new Error("Unable to load module comparison.");
+  const comparison = compare ? {from:previousFrom,to:previousTo,totals:previous.data.totals} : undefined;
+  return { ...current.data, module, from, to, comparison } as ModuleSummary;
 }

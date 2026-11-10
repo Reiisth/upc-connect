@@ -87,12 +87,17 @@ function NavigationLink({ item, mobile = false }: { item: Item; mobile?: boolean
   );
 }
 
+export function getPortalNavigationRoutes(permissions: readonly PermissionKey[]) {
+  return groups.flatMap(group => group.items).filter(item => itemIsVisible(item, permissions)).map(item =>
+    item.label === "Accounts" ? hasPermission(permissions, "accounts.view") ? "/portal/accounts/members" : "/portal/accounts/staff" : item.href);
+}
+
 export default function PortalNavigation({ permissions, variant }: PortalNavigationProps) {
   const visibleGroups = groups.map((group) => ({
     ...group,
     items: group.items.filter((item) => itemIsVisible(item, permissions)).map((item) =>
-      item.label === "Accounts" && !hasPermission(permissions, "accounts.view")
-        ? { ...item, href: "/portal/accounts/staff" }
+      item.label === "Accounts"
+        ? { ...item, href: hasPermission(permissions, "accounts.view") ? "/portal/accounts/members" : "/portal/accounts/staff" }
         : item,
     ),
   })).filter((group) => group.items.length > 0);

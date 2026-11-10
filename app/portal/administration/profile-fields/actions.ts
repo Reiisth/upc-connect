@@ -4,7 +4,7 @@ import { isProfileDefinition, isReservedMemberField } from "@/lib/member-field-p
 
 import { PROFILE_FIELD_DEFAULTS } from "@/lib/profile-field-defaults";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdministrationPermission } from "@/app/portal/administration/access";
@@ -54,7 +54,7 @@ export async function restoreDefaultFieldConfiguration() {
   }
 
   revalidatePath("/portal/administration/profile-fields");
-  revalidatePath("/portal/profile");
+  revalidatePath("/portal/profile", "layout");
 }
 
 export async function saveFieldConfiguration(
@@ -157,7 +157,7 @@ export async function saveFieldConfiguration(
   }
 
   revalidatePath("/portal/administration/profile-fields");
-  revalidatePath("/portal/profile");
+  revalidatePath("/portal/profile", "layout");
 }
 
 export async function deleteCustomField(fieldId: string) {
@@ -189,5 +189,5 @@ export async function deleteCustomField(fieldId: string) {
   }
 
   revalidatePath("/portal/administration/profile-fields");
-  revalidatePath("/portal/profile");
+  revalidatePath("/portal/profile", "layout");
 }

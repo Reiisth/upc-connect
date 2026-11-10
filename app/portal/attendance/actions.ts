@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseManilaDateTime, toManilaDateTimeValue } from "@/lib/manila-time";

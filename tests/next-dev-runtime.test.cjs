@@ -47,7 +47,8 @@ test('managed local starts disable persisted public-env chunks while production 
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://10.23.4.5:54321';
     assert.equal(loadTypeScript('next.config.ts').default.experimental.turbopackFileSystemCacheForDev, false);
     process.env.NODE_ENV = 'production';
-    assert.equal(loadTypeScript('next.config.ts').default.experimental, undefined);
+    assert.equal(loadTypeScript('next.config.ts').default.experimental.turbopackFileSystemCacheForDev, undefined);
+    assert.equal(loadTypeScript('next.config.ts').default.experimental.staleTimes.dynamic, 30);
   } finally { for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k]; Object.assign(process.env, saved); }
 });
 test('real Next env loader preserves launcher public URL ahead of .env.local values', async () => {

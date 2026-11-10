@@ -33,16 +33,16 @@ test('all four list pages wire their scoped, ordered queries through explicit pa
     'app/portal/baptisms/data.ts',
     'app/portal/services/page.tsx',
   ];
-  for (const file of files) {
+  for (const file of files.slice(1)) {
     const source = readFileSync(file, 'utf8');
     assert.match(source, /readAllPages/);
     assert.match(source, /\.range\(from, to\)/);
     assert.match(source, /\.order\(/);
   }
   const members = readFileSync(files[0], 'utf8');
-  assert.match(members, /membersQuery = membersQuery\.in\(\s*"church_branch_id",\s*branchIds,?\s*\)/);
-  assert.match(members, /const activeMemberRows = members\?\.filter\(\(member\) => !member\.is_archived\) \?\? \[\]/);
-  assert.match(members, /const totalMembers = activeMemberRows\.length/);
+  assert.match(members, /query = query\.in\("church_branch_id",branchIds\)/);
+  assert.match(members, /list\(\)\.range\(\(filters.page-1\)\*10,filters.page\*10-1\)/);
+  assert.match(members, /count\(\), count\("member_status","active"\)/);
   for (const file of files.slice(1)) {
     assert.match(readFileSync(file, 'utf8'), /\.in\("church_branch_id", branchIds\)/);
   }

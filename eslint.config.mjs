@@ -10,7 +10,9 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  { ignores: [".next/**", "out/**", "supabase/.temp/**", ".temp/**"] },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  { files: ["tests/**/*.cjs"], linterOptions: { reportUnusedDisableDirectives: "off" }, rules: { "@typescript-eslint/no-require-imports": "off", "@next/next/no-assign-module-variable": "off" } },
 ];
 
 export default eslintConfig;

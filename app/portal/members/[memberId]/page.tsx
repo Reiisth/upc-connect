@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -23,6 +24,9 @@ export default function MemberPage(props: { params: Promise<{ memberId: string }
 }
 
 async function Content({ params }: { params: Promise<{ memberId: string }> }) {
+  "use cache: private";
+  cacheLife({ stale: 120 });
+  cacheTag("portal:members");
   const { memberId } = await params;
   const { member, access, admin } = await requireStaffMember(memberId, "members.view");
   const can = (permission: typeof access.permissions[number]) => hasPermission(access.permissions, permission);

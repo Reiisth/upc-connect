@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertHistoricalRecordBranch } from "@/lib/historical-records";

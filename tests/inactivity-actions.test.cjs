@@ -36,7 +36,7 @@ function harness({ permissionKeys = ['inactivity.manage_settings'], branchIds = 
     },
   };
   const imports = {
-    'next/cache': { revalidatePath: (path) => revalidated.push(path) },
+    '@/lib/portal-invalidation': { revalidatePortalPath: (path) => revalidated.push(path) },
     '@/lib/branch-access': { getUserBranchScope: async () => ({ branchIds, isSystemAdmin }) },
     '@/lib/permissions-server': {
       requirePermission: async (permission) => {

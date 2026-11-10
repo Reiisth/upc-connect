@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -17,6 +18,9 @@ export default function FollowUpsPage() {
   return <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="follow ups" />}><FollowUpsContent /></Suspense>;
 }
 async function FollowUpsContent() {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:follow-ups");
   const access = await requireFollowUpsPermission("follow_ups.view");
   const admin = createAdminClient();
   const [branches, rows] = await Promise.all([loadFollowUpBranches(access, admin), loadFollowUpRecords(access, admin)]);

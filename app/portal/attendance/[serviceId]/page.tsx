@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -46,6 +47,9 @@ export default function AttendanceServicePage(
 async function AttendanceServiceContent({
   params,
 }: AttendanceServicePageProps) {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:attendance");
   const access = await requireAttendancePermission(
     "attendance.view",
   );

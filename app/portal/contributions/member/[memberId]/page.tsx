@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { Suspense } from "react";
@@ -25,6 +26,9 @@ function money(cents: bigint) {
   return `₱${(cents / BigInt(100)).toLocaleString("en-PH")}.${(cents % BigInt(100)).toString().padStart(2, "0")}`;
 }
 async function Content({ params, searchParams }: Props) {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:contributions");
   const access = await requireContributionsPermission("contributions.view");
   const { memberId } = await params;
   const navigationParams = await searchParams;

@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { readAllPages } from "@/lib/supabase/read-all-pages";
 import { hasPermission } from "@/lib/permissions";
@@ -38,6 +39,9 @@ export default function AttendancePage() {
 }
 
 async function AttendanceContent() {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:attendance");
   const access = await requireAttendancePermission(
     "attendance.view",
   );
@@ -47,6 +51,8 @@ async function AttendanceContent() {
     admin,
   );
   const branchIds = branches.map((branch) => branch.id);
+  const labelsPromise = Promise.resolve(admin.from("service_types").select("key,name,is_active").order("name"));
+  const dashboardPromise = loadAttendanceDashboard(admin, branches);
   let rows: ServiceRow[] = [];
 
   if (branchIds.length > 0) {
@@ -55,7 +61,7 @@ async function AttendanceContent() {
       .in("church_branch_id",branchIds).in("status",["scheduled","ongoing"])
       .order("service_date").order("id").range(from,to)) as ServiceRow[];
   }
-  const { data: typeRows, error: typeError } = await admin.from("service_types").select("key,name,is_active").order("name");
+  const { data: typeRows, error: typeError } = await labelsPromise;
   if (typeError) throw new Error("Unable to load service type labels.");
   const serviceTypes = (typeRows ?? []).map((t) => ({ key: t.key, name: t.name, isActive: t.is_active }));
   const serviceTypeNames = Object.fromEntries(serviceTypes.map((t) => [t.key, t.name]));
@@ -84,7 +90,7 @@ async function AttendanceContent() {
     branch: branchMap.get(service.church_branch_id) ?? null,
   }));
 
-  const dashboard = await loadAttendanceDashboard(admin, branches);
+  const dashboard = await dashboardPromise;
   return (
     <PageContainer>
       <PageHeader

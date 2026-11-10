@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isProfileDefinition, orderPersonalAnniversary } from "@/lib/member-field-policy";
 import { Suspense } from "react";
@@ -18,6 +19,9 @@ export default function FieldManagementPage() {
 }
 
 async function FieldManagementContent() {
+  "use cache: private";
+  cacheLife({ stale: 300 });
+  cacheTag("portal:administration-profile-fields");
   await requireAdministrationPermission("administration.view");
 
   const admin = createAdminClient();

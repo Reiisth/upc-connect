@@ -22,6 +22,9 @@ exports.loadTypeScript = function loadTypeScript(entry, stubs = {}, globals = {}
       module, exports: module.exports, process, console, URL, URLSearchParams, Error,
       AbortController, setTimeout, clearTimeout, ...globals,
       require(name) {
+        if (name === 'server-only') return {};
+        if (name === 'next/navigation') return { ...require(name), useRouter: () => ({ replace() {}, push() {}, refresh() {}, prefetch() {} }), ...(stubs[name] ?? {}) };
+        if (name === 'next/cache') return { ...require(name), cacheLife() {}, cacheTag() {}, updateTag() {}, ...(stubs[name] ?? {}) };
         if (Object.hasOwn(stubs, name)) return stubs[name];
         if (!name.startsWith('.') && !name.startsWith('@/')) return require(name);
         const resolved = name.startsWith('@/') ? path.join(root, name.slice(2)) : path.resolve(path.dirname(filename), name);

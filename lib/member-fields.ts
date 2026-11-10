@@ -1,6 +1,7 @@
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function getMemberFieldDefinitions() {
+export const getMemberFieldDefinitions = cache(async function getMemberFieldDefinitions() {
   const admin = createAdminClient();
 
   const { data, error } = await admin
@@ -26,4 +27,4 @@ export async function getMemberFieldDefinitions() {
   }
 
   return data ?? [];
-}
+});

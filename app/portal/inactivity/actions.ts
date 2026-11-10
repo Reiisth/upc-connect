@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 import { getUserBranchScope } from "@/lib/branch-access";
 import { requirePermission } from "@/lib/permissions-server";
 import { createAdminClient } from "@/lib/supabase/admin";

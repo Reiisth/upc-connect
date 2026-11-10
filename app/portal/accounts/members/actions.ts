@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 import { requireAccountTarget } from "../target-scope";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {

@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
@@ -32,6 +33,9 @@ export default function EditMemberProfilePage(
 async function EditMemberProfileContent({
   params,
 }: PageProps) {
+  "use cache: private";
+  cacheLife({ stale: 120 });
+  cacheTag("portal:profile");
   const { memberId } = await params;
 
   const { user, supabase } = await requireOwnedProfile(memberId, "profile.update");

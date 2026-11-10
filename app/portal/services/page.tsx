@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { effectiveStoredServiceStatus } from "@/app/portal/services/lifecycle";
 import Link from "next/link";
@@ -46,6 +47,9 @@ export default function ServicesPage() {
 }
 
 async function ServicesContent() {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:services");
   const access = await requireServicesPermission("services.view");
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(
@@ -53,6 +57,7 @@ async function ServicesContent() {
     admin,
   );
   const branchIds = branches.map((branch) => branch.id);
+  const labelsPromise = Promise.resolve(admin.from("service_types").select("key,name,is_active").order("name"));
 
   let rows: ServiceRow[] = [];
 
@@ -91,7 +96,7 @@ async function ServicesContent() {
     notes: service.notes,
     branch: branchMap.get(service.church_branch_id) ?? null,
   }));
-  const { data: serviceTypeRows, error: serviceTypeError } = await admin.from("service_types").select("key,name,is_active").order("name");
+  const { data: serviceTypeRows, error: serviceTypeError } = await labelsPromise;
   if (serviceTypeError) throw new Error("Unable to load service type labels.");
   const serviceTypes = (serviceTypeRows ?? []).map((row) => ({ key: row.key, name: row.name, isActive: row.is_active }));
   const serviceTypeNames = Object.fromEntries(serviceTypes.map((type) => [type.key, type.name]));

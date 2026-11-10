@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { Suspense } from "react";
@@ -21,6 +22,9 @@ export default function MemberBaptismRecordsPage(props: Props) {
   return <Suspense fallback={<PageSkeleton kind="history" fields={6} metrics={4} columns={5} label="baptisms member" />}><Content {...props} /></Suspense>;
 }
 async function Content({ params, searchParams }: Props) {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+  cacheTag("portal:baptisms");
   const access = await requireBaptismPermission("baptisms.view");
   const { memberId } = await params;
   const navigationParams = await searchParams;

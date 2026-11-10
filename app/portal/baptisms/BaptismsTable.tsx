@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import ModuleMiniDashboard, { type ModuleSummary } from "@/components/module-summary";
 
 import {

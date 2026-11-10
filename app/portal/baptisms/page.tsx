@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { loadModuleSummary } from "@/lib/module-summary";
 import Link from "next/link";
@@ -37,14 +38,16 @@ export default function BaptismsPage() {
 }
 
 async function BaptismsContent() {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+  cacheTag("portal:baptisms");
   const access = await requireBaptismPermission("baptisms.view");
   const admin = createAdminClient();
   const branches = await getHistoricalRecordBranches(access, admin);
-  const records = await loadBaptismRecords(
-    admin,
-    branches,
-  );
-  const dashboard = await loadModuleSummary(admin, "baptisms", branches.map(b => b.id));
+  const [records, dashboard] = await Promise.all([
+    loadBaptismRecords(admin, branches),
+    loadModuleSummary(admin, "baptisms", branches.map(branch => branch.id)),
+  ]);
   const canCreate = hasAnyPermission(
     access.permissions,
     BAPTISM_CREATE_PERMISSIONS,

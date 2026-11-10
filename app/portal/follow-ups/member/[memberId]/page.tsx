@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import Link from "next/link";
@@ -25,6 +26,9 @@ export default function MemberFollowUpPage(props: Props) {
   return <Suspense fallback={<PageSkeleton kind="history" fields={6} metrics={4} columns={5} label="follow ups member" />}><MemberFollowUpContent {...props} /></Suspense>;
 }
 async function MemberFollowUpContent({ params, searchParams }: Props) {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:follow-ups");
   const access = await requireFollowUpsPermission("follow_ups.view");
   const { memberId } = await params;
   const navigationParams = await searchParams;

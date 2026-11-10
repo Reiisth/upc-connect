@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasPermission } from "@/lib/permissions";
@@ -54,6 +54,7 @@ function finish(access: FollowUpAccess, memberId: string, recordId: string, edit
   revalidatePath(`/portal/follow-ups/member/${memberId}`);
   revalidatePath(`/portal/follow-ups/${recordId}/edit`);
   revalidatePath("/portal/inactivity");
+  revalidatePath("/portal/reports");
   if (hasPermission(access.permissions, "follow_ups.view")) redirect(`/portal/follow-ups/member/${memberId}?saved=1`);
   redirect(edit ? `/portal/follow-ups/${recordId}/edit?saved=1` : "/portal/follow-ups/new?saved=1");
 }

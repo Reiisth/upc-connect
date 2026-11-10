@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -16,6 +17,9 @@ import { StatusAction } from "./StatusAction";
 
 export default function ServiceTypesPage() { return <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="administration service types" />}><Content /></Suspense>; }
 async function Content() {
+  "use cache: private";
+  cacheLife({ stale: 300 });
+  cacheTag("portal:administration-service-types");
   const access = await requireAdministrationPermission("service_types.view");
   const admin = createAdminClient();
   const { data, error } = await admin.from("service_types").select("key,name,is_active").order("name").order("key");

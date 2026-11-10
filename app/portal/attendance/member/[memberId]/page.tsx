@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { Suspense } from "react";
@@ -22,6 +23,9 @@ export default function MemberAttendancePage(props: Props) {
 }
 
 async function Content({ params, searchParams }: Props) {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:attendance");
   const access = await requireAttendancePermission("attendance.view");
   const { memberId } = await params;
   const navigationParams = await searchParams;

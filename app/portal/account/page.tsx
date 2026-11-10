@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { UserRound } from "lucide-react";
@@ -16,6 +17,9 @@ export default function AccountPage() {
 }
 
 async function AccountContent() {
+  "use cache: private";
+  cacheLife({ stale: 120 });
+  cacheTag("portal:account");
   const { user } = await requireActiveAccount();
 
   return (

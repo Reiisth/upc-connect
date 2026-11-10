@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { Eye, EyeOff, LogIn } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -33,7 +32,6 @@ export default function LoginPage() {
       window.removeEventListener("pageshow", resetLoginForm);
     };
   }, []);
-  const router = useRouter();
   const supabase = createClient();
 
   const [email, setEmail] = useState("");
@@ -104,8 +102,9 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/portal");
-      router.refresh();
+      // Auth cookies changed outside a Server Action. Start a new document so
+      // no prior account's in-memory Router Cache survives this sign-in.
+      window.location.replace("/portal");
     } catch {
       setGeneralError(
         "Unable to connect. Please check your internet connection and try again.",

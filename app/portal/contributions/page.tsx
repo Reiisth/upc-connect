@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { loadModuleSummary } from "@/lib/module-summary";
 import Link from "next/link";
@@ -31,16 +32,18 @@ export default function ContributionsPage() {
 }
 
 async function ContributionsContent() {
+  "use cache: private";
+  cacheLife({ stale: 30 });
+  cacheTag("portal:contributions");
   const access = await requireContributionsPermission(
     "contributions.view",
   );
   const admin = createAdminClient();
   const branches = await getHistoricalRecordBranches(access, admin);
-  const records = await loadContributionRecords(
-    admin,
-    branches,
-  );
-  const dashboard = await loadModuleSummary(admin, "contributions", branches.map(b => b.id));
+  const [records, dashboard] = await Promise.all([
+    loadContributionRecords(admin, branches),
+    loadModuleSummary(admin, "contributions", branches.map(branch => branch.id)),
+  ]);
   const canCreate = hasPermission(
     access.permissions,
     "contributions.create",

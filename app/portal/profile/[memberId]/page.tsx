@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
@@ -24,6 +25,9 @@ type PageProps = {
 export default async function MemberProfilePage({
   params,
 }: PageProps) {
+  "use cache: private";
+  cacheLife({ stale: 120 });
+  cacheTag("portal:profile");
   return (
     <Suspense fallback={<PageSkeleton kind="form" fields={8} sections={2} metrics={0} columns={5} label="profile" />}>
       <MemberProfileContent params={params} />
