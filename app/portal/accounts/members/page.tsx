@@ -154,7 +154,7 @@ async function MemberAccountsContent() {
         eyebrow="Account Management"
         eyebrowIcon={<UserRoundCog className="h-4 w-4" />}
         title="Member Accounts"
-        action={canLinkAccount ? <Button asChild><Link href="/portal/members/invite"><UserPlus aria-hidden="true" />New Member Account</Link></Button> : undefined}
+        action={canLinkAccount ? <Button asChild><Link href="/portal/members/invite?returnTo=/portal/accounts/members"><UserPlus aria-hidden="true" />New Member Account</Link></Button> : undefined}
         description="View member accounts, review their linked profiles, and connect additional members to existing accounts."
       />
 

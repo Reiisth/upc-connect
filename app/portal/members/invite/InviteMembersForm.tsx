@@ -1,8 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Mail, Search, UsersRound } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { unstable_rethrow, useRouter } from "next/navigation";
+import { finishMemberConnection, type MemberConnectionResult } from "@/lib/member-connection";
+import { Link2, Mail, Plus, UsersRound, X } from "lucide-react";
+import MemberAutocomplete from "../../contributions/MemberAutocomplete";
+import { Button } from "@/components/ui/button";
+import { FormActions } from "@/components/ui/form-actions";
+import { FormField } from "@/components/ui/form-field";
+import { FormSection } from "@/components/ui/form-section";
+import { Input } from "@/components/ui/input";
+import styles from "./connection-line.module.css";
 
 type Member = {
   id: string;
@@ -17,177 +26,120 @@ type InviteMembersFormProps = {
   existingEmails: string[];
   defaultEmail: string;
   defaultMemberId?: string;
-  action: (formData: FormData) => void | Promise<void>;
+  action: (formData: FormData) => Promise<MemberConnectionResult>;
 };
 
-export default function InviteMembersForm({
-  members,
-  existingEmails,
-  defaultEmail,
-  defaultMemberId,
-  action,
-}: InviteMembersFormProps) {
-  const [search, setSearch] = useState("");
-
-  const filteredMembers = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    if (!query) return members;
-
-    return members.filter((member) => {
-      const fullName = [
-        member.first_name,
-        member.middle_name,
-        member.last_name,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return (
-        fullName.includes(query) ||
-        member.account_status.toLowerCase().includes(query)
-      );
-    });
-  }, [members, search]);
-
-  return (
-    <form action={action} className="space-y-7">
-      {/* EMAIL */}
-      <div>
-        <div className="mb-2 flex items-center gap-2">
-          <Mail className="h-4 w-4 text-[#5D94E8]" />
-
-          <label
-            htmlFor="email"
-            className="text-sm font-medium text-[#203264]"
-          >
-            Account Email
-          </label>
-        </div>
-
-        <input
-          id="email"
-          name="email"
-          type="email"
-          list="existing-accounts"
-          defaultValue={defaultEmail}
-          placeholder="Search existing email or enter a new one"
-          autoComplete="off"
-          required
-          className="w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
-        />
-
-        <datalist id="existing-accounts">
-          {existingEmails.map((email) => (
-            <option key={email} value={email} />
-          ))}
-        </datalist>
-
-        <p className="mt-2 text-xs text-muted-foreground">
-          Existing accounts will be connected directly. New email addresses
-          will receive an invitation.
-        </p>
-      </div>
-
-      {/* MEMBER SEARCH */}
-      <fieldset>
-        <div className="flex items-center gap-2">
-          <UsersRound className="h-4 w-4 text-[#5D94E8]" />
-
-          <legend className="text-sm font-medium text-[#203264]">
-            Select Members
-          </legend>
-        </div>
-
-        <div className="relative mt-4">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search members..."
-            className="w-full rounded-xl border bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#5D94E8] focus:ring-4 focus:ring-[#5D94E8]/10"
-          />
-        </div>
-
-        <div className="mt-4 max-h-[420px] space-y-2 overflow-y-auto rounded-2xl border bg-[#F8FAFD] p-3">
-          {filteredMembers.map((member) => {
-            const fullName = [
-              member.first_name,
-              member.middle_name,
-              member.last_name,
-            ]
-              .filter(Boolean)
-              .join(" ");
-
-            return (
-              <label
-                key={member.id}
-                className="flex cursor-pointer items-center gap-3 rounded-xl bg-white p-3 transition hover:bg-[#EEF3FB]"
-              >
-                <input
-                  type="checkbox"
-                  name="member_ids"
-                  value={member.id}
-                  defaultChecked={member.id === defaultMemberId}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-[#203264]">
-                    {fullName}
-                  </p>
-
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {formatStatus(member.account_status)}
-                  </p>
-                </div>
-              </label>
-            );
-          })}
-
-          {!filteredMembers.length && (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              No members found.
-            </div>
-          )}
-        </div>
-      </fieldset>
-
-      <div className="flex justify-end">
-        <ConnectMembersButton />
-      </div>
-    </form>
-  );
+export default function InviteMembersForm(props: InviteMembersFormProps) {
+  const [session, setSession] = useState(0);
+  useLayoutEffect(() => () => setSession(value => value + 1), []);
+  return <InviteMembersFormSession key={session} {...props} />;
 }
 
-function ConnectMembersButton() {
-  const { pending } = useFormStatus();
-
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex items-center justify-center gap-2 rounded-xl bg-[#203264] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2C447D] disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {pending ? (
-        <>
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-          Connecting members...
-        </>
-      ) : (
-        "Connect Members"
-      )}
-    </button>
-  );
+function InviteMembersFormSession({ action, ...props }: InviteMembersFormProps) {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [completed, setCompleted] = useState(false);
+  const finishAnimation = useRef<(() => void) | null>(null);
+  const onAnimationComplete = useCallback(() => finishAnimation.current?.(), []);
+  async function connect(formData: FormData) {
+    setError("");
+    const animation = new Promise<void>(resolve => { finishAnimation.current = resolve; });
+    try {
+      const result = await finishMemberConnection(() => action(formData), animation);
+      if (result.error) setError(result.error);
+      else if (result.redirectTo) {
+        setCompleted(true);
+        router.push(result.redirectTo);
+      }
+    } catch (error) {
+      unstable_rethrow(error);
+      setError("Unable to connect these members. Check the account email and member selections, then try again.");
+    } finally {
+      finishAnimation.current = null;
+    }
+  }
+  return <form action={connect} className="space-y-5">
+    <ConnectionFields {...props} error={error} completed={completed} onAnimationComplete={onAnimationComplete} />
+  </form>;
 }
 
-function formatStatus(value: string) {
-  if (value === "connected") return "Connected";
-  if (value === "invited") return "Invited";
-  if (value === "no_account") return "No account";
+function ConnectionFields({ members, existingEmails, defaultEmail, defaultMemberId, error, completed, onAnimationComplete }: Omit<InviteMembersFormProps, "action"> & { error: string; completed: boolean; onAnimationComplete: () => void }) {
+  const { pending: submitting } = useFormStatus();
+  const pending = submitting || completed;
+  useEffect(() => {
+    if (submitting && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const frame = requestAnimationFrame(onAnimationComplete);
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [submitting, onAnimationComplete]);
+  const prefilledMember = members.find(member => member.id === defaultMemberId);
+  const [email, setEmail] = useState(defaultEmail);
+  const [rows, setRows] = useState([{ key: 0, memberId: prefilledMember?.id ?? "" }]);
+  const nextKey = useRef(1);
+  const hasEmail = Boolean(email.trim());
+  const options = members.map(member => ({
+    id: member.id,
+    fullName: [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" "),
+    churchBranchId: "",
+    isArchived: false,
+  }));
+  const ready = hasEmail && rows.every(row => Boolean(row.memberId));
 
-  return value.replaceAll("_", " ");
+  return <>
+    <div className="grid items-start gap-0 lg:grid-cols-[minmax(0,1fr)_5rem_minmax(0,1fr)]">
+      <FormSection className="lg:self-center" title="Account" icon={<Mail />} description="Choose an existing account or invite someone new.">
+        <FormField label="Account email" htmlFor="connection-email" required description="New email addresses receive an invitation. Existing accounts are connected directly.">
+          <Input id="connection-email" name="email" type="email" list="existing-accounts" value={email}
+            onChange={event => setEmail(event.target.value)} placeholder="Enter or search an email address"
+            autoComplete="off" required disabled={pending} />
+          <datalist id="existing-accounts">{existingEmails.map(value => <option key={value} value={value} />)}</datalist>
+        </FormField>
+      </FormSection>
+
+      <div className={`${styles.connector} lg:self-stretch`} data-connecting={pending} role="img"
+        aria-label={pending ? "Connecting account and members" : "Account to member connection"}>
+        <span className={styles.track} />
+        <span className={`${styles.light} ${styles.fromAccount}`} />
+        <span className={`${styles.light} ${styles.fromMembers}`} />
+        <span className={styles.middle} onAnimationEnd={event => { if (event.target === event.currentTarget) onAnimationComplete(); }}>
+          <Link2 className="h-4 w-4" aria-hidden="true" />
+        </span>
+      </div>
+
+      <FormSection title="Member profiles" icon={<UsersRound />} description="Search for each member you want this account to manage.">
+        {!members.length ? <p role="status" className="text-sm text-slate-500">No unconnected members are available in your accessible branches.</p> : <>
+          <div className="space-y-4">
+            {rows.map((row, index) => {
+              const disabled = pending || (!hasEmail && !(row.key === 0 && prefilledMember));
+              const available = options.filter(option => option.id === row.memberId || !rows.some(other => other.memberId === option.id));
+              return <div key={row.key} className="flex items-start gap-2">
+                <FormField label={`Member ${index + 1}`} htmlFor={`connection-member-${row.key}`} required className="min-w-0 flex-1"
+                  description={!hasEmail && row.key === 0 ? prefilledMember ? "Selected from the member page. Enter an email to connect." : "Enter an account email to search members." : undefined}>
+                  <MemberAutocomplete id={`connection-member-${row.key}`} members={available} value={row.memberId}
+                    name="member_ids" disabled={disabled} showContext={false}
+                    onChange={memberId => setRows(current => current.map(item => item.key === row.key ? { ...item, memberId } : item))} />
+                </FormField>
+                {rows.length > 1 && <Button type="button" variant="ghost" size="icon" className="mt-7 shrink-0"
+                  disabled={pending} aria-label={`Remove member ${index + 1}`} title="Remove member"
+                  onClick={() => setRows(current => current.filter(item => item.key !== row.key))}><X /></Button>}
+              </div>;
+            })}
+          </div>
+          <Button type="button" variant="outline" size="sm" disabled={pending || !hasEmail || rows.length >= members.length}
+            onClick={() => { const key = nextKey.current++; setRows(current => [...current, { key, memberId: "" }]); }}>
+            <Plus />Add member
+          </Button>
+        </>}
+      </FormSection>
+    </div>
+    {error && !pending && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
+    <FormActions>
+      <p role="status" aria-live="polite" className="self-center text-sm text-slate-500 sm:mr-auto">
+        {pending ? "Connecting account and member profiles..." : "Each member can be connected to one account."}
+      </p>
+      <Button type="submit" disabled={!ready || !members.length || pending} loading={pending} pendingLabel="Connecting members...">
+        <Link2 />Connect Members
+      </Button>
+    </FormActions>
+  </>;
 }

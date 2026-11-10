@@ -280,7 +280,7 @@ export default function MemberAccountsTable({
                       <TableActionButton
                         href={`/portal/members/invite?email=${encodeURIComponent(
                           account.email,
-                        )}`}
+                        )}&returnTo=/portal/accounts/members`}
                         icon={<UserPlus />}
                       >
                         Link Members

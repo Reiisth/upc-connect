@@ -59,7 +59,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
       backLabel="Back to Members"
       action={<div className="flex flex-wrap gap-2">
         {member.account_status === "no_account" && !member.is_archived && can("members.link_account") &&
-          <Button variant="outline" asChild><Link href={`/portal/members/invite?memberId=${memberId}`}>Connect Account</Link></Button>}
+          <Button variant="outline" asChild><Link href={`/portal/members/invite?memberId=${memberId}&returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}>Connect Account</Link></Button>}
       </div>}
     />
 

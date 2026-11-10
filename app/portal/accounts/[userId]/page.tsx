@@ -117,7 +117,7 @@ async function AccountDetailsContent({
             </div>
             {canLinkMembers && (
               <Button asChild size="sm">
-                <Link href={`/portal/members/invite?email=${encodeURIComponent(authData.user.email ?? "")}`}>
+                <Link href={`/portal/members/invite?email=${encodeURIComponent(authData.user.email ?? "")}&returnTo=${encodeURIComponent(`/portal/accounts/${userId}`)}`}>
                   <UsersRound className="h-4 w-4" />Link Members
                 </Link>
               </Button>

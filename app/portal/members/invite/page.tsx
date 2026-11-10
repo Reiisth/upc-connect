@@ -1,9 +1,13 @@
-import Link from "next/link";
-import { ArrowLeft, Link2 } from "lucide-react";
+import { Link2 } from "lucide-react";
+import { PageContainer } from "@/components/ui/page-container";
+import { PageHeader } from "@/components/ui/page-header";
 
 import { getAccountTargetScopes } from "../../accounts/target-scope";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { inviteMembers } from "../actions";
+import { connectMembersToAccount } from "../actions";
+import { unstable_rethrow } from "next/navigation";
+import { MemberConnectionValidationError, type MemberConnectionResult } from "@/lib/member-connection";
+import { accountConnectionNavigation } from "@/lib/account-connection-navigation";
 import { requireMembersPermission } from "../access";
 import { getAccessibleActiveBranches } from "../../services/access";
 import InviteMembersForm from "./InviteMembersForm";
@@ -22,12 +26,14 @@ export default async function InviteMembersPage({
   searchParams: Promise<{
     memberId?: string;
     email?: string;
+    returnTo?: string;
   }>;
 }) {
   const access = await requireMembersPermission(
     "members.link_account",
   );
-  const { memberId, email } = await searchParams;
+  const { memberId, email, returnTo } = await searchParams;
+  const navigation = accountConnectionNavigation(returnTo);
 
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(
@@ -57,7 +63,14 @@ export default async function InviteMembersPage({
       throw new Error(error.message);
     }
 
-    members = data ?? [];
+    const candidates = data ?? [];
+    if (candidates.length) {
+      const { data: links, error: linksError } = await admin.from("account_members")
+        .select("member_id").in("member_id", candidates.map(member => member.id)).eq("relationship", "member");
+      if (linksError) throw new Error("Unable to load available member profiles.");
+      const connectedIds = new Set((links ?? []).map(link => link.member_id));
+      members = candidates.filter(member => !connectedIds.has(member.id));
+    }
   }
 
   const existingEmails: string[] = [];
@@ -72,7 +85,7 @@ export default async function InviteMembersPage({
 
   existingEmails.sort((a, b) => a.localeCompare(b));
 
-  async function action(formData: FormData) {
+  async function action(formData: FormData): Promise<MemberConnectionResult> {
     "use server";
 
     const email = String(formData.get("email") ?? "").trim();
@@ -81,39 +94,21 @@ export default async function InviteMembersPage({
       .getAll("member_ids")
       .map((value) => String(value));
 
-    await inviteMembers(memberIds, email, memberId);
+    try {
+      const redirectTo = await connectMembersToAccount(memberIds, email, memberId);
+      return { redirectTo: returnTo ? navigation.backHref : redirectTo };
+    } catch (error) {
+      unstable_rethrow(error);
+      return { error: error instanceof MemberConnectionValidationError ? error.message : "Unable to connect these members. Please try again." };
+    }
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl">
-      <Link
-        href="/portal/members"
-        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-[#203264]"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Members
-      </Link>
-
-      <div className="mt-5">
-        <div className="flex items-center gap-2 text-[#5D94E8]">
-          <Link2 className="h-4 w-4" />
-
-          <p className="text-sm font-medium">
-            Account Connection
-          </p>
-        </div>
-
-        <h1 className="mt-1 font-body text-2xl font-semibold text-[#203264] sm:text-3xl">
-          Connect Members to Account
-        </h1>
-
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Connect one or more member records to an existing account, or enter
-          a new email address to create and invite a new account.
-        </p>
-      </div>
-
-      <div className="mt-7 rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
+    <PageContainer className="max-w-5xl">
+      <PageHeader {...navigation}
+        eyebrow="Account Connection" eyebrowIcon={<Link2 className="h-4 w-4" />}
+        title="Connect Members to Account"
+        description="Connect member profiles to an existing account, or invite a new account by email." />
         <InviteMembersForm
           key={`${memberId ?? ""}:${email ?? ""}`}
           members={members}
@@ -122,7 +117,6 @@ export default async function InviteMembersPage({
           defaultMemberId={memberId}
           action={action}
         />
-      </div>
-    </main>
+    </PageContainer>
   );
 }

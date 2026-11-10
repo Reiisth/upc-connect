@@ -1,0 +1,59 @@
+.connector {
+  position: relative;
+  height: 4rem;
+  min-height: 4rem;
+  color: #94a3b8;
+  overflow: hidden;
+}
+.track {
+  position: absolute;
+  inset: 0 auto 0 50%;
+  width: 3px;
+  background: #cbd5e1;
+  transform: translateX(-50%);
+}
+.middle {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  background: #eef3fb;
+  transform: translate(-50%, -50%);
+}
+.light {
+  position: absolute;
+  left: calc(50% - 1.5px);
+  width: 3px;
+  height: 50%;
+  background: #8bbcff;
+  box-shadow: 0 0 8px 2px #5d94e866;
+  transform: scaleY(0);
+}
+.fromAccount { top: 0; transform-origin: top; }
+.fromMembers { bottom: 0; transform-origin: bottom; }
+.connector[data-connecting="true"] .light { animation: fill-vertical 900ms ease-in-out forwards; }
+.connector[data-connecting="true"] .middle { animation: charge-link 1200ms ease-in-out forwards; }
+@keyframes fill-vertical { to { transform: scaleY(1); } }
+@keyframes fill-horizontal { to { transform: scaleX(1); } }
+@keyframes charge-link {
+  0%, 70% { background: #eef3fb; border-color: #cbd5e1; color: #94a3b8; box-shadow: none; }
+  100% { background: #8bbcff; border-color: #5d94e8; color: #203264; box-shadow: 0 0 12px 3px #5d94e855; }
+}
+@media (min-width: 1024px) {
+  .connector { height: auto; min-height: 14rem; }
+  .track { inset: 50% 0 auto; width: auto; height: 3px; transform: translateY(-50%); }
+  .light { top: calc(50% - 1.5px); height: 3px; width: 50%; transform: scaleX(0); }
+  .fromAccount { left: 0; transform-origin: left; }
+  .fromMembers { left: auto; right: 0; bottom: auto; transform-origin: right; }
+  .connector[data-connecting="true"] .light { animation-name: fill-horizontal; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .connector[data-connecting="true"] .light { animation: none; transform: scale(1); }
+  .connector[data-connecting="true"] .middle { animation: none; background: #8bbcff; border-color: #5d94e8; color: #203264; }
+}

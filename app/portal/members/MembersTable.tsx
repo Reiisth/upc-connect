@@ -374,7 +374,7 @@ export default function MembersTable({
                           {!member.is_archived && canLinkAccount && (
                             member.account_status === "no_account" ? (
                               <TableActionButton
-                                href={`/portal/members/invite?memberId=${member.id}`}
+                                href={`/portal/members/invite?memberId=${member.id}&returnTo=${encodeURIComponent(paging ? memberListUrl(paging.filters) : "/portal/members")}`}
                                 icon={<MailPlus />}
                               >
                                 Connect Email

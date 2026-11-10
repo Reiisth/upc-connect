@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import type { ContributionMemberOption } from "./types";
 
-export default function MemberAutocomplete({members,value,onChange,branchId,id="contribution-member",showContext=true}:{
- members:ContributionMemberOption[];value:string;onChange:(id:string)=>void;branchId:string;id?:string;showContext?:boolean;
+export default function MemberAutocomplete({members,value,onChange,branchId,id="contribution-member",showContext=true,name="member_id",disabled=!branchId}:{
+ members:ContributionMemberOption[];value:string;onChange:(id:string)=>void;branchId?:string;id?:string;showContext?:boolean;name?:string;disabled?:boolean;
 }) {
  const selected=members.find(member=>member.id===value);
  const [query,setQuery]=useState(selected?.fullName??"");
@@ -26,12 +26,12 @@ export default function MemberAutocomplete({members,value,onChange,branchId,id="
   return `${member.homeBranchName??"Home branch unknown"}${member.churchBranchId&&member.churchBranchId!==branchId?" · Visiting Member":""}${member.isArchived?" · Archived (historical)":""}`;
  }
  return <div className="relative">
-  <input type="hidden" name="member_id" value={value}/>
+  <input type="hidden" name={name} value={value} disabled={disabled}/>
   <Input ref={input} id={id} role="combobox" aria-autocomplete="list"
    aria-expanded={open} aria-controls={`${id}-options`}
    aria-activedescendant={open&&options[active]?`${id}-option-${active}`:undefined}
    aria-describedby={selected&&showContext?`${id}-context`:undefined}
-   value={query} placeholder="Search Member name..." autoComplete="off" required disabled={!branchId}
+   value={query} placeholder="Search Member name..." autoComplete="off" required disabled={disabled}
    onFocus={()=>{setOpen(true);setActive(0);}}
    onBlur={()=>setOpen(false)}
    onChange={event=>{setQuery(event.target.value);onChange("");setOpen(true);setActive(0);event.target.setCustomValidity(event.target.value?"Choose a Member from the suggestions.":"");}}
@@ -43,7 +43,7 @@ export default function MemberAutocomplete({members,value,onChange,branchId,id="
     else if(event.key==="Escape"){event.preventDefault();setOpen(false);}
    }}/>
   {selected&&showContext&&<p id={`${id}-context`} className="mt-1 text-xs text-slate-500">{context(selected)}</p>}
-  {open&&<div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+  {open&&!disabled&&<div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
    <ul id={`${id}-options`} role="listbox" aria-label="Matching Members" className="max-h-64 overflow-y-auto p-1">
     {options.map((member,index)=><li key={member.id} role="presentation"><button type="button" role="option" id={`${id}-option-${index}`} tabIndex={-1} aria-selected={active===index}
      className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[#EEF3FB] ${active===index?"bg-[#EEF3FB]":""}`}

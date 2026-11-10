@@ -26,6 +26,8 @@ exports.loadTypeScript = function loadTypeScript(entry, stubs = {}, globals = {}
         if (name === 'next/navigation') return { ...require(name), useRouter: () => ({ replace() {}, push() {}, refresh() {}, prefetch() {} }), ...(stubs[name] ?? {}) };
         if (name === 'next/cache') return { ...require(name), cacheLife() {}, cacheTag() {}, updateTag() {}, ...(stubs[name] ?? {}) };
         if (Object.hasOwn(stubs, name)) return stubs[name];
+        // CSS Modules are bundled by Next; Node render tests only need class names.
+        if (name.endsWith('.module.css')) return new Proxy({}, { get: (_target, key) => key === '__esModule' ? false : String(key) });
         if (!name.startsWith('.') && !name.startsWith('@/')) return require(name);
         const resolved = name.startsWith('@/') ? path.join(root, name.slice(2)) : path.resolve(path.dirname(filename), name);
         const source = [resolved, `${resolved}.ts`, `${resolved}.tsx`].find((candidate) => existsSync(candidate));

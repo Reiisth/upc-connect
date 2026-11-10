@@ -350,18 +350,42 @@ test('canonical linking requires its own permission, scoped members and a visibl
   const missing = harness({ permissions: ['members.update'] });
   await assert.rejects(missing.load('app/portal/members/actions.ts').inviteMembers(['owned'], 'owner@example.test'), denied);
   const foreign = harness();
+  foreign.db.members.push({ ...foreign.db.members[0], id: 'unlinked', account_status: 'no_account' });
   await assert.rejects(foreign.load('app/portal/members/actions.ts').inviteMembers(['foreign'], 'new@example.test'), /branches assigned/);
-  await assert.rejects(foreign.load('app/portal/members/actions.ts').inviteMembers(['owned'], 'foreign@example.test'), denied);
+  await assert.rejects(foreign.load('app/portal/members/actions.ts').inviteMembers(['unlinked'], 'foreign@example.test'), denied);
   assert.equal(foreign.events.some((event) => event.invite), false);
   const local = harness();
-  await assert.rejects(local.load('app/portal/members/actions.ts').inviteMembers(['owned'], 'owner@example.test', 'owned'), /redirect:\/portal\/members\/owned$/);
+  local.db.members.push({ ...local.db.members[0], id: 'unlinked', account_status: 'no_account' });
+  await assert.rejects(local.load('app/portal/members/actions.ts').inviteMembers(['unlinked'], 'owner@example.test', 'unlinked'), /redirect:\/portal\/members\/unlinked$/);
+});
+
+test('connection rejects malformed emails and existing or stale member links before invitations/writes', async () => {
+  for (const email of ['', 'invalid', 'invalid@', 'a b@example.test', 'a@example..test']) {
+    const h = harness();
+    await assert.rejects(h.load('app/portal/members/actions.ts').connectMembersToAccount(['owned'], email), /email/i);
+    assert.equal(h.events.some(event => event.invite), false);
+    assert.equal(h.writes.length, 0);
+  }
+  for (const status of ['connected', 'invited', 'no_account']) {
+    const h = harness(); h.db.members[0].account_status = status;
+    await assert.rejects(h.load('app/portal/members/actions.ts').connectMembersToAccount(['owned'], 'new@example.test'), /already connected or invited/);
+    assert.equal(h.events.some(event => event.invite), false);
+    assert.equal(h.writes.length, 0);
+  }
 });
 
 test('invitation suggestions expose only accounts allowed by the shared account target scope', async () => {
   const h = harness(); h.db.members[0].account_status = 'no_account';
+  h.db.members.push({ ...h.db.members[0], id: 'unlinked' });
   const tree = await h.load('app/portal/members/invite/page.tsx').default({ searchParams: Promise.resolve({ memberId: 'owned' }) });
   const json = JSON.stringify(tree);
   assert.ok(json.includes('owner@example.test')); assert.ok(!json.includes('foreign@example.test'));
+  function findMembers(node) {
+    if (!node || typeof node !== 'object') return;
+    if (node?.props?.existingEmails) return node.props.members;
+    for (const child of [node?.props?.children].flat(Infinity)) { const result = findMembers(child); if (result) return result; }
+  }
+  assert.deepEqual(findMembers(tree).map(member => member.id), ['unlinked']);
 });
 
 test('self-service preserves hidden values and normalizes optional blanks, configured choices and checkbox values', async () => {

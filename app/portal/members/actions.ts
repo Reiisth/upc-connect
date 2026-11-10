@@ -10,6 +10,8 @@ import { requireStaffMember } from "./data";
 import { validateChurchMember } from "./validation";
 import { getAccountTargetScopes } from "../accounts/target-scope";
 import { hasPermission } from "@/lib/permissions";
+import { z } from "zod";
+import { MemberConnectionValidationError } from "@/lib/member-connection";
 
 export async function createMember(formData: FormData) {
   const access = await requireMembersPermission("members.create");
@@ -109,6 +111,11 @@ export async function archiveMember(memberId: string) {
 }
 
 export async function inviteMembers(memberIds: string[], email: string, returnMemberId?: string) {
+  redirect(await connectMembersToAccount(memberIds, email, returnMemberId));
+}
+
+// Return a destination so the connection UI can finish its animation before navigating.
+export async function connectMembersToAccount(memberIds: string[], email: string, returnMemberId?: string) {
   const access = await requireMembersPermission(
     "members.link_account",
   );
@@ -117,20 +124,23 @@ export async function inviteMembers(memberIds: string[], email: string, returnMe
   const uniqueMemberIds = Array.from(new Set(memberIds));
 
   if (uniqueMemberIds.length === 0) {
-    throw new Error("Select at least one member.");
+    throw new MemberConnectionValidationError("Select at least one member.");
   }
 
-  const admin = createAdminClient();
   const normalizedEmail = email.trim().toLowerCase();
 
   if (!normalizedEmail) {
-    throw new Error("An account email is required.");
+    throw new MemberConnectionValidationError("An account email is required.");
   }
+  if (!z.string().email().safeParse(normalizedEmail).success) {
+    throw new MemberConnectionValidationError("Enter a valid account email address.");
+  }
+  const admin = createAdminClient();
 
   for (const memberId of uniqueMemberIds) {
     const { data: member, error: memberError } = await admin
       .from("members")
-      .select("id, church_branch_id, is_archived")
+      .select("id, church_branch_id, is_archived, account_status")
       .eq("id", memberId)
       .maybeSingle();
 
@@ -153,6 +163,12 @@ export async function inviteMembers(memberIds: string[], email: string, returnMe
       access,
       member.church_branch_id ?? "",
     );
+    const { data: link, error: linkError } = await admin.from("account_members")
+      .select("id").eq("member_id", memberId).eq("relationship", "member").maybeSingle();
+    if (linkError) throw new Error("Unable to verify member account connections.");
+    if (link || member.account_status !== "no_account") {
+      throw new MemberConnectionValidationError("A selected member is already connected or invited to an account. Choose an unconnected member.");
+    }
   }
 
   let existingUserId: string | null = null;
@@ -219,14 +235,8 @@ export async function inviteMembers(memberIds: string[], email: string, returnMe
       throw new Error(memberLinkError.message);
     }
 
-    if (memberLink && memberLink.user_id !== userId) {
-      throw new Error(
-        "This member is already connected to a different account.",
-      );
-    }
-
-    if (memberLink && memberLink.user_id === userId) {
-      continue;
+    if (memberLink) {
+      throw new MemberConnectionValidationError("A selected member was connected to an account while this form was open. Refresh and choose another member.");
     }
 
     const { error } = await admin.rpc("link_invited_member", {
@@ -257,6 +267,8 @@ export async function inviteMembers(memberIds: string[], email: string, returnMe
   }
 
   revalidatePath("/portal/accounts/members");
+  revalidatePath("/portal/members");
+  revalidatePath("/portal/members/invite");
 
   if (userId) {
     revalidatePath(`/portal/accounts/${userId}`);
@@ -264,9 +276,9 @@ export async function inviteMembers(memberIds: string[], email: string, returnMe
 
   if (returnMemberId && uniqueMemberIds.includes(returnMemberId) && hasPermission(access.permissions, "members.view")) {
     refreshMember(returnMemberId);
-    redirect('/portal/members/' + returnMemberId);
+    return '/portal/members/' + returnMemberId;
   }
-  redirect("/portal/members");
+  return "/portal/members";
 }
 
 export async function disconnectMember(memberId: string) {
