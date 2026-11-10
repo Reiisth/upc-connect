@@ -217,8 +217,6 @@ export default function MemberCard({
 
               {/* KEY MEMBER INFO */}
               <div className="mt-6 grid grid-cols-2 gap-4">
-                <InfoItem label="Date of Birth" value={birthDate} />
-
                 <InfoItem
                   label="Church Branch"
                   value={member.church_branch?.name || "—"}
@@ -237,7 +235,7 @@ export default function MemberCard({
                 </p>
 
                 <div className="rounded-2xl bg-white p-4 shadow-sm">
-                  <QRCode value={member.id} size={120} />
+                  <QRCode value={member.id} size={180} className="h-auto max-w-full" />
                 </div>
 
                 <p className="mt-3 text-center text-xs text-muted-foreground">
@@ -266,6 +264,8 @@ export default function MemberCard({
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">
+                  <InfoItem label="Date of Birth" value={birthDate} />
+
                   <InfoItem
                     label="Gender"
                     value={formatValue(member.gender)}
@@ -281,10 +281,6 @@ export default function MemberCard({
                     value={age !== null ? `${age} years old` : "—"}
                   />
 
-                  <InfoItem
-                    label="Zone"
-                    value={member.zone ? `Zone ${member.zone}` : "—"}
-                  />
                 </div>
               </section>
 
@@ -331,6 +327,10 @@ export default function MemberCard({
                   <InfoItem
                     label="Position"
                     value={member.position || "—"}
+                  />
+                  <InfoItem
+                    label="Zone"
+                    value={member.zone ? `Zone ${member.zone}` : "—"}
                   />
                 </div>
               </section>

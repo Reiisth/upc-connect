@@ -118,7 +118,7 @@ async function PortalShell({
             <MobileProfileInfo><PortalIdentitySummary context={identity} /></MobileProfileInfo>
           <form action={logoutPortal}>
             <Button
-              variant="ghost" pendingLabel="Signing out..."
+              variant="ghost" size="icon" pendingLabel=""
               type="submit"
               aria-label="Logout"
               title="Logout"
