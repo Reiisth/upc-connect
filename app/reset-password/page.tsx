@@ -85,7 +85,7 @@ export default function ResetPasswordPage() {
           <p className="mt-5 text-sm font-medium text-[#5D94E8]">
             Account recovery
           </p>
-          <h1 className="mt-1 font-heading text-2xl font-semibold text-[#203264]">
+          <h1 className="mt-1 font-body text-2xl font-semibold text-[#203264]">
             Create a new password
           </h1>
 

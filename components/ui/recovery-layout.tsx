@@ -22,7 +22,7 @@ export function RecoveryLayout({ children }: { children: ReactNode }) {
         </div>
 
         <div className="max-w-lg">
-          <h2 className="font-heading text-4xl font-semibold leading-tight">
+          <h2 className="font-body text-4xl font-semibold leading-tight">
             One church.
             <br />
             One connected community.
