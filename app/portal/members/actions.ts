@@ -213,7 +213,11 @@ export async function connectMembersToAccount(memberIds: string[], email: string
 
   if (!userId) {
     const { data, error } =
-      await admin.auth.admin.inviteUserByEmail(normalizedEmail);
+      await admin.auth.admin.inviteUserByEmail(normalizedEmail, {
+        redirectTo: process.env.NODE_ENV === "development"
+          ? `http://localhost:${process.env.PORT || "3000"}/set-password`
+          : "https://www.upc-connect.org/set-password",
+      });
 
     if (error) {
       throw new Error(error.message);

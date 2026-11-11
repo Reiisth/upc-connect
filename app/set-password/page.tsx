@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 import { setAccountPassword } from "./actions";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SetPasswordPage() {
   const router = useRouter();
@@ -23,10 +24,42 @@ export default function SetPasswordPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const inviteInitializationStarted = useRef(false);
+
+  useEffect(() => {
+    if (inviteInitializationStarted.current) return;
+    inviteInitializationStarted.current = true;
+    // Standard ConfirmationURL invites return an implicit session in the hash.
+    // The shared SSR browser client uses PKCE, so accept this invite explicitly
+    // through setSession and let its cookie adapter persist the verified session.
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const isInvite = params.get("type") === "invite";
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+    if (!isInvite && !params.has("error")) {
+      setSessionReady(true); // Already verified by /auth/confirm or cookie session.
+      return;
+    }
+
+    // Remove credentials from browser history before initializing the client.
+    window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+    if (params.has("error") || !accessToken || !refreshToken) {
+      setError("This invitation is invalid or expired. Please request a new invitation.");
+      return;
+    }
+    const client = createClient();
+    void client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+      .then(({ error }) => {
+        if (error) setError("This invitation is invalid or expired. Please request a new invitation.");
+        else setSessionReady(true);
+      })
+      .catch(() => setError("Unable to verify your invitation. Please try opening the link again."));
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (loading) return;
+    if (loading || !sessionReady) return;
     setError(null);
 
     if (password.length < 8) {
@@ -231,7 +264,7 @@ export default function SetPasswordPage() {
                 )}
 
                 {/* SUBMIT */}
-                <Button type="submit" loading={loading} pendingLabel="Creating password..." className="w-full">Create Password</Button>
+                <Button type="submit" disabled={!sessionReady} loading={loading} pendingLabel="Creating password..." className="w-full">Create Password</Button>
               </form>
             </CardContent></Card>
           </div>

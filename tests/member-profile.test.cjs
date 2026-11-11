@@ -118,7 +118,7 @@ function harness({ permissions = ['members.view', 'members.create', 'members.upd
     auth: { admin: {
       listUsers: async () => ({ data: { users: [{ id: 'actor', email: 'owner@example.test' }, { id: 'foreign-account', email: 'foreign@example.test' }] }, error: null }),
       getUserById: async (id) => ({ data: { user: { id, email: id === 'actor' ? 'owner@example.test' : 'foreign@example.test' } }, error: null }),
-      inviteUserByEmail: async () => { events.push({ invite: true }); return { data: { user: { id: 'new-account' } }, error: null }; },
+      inviteUserByEmail: async (email, options) => { events.push({ invite: true, email, options }); return { data: { user: { id: 'new-account' } }, error: null }; },
     } },
     rpc: async () => ({ error: null }),
   };
@@ -511,4 +511,59 @@ test('profile form displays church information as read-only values after address
   assert.match(church,/Branch A/); assert.match(church,/Ministry/); assert.match(church,/Volunteer/);
   assert.match(church,/please contact an admin/);
   assert.doesNotMatch(church,/<input|<select|<textarea|<button/);
+});
+
+test('new member invite uses canonical set-password redirect and preserves linking and navigation', async () => {
+  const h = harness();
+  h.db.members.push({ ...h.db.members[0], id: 'unlinked', account_status: 'no_account' });
+  const rpcCalls = [];
+  h.client.rpc = async (name, args) => { rpcCalls.push({name, args}); return {error: null}; };
+  const destination = await h.load('app/portal/members/actions.ts').connectMembersToAccount(['unlinked'], ' New@Example.test ', 'unlinked');
+  assert.equal(destination, '/portal/members/unlinked');
+  const invite = h.events.find(event => event.invite);
+  assert.equal(invite.email, 'new@example.test');
+  assert.equal(invite.options.redirectTo, process.env.NODE_ENV === 'development'
+    ? `http://localhost:${process.env.PORT || '3000'}/set-password`
+    : 'https://www.upc-connect.org/set-password');
+  assert.equal(rpcCalls[0].name, 'link_invited_member');
+  assert.equal(rpcCalls[0].args.p_member_id, 'unlinked');
+  assert.equal(rpcCalls[0].args.p_user_id, 'new-account');
+  assert.equal(h.db.members.find(member => member.id === 'unlinked').account_status, 'invited');
+});
+
+test('member invite development redirect uses the existing local server port', async () => {
+  const previousMode = process.env.NODE_ENV, previousPort = process.env.PORT;
+  try {
+    process.env.NODE_ENV = 'development';
+    process.env.PORT = '3100';
+    const h = harness();
+    h.db.members.push({ ...h.db.members[0], id: 'unlinked', account_status: 'no_account' });
+    await h.load('app/portal/members/actions.ts').connectMembersToAccount(['unlinked'], 'new@example.test');
+    assert.equal(h.events.find(event => event.invite).options.redirectTo, 'http://localhost:3100/set-password');
+  } finally {
+    for (const [key, previous] of [['NODE_ENV', previousMode], ['PORT', previousPort]]) {
+      if (previous === undefined) delete process.env[key]; else process.env[key] = previous;
+    }
+  }
+});
+
+test('existing member account connection sends no invitation and retains connected status', async () => {
+  const h = harness();
+  h.db.members.push({ ...h.db.members[0], id: 'unlinked', account_status: 'no_account' });
+  const destination = await h.load('app/portal/members/actions.ts').connectMembersToAccount(['unlinked'], 'owner@example.test');
+  assert.equal(destination, '/portal/members');
+  assert.equal(h.events.some(event => event.invite), false);
+  assert.equal(h.db.members.find(member => member.id === 'unlinked').account_status, 'connected');
+});
+
+test('Supabase invitation errors propagate before member linking or status writes', async () => {
+  const h = harness();
+  h.db.members.push({ ...h.db.members[0], id: 'unlinked', account_status: 'no_account' });
+  let linked = false;
+  h.client.rpc = async () => { linked = true; return { error: null }; };
+  h.client.auth.admin.inviteUserByEmail = async () => ({ data: { user: null }, error: { message: 'Invite delivery failed' } });
+  await assert.rejects(h.load('app/portal/members/actions.ts').connectMembersToAccount(['unlinked'], 'new@example.test'), /Invite delivery failed/);
+  assert.equal(linked, false);
+  assert.equal(h.writes.length, 0);
+  assert.equal(h.db.members.find(member => member.id === 'unlinked').account_status, 'no_account');
 });
