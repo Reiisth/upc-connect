@@ -23,6 +23,7 @@ export default function ForgotPasswordPage() {
     event: React.FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
+
     if (loading) return;
 
     setError("");
@@ -38,7 +39,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const { error } =
+      const { data, error } =
         await supabase.auth.resetPasswordForEmail(
           normalizedEmail,
           {
@@ -46,16 +47,28 @@ export default function ForgotPasswordPage() {
           },
         );
 
+      console.log("Password reset data:", data);
+      console.log("Password reset error:", error);
+
       if (error) {
+        console.error("Supabase password reset error:", {
+          message: error.message,
+          status: error.status,
+          name: error.name,
+          error,
+        });
+
         setError(
-          "Unable to send the password reset email. Please try again.",
+          `Unable to send reset email: ${error.message}`,
         );
-        setLoading(false);
+
         return;
       }
 
       setSuccess(true);
-    } catch {
+    } catch (err) {
+      console.error("Unexpected password reset error:", err);
+
       setError(
         "Unable to connect. Please check your internet connection and try again.",
       );
@@ -69,24 +82,78 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md rounded-3xl">
         <CardContent className="p-6 sm:p-8">
           <Button asChild variant="link" className="h-auto p-0">
-            <Link href="/login"><ArrowLeft aria-hidden="true" />Back to Login</Link>
+            <Link href="/login">
+              <ArrowLeft aria-hidden="true" />
+              Back to Login
+            </Link>
           </Button>
+
           <div className="mt-6">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF3FB] text-[#203264]"><Mail className="h-5 w-5" aria-hidden="true" /></div>
-            <h1 className="mt-4 font-heading text-2xl font-semibold text-[#203264]">Forgot your password?</h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Enter the email address connected to your UPC Connect account. We&apos;ll send you a link to reset your password.</p>
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF3FB] text-[#203264]">
+              <Mail className="h-5 w-5" aria-hidden="true" />
+            </div>
+
+            <h1 className="mt-4 font-heading text-2xl font-semibold text-[#203264]">
+              Forgot your password?
+            </h1>
+
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Enter the email address connected to your UPC Connect account.
+              We&apos;ll send you a link to reset your password.
+            </p>
           </div>
+
           {success ? (
-            <div role="status" className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4">
-              <p className="text-sm font-medium text-green-800">Check your email</p>
-              <p className="mt-1 text-sm text-green-700">If an account exists for that email address, a password reset link has been sent.</p>
+            <div
+              role="status"
+              className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4"
+            >
+              <p className="text-sm font-medium text-green-800">
+                Check your email
+              </p>
+
+              <p className="mt-1 text-sm text-green-700">
+                If an account exists for that email address, a password reset
+                link has been sent.
+              </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-6 space-y-5" aria-busy={loading}>
-              <FormField label="Email Address" htmlFor="email" required error={error || undefined}>
-                <Input id="email" name="email" type="email" value={email} onChange={event => { setEmail(event.target.value); setError(""); }} placeholder="Enter your email" autoComplete="email" required disabled={loading} aria-invalid={Boolean(error)} />
+            <form
+              onSubmit={handleSubmit}
+              className="mt-6 space-y-5"
+              aria-busy={loading}
+            >
+              <FormField
+                label="Email Address"
+                htmlFor="email"
+                required
+                error={error || undefined}
+              >
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setError("");
+                  }}
+                  placeholder="Enter your email"
+                  autoComplete="email"
+                  required
+                  disabled={loading}
+                  aria-invalid={Boolean(error)}
+                />
               </FormField>
-              <Button type="submit" loading={loading} pendingLabel="Sending reset link..." className="w-full">Send Reset Link</Button>
+
+              <Button
+                type="submit"
+                loading={loading}
+                pendingLabel="Sending reset link..."
+                className="w-full"
+              >
+                Send Reset Link
+              </Button>
             </form>
           )}
         </CardContent>
