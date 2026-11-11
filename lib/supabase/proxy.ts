@@ -51,6 +51,8 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname !== "/" &&
     // This endpoint returns its own 401 JSON for the client session guard.
     request.nextUrl.pathname !== "/api/portal/session" &&
+    // This exact route enforces its own feature flag, secret and account gate.
+    request.nextUrl.pathname !== "/api/load-test/login" &&
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/forgot-password") &&
