@@ -1,18 +1,16 @@
 "use client";
+import { Card, CardContent } from "@/components/ui/card";
+
+import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
+
 
 import { useMemo, useState } from "react";
-import {
-  Archive,
-  ExternalLink,
-  RotateCcw,
-  Search,
-  SearchX,
-} from "lucide-react";
+import { UserRoundCog, KeyRound, Archive, ExternalLink, RotateCcw, SearchX } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
+
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
@@ -213,24 +211,53 @@ export default function StaffAccountsTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 text-slate-500">
+              <UserRoundCog className="h-4 w-4" />
 
-          <Input
-            type="search"
+              <p className="text-xs font-medium uppercase tracking-wide">
+                Staff Accounts
+              </p>
+            </div>
+
+            <p className="mt-3 text-3xl font-semibold text-[#203264]">
+              {filteredAccounts.length}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 text-slate-500">
+              <KeyRound className="h-4 w-4" />
+
+              <p className="text-xs font-medium uppercase tracking-wide">
+                Assigned Roles
+              </p>
+            </div>
+
+            <p className="mt-3 text-3xl font-semibold text-[#203264]">
+              {filteredAccounts.reduce((total, account) => total + account.roles.length, 0)}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+
+      <TableToolbar>
+        <SearchInput
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search by staff name or email..."
-            className="pl-9"
             aria-label="Search staff accounts"
           />
-        </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
           {hasFilters && <ClearFiltersButton onClick={clearFilters} />}
         </div>
-      </div>
+      </TableToolbar>
 
       {accounts.length === 0 ? (
         <EmptyState

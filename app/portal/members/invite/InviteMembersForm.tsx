@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
@@ -132,7 +134,7 @@ function ConnectionFields({ members, existingEmails, defaultEmail, defaultMember
         </>}
       </FormSection>
     </div>
-    {error && !pending && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
+    {error && !pending && <FeedbackMessage>{error}</FeedbackMessage>}
     <FormActions>
       <p role="status" aria-live="polite" className="self-center text-sm text-slate-500 sm:mr-auto">
         {pending ? "Connecting account and member profiles..." : "Each member can be connected to one account."}

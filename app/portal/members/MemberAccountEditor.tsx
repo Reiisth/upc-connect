@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 import { useActionState, useEffect, useState, type ReactNode } from "react";
 import { Link2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +36,7 @@ export default function MemberAccountEditor({ memberId, displayName, canEditName
         <FormField label="Display Name" htmlFor="account-display-name"><Input id="account-display-name" name="display_name" required maxLength={200} defaultValue={displayName} readOnly={!canEditName} /></FormField>
       </fieldset>
       <p className="text-xs text-slate-500">These changes apply to the linked login account and all its member profiles.</p>
-      {state.error && <p role="alert" className="text-sm text-red-700">{state.error}</p>}
+      {state.error && <FeedbackMessage>{state.error}</FeedbackMessage>}
       <FormActions><Button type="button" variant="outline" disabled={pending} onClick={() => setEditing(false)}>Cancel</Button><Button type="submit" loading={pending} disabled={pending}>{pending ? "Saving..." : "Save Changes"}</Button></FormActions>
     </form> : <>{showSaved && <p role="status" className="text-sm text-emerald-700">Account information saved.</p>}<dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2"><div><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Display Name</dt><dd className="mt-1 break-words text-sm font-medium text-slate-800">{displayName || "Not provided"}</dd></div>{children}</dl></>}
   </CardContent></Card>;

@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 import { useState, useTransition } from "react";
 import { unstable_rethrow } from "next/navigation";
 import Link from "next/link";
@@ -177,7 +179,7 @@ export function ServiceForm({
           </FormField>
         </div>
 
-        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+        {error && <FeedbackMessage>{error}</FeedbackMessage>}
         <FormActions>
           <Button variant="outline" asChild>
             <Link href="/portal/services">Cancel</Link>

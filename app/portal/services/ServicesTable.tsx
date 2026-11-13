@@ -1,20 +1,22 @@
 "use client";
+import { Card, CardContent } from "@/components/ui/card";
+
+import { Pagination } from "@/components/ui/pagination";
+
+import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
+
 import Link from "next/link";
 import ServiceLifecycleActions from "./ServiceLifecycleActions";
 import ServiceStatusIcon from "./ServiceStatusIcon";
 
 import { serviceTimestamp } from "@/lib/manila-time";
 
-import {
-  ExternalLink,
-  Search,
-  SearchX,
-} from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock3, ExternalLink, SearchX } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/ui/empty-state";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
+
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { Select } from "@/components/ui/select";
 import {
@@ -115,19 +117,36 @@ export default function ServicesTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <ServiceSummaryCard
+          label="Visible Services"
+          value={filteredServices.length}
+          icon={<CalendarDays />}
+        />
 
-          <Input
-            type="search"
+        <ServiceSummaryCard
+          label="Scheduled"
+          value={filteredServices.filter(service => service.status === "scheduled").length}
+          icon={<Clock3 />}
+          valueClassName="text-amber-700"
+        />
+
+        <ServiceSummaryCard
+          label="Ongoing"
+          value={filteredServices.filter(service => service.status === "ongoing").length}
+          icon={<CheckCircle2 />}
+          valueClassName="text-emerald-700"
+        />
+      </div>
+
+
+      <TableToolbar>
+        <SearchInput
             value={search}
             onChange={(event) => { setSearch(event.target.value); setPage(1); }}
             placeholder="Search by service name..."
-            className="pl-9"
             aria-label="Search services"
           />
-        </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
           <Select
@@ -147,7 +166,7 @@ export default function ServicesTable({
           <Select aria-label="Sort services" value={sortBy} onChange={event => { setSortBy(event.target.value); setPage(1); }} className="w-full sm:w-52"><option value="schedule">Schedule order</option><option value="newest">Date: newest first</option><option value="oldest">Date: oldest first</option><option value="name_asc">Name: A-Z</option><option value="name_desc">Name: Z-A</option></Select>
         {hasFilters && <ClearFiltersButton onClick={clearFilters} />}
         </div>
-      </div>
+      </TableToolbar>
 
       {services.length === 0 ? (
         <EmptyState
@@ -199,14 +218,7 @@ export default function ServicesTable({
         </Table>
       )}
       {filteredServices.length > 0 && (
-        <nav aria-label="Services pagination" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p role="status" className="text-sm text-slate-500">Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredServices.length)} of {filteredServices.length} services</p>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</Button>
-            <span className="text-sm text-slate-500">Page {currentPage} of {totalPages}</span>
-            <Button type="button" variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>Next</Button>
-          </div>
-        </nav>
+        <Pagination label="Services pagination" page={currentPage} pageSize={10} total={filteredServices.length} noun="services" onPageChange={setPage} />
       )}
     </div>
   );
@@ -265,5 +277,39 @@ function formatStartTime(value: string | null) {
       hour: "numeric",
       minute: "2-digit",
     },
+  );
+}
+
+function ServiceSummaryCard({
+  label,
+  value,
+  icon,
+  valueClassName = "text-[#203264]",
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  valueClassName?: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              {label}
+            </p>
+
+            <p className={`mt-3 text-3xl font-semibold ${valueClassName}`}>
+              {value}
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
+            {icon}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

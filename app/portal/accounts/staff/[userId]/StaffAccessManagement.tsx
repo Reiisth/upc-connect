@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import { Building2, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -251,7 +253,7 @@ export function StaffAccessManagement({
                 </div>
 
                 {roleFeedback && (
-                  <FeedbackMessage feedback={roleFeedback} />
+                  <ActionFeedback feedback={roleFeedback} />
                 )}
 
                 <FormActions>
@@ -422,7 +424,7 @@ export function StaffAccessManagement({
               </div>
 
               {branchFeedback && (
-                <FeedbackMessage feedback={branchFeedback} />
+                <ActionFeedback feedback={branchFeedback} />
               )}
 
               <FormActions>
@@ -537,21 +539,9 @@ function ReadOnlyBranchAccess({
   );
 }
 
-function FeedbackMessage({ feedback }: { feedback: Feedback }) {
+function ActionFeedback({ feedback }: { feedback: Feedback }) {
   if (!feedback) return null;
-
-  return (
-    <p
-      role={feedback.type === "error" ? "alert" : "status"}
-      className={
-        feedback.type === "error"
-          ? "rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700"
-          : "rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700"
-      }
-    >
-      {feedback.message}
-    </p>
-  );
+  return <FeedbackMessage variant={feedback.type === "error" ? "error" : "success"}>{feedback.message}</FeedbackMessage>;
 }
 
 function hasSameIds(left: string[], right: string[]) {

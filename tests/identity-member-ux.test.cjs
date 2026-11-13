@@ -113,7 +113,7 @@ test('Member detail prioritizes church information and gates secondary actions b
   const care = detail.indexOf('Care and Activity');
   const archive = detail.indexOf('Member Record Actions');
   assert.ok(church >= 0 && church < account && account < personal && personal < care && care < archive);
-  assert.match(detail, /Member Status:/);
+  assert.match(detail, /<MemberStatus status=\{member.member_status\}/);
   assert.match(detail, /View Attendance History/);
   assert.match(detail, /can\("members\.update"\)/);
   assert.match(detail, /can\("members\.link_account"\)/);

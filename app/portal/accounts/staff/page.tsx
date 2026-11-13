@@ -1,10 +1,7 @@
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
@@ -22,11 +19,7 @@ import StaffAccountsTable, {
 import { getAccountTargetScopes } from "../target-scope";
 import { getAuthUsersByIds } from "../auth-users";
 import { requireStaffAccountAccess } from "../access";
-import {
-  KeyRound,
-  UserPlus,
-  UserRoundCog,
-} from "lucide-react";
+import { UserPlus, UserRoundCog } from "lucide-react";
 
 type ProfileRow = {
   id: string;
@@ -209,12 +202,6 @@ async function StaffAccountsContent() {
       };
     });
 
-  const totalAccounts = staffAccounts.length;
-
-  const totalRoleAssignments = staffAccounts.reduce(
-    (total, account) => total + account.roles.length,
-    0,
-  );
   const canInvite = hasPermission(
     access.permissions,
     "accounts.invite",
@@ -248,40 +235,6 @@ async function StaffAccountsContent() {
       />
 
       <AccountsTabs permissions={access.permissions} />
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center gap-2 text-slate-500">
-              <UserRoundCog className="h-4 w-4" />
-
-              <p className="text-xs font-medium uppercase tracking-wide">
-                Staff Accounts
-              </p>
-            </div>
-
-            <p className="mt-3 text-3xl font-semibold text-[#203264]">
-              {totalAccounts}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center gap-2 text-slate-500">
-              <KeyRound className="h-4 w-4" />
-
-              <p className="text-xs font-medium uppercase tracking-wide">
-                Assigned Roles
-              </p>
-            </div>
-
-            <p className="mt-3 text-3xl font-semibold text-[#203264]">
-              {totalRoleAssignments}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       <StaffAccountsTable
         accounts={staffAccounts}

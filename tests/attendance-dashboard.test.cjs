@@ -19,6 +19,7 @@ function harness(db=fixture()){
   constructor(table){this.table=table;this.filters=[];this.orders=[];this.first=0;this.last=Infinity;}
   select(columns,options={}){this.columns=columns;this.options=options;return this;}
   eq(key,value){this.filters.push(row=>row[key]===value);return this;}
+  ilike(key,pattern){const needle=pattern.slice(1,-1).toLowerCase();this.filters.push(row=>row[key].toLowerCase().includes(needle));return this;}
   in(key,values){this.filters.push(row=>values.includes(row[key]));return this;}
   gte(key,value){this.filters.push(row=>row[key]>=value);return this;}
   lte(key,value){this.filters.push(row=>row[key]<=value);return this;}
@@ -48,9 +49,9 @@ test('average uses Present only; completed and effective ongoing Services includ
  const date=await harness().load(null,'2026-11-01');assert.equal(date.qualifyingServices,4);assert.equal(date.average,1.5);
  const north=await harness().load('a','2026-11-01');assert.equal(north.qualifyingServices,3);assert.equal(north.average,1);
 });
-test('current member population uses home branch, includes inactive, excludes archived and ignores dashboard date',async()=>{
+test('unfiltered member population uses home branch; date filters count distinct members with records',async()=>{
  const h=harness();assert.equal((await h.load()).totalMembers,3);assert.equal((await h.load('a')).totalMembers,2);assert.equal((await h.load('b')).totalMembers,1);
- assert.equal((await h.load('a','2000-01-01')).totalMembers,2);assert.equal((await h.load('b','2026-11-01')).totalMembers,1);
+ assert.equal((await h.load('a','2000-01-01')).totalMembers,0);assert.equal((await h.load('b','2026-11-01')).totalMembers,5);
 });
 test('same-day composition groups multiple Services by host branch and uses only stored Absent',async()=>{
  const h=harness();const data=await h.load(null,'2026-11-01');assert.equal(data.byBranch.length,2);
@@ -61,7 +62,7 @@ test('same-day composition groups multiple Services by host branch and uses only
 test('date context uses Manila Service DATE, not attendance check-in UTC day; empty date has no invented latest Service',async()=>{
  const h=harness();const day=await h.load('b','2026-11-06');assert.equal(day.latest.id,'midnight');assert.equal(day.byBranch[0].present,1);
  const previous=await h.load('b','2026-11-05');assert.equal(previous.latest,null);assert.equal(previous.average,null);assert.equal(previous.byBranch[0].present,0);
- const empty=await h.load(null,'2000-01-01');assert.equal(empty.latest,null);assert.equal(empty.average,null);assert.equal(empty.qualifyingServices,0);assert.equal(empty.totalMembers,3);
+ const empty=await h.load(null,'2000-01-01');assert.equal(empty.latest,null);assert.equal(empty.average,null);assert.equal(empty.qualifyingServices,0);assert.equal(empty.totalMembers,0);
 });
 test('overview trend is ordered and count queries download neither raw attendance rows nor Member details',async()=>{
  const h=harness(),data=await h.load();assert.deepEqual(Array.from(data.trend,row=>row.period),['2026-06-01','2026-07-01','2026-08-01','2026-09-01','2026-10-01','2026-11-01']);assert.deepEqual(Array.from(data.trend,row=>row.present),[0,0,0,0,1,7]);
@@ -92,7 +93,7 @@ test('latest lookup pages past same-day future attendance candidates instead of 
 test('large service scopes paginate metadata and batch SQL counts without downloading attendance histories',async()=>{
  const h=harness();for(let n=0;n<505;n++){const id='bulk-'+String(n).padStart(4,'0');h.db.services.push({id,name:id,church_branch_id:'a',service_date:'2026-10-30',start_time:'09:00',status:'completed'});h.db.attendance_records.push({id,service_id:id,member_id:'1',attendance_status:'present'});}
  const result=await h.load('a','2026-10-30');assert.equal(result.qualifyingServices,505);assert.equal(result.byBranch[0].present,505);assert.equal(result.average,1);assert.equal(result.latest.present,1);
- assert.ok(h.calls.filter(call=>call.table==='attendance_records').every(call=>call.head));
+ assert.ok(h.calls.filter(call=>call.table==='attendance_records').every(call=>call.head||call.columns==='id,member_id'));
 });
 
 test('effective authorized branch count drives date charts and Attendance palette is explicit',()=>{
@@ -173,4 +174,15 @@ test('Latest card and comparison count Present only, including a real Service wi
  assert.match(html,/Latest Service Attendance<\/p><p[^>]*>3<\/p>/);assert.equal(data.latest.present+data.latest.excused+data.latest.absent,5);
  for(const row of h.db.attendance_records)if(row.service_id==='a2')row.attendance_status='absent';
  const zero=await h.load('a');assert.equal(zero.latest.id,'a2');assert.equal(zero.latest.present,0);assert.equal(zero.latestComparison.previous,1);assert.equal(zero.latestComparison.percent,-100);
+});
+
+test('dashboard service search/type constrain latest, trend, average, comparisons and distinct member card', async()=>{
+ const h=harness();
+ for(const service of h.db.services)service.service_type=service.id==='a2'?'worship':'prayer';
+ const data=await h.api.loadAttendanceDashboard(h.admin,h.db.branches,null,'2026-11-01',now,{search:'a2',type:'worship'});
+ assert.equal(data.qualifyingServices,1);assert.equal(data.latest.id,'a2');assert.equal(data.average,2);
+ assert.equal(data.totalMembers,2);assert.equal(data.byBranch.reduce((sum,row)=>sum+row.present,0),2);
+ const empty=await h.api.loadAttendanceDashboard(h.admin,h.db.branches,null,null,now,{search:'no matching service'});
+ assert.equal(empty.latest,null);assert.equal(empty.qualifyingServices,0);assert.equal(empty.totalMembers,0);
+ assert.ok(empty.trend.every(row=>row.present===0));
 });

@@ -1,4 +1,10 @@
 "use client";
+import { Pagination } from "@/components/ui/pagination";
+
+import { MemberStatus } from "@/components/ui/member-status";
+
+import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
+
 import { useRouter } from "next/navigation";
 import { useRef, useTransition } from "react";
 import { memberListUrl, type MemberListFilters } from "./list-filters";
@@ -10,12 +16,11 @@ import { MemberArchiveControl } from "./MemberArchiveControl";
 import {
   ExternalLink,
   MailPlus,
-  Search,
   SearchX,
   Unplug,
 } from "lucide-react";
 import Link from "@/components/ui/intent-link";
-import { Input } from "@/components/ui/input";
+
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { Select } from "@/components/ui/select";
 import {
@@ -26,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+
 import { EmptyState } from "@/components/ui/empty-state";
 
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -188,10 +193,6 @@ export default function MembersTable({
     sortBy,
   ]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil((paging?.total ?? filteredMembers.length) / itemsPerPage),
-  );
 
   const paginatedMembers = paging ? members : filteredMembers.slice(
     (currentPage - 1) * itemsPerPage,
@@ -231,18 +232,12 @@ export default function MembersTable({
   return (
     <>
       {refreshing && <p role="status" className="text-xs text-slate-500">Updating members...</p>}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-          <Input
-            type="search"
+      <TableToolbar>
+        <SearchInput
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search members..."
-            className="pl-9"
           />
-        </div>
 
         <div className="grid grid-cols-2 items-center gap-3 sm:grid-cols-3 lg:flex">
           <Select value={branchFilter} onChange={event => setBranchFilter(event.target.value)} className="lg:w-44" aria-label="Filter members by branch">
@@ -270,7 +265,7 @@ export default function MembersTable({
 
         </div>
         {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} className="self-center" />}
-      </div>
+      </TableToolbar>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border bg-white shadow-sm">
         {(paging?.sourceCount ?? members.length) === 0 ? (
@@ -315,11 +310,7 @@ export default function MembersTable({
                   <TableRow key={member.id}>
                     <TableCell>
                       <div className="flex items-start gap-3">
-                        <span tabIndex={0} aria-label={`Member status: ${member.member_status === "active" ? "Active" : "Inactive"}`}
-                          className={`group mt-1 inline-flex h-3 shrink-0 items-center rounded-full outline-none transition-all hover:h-6 focus:h-6 focus-visible:ring-2 focus-visible:ring-[#5D94E8] focus-visible:ring-offset-2 ${member.member_status === "active" ? "bg-emerald-500" : "bg-slate-400"}`}>
-                          <span className="h-3 w-3 rounded-full" aria-hidden="true" />
-                          <span aria-hidden="true" className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium text-white opacity-0 transition-all group-hover:max-w-24 group-hover:pr-2 group-hover:opacity-100 group-focus:max-w-24 group-focus:pr-2 group-focus:opacity-100">{member.member_status === "active" ? "Active" : "Inactive"}</span>
-                        </span>
+                        <MemberStatus status={member.member_status} className="mt-1" />
                         <div className="min-w-0">
                       <Link
                         href={`/portal/members/${member.id}`}
@@ -406,52 +397,7 @@ export default function MembersTable({
         )}
       </div>
       {(paging?.total ?? filteredMembers.length) > 0 && (
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">
-            Showing{" "}
-            {(currentPage - 1) * itemsPerPage + 1}
-            {"–"}
-            {Math.min(
-              currentPage * itemsPerPage,
-              paging?.total ?? filteredMembers.length,
-            )}{" "}
-            of {paging?.total ?? filteredMembers.length} members
-          </p>
-
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((page) =>
-                  Math.max(1, page - 1),
-                )
-              }
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-
-            <span className="px-2 text-sm text-slate-500">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((page) =>
-                  Math.min(totalPages, page + 1),
-                )
-              }
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+        <Pagination label="Members pagination" page={currentPage} pageSize={itemsPerPage} total={paging?.total ?? filteredMembers.length} noun="members" onPageChange={page => setCurrentPage(page)} />
       )}
     </>
   );

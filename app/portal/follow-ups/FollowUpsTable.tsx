@@ -1,4 +1,10 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
+import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
+
+import { Pagination } from "@/components/ui/pagination";
+
 
 import { useMemo, useState } from "react";
 import { History, Pencil } from "lucide-react";
@@ -63,16 +69,16 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
             <FormField label="To" htmlFor="follow-ups-to"><Input id="follow-ups-to" type="date" value={dateTo} min={dateFrom || undefined} onChange={e => { setDateTo(e.target.value); setPeriod("custom"); }} aria-invalid={Boolean(rangeError)} /></FormField>
             <Button type="submit" className="col-span-2 lg:col-span-1">Apply range</Button>
           </div>
-          {rangeError && <p role="alert" className="mt-2 text-sm text-red-700">{rangeError}</p>}
+          {rangeError && <FeedbackMessage className="mt-2">{rangeError}</FeedbackMessage>}
         </fieldset>
       </form>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Search members" htmlFor="follow-ups-search"><Input id="follow-ups-search" type="search" value={filters.search} onChange={(event) => field("search", event.target.value)} placeholder="Member name" /></FormField>
+      <TableToolbar className="lg:items-end [&>div]:w-full lg:[&>div]:flex-1">
+        <FormField label="Search members" htmlFor="follow-ups-search"><SearchInput id="follow-ups-search" value={filters.search} onChange={(event) => field("search", event.target.value)} placeholder="Member name" /></FormField>
         <FormField label="Branch" htmlFor="follow-ups-branch"><Select id="follow-ups-branch" value={filters.branch} onChange={(event) => field("branch", event.target.value)}>
           <option value="">All accessible branches</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}{branch.isActive ? "" : " (Inactive branch)"}</option>)}
         </Select></FormField>
         {hasClearableFilters && <div className="flex items-end"><ClearFiltersButton onClick={clearFilters} /></div>}
-      </div>
+      </TableToolbar>
       {!rows.length ? <EmptyState title="No follow-ups recorded" description="A record appears only when staff records a follow-up action." /> : (
         <Table className="min-w-[1080px]" aria-label="Historical member follow-ups">
           <TableHeader><TableRow>
@@ -101,14 +107,7 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
           })}</TableBody>
         </Table>
       )}
-      {filtered.length > 0 && <nav aria-label="Follow-ups pagination" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p role="status" className="text-sm text-slate-500">Showing {(currentPage - 1) * 10 + 1}-{Math.min(currentPage * 10, filtered.length)} of {filtered.length} records</p>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</Button>
-          <span className="text-sm text-slate-500">Page {currentPage} of {totalPages}</span>
-          <Button type="button" variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>Next</Button>
-        </div>
-      </nav>}
+      {filtered.length > 0 && <Pagination label="Follow-ups pagination" page={currentPage} pageSize={10} total={filtered.length} noun="records" onPageChange={setPage} />}
     </section>
   );
 }

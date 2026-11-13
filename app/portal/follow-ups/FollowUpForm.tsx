@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import Link from "next/link";
 import MemberAutocomplete from "../contributions/MemberAutocomplete";
@@ -26,7 +28,7 @@ export default function FollowUpForm({ branches, members, initialValues, action,
   return (
     <form action={formAction}>
       <FormSection title="Follow-up Details">
-        {state.error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{state.error}</p>}
+        {state.error && <FeedbackMessage>{state.error}</FeedbackMessage>}
         <fieldset disabled={pending} className="grid gap-5 md:grid-cols-2">
           {immutable ? (
             <>

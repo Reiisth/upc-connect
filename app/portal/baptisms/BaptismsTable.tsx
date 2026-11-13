@@ -1,5 +1,12 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
+import { Pagination } from "@/components/ui/pagination";
+
+import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
+
 import Link from "@/components/ui/intent-link";
+import { filteredModuleSummary } from "@/lib/filtered-module-summary";
 import ModuleMiniDashboard, { type ModuleSummary } from "@/components/module-summary";
 
 import {
@@ -7,7 +14,6 @@ import {
   Droplets,
   Flame,
   Pencil,
-  Search,
   SearchX,
 } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
@@ -92,11 +98,9 @@ export default function BaptismsTable({
     else if(value!=="custom"){const next=resolveAnalyticsDateRange({preset:value as "last_30_days"|"year_to_date"},today);setDateFrom(next.from);setDateTo(next.to);}
   }
 
-  const filteredRecords = useMemo(() => {
+  const contextRecords = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
-
-    return [...records]
-      .filter((record) => {
+    return records.filter(record => {
         const matchesSearch =
           !normalizedSearch ||
           record.memberName.toLowerCase().includes(normalizedSearch);
@@ -106,25 +110,28 @@ export default function BaptismsTable({
         const matchesType =
           typeFilter === "all" ||
           record.baptismType === typeFilter;
+
+      return matchesSearch && matchesBranch && matchesType;
+    });
+  }, [records, search, branchFilter, typeFilter]);
+  const filteredSummary = useMemo(() => summary ? filteredModuleSummary(summary, contextRecords) : undefined, [summary, contextRecords]);
+
+  const filteredRecords = useMemo(() => {
+    return [...contextRecords]
+      .filter((record) => {
         const matchesDateFrom =
           !range.from || (record.baptismDate===null ? range.includeUndated : record.baptismDate >= range.from);
         const matchesDateTo =
           !range.to || (record.baptismDate===null ? range.includeUndated : record.baptismDate <= range.to);
 
-        return (
-          matchesSearch &&
-          matchesBranch &&
-          matchesType &&
-          matchesDateFrom &&
-          matchesDateTo
-        );
+        return matchesDateFrom && matchesDateTo;
       })
       .sort((a, b) => {
         if (sortBy === "name_asc" || sortBy === "name_desc") return (sortBy === "name_desc" ? -1 : 1) * a.memberName.localeCompare(b.memberName) || a.id.localeCompare(b.id);
         if (!a.baptismDate || !b.baptismDate) return compareBaptisms(a, b) || a.id.localeCompare(b.id);
         return (sortBy === "oldest" ? -1 : 1) * compareBaptisms(a, b) || a.id.localeCompare(b.id);
       });
-  }, [records, search, branchFilter, typeFilter, range, sortBy]);
+  }, [contextRecords, range, sortBy]);
 
   const pageSize=10,totalPages=Math.max(1,Math.ceil(filteredRecords.length/pageSize));
   const currentPage=Math.min(page,totalPages);
@@ -156,23 +163,17 @@ export default function BaptismsTable({
             <FormField label="To" htmlFor="baptisms-to"><Input id="baptisms-to" type="date" value={dateTo} min={dateFrom||undefined} onChange={(event)=>{setDateTo(event.target.value);setPreset("custom");}} aria-label="Baptisms to date" aria-invalid={Boolean(rangeError)||undefined}/></FormField>
             <Button type="submit" className="col-span-2 lg:col-span-1" loading={pending} disabled={pending}>{pending?"Applying...":"Apply range"}</Button>
           </div>
-          {rangeError&&<p role="alert" className="mt-2 text-sm text-red-700">{rangeError}</p>}
+          {rangeError&&<FeedbackMessage className="mt-2">{rangeError}</FeedbackMessage>}
         </fieldset>
       </form>
-      {summary && <ModuleMiniDashboard data={summary} branchId={branchFilter} branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-          <Input
-            type="search"
+      {filteredSummary && <ModuleMiniDashboard data={filteredSummary} branchId="all" branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
+      <TableToolbar>
+        <SearchInput
             value={search}
             onChange={(event) => {setSearch(event.target.value);setPage(1);}}
             placeholder="Search by member name..."
-            className="pl-9"
             aria-label="Search baptism records by member name"
           />
-        </div>
 
         <div className="w-full shrink-0 sm:w-56">
           <Select
@@ -193,7 +194,7 @@ export default function BaptismsTable({
 
         <Select aria-label="Sort baptisms" value={sortBy} onChange={event => { setSortBy(event.target.value); setPage(1); }} className="w-full sm:w-52"><option value="newest">Date: newest first</option><option value="oldest">Date: oldest first</option><option value="name_asc">Name: A-Z</option><option value="name_desc">Name: Z-A</option></Select>
         {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} className="self-start sm:self-center" />}
-      </div>
+      </TableToolbar>
 
       {records.length === 0 ? (
         <EmptyState
@@ -302,14 +303,7 @@ export default function BaptismsTable({
           </TableBody>
         </Table>
       )}
-      {filteredRecords.length>0&&<nav aria-label="Baptisms pagination" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p role="status" className="text-sm text-slate-500">Showing {(currentPage-1)*pageSize+1}-{Math.min(currentPage*pageSize,filteredRecords.length)} of {filteredRecords.length} baptism records</p>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={currentPage===1} onClick={()=>setPage(currentPage-1)}>Previous</Button>
-          <span className="text-sm text-slate-500">Page {currentPage} of {totalPages}</span>
-          <Button type="button" variant="outline" size="sm" disabled={currentPage===totalPages} onClick={()=>setPage(currentPage+1)}>Next</Button>
-        </div>
-      </nav>}
+      {filteredRecords.length>0&&<Pagination label="Baptisms pagination" page={currentPage} pageSize={10} total={filteredRecords.length} noun="baptism records" onPageChange={setPage} />}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { MemberStatus } from "@/components/ui/member-status";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
@@ -67,11 +68,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
-            <span tabIndex={0} aria-label={`Member Status: ${member.member_status === "active" ? "Active" : "Inactive"}`}
-              className={`group inline-flex h-3 shrink-0 items-center rounded-full outline-none transition-all hover:h-6 focus:h-6 focus-visible:ring-2 focus-visible:ring-[#5D94E8] focus-visible:ring-offset-2 ${member.member_status === "active" ? "bg-emerald-500" : "bg-slate-400"}`}>
-              <span className="h-3 w-3 rounded-full" aria-hidden="true" />
-              <span aria-hidden="true" className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium text-white opacity-0 transition-all group-hover:max-w-24 group-hover:pr-2 group-hover:opacity-100 group-focus:max-w-24 group-focus:pr-2 group-focus:opacity-100">{member.member_status === "active" ? "Active" : "Inactive"}</span>
-            </span>
+            <MemberStatus status={member.member_status} />
             <h2 className="font-radio-canada text-2xl font-semibold text-[#203264] sm:text-3xl">{fullName}</h2>
             <MemberCardButton member={{ ...member, department, church_branch: branch }} />
           </div>

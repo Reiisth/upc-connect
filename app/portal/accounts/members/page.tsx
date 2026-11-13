@@ -3,16 +3,9 @@ import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+
 import MemberAccountsTable from "./MemberAccountsTable";
-import {
-  UserPlus,
-  UserRoundCog,
-  UsersRound,
-} from "lucide-react";
+import { UserPlus, UserRoundCog } from "lucide-react";
 import AccountsTabs from "../AccountsTabs";
 import { Suspense } from "react";
 
@@ -129,12 +122,6 @@ async function MemberAccountsContent() {
     };
   });
 
-  const totalAccounts = accounts.length;
-
-  const totalLinkedMembers = accounts.reduce(
-    (total, account) => total + account.members.length,
-    0,
-  );
   const canArchive = hasPermission(
     access.permissions,
     "accounts.archive",
@@ -159,41 +146,6 @@ async function MemberAccountsContent() {
       />
 
       <AccountsTabs permissions={access.permissions} />
-
-      {/* SUMMARY */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center gap-2 text-slate-500">
-              <UserRoundCog className="h-4 w-4" />
-
-              <p className="text-xs font-medium uppercase tracking-wide">
-                Member Accounts
-              </p>
-            </div>
-
-            <p className="mt-3 text-3xl font-semibold text-[#203264]">
-              {totalAccounts}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center gap-2 text-slate-500">
-              <UsersRound className="h-4 w-4" />
-
-              <p className="text-xs font-medium uppercase tracking-wide">
-                Linked Members
-              </p>
-            </div>
-
-            <p className="mt-3 text-3xl font-semibold text-[#203264]">
-              {totalLinkedMembers}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* TABLE */}
       <MemberAccountsTable

@@ -2,7 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { Activity, CircleAlert, CircleCheck, CircleHelp, UsersRound } from "lucide-react";
+import { Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -11,7 +11,7 @@ import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select } from "@/components/ui/select";
 import { getBranchMemberInactivity, getInactivityBranchOptions } from "@/lib/inactivity/server";
-import { getMonitoringCounts } from "@/lib/inactivity/presentation";
+
 import InactivityTable from "./InactivityTable";
 import ThresholdSettings from "./ThresholdSettings";
 
@@ -35,7 +35,7 @@ async function CachedInactivityContent({ searchParams }: { searchParams: Awaited
   const branch = requestedBranch ? branches.find((item) => item.id === requestedBranch) : branches[0];
   if (requestedBranch && !branch) redirect("/access-denied");
   const rows = branch ? await getBranchMemberInactivity(branch.id) : [];
-  const counts = getMonitoringCounts(rows);
+
 
   return (
     <PageContainer>
@@ -73,25 +73,6 @@ async function CachedInactivityContent({ searchParams }: { searchParams: Awaited
             <ThresholdSettings key={branch.id} branch={branch} canManage={canManageSettings} />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Selected branch monitoring totals">
-            {[
-              { label: "Total Monitored", value: counts.total, icon: UsersRound, note: "Non-archived branch members" },
-              { label: "Monitoring", value: counts.monitoring, icon: CircleCheck, note: "Below the follow-up threshold" },
-              { label: "Needs Follow-up", value: counts.needsFollowUp, icon: CircleAlert, note: "Threshold reached; staff review is needed" },
-              { label: "Unknown", value: counts.unknown, icon: CircleHelp, note: "Missing or invalid attendance start date" },
-            ].map(({ label, value, icon: Icon, note }) => (
-              <Card key={label}>
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-                    <Icon className="h-5 w-5 shrink-0 text-[#5D94E8]" aria-hidden="true" />
-                  </div>
-                  <p className="mt-3 text-3xl font-semibold tabular-nums text-[#203264]">{value.toLocaleString("en-PH")}</p>
-                  <p className="mt-2 text-xs text-slate-500">{note}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
           <InactivityTable key={branch.id} rows={rows} canCreateFollowUps={canCreateFollowUps} canViewFollowUps={canViewFollowUps} canViewMemberStatus={canViewMemberStatus} canUpdateMemberStatus={canUpdateMemberStatus} />
         </>
       )}

@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
@@ -280,7 +282,7 @@ export default function RoleDetailEditor({
             )}
 
             {metadataFeedback && (
-              <FeedbackMessage feedback={metadataFeedback} />
+              <ActionFeedback feedback={metadataFeedback} />
             )}
 
             {canUpdate && (
@@ -324,7 +326,7 @@ export default function RoleDetailEditor({
           />
 
           {permissionFeedback && (
-            <FeedbackMessage feedback={permissionFeedback} />
+            <ActionFeedback feedback={permissionFeedback} />
           )}
 
           {canManagePermissions && (
@@ -357,19 +359,9 @@ export default function RoleDetailEditor({
   );
 }
 
-function FeedbackMessage({ feedback }: { feedback: Feedback }) {
+function ActionFeedback({ feedback }: { feedback: Feedback }) {
   if (!feedback) return null;
-
-  return (
-    <p
-      role="status"
-      className={feedback.type === "error"
-        ? "rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
-        : "rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700"}
-    >
-      {feedback.message}
-    </p>
-  );
+  return <FeedbackMessage variant={feedback.type === "error" ? "error" : "success"}>{feedback.message}</FeedbackMessage>;
 }
 
 function getErrorMessage(error: unknown, fallback: string) {

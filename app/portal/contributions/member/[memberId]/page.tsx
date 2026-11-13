@@ -1,14 +1,15 @@
+import { Pagination } from "@/components/ui/pagination";
+import { MemberStatus } from "@/components/ui/member-status";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { Suspense } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarDays, HandCoins, MapPin, Wallet, Pencil } from "lucide-react";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableActionButton } from "@/components/ui/table-action-button";
@@ -71,9 +72,7 @@ async function Content({ params, searchParams }: Props) {
     <PageHeader eyebrow="Contributions" eyebrowIcon={<HandCoins className="h-4 w-4" />} title="Member Contribution History" description="Recorded contributions within your branch access." backHref={navigation.backHref} backLabel={navigation.backLabel} />
     <Card><CardContent className="space-y-4 p-5 sm:p-6">
       <div><div className="flex items-center gap-3">
-        {showStatus && <span tabIndex={0} aria-label={`Member status: ${member.member_status ?? "unknown"}`} className={`group inline-flex h-3 shrink-0 items-center rounded-full outline-none transition-all hover:h-6 focus:h-6 focus-visible:ring-2 focus-visible:ring-[#5D94E8] ${member.member_status === "active" ? "bg-emerald-500" : "bg-slate-400"}`}>
-          <span className="h-3 w-3 rounded-full" aria-hidden="true" /><span aria-hidden="true" className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium text-white opacity-0 transition-all group-hover:max-w-24 group-hover:pr-2 group-hover:opacity-100 group-focus:max-w-24 group-focus:pr-2 group-focus:opacity-100">{member.member_status === "active" ? "Active" : member.member_status === "inactive" ? "Inactive" : "Unknown"}</span>
-        </span>}
+        {showStatus && <MemberStatus status={member.member_status} />}
         <h2 className="font-radio-canada text-2xl font-semibold text-[#203264] sm:text-3xl">{name}</h2>
       </div><p className="mt-2 text-sm text-slate-500">{currentBranch?.name ?? "Outside your branch access"}{showStatus && member.is_archived ? " · Archived member" : ""}</p></div>
       <dl className="grid gap-5 border-t border-slate-200 pt-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -89,9 +88,7 @@ async function Content({ params, searchParams }: Props) {
           {hasPermission(access.permissions, "contributions.update") && <TableActionButton href={`/portal/contributions/${record.id}/edit`} icon={<Pencil />}>Edit</TableActionButton>}
         </div>{record.notes && <p className="whitespace-pre-wrap break-words text-sm text-slate-600">{record.notes}</p>}
       </CardContent></Card>)}
-      <nav aria-label="Contribution history pagination" className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-500">Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, history.length)} of {history.length} records</p><div className="flex items-center gap-2">
-        {page > 1 ? <Button variant="outline" size="sm" asChild><Link href={navigation.pageHref(page - 1)}>Previous</Link></Button> : <Button variant="outline" size="sm" disabled>Previous</Button>}<span className="text-sm text-slate-500">Page {page} of {pages}</span>{page < pages ? <Button variant="outline" size="sm" asChild><Link href={navigation.pageHref(page + 1)}>Next</Link></Button> : <Button variant="outline" size="sm" disabled>Next</Button>}
-      </div></nav>
+      <Pagination label="Contribution history pagination" page={page} pageSize={10} total={history.length} hrefForPage={navigation.pageHref} />
     </section>}
   </PageContainer>;
 }

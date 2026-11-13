@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import { Archive, RotateCcw } from "lucide-react";
 import { useState } from "react";
@@ -94,12 +96,7 @@ export function StaffAccountActions({
         )}
 
         {actionError && (
-          <p
-            role="alert"
-            className="basis-full rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {actionError}
-          </p>
+          <FeedbackMessage className="basis-full">{actionError}</FeedbackMessage>
         )}
       </div>
 

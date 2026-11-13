@@ -1,4 +1,8 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
+import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
+
 
 import {
   ExternalLink,
@@ -36,14 +40,7 @@ import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import { saveAttendanceRecord, searchAttendanceMembers } from "./actions";
 import { formatManilaTimestamp, toManilaDateTimeValue } from "@/lib/manila-time";
-import {
-  formatAttendanceStatus,
-  isVisitingMember,
-  formatMemberName,
-  type AttendanceMemberRow,
-  type AttendanceStatus,
-  type AttendanceSummary,
-} from "./types";
+import { getAttendanceSummary, formatAttendanceStatus, isVisitingMember, formatMemberName, type AttendanceMemberRow, type AttendanceStatus, type AttendanceSummary } from "./types";
 
 type AttendanceViewProps = {
   serviceId: string;
@@ -72,7 +69,7 @@ export default function AttendanceView({
   visitingBranches = [],
   serviceBranchId = "",
   rows,
-  summary,
+
   canRecord,
   canCorrect,
 }: AttendanceViewProps) {
@@ -132,6 +129,7 @@ export default function AttendanceView({
       return matchesSearch && matchesStatus;
     });
   }, [rows, search, statusFilter]);
+  const summary = getAttendanceSummary(filteredRows);
   const hasClearableFilters = Boolean(search.trim() || statusFilter !== "all");
   function clearFilters() {
     setSearch("");
@@ -324,21 +322,11 @@ export default function AttendanceView({
             </div>
 
             {errorMessage && (
-              <p
-                role="alert"
-                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-              >
-                {errorMessage}
-              </p>
+              <FeedbackMessage>{errorMessage}</FeedbackMessage>
             )}
 
             {successMessage && (
-              <p
-                role="status"
-                className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
-              >
-                {successMessage}
-              </p>
+              <FeedbackMessage variant="success">{successMessage}</FeedbackMessage>
             )}
 
             <FormActions>
@@ -376,21 +364,15 @@ export default function AttendanceView({
       )}
 
       <div className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-            <Input
-              type="search"
+        <TableToolbar>
+          <SearchInput
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search by member name..."
-              className="pl-9"
               aria-label="Search attendance members"
             />
-          </div>
           {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} />}
-        </div>
+        </TableToolbar>
 
         {rows.length === 0 ? (
           <EmptyState

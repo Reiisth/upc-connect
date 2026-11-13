@@ -1,5 +1,6 @@
 export type AttendanceCounts = {present:number;excused:number;absent:number};
 export type AttendanceDashboardData = {
+ serviceSearch?:string; serviceType?:string;
  branchId:string|null; date:string|null; from:string; to:string;
  latest:({id:string;name:string;serviceDate:string;branchName:string}&AttendanceCounts)|null;
  latestComparison?:AttendanceComparison; averageComparison?:AttendanceComparison;

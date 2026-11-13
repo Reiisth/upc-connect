@@ -11,7 +11,7 @@ type Service = {id:string;name:string;church_branch_id:string;service_date:strin
 const statuses = ["present","excused","absent"] as const;
 
 /** Branches must come from attendance.view + existing active host-branch scope. */
-export async function loadAttendanceDashboard(admin:ReturnType<typeof createAdminClient>,branches:Branch[],branchId:string|null=null,date:string|null=null,now=new Date()):Promise<AttendanceDashboardData> {
+export async function loadAttendanceDashboard(admin:ReturnType<typeof createAdminClient>,branches:Branch[],branchId:string|null=null,date:string|null=null,now=new Date(),filters:{search?:string;type?:string}={}):Promise<AttendanceDashboardData> {
  if (date && !validAnalyticsDate(date)) throw new Error("Select a valid dashboard calendar date.");
  if (branchId && !branches.some(branch=>branch.id===branchId)) throw new Error("Dashboard branch is outside your access.");
  const scoped=branchId ? branches.filter(branch=>branch.id===branchId):branches;
@@ -19,6 +19,14 @@ export async function loadAttendanceDashboard(admin:ReturnType<typeof createAdmi
  const today=manilaDate(now),start=new Date(`${today.slice(0,7)}-01T00:00:00Z`);start.setUTCMonth(start.getUTCMonth()-5);
  const from=date||start.toISOString().slice(0,10),to=date||today;
  const result:AttendanceDashboardData={branchId,date,from,to,latest:null,average:null,qualifyingServices:0,totalMembers:0,trend:[],byBranch:[]};
+ const search=(filters.search??"").trim().slice(0,100),type=filters.type??"all";
+ result.serviceSearch=search;result.serviceType=type;
+ function filteredQuery<Columns extends string>(columns:Columns){
+   let query=admin.from("services").select(columns).in("church_branch_id",ids).in("status",["scheduled","ongoing","completed"]);
+   if(search)query=query.ilike("name",`%${search.replace(/[\\%_]/g,"\\$&")}%`);
+   if(type!=="all")query=query.eq("service_type",type);
+   return query;
+ }
  if(!ids.length)return result;
  try {
    // SQL COUNT only: no attendance/member profiles are downloaded for aggregation.
@@ -33,13 +41,20 @@ export async function loadAttendanceDashboard(admin:ReturnType<typeof createAdmi
    async function counts(serviceIds:string[]):Promise<AttendanceCounts>{const values=await Promise.all(statuses.map(status=>count(serviceIds,status)));return {present:values[0],excused:values[1],absent:values[2]};}
    const [memberCount,rows] = await Promise.all([
      admin.from("members").select("id",{count:"exact",head:true}).in("church_branch_id",ids).eq("is_archived",false),
-     readAllPages((first,last)=>admin.from("services").select("id,name,church_branch_id,service_date,start_time,status")
-       .in("church_branch_id",ids).in("status",["scheduled","ongoing","completed"]).gte("service_date",from).lte("service_date",to).order("id").range(first,last)),
+     readAllPages((first,last)=>filteredQuery("id,name,church_branch_id,service_date,start_time,status").gte("service_date",from).lte("service_date",to).order("id").range(first,last)),
    ]);
    if(memberCount.error || typeof memberCount.count!=="number")throw new Error("Member count unavailable");
    result.totalMembers=memberCount.count;
    const services=(rows as Service[]).filter(service=>effectiveStoredServiceStatus(service,now)!=="scheduled");
    result.qualifyingServices=services.length;
+   if(search||type!=="all"||date){
+     const memberIds=new Set<string>();
+     for(let offset=0;offset<services.length;offset+=100){
+       const records=await readAllPages((first,last)=>admin.from("attendance_records").select("id,member_id").in("service_id",services.slice(offset,offset+100).map(service=>service.id)).order("id").range(first,last));
+       for(const row of records)if(row.member_id)memberIds.add(row.member_id);
+     }
+     result.totalMembers=memberIds.size;
+   }
    if(date){
      result.byBranch=await Promise.all(scoped.map(async branch=>({...branch,...await counts(services.filter(service=>service.church_branch_id===branch.id).map(service=>service.id))})));
    }else{
@@ -53,8 +68,7 @@ export async function loadAttendanceDashboard(admin:ReturnType<typeof createAdmi
    const days=Math.round((Date.parse(`${to}T00:00:00Z`)-Date.parse(`${from}T00:00:00Z`))/86400000)+1;
    const previousTo=new Date(Date.parse(`${from}T00:00:00Z`)-86400000).toISOString().slice(0,10);
    const previousFrom=new Date(Date.parse(`${from}T00:00:00Z`)-days*86400000).toISOString().slice(0,10);
-   const previousRows=await readAllPages((first,last)=>admin.from("services").select("id,name,church_branch_id,service_date,start_time,status")
-     .in("church_branch_id",ids).in("status",["scheduled","ongoing","completed"]).gte("service_date",previousFrom).lte("service_date",previousTo).order("id").range(first,last));
+   const previousRows=await readAllPages((first,last)=>filteredQuery("id,name,church_branch_id,service_date,start_time,status").gte("service_date",previousFrom).lte("service_date",previousTo).order("id").range(first,last));
    const previousServices=(previousRows as Service[]).filter(service=>effectiveStoredServiceStatus(service,now)!=="scheduled");
    const previousPresent=await count(previousServices.map(service=>service.id),"present");
    result.averageComparison=attendanceComparison(services.length?present/services.length:null,previousServices.length?previousPresent/previousServices.length:null,
@@ -64,8 +78,7 @@ export async function loadAttendanceDashboard(admin:ReturnType<typeof createAdmi
    // Page candidates so future starts today cannot hide an older valid Service.
    const latestServices:Service[]=[];
    for(let offset=0;;offset+=20){
-     let query=admin.from("services").select("id,name,church_branch_id,service_date,start_time,status,attendance_records!inner(id)")
-       .in("church_branch_id",ids).in("status",["scheduled","ongoing","completed"]);
+     let query=filteredQuery("id,name,church_branch_id,service_date,start_time,status,attendance_records!inner(id)");
      query=query.lte("service_date",date??today);
      const response=await query.order("service_date",{ascending:false}).order("start_time",{ascending:false,nullsFirst:false}).order("id",{ascending:false})
        .limit(1,{referencedTable:"attendance_records"}).range(offset,offset+19);

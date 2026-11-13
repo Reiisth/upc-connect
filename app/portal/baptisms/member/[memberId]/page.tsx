@@ -1,3 +1,4 @@
+import { MemberStatus } from "@/components/ui/member-status";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
@@ -51,9 +52,7 @@ async function Content({ params, searchParams }: Props) {
     <PageHeader eyebrow="Baptisms" eyebrowIcon={<Droplets className="h-4 w-4" />} title="Member Baptism Records" description="Water and Holy Ghost baptism records within your branch access." backHref={navigation.backHref} backLabel={navigation.backLabel} />
     <Card><CardContent className="space-y-4 p-5 sm:p-6">
       <div><div className="flex items-center gap-3">
-        {showStatus && <span tabIndex={0} aria-label={`Member status: ${member.member_status ?? "unknown"}`} className={`group inline-flex h-3 shrink-0 items-center rounded-full outline-none transition-all hover:h-6 focus:h-6 focus-visible:ring-2 focus-visible:ring-[#5D94E8] ${member.member_status === "active" ? "bg-emerald-500" : "bg-slate-400"}`}>
-          <span className="h-3 w-3 rounded-full" aria-hidden="true" /><span aria-hidden="true" className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium text-white opacity-0 transition-all group-hover:max-w-24 group-hover:pr-2 group-hover:opacity-100 group-focus:max-w-24 group-focus:pr-2 group-focus:opacity-100">{member.member_status === "active" ? "Active" : member.member_status === "inactive" ? "Inactive" : "Unknown"}</span>
-        </span>}
+        {showStatus && <MemberStatus status={member.member_status} />}
         <h2 className="font-radio-canada text-2xl font-semibold text-[#203264] sm:text-3xl">{name}</h2>
       </div><p className="mt-2 text-sm text-slate-500">{currentBranch?.name ?? "Outside your branch access"}{showStatus && member.is_archived ? " · Archived member" : ""}</p></div>
       <dl className="grid gap-5 border-t border-slate-200 pt-4 sm:grid-cols-2">

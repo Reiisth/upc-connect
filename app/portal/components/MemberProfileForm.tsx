@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import { unstable_rethrow } from "next/navigation";
 import { useMemo, useState, useRef } from "react";
@@ -1244,7 +1246,7 @@ export default function MemberProfileForm({
         </FormSection>
       )}
 
-      {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
+      {saveError && <FeedbackMessage>{saveError}</FeedbackMessage>}
       <FormSection title="Church Information" icon={<Church />} description="Your current church information is shown below.">
         <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
           {[

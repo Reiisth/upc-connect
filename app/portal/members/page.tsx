@@ -72,7 +72,12 @@ async function CachedMembersPageContent({searchParams}: {searchParams?: MemberLi
   const count = (column?: string, value?: string) => {
     let query = scopedQuery().select("id", {count:"exact",head:true});
     if (!isSystemAdmin) query = query.in("church_branch_id",branchIds);
-    if (column !== "any") query = query.eq("is_archived",false);
+    if (column !== "any") {
+      if (filters.branch !== "all") query = query.eq("church_branch_id",filters.branch);
+      if (filters.archive !== "all") query = query.eq("is_archived",filters.archive === "archived");
+      for (const [column,value] of [["member_status",filters.status],["account_status",filters.account],["profile_status",filters.profile]]) if (value !== "all") query = query.eq(column,value);
+      for (const word of memberSearchWords(filters.search)) query = query.or(["first_name","middle_name","last_name","member_status","account_status","profile_status"].map(column => `${column}.ilike.%${word}%`).join(","));
+    }
     if (column && column !== "any") query = query.eq(column,value);
     return query;
   };

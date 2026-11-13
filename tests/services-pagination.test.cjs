@@ -7,7 +7,7 @@ test('Services paginates after filtering, resets all filters to page one and cla
   const props = { services, serviceTypes: [], serviceTypeNames: {}, branches: [], canEdit: false, canManageAttendance: false };
   const render = () => h.render(props);
   const rows = tree => React.Children.toArray(findElement(tree, e => e.type.displayName === 'TableBody').props.children);
-  const button = (tree, label) => findElement(tree, e => e.props.children === label);
+  const button = (tree, label) => { const pagination = findElement(tree, e => e.type.name === 'Pagination'); return findElement(pagination.type(pagination.props), e => e.props.children === label); };
   let tree = render(); assert.equal(rows(tree).length, 10); assert.equal(button(tree, 'Previous').props.disabled, true);
   const first = rows(tree).map(e => e.key);
   button(tree, 'Next').props.onClick(); tree = render(); assert.equal(rows(tree).length, 10); assert.ok(rows(tree).every(e => !first.includes(e.key)));

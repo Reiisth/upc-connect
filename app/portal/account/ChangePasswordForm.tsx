@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import { useState } from "react";
 import { Eye, EyeOff, LockKeyhole } from "lucide-react";
@@ -112,15 +114,11 @@ export default function ChangePasswordForm() {
       />
 
       {error && (
-        <p role="alert" className="text-sm font-medium text-red-600">
-          {error}
-        </p>
+        <FeedbackMessage>{error}</FeedbackMessage>
       )}
 
       {success && (
-        <p role="status" className="text-sm font-medium text-green-600">
-          {success}
-        </p>
+        <FeedbackMessage variant="success">{success}</FeedbackMessage>
       )}
 
       <FormActions>

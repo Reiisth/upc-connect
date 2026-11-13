@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import { useActionState, useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { Church, Pencil } from "lucide-react";
@@ -29,7 +31,7 @@ export default function MemberChurchEditor({ memberId, canEdit, children, ...opt
     </div>
     {editing ? <>
       <MemberChurchForm {...options} embedded editing action={action} onCancel={() => setEditing(false)} pending={pending} />
-      {state.error && <p role="alert" className="text-sm text-red-700">{state.error}</p>}
+      {state.error && <FeedbackMessage>{state.error}</FeedbackMessage>}
     </> : <>{showSaved && <p role="status" className="text-sm text-emerald-700">Church information saved.</p>}{children}</>}
   </CardContent></Card>;
 }

@@ -1,3 +1,5 @@
+import { Pagination } from "@/components/ui/pagination";
+import { MemberStatus } from "@/components/ui/member-status";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
@@ -8,7 +10,7 @@ import { CalendarDays, Clock3, ClipboardCheck, ExternalLink, MapPin, QrCode, Pen
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { hasPermission } from "@/lib/permissions";
@@ -69,10 +71,7 @@ async function Content({ params, searchParams }: Props) {
     <Card><CardContent className="space-y-4 p-5 sm:p-6">
       <div>
         <div className="flex items-center gap-3">
-          {showMemberStatus && <span tabIndex={0} aria-label={`Member status: ${member.member_status ?? "unknown"}`} className={`group inline-flex h-3 shrink-0 items-center rounded-full outline-none transition-all hover:h-6 focus:h-6 focus-visible:ring-2 focus-visible:ring-[#5D94E8] ${member.member_status === "active" ? "bg-emerald-500" : "bg-slate-400"}`}>
-            <span className="h-3 w-3 rounded-full" aria-hidden="true" />
-            <span aria-hidden="true" className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium text-white opacity-0 transition-all group-hover:max-w-24 group-hover:pr-2 group-hover:opacity-100 group-focus:max-w-24 group-focus:pr-2 group-focus:opacity-100">{member.member_status === "active" ? "Active" : member.member_status === "inactive" ? "Inactive" : "Unknown"}</span>
-          </span>}
+          {showMemberStatus && <MemberStatus status={member.member_status} />}
           <h2 className="font-radio-canada text-2xl font-semibold text-[#203264] sm:text-3xl">{name}</h2>
         </div>
         <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500"><MapPin className="h-4 w-4" aria-hidden="true" />{currentBranch?.name ?? "Outside your branch access"}{showMemberStatus && member.is_archived ? " ? Archived member" : ""}</p>
@@ -106,14 +105,7 @@ async function Content({ params, searchParams }: Props) {
           {service.status === "cancelled" && <StatusBadge variant="muted">Cancelled service</StatusBadge>}
         </CardContent></Card>;
       })}
-        <nav aria-label="Attendance history pagination" className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-500">Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, total)} of {total} records</p>
-          <div className="flex items-center gap-2">
-            {page > 1 ? <Button variant="outline" size="sm" asChild><Link href={navigation.pageHref(page - 1)}>Previous</Link></Button> : <Button variant="outline" size="sm" disabled>Previous</Button>}
-            <span className="text-sm text-slate-500">Page {page} of {totalPages}</span>
-            {page < totalPages ? <Button variant="outline" size="sm" asChild><Link href={navigation.pageHref(page + 1)}>Next</Link></Button> : <Button variant="outline" size="sm" disabled>Next</Button>}
-          </div>
-        </nav>
+        <Pagination label="Attendance history pagination" page={page} pageSize={10} total={total} hrefForPage={navigation.pageHref} />
     </section>}
   </PageContainer>;
 }

@@ -1,4 +1,6 @@
 "use client";
+import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
+
 import ServiceLifecycleActions from "../services/ServiceLifecycleActions";
 import ServiceStatusIcon from "../services/ServiceStatusIcon";
 import AttendanceMiniDashboard from "./AttendanceMiniDashboard";
@@ -8,7 +10,6 @@ import { serviceTimestamp } from "@/lib/manila-time";
 
 import {
   ExternalLink,
-  Search,
   SearchX,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -105,35 +106,29 @@ export default function AttendanceServicesTable({
 
   return (
     <div className="space-y-4">
-      {dashboard && <AttendanceMiniDashboard initial={dashboard} branches={branches} branchFilter={branchFilter} onBranchChange={setBranchFilter} />}
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-          <Input
-            type="search"
+      {dashboard && <AttendanceMiniDashboard initial={dashboard} branches={branches} branchFilter={branchFilter} onBranchChange={setBranchFilter} dateFilter={dateFilter} onDateChange={setDateFilter} search={search} serviceType={typeFilter} />}
+      <TableToolbar>
+        <SearchInput
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search by service name..."
-            className="pl-9"
             aria-label="Search attendance services"
           />
-        </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:flex">
           {!dashboard && <Select aria-label="Filter attendance by branch" value={branchFilter} onChange={event=>setBranchFilter(event.target.value)}><option value="all">All branches</option>{branches.map(branch=><option key={branch.id} value={branch.id}>{branch.name}</option>)}</Select>}
-          <Input
+          {!dashboard && <Input
             type="date"
             value={dateFilter}
             onChange={(event) => setDateFilter(event.target.value)}
             className="xl:w-40"
             aria-label="Filter attendance by service date"
-            title="Operational Service date only; independent of Dashboard Date"
-          />
+            title="Filter service date"
+          />}
 
           {hasFilters && <ClearFiltersButton onClick={clearFilters} />}
         </div>
-      </div>
+      </TableToolbar>
 
       {(["ongoing","scheduled"] as const).map(group => <section key={group} className="space-y-3">
         <div className="flex flex-wrap items-center gap-3"><h2 className={`text-lg font-semibold ${group === "ongoing" ? "text-[#203264]" : "text-slate-600"}`}>{group === "ongoing" ? "Ongoing Services" : "Upcoming Services"}</h2><StatusBadge variant={group === "ongoing" ? "success" : "muted"}>{group === "ongoing" ? "Attendance Open" : "Preparation Only"}</StatusBadge></div>

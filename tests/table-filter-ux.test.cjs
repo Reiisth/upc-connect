@@ -10,7 +10,7 @@ function source(file) { return fs.readFileSync(file, 'utf8'); }
 
 test('Members keeps search, sort and archive state global while status filters live in column headers', () => {
   const table = source('app/portal/members/MembersTable.tsx');
-  const toolbar = table.slice(table.indexOf('<div className="flex flex-col gap-3 lg:flex-row'), table.indexOf('<div className="mt-6 overflow-x-auto'));
+  const toolbar = table.slice(table.indexOf('<TableToolbar>'), table.indexOf('<div className="mt-6 overflow-x-auto'));
   assert.match(toolbar, /placeholder="Search members\.\.\."/);
   assert.match(toolbar, /aria-label="Sort members"/);
   assert.match(toolbar, /Filter by archive status/);

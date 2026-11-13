@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import MemberAutocomplete from "./MemberAutocomplete";
 import Link from "next/link";
@@ -123,14 +125,10 @@ export function ContributionForm({
   return (
     <form action={formAction} className="space-y-6">
       {actionState.error && (
-        <div
-          role="alert"
-          aria-live="polite"
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-        >
+        <FeedbackMessage>
           <p className="font-semibold">Unable to save contribution</p>
           <p className="mt-1">{actionState.error}</p>
-        </div>
+        </FeedbackMessage>
       )}
 
       <FormSection

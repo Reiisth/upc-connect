@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, RotateCcw } from "lucide-react";
@@ -28,6 +30,6 @@ export function MemberArchiveControl({ memberId, memberName, archived, compact =
         try { await (archived ? restoreMember : archiveMember)(memberId); setOpen(false); router.refresh(); }
         catch { setError("The member archive state could not be changed."); }
       })} />
-    {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+    {error && <FeedbackMessage>{error}</FeedbackMessage>}
   </div>;
 }

@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import Link from "next/link";
 import { Building2, Mail, ShieldCheck, UserRound } from "lucide-react";
@@ -320,12 +322,7 @@ export default function StaffAccountForm({
       <p className="text-sm text-slate-500">New staff accounts require an active staff role and a branch unless system administrator access is selected. Existing accounts retain their display name, roles and other branch assignments.</p>
 
       {error && (
-        <p
-          role="alert"
-          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
-        >
-          {error}
-        </p>
+        <FeedbackMessage>{error}</FeedbackMessage>
       )}
 
       <FormActions>

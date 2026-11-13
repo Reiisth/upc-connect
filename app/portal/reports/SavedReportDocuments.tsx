@@ -1,4 +1,6 @@
 "use client";
+import { Pagination } from "@/components/ui/pagination";
+
 
 import { useEffect, useState } from "react";
 import { Download, Printer } from "lucide-react";
@@ -28,7 +30,6 @@ export default function SavedReportDocuments({ refreshKey }: { refreshKey: strin
     return () => { active = false; };
   }, [page, key]);
   const loaded = data?.key === key;
-  const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / 5));
   return <section aria-labelledby="saved-report-documents-title" className="space-y-4 border-t pt-5">
     <div><h3 id="saved-report-documents-title" className="font-radio-canada text-lg font-semibold text-[#203264]">Report Documents</h3>
       <p className="mt-1 text-sm text-slate-500">Your saved reports, newest first. Open a report to print it or save it as PDF.</p></div>
@@ -44,14 +45,7 @@ export default function SavedReportDocuments({ refreshKey }: { refreshKey: strin
           </div></TableCell>
         </TableRow>)}</TableBody>
       </Table>
-      <nav aria-label="Report documents pagination" className="flex flex-wrap items-center justify-between gap-3">
-        <p role="status" className="text-sm text-slate-500">Showing {(page - 1) * 5 + 1}-{Math.min(page * 5, data.total)} of {data.total} documents</p>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={page === 1} onClick={() => setSelection({ key: refreshKey, page: page - 1 })}>Previous</Button>
-          <span className="text-sm text-slate-500">Page {page} of {totalPages}</span>
-          <Button type="button" variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setSelection({ key: refreshKey, page: page + 1 })}>Next</Button>
-        </div>
-      </nav>
+      <Pagination label="Report documents pagination" page={page} pageSize={5} total={data.total} noun="documents" onPageChange={page => setSelection({ key: refreshKey, page })} />
     </>}
   </section>;
 }

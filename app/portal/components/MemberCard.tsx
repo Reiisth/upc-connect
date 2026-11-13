@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import Image from "next/image";
 import { useRef, useState } from "react";
@@ -150,7 +152,7 @@ export default function MemberCard({
           <span className="hidden sm:inline">{printing ? "Preparing..." : "Print Card"}</span>
         </Button>
       </div>
-      {printError && <p role="alert" className="mb-3 text-sm text-red-700">{printError}</p>}
+      {printError && <FeedbackMessage>{printError}</FeedbackMessage>}
       <div className="[perspective:1200px]">
         <div
           ref={cardRef}

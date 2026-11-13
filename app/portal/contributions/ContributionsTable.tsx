@@ -1,11 +1,17 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
+import { Pagination } from "@/components/ui/pagination";
+
+import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
+
 import Link from "@/components/ui/intent-link";
+import { filteredModuleSummary } from "@/lib/filtered-module-summary";
 import ModuleMiniDashboard, { type ModuleSummary } from "@/components/module-summary";
 
 import {
   ExternalLink,
   Pencil,
-  Search,
   SearchX,
 } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
@@ -93,11 +99,9 @@ export default function ContributionsTable({
     else if(value!=="custom"){const next=resolveAnalyticsDateRange({preset:value as "last_30_days"|"year_to_date"},today);setDateFrom(next.from);setDateTo(next.to);}
   }
 
-  const filteredRecords = useMemo(() => {
+  const contextRecords = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
-
-    return [...records]
-      .filter((record) => {
+    return records.filter(record => {
         const name = contributorName(record);
         const matchesSearch =
           !normalizedSearch ||
@@ -111,34 +115,28 @@ export default function ContributionsTable({
         const matchesPayment =
           paymentFilter === "all" ||
           record.paymentMethod === paymentFilter;
+
+      return matchesSearch && matchesBranch && matchesType && matchesPayment;
+    });
+  }, [records, search, branchFilter, typeFilter, paymentFilter]);
+  const filteredSummary = useMemo(() => summary ? filteredModuleSummary(summary, contextRecords) : undefined, [summary, contextRecords]);
+
+  const filteredRecords = useMemo(() => {
+    return [...contextRecords]
+      .filter((record) => {
         const matchesDateFrom =
           !range.from || record.contributionDate >= range.from;
         const matchesDateTo =
           !range.to || record.contributionDate <= range.to;
 
-        return (
-          matchesSearch &&
-          matchesBranch &&
-          matchesType &&
-          matchesPayment &&
-          matchesDateFrom &&
-          matchesDateTo
-        );
+        return matchesDateFrom && matchesDateTo;
       })
       .sort((a, b) => {
         if (sortBy === "name_asc" || sortBy === "name_desc") return (sortBy === "name_desc" ? -1 : 1) * contributorName(a).localeCompare(contributorName(b)) || a.id.localeCompare(b.id);
         if (sortBy === "amount_asc" || sortBy === "amount_desc") return (sortBy === "amount_desc" ? -1 : 1) * (Number(a.amount) - Number(b.amount)) || compareContributions(a, b) || a.id.localeCompare(b.id);
         return (sortBy === "oldest" ? -1 : 1) * compareContributions(a, b) || a.id.localeCompare(b.id);
       });
-  }, [
-    records,
-    search,
-    branchFilter,
-    typeFilter,
-    paymentFilter,
-    range,
-    sortBy,
-  ]);
+  }, [contextRecords, range, sortBy]);
 
   const pageSize=10;
   const totalPages=Math.max(1,Math.ceil(filteredRecords.length/pageSize));
@@ -173,23 +171,17 @@ export default function ContributionsTable({
             <FormField label="To" htmlFor="contributions-to"><Input id="contributions-to" type="date" value={dateTo} min={dateFrom||undefined} onChange={(event)=>{setDateTo(event.target.value);setPreset("custom");}} aria-label="Contributions to date" aria-invalid={Boolean(rangeError)||undefined}/></FormField>
             <Button type="submit" className="col-span-2 lg:col-span-1" loading={pending} disabled={pending}>{pending?"Applying...":"Apply range"}</Button>
           </div>
-          {rangeError&&<p role="alert" className="mt-2 text-sm text-red-700">{rangeError}</p>}
+          {rangeError&&<FeedbackMessage className="mt-2">{rangeError}</FeedbackMessage>}
         </fieldset>
       </form>
-      {summary && <ModuleMiniDashboard data={summary} branchId={branchFilter} branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-          <Input
-            type="search"
+      {filteredSummary && <ModuleMiniDashboard data={filteredSummary} branchId="all" branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
+      <TableToolbar>
+        <SearchInput
             value={search}
             onChange={(event) => {setSearch(event.target.value);setPage(1);}}
             placeholder="Search by contributor name..."
-            className="pl-9"
             aria-label="Search contributions by contributor name"
           />
-        </div>
 
         <div className="w-full shrink-0 sm:w-56">
           <Select
@@ -210,7 +202,7 @@ export default function ContributionsTable({
 
         <Select aria-label="Sort contributions" value={sortBy} onChange={event => { setSortBy(event.target.value); setPage(1); }} className="w-full sm:w-52"><option value="newest">Date: newest first</option><option value="oldest">Date: oldest first</option><option value="name_asc">Name: A-Z</option><option value="name_desc">Name: Z-A</option><option value="amount_desc">Amount: highest first</option><option value="amount_asc">Amount: lowest first</option></Select>
         {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} className="self-start sm:self-center" />}
-      </div>
+      </TableToolbar>
 
       {records.length === 0 ? (
         <EmptyState
@@ -331,14 +323,7 @@ export default function ContributionsTable({
           </TableBody>
         </Table>
       )}
-      {filteredRecords.length>0&&<nav aria-label="Contributions pagination" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p role="status" className="text-sm text-slate-500">Showing {(currentPage-1)*pageSize+1}-{Math.min(currentPage*pageSize,filteredRecords.length)} of {filteredRecords.length} contributions</p>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={currentPage===1} onClick={()=>setPage(currentPage-1)}>Previous</Button>
-          <span className="text-sm text-slate-500">Page {currentPage} of {totalPages}</span>
-          <Button type="button" variant="outline" size="sm" disabled={currentPage===totalPages} onClick={()=>setPage(currentPage+1)}>Next</Button>
-        </div>
-      </nav>}
+      {filteredRecords.length>0&&<Pagination label="Contributions pagination" page={currentPage} pageSize={10} total={filteredRecords.length} noun="contributions" onPageChange={setPage} />}
     </div>
   );
 }

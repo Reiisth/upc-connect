@@ -1,4 +1,6 @@
 "use client";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
+
 
 import { PROFILE_FIELD_DEFAULTS, isDefaultProfileConfiguration } from "@/lib/profile-field-defaults";
 import { Button } from "@/components/ui/button";
@@ -366,15 +368,13 @@ export default function FieldManagementTable({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         {errorMessage && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage}
-          </div>
+          <FeedbackMessage>{errorMessage}</FeedbackMessage>
         )}
 
         {successMessage && (
-          <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          <FeedbackMessage variant="success">
             {successMessage}
-          </div>
+          </FeedbackMessage>
         )}
         <div className="ml-auto flex flex-wrap justify-end gap-3">
           <Button

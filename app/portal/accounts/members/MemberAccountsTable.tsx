@@ -1,16 +1,13 @@
 "use client";
+import { Card, CardContent } from "@/components/ui/card";
+
+import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
+
 
 import Link from "next/link";
 import { Select } from "@/components/ui/select";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Archive,
-  ExternalLink,
-  RotateCcw,
-  Search,
-  SearchX,
-  UserPlus,
-} from "lucide-react";
+import { UserRoundCog, UsersRound, Archive, ExternalLink, RotateCcw, SearchX, UserPlus } from "lucide-react";
 
 import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
 
@@ -20,7 +17,7 @@ import {
 } from "./actions";
 
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
+
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
@@ -160,18 +157,49 @@ export default function MemberAccountsTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      {/* SUMMARY */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 text-slate-500">
+              <UserRoundCog className="h-4 w-4" />
 
-          <Input
+              <p className="text-xs font-medium uppercase tracking-wide">
+                Member Accounts
+              </p>
+            </div>
+
+            <p className="mt-3 text-3xl font-semibold text-[#203264]">
+              {filteredAccounts.length}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 text-slate-500">
+              <UsersRound className="h-4 w-4" />
+
+              <p className="text-xs font-medium uppercase tracking-wide">
+                Linked Members
+              </p>
+            </div>
+
+            <p className="mt-3 text-3xl font-semibold text-[#203264]">
+              {filteredAccounts.reduce((total, account) => total + account.members.length, 0)}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+
+      <TableToolbar>
+        <SearchInput
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             aria-label="Search member accounts"
             placeholder="Search by email or member name..."
-            className="pl-9"
           />
-        </div>
 
         <Select aria-label="Sort member accounts" value={sortBy} onChange={event => setSortBy(event.target.value)} className="sm:w-52">
           <option value="email-asc">Email: A to Z</option>
@@ -180,7 +208,7 @@ export default function MemberAccountsTable({
           <option value="members-asc">Fewest linked members</option>
         </Select>
         {hasClearableFilters && <ClearFiltersButton onClick={clearFilters} />}
-      </div>
+      </TableToolbar>
 
       {displayedAccounts.length === 0 ? (
         <EmptyState
