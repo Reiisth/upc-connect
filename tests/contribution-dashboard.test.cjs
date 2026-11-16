@@ -32,13 +32,14 @@ test('range refresh reauthorizes Contributions view and resolves historical rece
  await refreshContributionSummary('2026-01-01','2026-01-31');assert.equal(args[1],'contributions');assert.deepEqual(Array.from(args[2]),['receiving']);assert.deepEqual({...args[3]},{from:'2026-01-01',to:'2026-01-31'});
  allowed=false;await assert.rejects(refreshContributionSummary('2026-01-01','2026-01-31'),/denied/);assert.equal(checks,2);
 });
-test('absolute monetary charts plot PHP coordinates while tooltips/tables retain exact strings and relative callers retain defaults',()=>{
+test('monetary charts default to stable PHP coordinates and allow explicit relative geometry',()=>{
  let chart;const capture=props=>{chart=props;return null;};const Chart=loadTypeScript('app/portal/reports/ReportChart.tsx',{'react-chartjs-2':{Bar:capture,Line:capture,Doughnut:capture}}).default;
  const props={title:'Contributions',money:true,labels:['Feb','Mar'],series:[{label:'Received',values:['1000.10','500.25']}],emptyMessage:'Empty'};
  const html=renderToStaticMarkup(React.createElement(Chart,{...props,moneyScale:'absolute'}));
- assert.deepEqual(Array.from(chart.data.datasets[0].data),[1000.1,500.25]);assert.equal(chart.options.scales.y.max,undefined);assert.equal(chart.options.scales.y.title.text,'Amount (PHP)');assert.doesNotMatch(chart.options.scales.y.ticks.callback(1000.1),/%/);assert.match(chart.options.scales.y.ticks.callback(0.3),/0\.3/);
+ assert.deepEqual(Array.from(chart.data.datasets[0].data),[1000.1,500.25]);assert.ok(chart.options.scales.y.max>=1000.1);assert.equal(chart.options.scales.y.title.text,'Amount (PHP)');assert.doesNotMatch(chart.options.scales.y.ticks.callback(1000.1),/%/);assert.match(chart.options.scales.y.ticks.callback(0.3),/0\.3/);
  assert.match(chart.options.plugins.tooltip.callbacks.label({dataIndex:0,datasetIndex:0}),/1,000\.10/);assert.match(html,/1,000\.10/);assert.doesNotMatch(html,/Relative to the largest/);
- renderToStaticMarkup(React.createElement(Chart,props));assert.equal(chart.options.scales.y.max,100);assert.equal(chart.data.datasets[0].data[0],100);
+ renderToStaticMarkup(React.createElement(Chart,props));assert.equal(chart.data.datasets[0].data[0],1000.1);
+ renderToStaticMarkup(React.createElement(Chart,{...props,moneyScale:'relative'}));assert.equal(chart.options.scales.y.max,100);assert.equal(chart.data.datasets[0].data[0],100);
 });
 test('cards compare total/count/average in selected branch and both charts use absolute money over actual selected months',()=>{
  const charts=[];const Dashboard=loadTypeScript('components/module-summary.tsx',{'@/app/portal/reports/ReportChart':{__esModule:true,default:props=>{charts.push(props);return null;}}}).default;

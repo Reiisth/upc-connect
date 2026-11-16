@@ -1,6 +1,9 @@
 "use client";
 
 import { useId } from "react";
+import { useChartScale, useChartReducedMotion } from "@/components/ui/use-chart-scale";
+import { chartCeiling, chartExtent } from "@/lib/chart-scale";
+import { Button } from "@/components/ui/button";
 import { Chart as ChartJS, Filler, ArcElement, DoughnutController, BarController, BarElement, CategoryScale, LinearScale, LineController, LineElement, PointElement, Legend, Tooltip, type ChartOptions } from "chart.js";
 import { Bar, Line, Doughnut } from "react-chartjs-2";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,13 +19,17 @@ export type ReportChartProps = {
   moneyScale?: "relative"|"absolute"; appearance?: "attendance"; categoryColors?: string[]; compact?: boolean; kind?: "line" | "bar" | "doughnut"; stacked?: boolean; centerValue?: number; money?: boolean; horizontal?: boolean; emptyMessage: string;
 };
 
-export default function ReportChart({ title, description, labels, series, compact = false, kind = "bar", stacked = false, centerValue, categoryColors, appearance, money = false, moneyScale="relative", horizontal = false, emptyMessage }: ReportChartProps) {
+export default function ReportChart({ title, description, labels, series, compact = false, kind = "bar", stacked = false, centerValue, categoryColors, appearance, money = false, moneyScale="absolute", horizontal = false, emptyMessage }: ReportChartProps) {
   const id = useId();
   const refined=appearance==="attendance";
   const relativeMoney=money&&moneyScale==="relative";
   const coordinates = money && !relativeMoney ? series.map(item=>item.values.map(value=>typeof value==="string"&&/^\d+(?:\.\d{1,2})?$/.test(value)&&Number.isFinite(Number(value))?Number(value):null)) : money ? relativeMoneyCoordinates(series.map((item) => item.values.map((value) => typeof value === "string" ? value : null))) :
     series.map((item) => item.values.map((value) => typeof value === "number" && Number.isFinite(value) ? value : null));
   const hasData = labels.length > 0 && coordinates.some((values) => values.some((value) => value !== null && value !== 0));
+  const stableScale = kind !== "doughnut" && !relativeMoney;
+  const scaleKey = JSON.stringify([title, money ? "PHP" : "count", kind, horizontal, stacked, series.map(item => item.label)]);
+  const scale = useChartScale(scaleKey, chartCeiling(chartExtent(coordinates, stacked), money), stableScale);
+  const reduceMotion = useChartReducedMotion();
   const formatValue = (value: number | string | null) => money ? formatReportMoney(typeof value === "string" ? value : null) : formatReportNumber(typeof value === "number" ? value : null);
   const data = {
     labels: labels.map((label) => label.length > 26 ? `${label.slice(0, 25)}…` : label),
@@ -32,7 +39,7 @@ export default function ReportChart({ title, description, labels, series, compac
     })),
   };
   const numericAxis = {
-    stacked, beginAtZero: true, min: 0, ...(relativeMoney ? { max: 100 } : {}),
+    stacked, beginAtZero: true, min: 0, max: relativeMoney ? 100 : scale.max,
     grid: { color: refined ? "#F0F4FA" : "#E8EDF5" }, border: { display: false },
     title: { display: money, text: relativeMoney?"Relative amount":"Amount (PHP)", color: "#64748B", font: { size: 11 } },
     ticks: { maxTicksLimit: 5, precision: 0, color: refined ? "#8593A8" : "#64748B", font: { size: 11 },
@@ -41,7 +48,7 @@ export default function ReportChart({ title, description, labels, series, compac
   const categoryAxis = { stacked, grid: { display: false }, border: { display: false },
     ticks: { autoSkip: !horizontal, maxTicksLimit: horizontal ? undefined : 6, maxRotation: 30, color: refined ? "#8593A8" : "#64748B", font: { size: 11 } } };
   const options = {
-    responsive: true, maintainAspectRatio: false, animation: false as const,
+    responsive: true, maintainAspectRatio: false, animation: reduceMotion ? false as const : { duration: 350, easing: "easeOutQuart" as const },
     indexAxis: horizontal ? "y" as const : "x" as const,
     interaction: { mode: "index" as const, intersect: false },
     plugins: {
@@ -62,6 +69,11 @@ export default function ReportChart({ title, description, labels, series, compac
       {description && <p className="text-xs leading-relaxed text-slate-500">{description}</p>}
     </CardHeader>
     <CardContent className={compact ? "p-4 pt-0" : undefined}>
+      {stableScale && <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <p role="status" className="text-xs text-slate-500">Scale: 0–{money ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 2 }).format(scale.max) : formatReportNumber(scale.max, 0)}</p>
+        <Button type="button" variant="ghost" size="sm" className="h-auto px-1 py-1 text-xs text-[#365FA6]" onClick={scale.fit} aria-label={`Fit ${title} scale to current data`}>Fit current data</Button>
+        <p className="w-full text-[11px] leading-relaxed text-slate-500">Scale stays fixed between filters; expands for larger values.</p>
+      </div>}
       {!hasData ? <EmptyState title="No chart activity" description={emptyMessage} className={compact ? "min-h-[220px] px-3 py-6" : "min-h-64 px-3 py-8"} /> : <>
         <div className={`relative w-full min-w-0 ${refined?"px-1 pt-3":""}`} style={{ height: compact ? 220 : horizontal ? Math.min(480, Math.max(248, labels.length * 36)) : 256 }}>
           {kind === "doughnut" ? <>
@@ -71,6 +83,7 @@ export default function ReportChart({ title, description, labels, series, compac
             <Bar data={data} options={options} role="img" aria-labelledby={`${id}-title`} fallbackContent={title} />}
         </div>
         {relativeMoney && <p className="mt-2 text-xs text-slate-500">Relative to the largest amount. Hover or view data for exact peso values.</p>}
+        {kind === "doughnut" && <p className="mt-2 text-xs text-slate-500">Slices show proportions. Compare the total and chart data for changes in volume.</p>}
       </>}
       {labels.length > 0 && <details className="mt-4 text-xs text-slate-600">
         <summary className="w-fit cursor-pointer rounded py-1 font-medium text-[#365FA6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">View chart data</summary>

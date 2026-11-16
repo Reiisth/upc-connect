@@ -93,12 +93,12 @@ test('money formatting preserves cents and arbitrarily large aggregate strings w
   assert.deepEqual(Array.from(relativeMoneyCoordinates([['0.00', null]])[0]), [0, 0]);
 });
 
-test('money chart geometry is relative, while tooltips and accessible data retain the original exact value', () => {
+test('explicit relative money chart retains exact values in tooltips and accessible data', () => {
   let captured;
   const capture = (props) => { captured = props; return React.createElement('canvas', { role: props.role, 'aria-labelledby': props['aria-labelledby'] }); };
   const Chart = loadTypeScript('app/portal/reports/ReportChart.tsx', { 'react-chartjs-2': { Line: capture, Bar: capture } }).default;
   const amount = '9007199254740993123456.01';
-  const html = renderToStaticMarkup(React.createElement(Chart, { title: 'Exact money', labels: ['October'], money: true,
+  const html = renderToStaticMarkup(React.createElement(Chart, { title: 'Exact money', labels: ['October'], money: true, moneyScale: 'relative',
     series: [{ label: 'Contributions', values: [amount] }], emptyMessage: 'No activity' }));
   assert.equal(captured.data.datasets[0].data[0], 100);
   assert.equal(captured.options.scales.y.title.text, 'Relative amount');
