@@ -57,6 +57,15 @@ async function saveChurchInformation(memberId: string, form: FormData) {
   if (member.church_branch_id || !access.isSystemAdmin) await assertActiveServiceBranch(admin, access, member.church_branch_id ?? "");
   await assertActiveServiceBranch(admin, access, payload.church_branch_id);
   await validateDepartment(admin, payload.department_id, payload.department_id === member.department_id);
+  if (payload.church_branch_id !== member.church_branch_id) {
+    const { error } = await admin.rpc("change_member_membership", {
+      p_member_id: memberId, p_actor_id: access.user.id, p_expected_branch: member.church_branch_id,
+      p_operation: "transfer", p_patch: payload,
+    });
+    if (error) throw new Error("The branch change could not be saved. Reload the record and try again.");
+    refreshMember(memberId);
+    return access;
+  }
   let query = admin.from("members").update({ ...payload, updated_at: new Date().toISOString() })
     .eq("id", memberId).eq("is_archived", false);
   query = member.church_branch_id ? query.eq("church_branch_id", member.church_branch_id) : query.is("church_branch_id", null);
@@ -79,9 +88,28 @@ export async function saveMemberChurchInformation(memberId: string, _state: { er
 export async function restoreMember(memberId: string) {
   const { member, access, admin } = await requireStaffMember(memberId, "members.archive");
   await assertActiveServiceBranch(admin, access, member.church_branch_id ?? "");
+  if (member.departed_at) {
+    const { error } = await admin.rpc("change_member_membership", {
+      p_member_id: memberId, p_actor_id: access.user.id, p_expected_branch: member.church_branch_id, p_operation: "return",
+    });
+    if (error) throw new Error("The return could not be saved. Reload the record and try again.");
+    refreshMember(memberId);
+    return;
+  }
   const { data: saved, error } = await admin.from("members").update({ is_archived: false, archived_at: null, updated_at: new Date().toISOString() })
     .eq("id", memberId).eq("church_branch_id", member.church_branch_id).select("id").maybeSingle();
   if (error || !saved) throw new Error("The member could not be restored. Reload the record and try again.");
+  refreshMember(memberId);
+}
+
+export async function recordMemberDeparture(memberId: string) {
+  const { member, access, admin } = await requireStaffMember(memberId, "members.archive");
+  await assertActiveServiceBranch(admin, access, member.church_branch_id ?? "");
+  if (member.is_archived || member.departed_at) throw new Error("Only a current member can depart.");
+  const { error } = await admin.rpc("change_member_membership", {
+    p_member_id: memberId, p_actor_id: access.user.id, p_expected_branch: member.church_branch_id, p_operation: "departure",
+  });
+  if (error) throw new Error("The departure could not be saved. Reload the record and try again.");
   refreshMember(memberId);
 }
 

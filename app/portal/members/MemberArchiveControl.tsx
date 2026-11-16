@@ -9,7 +9,7 @@ import { TableActionButton } from "@/components/ui/table-action-button";
 import { ConfirmActionModal } from "@/components/ui/confirm-action-modal";
 import { archiveMember, restoreMember } from "./actions";
 
-export function MemberArchiveControl({ memberId, memberName, archived, compact = false }: { memberId: string; memberName?: string; archived: boolean; compact?: boolean }) {
+export function MemberArchiveControl({ memberId, memberName, archived, departed = false, compact = false }: { memberId: string; memberName?: string; archived: boolean; departed?: boolean; compact?: boolean }) {
   const [open, setOpen] = useState(false), [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -24,7 +24,7 @@ export function MemberArchiveControl({ memberId, memberName, archived, compact =
       </Button>
     )}
     <ConfirmActionModal open={open} title={archived ? "Restore member?" : "Archive member?"}
-      description={`${memberName ? `${memberName}: ` : ""}${archived ? "Restore this member record. Account state and historical records remain unchanged." : "Archive this member record. Linked accounts and attendance, contribution, baptism, and follow-up history remain unchanged."}`}
+      description={`${memberName ? `${memberName}: ` : ""}${archived ? departed ? "Restore this departed member and automatically record their return to the same branch dated now. Administrative member status is preserved; review it after restoring." : "Restore this member record. A previously recorded departure, if any, will automatically record a return dated now." : "Archive this member record. This does not count as leaving the church. Linked accounts and attendance, contribution, baptism, and follow-up history remain unchanged."}`}
       confirmLabel={archived ? "Restore" : "Archive"} loading={pending} onClose={() => { if (!pending) setOpen(false); }}
       onConfirm={() => startTransition(async () => {
         try { await (archived ? restoreMember : archiveMember)(memberId); setOpen(false); router.refresh(); }

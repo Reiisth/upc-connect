@@ -82,7 +82,7 @@ async function CachedMembersPageContent({searchParams}: {searchParams?: MemberLi
     return query;
   };
   const list = () => {
-    let query = scopedQuery().select("id,first_name,middle_name,last_name,member_status,account_status,profile_status,is_archived,created_at,church_branch:church_branches(id,name)", {count:"exact"});
+    let query = scopedQuery().select("id,first_name,middle_name,last_name,member_status,account_status,profile_status,is_archived,departed_at,created_at,church_branch:church_branches(id,name)", {count:"exact"});
     if (!isSystemAdmin) query = query.in("church_branch_id",branchIds);
     if (filters.branch !== "all") query = query.eq("church_branch_id",filters.branch);
     if (filters.archive !== "all") query = query.eq("is_archived",filters.archive === "archived");
@@ -115,13 +115,13 @@ async function CachedMembersPageContent({searchParams}: {searchParams?: MemberLi
         description="Manage church member records, account connections, and profile completion."
         action={
           canCreate ? (
-            <Button asChild>
+            <><Button variant="outline" asChild><Link href="/portal/members/migrations">Migration Records</Link></Button><Button asChild>
               <Link href="/portal/members/new">
                 <Plus />
                 Create Member
               </Link>
-            </Button>
-          ) : undefined
+            </Button></>
+          ) : <Button variant="outline" asChild><Link href="/portal/members/migrations">Migration Records</Link></Button>
         }
       />
 

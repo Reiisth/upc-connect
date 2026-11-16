@@ -3,7 +3,7 @@ const React = require('react');
 const { loadTypeScript } = require('./load-typescript.cjs');
 
 /** Exercise actual client event handlers/state without a browser or a new test dependency. */
-exports.clientHooks = function clientHooks(entry, stubs = {}) {
+exports.clientHooks = function clientHooks(entry, stubs = {}, exportName = 'default') {
   const slots = [];
   const work = [];
   let cursor = 0, pending = 0;
@@ -28,7 +28,7 @@ exports.clientHooks = function clientHooks(entry, stubs = {}) {
   };
   const api = loadTypeScript(entry, { ...stubs, react: hooks });
   return {
-    render(props) { cursor = 0; return api.default(props); },
+    render(props) { cursor = 0; return api[exportName](props); },
     async settle() { await Promise.all(work.splice(0)); },
   };
 };

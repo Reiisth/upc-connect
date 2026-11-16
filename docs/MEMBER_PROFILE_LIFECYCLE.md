@@ -1,5 +1,10 @@
 # Member and Profile lifecycle (Phase 1D)
 
+New movement tracking: see [MEMBER_MIGRATIONS.md](MEMBER_MIGRATIONS.md). The
+forward-only migration log now records transfers, explicit departures and
+returns. The original Phase 1D description below documents the prior baseline;
+it must not be used to infer membership before tracking began.
+
 Staff manage the church record through `/portal/members/[memberId]` and
 `/portal/members/[memberId]/edit`. `/portal/profile` remains linked-account
 self-service. Active-account and active-role permission checks apply to both.

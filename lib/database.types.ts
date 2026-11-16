@@ -253,16 +253,33 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"members": {
+                },"member_migrations": {
+  Row: { id: string; member_id: string; kind: string; from_branch_id: string | null; to_branch_id: string | null; member_name: string; from_branch_name: string | null; to_branch_name: string | null; recorded_at: string; recorded_by: string | null }
+  Insert: { id?: string; member_id: string; kind: string; from_branch_id?: string | null; to_branch_id?: string | null; member_name: string; from_branch_name?: string | null; to_branch_name?: string | null; recorded_at?: string; recorded_by?: string | null }
+  Update: { id?: string; member_id?: string; kind?: string; from_branch_id?: string | null; to_branch_id?: string | null; member_name?: string; from_branch_name?: string | null; to_branch_name?: string | null; recorded_at?: string; recorded_by?: string | null }
+  ComputedFields: never
+  Relationships: [
+    { foreignKeyName: "member_migrations_member_id_fkey"; columns: ["member_id"]; isOneToOne: false; referencedRelation: "members"; referencedColumns: ["id"] },
+    { foreignKeyName: "member_migrations_from_branch_id_fkey"; columns: ["from_branch_id"]; isOneToOne: false; referencedRelation: "church_branches"; referencedColumns: ["id"] },
+    { foreignKeyName: "member_migrations_to_branch_id_fkey"; columns: ["to_branch_id"]; isOneToOne: false; referencedRelation: "church_branches"; referencedColumns: ["id"] },
+    { foreignKeyName: "member_migrations_recorded_by_fkey"; columns: ["recorded_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }
+  ]
+},"member_migration_tracking": {
+  Row: { singleton: boolean; started_at: string }
+  Insert: { singleton?: boolean; started_at?: string }
+  Update: { singleton?: boolean; started_at?: string }
+  ComputedFields: never
+  Relationships: []
+},"members": {
                   Row: {
-                    "accepted_at": string | null,"account_status": string,"archived_at": string | null,"barangay": string | null,"birth_date": string | null,"church_branch_id": string | null,"city": string | null,"civil_status": string | null,"country": string | null,"created_at": string | null,"department": string | null,"department_id": string | null,"first_attendance_date": string | null,"first_name": string,"gender": string | null,"id": string,"invited_at": string | null,"invited_by": string | null,"is_archived": boolean,"last_name": string,"member_status": string | null,"middle_name": string | null,"nickname": string | null,"phone_number": string | null,"photo_url": string | null,"position": string | null,"profile_completed_at": string | null,"profile_status": string,"province": string | null,"street_address": string | null,"updated_at": string | null,"wedding_anniversary": string | null,"zone": number | null
+                    "accepted_at": string | null,"account_status": string,"archived_at": string | null,"barangay": string | null,"birth_date": string | null,"church_branch_id": string | null,"city": string | null,"civil_status": string | null,"country": string | null,"created_at": string | null,"department": string | null,"department_id": string | null,"departed_at": string | null,"first_attendance_date": string | null,"first_name": string,"gender": string | null,"id": string,"invited_at": string | null,"invited_by": string | null,"is_archived": boolean,"last_name": string,"member_status": string | null,"middle_name": string | null,"nickname": string | null,"phone_number": string | null,"photo_url": string | null,"position": string | null,"profile_completed_at": string | null,"profile_status": string,"province": string | null,"street_address": string | null,"updated_at": string | null,"wedding_anniversary": string | null,"zone": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "accepted_at"?: string | null,"account_status"?: string,"archived_at"?: string | null,"barangay"?: string | null,"birth_date"?: string | null,"church_branch_id"?: string | null,"city"?: string | null,"civil_status"?: string | null,"country"?: string | null,"created_at"?: string | null,"department"?: string | null,"department_id"?: string | null,"first_attendance_date"?: string | null,"first_name": string,"gender"?: string | null,"id"?: string,"invited_at"?: string | null,"invited_by"?: string | null,"is_archived"?: boolean,"last_name": string,"member_status"?: string | null,"middle_name"?: string | null,"nickname"?: string | null,"phone_number"?: string | null,"photo_url"?: string | null,"position"?: string | null,"profile_completed_at"?: string | null,"profile_status"?: string,"province"?: string | null,"street_address"?: string | null,"updated_at"?: string | null,"wedding_anniversary"?: string | null,"zone"?: number | null
+                    "accepted_at"?: string | null,"account_status"?: string,"archived_at"?: string | null,"barangay"?: string | null,"birth_date"?: string | null,"church_branch_id"?: string | null,"city"?: string | null,"civil_status"?: string | null,"country"?: string | null,"created_at"?: string | null,"department"?: string | null,"department_id"?: string | null,"departed_at"?: string | null,"first_attendance_date"?: string | null,"first_name": string,"gender"?: string | null,"id"?: string,"invited_at"?: string | null,"invited_by"?: string | null,"is_archived"?: boolean,"last_name": string,"member_status"?: string | null,"middle_name"?: string | null,"nickname"?: string | null,"phone_number"?: string | null,"photo_url"?: string | null,"position"?: string | null,"profile_completed_at"?: string | null,"profile_status"?: string,"province"?: string | null,"street_address"?: string | null,"updated_at"?: string | null,"wedding_anniversary"?: string | null,"zone"?: number | null
                   }
                   Update: {
-                    "accepted_at"?: string | null,"account_status"?: string,"archived_at"?: string | null,"barangay"?: string | null,"birth_date"?: string | null,"church_branch_id"?: string | null,"city"?: string | null,"civil_status"?: string | null,"country"?: string | null,"created_at"?: string | null,"department"?: string | null,"department_id"?: string | null,"first_attendance_date"?: string | null,"first_name"?: string,"gender"?: string | null,"id"?: string,"invited_at"?: string | null,"invited_by"?: string | null,"is_archived"?: boolean,"last_name"?: string,"member_status"?: string | null,"middle_name"?: string | null,"nickname"?: string | null,"phone_number"?: string | null,"photo_url"?: string | null,"position"?: string | null,"profile_completed_at"?: string | null,"profile_status"?: string,"province"?: string | null,"street_address"?: string | null,"updated_at"?: string | null,"wedding_anniversary"?: string | null,"zone"?: number | null
+                    "accepted_at"?: string | null,"account_status"?: string,"archived_at"?: string | null,"barangay"?: string | null,"birth_date"?: string | null,"church_branch_id"?: string | null,"city"?: string | null,"civil_status"?: string | null,"country"?: string | null,"created_at"?: string | null,"department"?: string | null,"department_id"?: string | null,"departed_at"?: string | null,"first_attendance_date"?: string | null,"first_name"?: string,"gender"?: string | null,"id"?: string,"invited_at"?: string | null,"invited_by"?: string | null,"is_archived"?: boolean,"last_name"?: string,"member_status"?: string | null,"middle_name"?: string | null,"nickname"?: string | null,"phone_number"?: string | null,"photo_url"?: string | null,"position"?: string | null,"profile_completed_at"?: string | null,"profile_status"?: string,"province"?: string | null,"street_address"?: string | null,"updated_at"?: string | null,"wedding_anniversary"?: string | null,"zone"?: number | null
                   }
                   Relationships: [
                     {
@@ -451,6 +468,9 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
+  "change_member_membership": { Args: { p_member_id: string; p_actor_id: string; p_expected_branch: string | null; p_operation: string; p_patch?: Json }; Returns: string },
+  "get_member_migration_analytics": { Args: { p_actor_id: string; p_branch_ids: string[]; p_from: string; p_to: string; p_grouping?: string }; Returns: Json },
+  "assert_member_migration_access": { Args: { p_actor: string; p_branches: string[]; p_permission: string }; Returns: undefined },
             "finalize_service_attendance":
 { Args: { "p_actor_id": string,"p_preview"?: boolean,"p_service_id": string }; Returns: Json
                            },

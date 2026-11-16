@@ -19,6 +19,7 @@ import MemberAccountEditor from "../MemberAccountEditor";
 import { getAccountTargetScopes } from "../../accounts/target-scope";
 import MemberCardButton from "../MemberCardButton";
 import { loadMemberAccountEmail } from "../account-email";
+import { MemberDepartureControl } from "../MemberDepartureControl";
 
 export default function MemberPage(props: { params: Promise<{ memberId: string }> }) {
   return <Suspense fallback={<PageSkeleton kind="detail" fields={4} metrics={0} columns={5} label="members" />}><Content {...props} /></Suspense>;
@@ -74,10 +75,12 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
           </div>
           <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-slate-500"><MapPin className="h-4 w-4" aria-hidden="true" />{branch?.name ?? "Not assigned"}</p>
         </div>
-        {member.is_archived && <StatusBadge variant="muted">Archived</StatusBadge>}
+        {member.departed_at ? <StatusBadge variant="warning">Departed</StatusBadge> : member.is_archived && <StatusBadge variant="muted">Archived</StatusBadge>}
       </div>
 
     </CardContent></Card>
+
+    <Button variant="outline" asChild><Link href={`/portal/members/${memberId}/migrations`}>View Migration History</Link></Button>
 
     <MemberChurchEditor memberId={memberId} member={member} branches={branches} departments={departmentOptions} canEdit={canEditChurch}>
         <dl className="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -126,7 +129,10 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
     {can("members.archive") && <section className="border-t border-slate-200 pt-5">
       <h2 className="text-sm font-semibold text-slate-700">Member Record Actions</h2>
       <p className="mt-1 mb-3 text-sm text-slate-500">Archiving a member does not archive the linked account.</p>
-      <MemberArchiveControl memberId={memberId} memberName={fullName} archived={member.is_archived} />
+      <div className="flex flex-wrap gap-3">
+        <MemberArchiveControl memberId={memberId} memberName={fullName} archived={member.is_archived} departed={Boolean(member.departed_at)} />
+        {!member.is_archived && <MemberDepartureControl memberId={memberId} />}
+      </div>
     </section>}
   </PageContainer>;
 }

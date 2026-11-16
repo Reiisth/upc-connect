@@ -22,7 +22,7 @@ export function MemberChurchForm({ action, branches, departments = [], member, e
         {!editing && (["first_name", "middle_name", "last_name"] as const).map((key) => <FormField key={key} label={{ first_name: "First Name", middle_name: "Middle Name", last_name: "Last Name" }[key]} htmlFor={key} required={key !== "middle_name"}>
           <Input id={key} name={key} defaultValue={member?.[key] ?? ""} maxLength={120} required={key !== "middle_name"} />
         </FormField>)}
-        <FormField label="Church Branch" htmlFor="church_branch_id" required description="Changing branch requires access to both the current and selected branch.">
+        <FormField label="Church Branch" htmlFor="church_branch_id" required description="Changing branch requires access to both branches and automatically records a transfer dated today.">
           <Select id="church_branch_id" name="church_branch_id" defaultValue={member?.church_branch_id ?? ""} required>
             <option value="" disabled>Select a branch</option>
             {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}

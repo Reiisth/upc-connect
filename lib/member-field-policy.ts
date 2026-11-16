@@ -6,7 +6,7 @@ export const SELF_SERVICE_FIELDS = [
 
 export const CHURCH_MANAGED_FIELDS = [
   "church_branch_id", "first_attendance_date", "member_status", "department_id",
-  "position", "zone", "is_archived", "archived_at",
+  "position", "zone", "is_archived", "archived_at", "departed_at",
 ] as const;
 
 const reservedFields = new Set<string>([

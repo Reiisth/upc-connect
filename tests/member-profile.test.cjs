@@ -120,7 +120,17 @@ function harness({ permissions = ['members.view', 'members.create', 'members.upd
       getUserById: async (id) => ({ data: { user: { id, email: id === 'actor' ? 'owner@example.test' : 'foreign@example.test' } }, error: null }),
       inviteUserByEmail: async (email, options) => { events.push({ invite: true, email, options }); return { data: { user: { id: 'new-account' } }, error: null }; },
     } },
-    rpc: async () => ({ error: null }),
+    rpc: async (name, args) => {
+      if (name === 'change_member_membership') {
+        beforeWrite?.(db,'members');
+        const row=db.members.find(member=>member.id===args.p_member_id && member.church_branch_id===args.p_expected_branch);
+        if (!row || failWrite==='members' || args.p_operation==='transfer' && row.is_archived) return {error:{message:'stale member'}};
+        const payload=args.p_operation==='transfer'?args.p_patch:args.p_operation==='departure'?{departed_at:new Date().toISOString(),is_archived:true}:{departed_at:null,is_archived:false};
+        Object.assign(row,payload);writes.push({table:'members',operation:'rpc',payload});
+        return {data:row.id,error:null};
+      }
+      return { error: null };
+    },
   };
   function redirect(url) { throw new Error(`redirect:${url}`); }
   const stubs = { 'server-only': {},

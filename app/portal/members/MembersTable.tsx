@@ -50,6 +50,7 @@ type Member = {
   profile_status: string;
   created_at: string;
   is_archived: boolean;
+  departed_at?: string | null;
 
   church_branch:
   | {
@@ -317,7 +318,7 @@ export default function MembersTable({
                         className="block w-full text-left font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline"
                       >
                         <span className="flex w-full flex-col items-start gap-1 text-left"><span className="inline-flex items-center gap-1.5">{fullName}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></span>
-                          {member.is_archived && <StatusBadge variant="muted">Archived</StatusBadge>}
+                          {member.departed_at ? <StatusBadge variant="warning">Departed</StatusBadge> : member.is_archived && <StatusBadge variant="muted">Archived</StatusBadge>}
                         </span>
                       </Link>
                       <p className="mt-1 text-xs text-slate-500">{member.church_branch?.name ?? "Not assigned"}</p>
@@ -383,6 +384,7 @@ export default function MembersTable({
                               memberId={member.id}
                               memberName={fullName}
                               archived={member.is_archived}
+                              departed={Boolean(member.departed_at)}
                               compact
                             />
                           )}

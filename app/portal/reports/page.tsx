@@ -3,6 +3,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { ChartNoAxesCombined, CircleAlert } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
@@ -57,7 +58,8 @@ async function CachedReportsContent({ searchParams }: { searchParams: ReportSear
   }
   return <PageContainer className="min-w-0">
     <PageHeader eyebrow="Insights" eyebrowIcon={<ChartNoAxesCombined className="h-4 w-4" />} title="Reports & Analytics"
-      description="Membership, attendance, member care, and giving across your accessible branches." />
+      description="Membership, attendance, member care, and giving across your accessible branches."
+      action={<Button variant="outline" asChild><Link href="/portal/reports/migrations">Member Migration</Link></Button>} />
     <ReportsView key={reportFilterUrl(parsed.values)} branches={branches} values={parsed.values}
       insightFilters={overview && parsed.request ? {
         ...(parsed.request.branchId ? { branchId: parsed.request.branchId } : {}),
