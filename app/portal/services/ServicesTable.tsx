@@ -1,4 +1,5 @@
 "use client";
+import { usePortalBranch } from "@/components/portal-branch-context";
 import { useListState } from "@/lib/use-list-state";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -52,13 +53,12 @@ export default function ServicesTable({
   services,
   serviceTypes,
   serviceTypeNames,
-  branches,
   canEdit,
 }: ServicesTableProps) {
   const [page, setPage] = useListState("page", 1);
   const [sortBy, setSortBy] = useListState("sortBy", "schedule");
   const [search, setSearch] = useListState("search", "");
-  const [branchFilter, setBranchFilter] = useListState("branchFilter", "all");
+  const branchFilter = usePortalBranch().branchId ?? "all";
   const [typeFilter, setTypeFilter] = useListState("typeFilter", "all");
   const [statusFilter, setStatusFilter] = useListState("statusFilter", "all");
 
@@ -104,14 +104,13 @@ export default function ServicesTable({
 
   const hasFilters =
     search.trim() !== "" ||
-    branchFilter !== "all" ||
+
     typeFilter !== "all" ||
     statusFilter !== "all";
 
   function clearFilters() {
     setPage(1);
     setSearch("");
-    setBranchFilter("all");
     setTypeFilter("all");
     setStatusFilter("all");
   }
@@ -150,19 +149,7 @@ export default function ServicesTable({
           />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex">
-          <Select
-            value={branchFilter}
-            onChange={(event) => { setBranchFilter(event.target.value); setPage(1); }}
-            className="lg:w-48"
-            aria-label="Filter by branch"
-          >
-            <option value="all">All branches</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </Select>
+
 
           <Select aria-label="Sort services" value={sortBy} onChange={event => { setSortBy(event.target.value); setPage(1); }} className="w-full sm:w-52"><option value="schedule">Schedule order</option><option value="newest">Date: newest first</option><option value="oldest">Date: oldest first</option><option value="name_asc">Name: A-Z</option><option value="name_desc">Name: Z-A</option></Select>
         {hasFilters && <ClearFiltersButton onClick={clearFilters} />}

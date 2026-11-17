@@ -1,3 +1,4 @@
+import { selectPortalBranches } from "@/lib/portal-branch-server";
 import { MemberStatus } from "@/components/ui/member-status";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
@@ -34,7 +35,7 @@ async function Content({ params, searchParams }: Props) {
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(access, admin);
   if (!branches.length) notFound();
-  const ids = branches.map(branch => branch.id);
+  const ids = (await selectPortalBranches(branches)).map(branch => branch.id);
   const { data: member, error: memberError } = await admin.from("members")
     .select("id,first_name,middle_name,last_name,church_branch_id,member_status,is_archived").eq("id", memberId).maybeSingle();
   if (memberError) throw new Error("Unable to load member baptism records.");

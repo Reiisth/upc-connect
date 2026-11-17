@@ -26,6 +26,9 @@ exports.loadTypeScript = function loadTypeScript(entry, stubs = {}, globals = {}
         if (name === 'next/navigation') return { ...require(name), useRouter: () => ({ replace() {}, push() {}, refresh() {}, prefetch() {} }), ...(stubs[name] ?? {}) };
         if (name === 'next/cache') return { ...require(name), cacheLife() {}, cacheTag() {}, updateTag() {}, ...(stubs[name] ?? {}) };
         if (Object.hasOwn(stubs, name)) return stubs[name];
+        // Request context defaults to All in isolated unit tests; individual scope tests override this boundary.
+        if (name === '@/lib/portal-branch-server') return { getPortalBranchId: async () => null, selectPortalBranches: async branches => [...branches] };
+        if (name === '@/components/portal-branch-context' && stubs.react) return { usePortalBranch: () => ({branchId:null,branches:[]}) };
         // CSS Modules are bundled by Next; Node render tests only need class names.
         if (name.endsWith('.module.css')) return new Proxy({}, { get: (_target, key) => key === '__esModule' ? false : String(key) });
         if (!name.startsWith('.') && !name.startsWith('@/')) return require(name);

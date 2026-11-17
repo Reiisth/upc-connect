@@ -10,6 +10,25 @@ date range and grouping. Its totals, trend, branch movements and transfer routes
 reuse the standalone migration page's shared panel. A migration-load failure is
 isolated to this tab. The reports header no longer has a migration shortcut.
 The standalone migration route remains available to existing links.
+
+Member Flow is the primary migration visual above the time chart. It uses a
+two-column SVG Sankey layout: From and To are separate node sets, so reciprocal
+transfers are supported. Band width is proportional to event count, with stable
+source-branch colors. Counts appear on bands where space permits; every route
+has an exact count in the accessible route list and hover/focus detail.
+
+The branch selector and selectable diagram nodes highlight related routes.
+Summary counts follow the shown flow types: transfers only by default, or all
+movements with Include departures and returns enabled. The latter adds Outside
+the church. Outside accessible branches stays a distinct masked endpoint and
+does not become a selectable branch or expose hidden names. Each event is
+counted once per route; these counts are not distinct-member counts.
+
+Below the wide-layout breakpoint, directional route cards replace the diagram;
+the same model supplies both views. SVG nodes/routes support Enter/Space and
+focus feedback, and exact route cards remain available on desktop. Transfer
+labels preserve the existing RPC's historical name grouping. No additional
+member data, database migration or chart dependency is introduced.
 The analytics RPC and metric definitions are unchanged.
 
 ## Filters

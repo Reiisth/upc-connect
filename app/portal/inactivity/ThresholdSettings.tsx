@@ -22,6 +22,7 @@ export default function ThresholdSettings({ branch, canManage }: {
     <Card className="border-[#5D94E8]/40 bg-[#F8FAFD]">
       <CardHeader>
         <CardTitle>Absence Follow-up Threshold</CardTitle>
+        <p className="text-sm font-medium text-[#203264]">{branch.name}</p>
         <p className="flex items-baseline gap-3 text-[#203264]" aria-label={`Follow-up threshold: ${branch.inactivityThresholdWeeks} weeks`}>
           <span className="text-6xl font-bold tabular-nums">{branch.inactivityThresholdWeeks}</span>
           <span className="text-xl font-semibold">{branch.inactivityThresholdWeeks === 1 ? "absent week" : "absent weeks"}</span>
@@ -32,14 +33,14 @@ export default function ThresholdSettings({ branch, canManage }: {
         {canManage ? (
           <form action={formAction} className="space-y-3" aria-label="Absence follow-up threshold settings">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <FormField label="Absence Follow-up Threshold" htmlFor="inactivity-threshold" className="sm:max-w-56">
-                <Input key={branch.inactivityThresholdWeeks} id="inactivity-threshold" name="inactivity_threshold_weeks"
+              <FormField label="Absence Follow-up Threshold" htmlFor={`inactivity-threshold-${branch.id}`} className="sm:max-w-56">
+                <Input key={branch.inactivityThresholdWeeks} id={`inactivity-threshold-${branch.id}`} name="inactivity_threshold_weeks"
                   type="number" min={1} max={52} step={1} required defaultValue={branch.inactivityThresholdWeeks}
-                  disabled={pending} aria-describedby="threshold-help" />
+                  disabled={pending} aria-describedby={`threshold-help-${branch.id}`} />
               </FormField>
               <Button type="submit" loading={pending} disabled={pending}>{pending ? "Saving…" : "Save rule"}</Button>
             </div>
-            <p id="threshold-help" className="text-xs text-slate-500">
+            <p id={`threshold-help-${branch.id}`} className="text-xs text-slate-500">
               Choose 1–52 weeks. Saving recalculates this branch’s results immediately.
             </p>
             {state.message && (

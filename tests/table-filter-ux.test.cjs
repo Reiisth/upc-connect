@@ -115,7 +115,7 @@ test('column filter is keyboard-operable, specific, stateful and clears only its
 test('column-mapped filters move into Accounts, Services, Attendance, Follow-ups, Contributions and Baptisms headers', () => {
   const cases = [
     ['app/portal/accounts/members/MemberAccountsTable.tsx', ['Linked Member Count', 'Account Status']],
-    ['app/portal/accounts/staff/StaffAccountsTable.tsx', ['Role', 'Branch Access', 'Account Status']],
+    ['app/portal/accounts/staff/StaffAccountsTable.tsx', ['Role', 'Account Status']],
     ['app/portal/services/ServicesTable.tsx', ['Service Type', 'Service Status']],
     ['app/portal/attendance/AttendanceServicesTable.tsx', ['Service Type']],
     ['app/portal/attendance/AttendanceView.tsx', ['Attendance Status']],
@@ -127,10 +127,10 @@ test('column-mapped filters move into Accounts, Services, Attendance, Follow-ups
     const text = source(file);
     for (const label of labels) assert.ok(text.includes(`TableColumnFilter label="${label}"`), `${file} should filter ${label} in its header`);
   }
-  assert.match(source('app/portal/services/ServicesTable.tsx'), /aria-label="Filter by branch"/);
-  assert.match(source('app/portal/attendance/AttendanceServicesTable.tsx'), /aria-label="Filter attendance by branch"/);
-  assert.match(source('app/portal/contributions/ContributionsTable.tsx'), /aria-label="Filter contributions by branch"/);
-  assert.match(source('app/portal/baptisms/BaptismsTable.tsx'), /aria-label="Filter baptisms by branch"/);
+  assert.doesNotMatch(source('app/portal/services/ServicesTable.tsx'), /aria-label="Filter by branch"/);
+  assert.doesNotMatch(source('app/portal/attendance/AttendanceServicesTable.tsx'), /aria-label="Filter attendance by branch"/);
+  assert.doesNotMatch(source('app/portal/contributions/ContributionsTable.tsx'), /aria-label="Filter contributions by branch"/);
+  assert.doesNotMatch(source('app/portal/baptisms/BaptismsTable.tsx'), /aria-label="Filter baptisms by branch"/);
   assert.match(source('app/portal/attendance/AttendanceServicesTable.tsx'), /aria-label="Filter attendance by service date"/);
   assert.match(source('app/portal/contributions/ContributionsTable.tsx'), /Contributions from date/);
   assert.match(source('app/portal/baptisms/BaptismsTable.tsx'), /Baptisms from date/);
@@ -163,7 +163,7 @@ test('filtered tables share the Services clear action and preserve broader conte
     assert.match(source(file), /hasClearableFilters|hasFilters/ , `${file} should show the action only when filters are active`);
   }
   const members = source('app/portal/members/MembersTable.tsx');
-  assert.match(members, /function clearFilters\(\)\s*\{\s*setSearch\(""\);\s*setBranchFilter\("all"\);\s*setMemberStatusFilter\("all"\);\s*setAccountStatusFilter\("all"\);\s*setProfileStatusFilter\("all"\);/);
+  assert.match(members, /function clearFilters\(\)\s*\{\s*setSearch\(""\);\s*setMemberStatusFilter\("all"\);\s*setAccountStatusFilter\("all"\);\s*setProfileStatusFilter\("all"\);/);
   assert.match(members, /archiveFilter,\s*sortBy/);
   const memberAccounts = source('app/portal/accounts/members/MemberAccountsTable.tsx');
   assert.match(memberAccounts, /const hasClearableFilters = search\.trim\(\) !== "" \|\| memberCountFilter !== "all"/);

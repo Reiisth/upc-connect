@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReportChart from "@/app/portal/reports/ReportChart";
@@ -14,8 +13,8 @@ import { formatReportNumber } from "@/app/portal/reports/presentation";
 import { ATTENDANCE_COLORS, attendanceChartMode, type AttendanceComparison, type AttendanceDashboardData } from "@/lib/attendance-dashboard-model";
 import { refreshAttendanceDashboard } from "./dashboard-actions";
 
-type Props={dateFilter?:string;onDateChange?:(value:string)=>void;search?:string;serviceType?:string;initial:AttendanceDashboardData;branches:{id:string;name:string}[];branchFilter:string;onBranchChange:(value:string)=>void};
-export default function AttendanceMiniDashboard({initial,branches,branchFilter,onBranchChange,dateFilter,onDateChange,search="",serviceType="all"}:Props){
+type Props={dateFilter?:string;onDateChange?:(value:string)=>void;search?:string;serviceType?:string;initial:AttendanceDashboardData;branches:{id:string;name:string}[];branchFilter:string};
+export default function AttendanceMiniDashboard({initial,branches,branchFilter,dateFilter,onDateChange,search="",serviceType="all"}:Props){
  const [date,setDate]=useState("");const [data,setData]=useState(initial);const [error,setError]=useState("");const [retry,setRetry]=useState(0);const sequence=useRef(0);const seed=useRef(initial);
  const activeDate=dateFilter??date;
  const changeDate=onDateChange??setDate;
@@ -47,7 +46,6 @@ export default function AttendanceMiniDashboard({initial,branches,branchFilter,o
  const dayTotal=data.byBranch.reduce((sum,row)=>sum+row.present+row.excused+row.absent,0);
  return <section aria-label="Attendance mini dashboard" className="space-y-3 tabular-nums">
   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 sm:flex sm:flex-wrap">
-   <FormField label="Branch" htmlFor="dashboard-branch" className="col-span-2 min-w-0 sm:flex-1 sm:max-w-xs"><Select id="dashboard-branch" aria-label="Filter attendance by branch" value={branchFilter} onChange={e=>onBranchChange(e.target.value)}><option value="all">All authorized branches</option>{branches.map(branch=><option key={branch.id} value={branch.id}>{branch.name}</option>)}</Select></FormField>
    <FormField label="Service Date" htmlFor="attendance-dashboard-date" className={`min-w-0 sm:flex-1 sm:max-w-[190px] ${activeDate ? "" : "col-span-2"}`}><Input id="attendance-dashboard-date" aria-label="Filter attendance by service date" type="date" value={activeDate} onChange={e=>changeDate(e.target.value)} /></FormField>
    {activeDate&&<Button variant="outline" type="button" onClick={()=>changeDate("")}>Clear date</Button>}
   </div>

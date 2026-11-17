@@ -1,3 +1,4 @@
+import { getPortalBranchId } from "@/lib/portal-branch-server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
@@ -44,6 +45,8 @@ async function MemberAccountsContent() {
     `)
     .eq("relationship", "member").in("user_id", visibleIds);
   if (!access.isSystemAdmin) linksQuery = linksQuery.in("members.church_branch_id", access.branchIds);
+  const selectedBranch = await getPortalBranchId();
+  if (selectedBranch) linksQuery = linksQuery.eq("members.church_branch_id",selectedBranch);
   const { data: links, error } = await linksQuery;
 
   if (error) {

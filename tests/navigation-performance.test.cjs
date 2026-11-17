@@ -51,7 +51,9 @@ test('member server pagination returns ten scoped records, exact totals, and no 
  const list=h.reads.find(row=>row.bounds);assert.deepEqual(list.bounds,[10,19]);assert.doesNotMatch(list.columns,/birth_date|phone_number|street_address|photo_url/);
 });
 test('member paging refuses a caller-selected branch outside current server scope',async()=>{
- const h=membersHarness();await assert.rejects(h.content({branch:'b'}),/Access denied/);assert.ok(!h.reads.some(row=>row.table==='members'));
+ const h=membersHarness();const tree=await h.content({branch:'b'});
+ function find(node){if(!node||typeof node!=='object')return null;if(node.props?.paging)return node.props;for(const child of [node.props?.children].flat(Infinity)){const found=find(child);if(found)return found;}return null;}
+ assert.ok(find(tree).members.every(member=>member.church_branch.id==='a'), 'URL branch cannot expand authorized scope');
 });
 
 

@@ -1,3 +1,4 @@
+import { selectPortalBranches } from "@/lib/portal-branch-server";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
@@ -50,7 +51,7 @@ async function BranchesContent() {
 
   const admin = createAdminClient();
 
-  const { data: branches, error } = await admin
+  const { data: branchRows, error } = await admin
     .from("church_branches")
     .select(`
       id,
@@ -70,6 +71,7 @@ async function BranchesContent() {
     throw new Error(error.message);
   }
 
+  const branches = await selectPortalBranches(branchRows ?? []);
   return (
     <PageContainer>
       <PageHeader

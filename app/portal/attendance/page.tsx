@@ -1,3 +1,4 @@
+import { getPortalBranchId, selectPortalBranches } from "@/lib/portal-branch-server";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { readAllPages } from "@/lib/supabase/read-all-pages";
@@ -46,13 +47,13 @@ async function AttendanceContent() {
     "attendance.view",
   );
   const admin = createAdminClient();
-  const branches = await getAccessibleActiveBranches(
+  const branches = await selectPortalBranches(await getAccessibleActiveBranches(
     access,
     admin,
-  );
+  ));
   const branchIds = branches.map((branch) => branch.id);
   const labelsPromise = Promise.resolve(admin.from("service_types").select("key,name,is_active").order("name"));
-  const dashboardPromise = loadAttendanceDashboard(admin, branches);
+  const dashboardPromise = loadAttendanceDashboard(admin, branches, branches.length ? await getPortalBranchId() : null);
   let rows: ServiceRow[] = [];
 
   if (branchIds.length > 0) {

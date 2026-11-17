@@ -1,3 +1,4 @@
+import { getPortalBranchId } from "@/lib/portal-branch-server";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
@@ -59,7 +60,7 @@ async function CachedMembersPageContent({searchParams}: {searchParams?: MemberLi
   const admin = createAdminClient();
 
   if (!isSystemAdmin && !branchIds.length) return <PageContainer><PageHeader title="Members" eyebrow="Member Management" /><EmptyState title="No branch assigned" description="Your account is not currently assigned to a church branch." /></PageContainer>;
-  const filters = parseMemberListFilters(searchParams);
+  const filters = parseMemberListFilters({...searchParams,branch: (await getPortalBranchId()) ?? "all"});
   function scopedQuery() {
     const query = admin.from("members");
     return query;
@@ -72,8 +73,8 @@ async function CachedMembersPageContent({searchParams}: {searchParams?: MemberLi
   const count = (column?: string, value?: string) => {
     let query = scopedQuery().select("id", {count:"exact",head:true});
     if (!isSystemAdmin) query = query.in("church_branch_id",branchIds);
+    if (filters.branch !== "all") query = query.eq("church_branch_id",filters.branch);
     if (column !== "any") {
-      if (filters.branch !== "all") query = query.eq("church_branch_id",filters.branch);
       if (filters.archive !== "all") query = query.eq("is_archived",filters.archive === "archived");
       for (const [column,value] of [["member_status",filters.status],["account_status",filters.account],["profile_status",filters.profile]]) if (value !== "all") query = query.eq(column,value);
       for (const word of memberSearchWords(filters.search)) query = query.or(["first_name","middle_name","last_name","member_status","account_status","profile_status"].map(column => `${column}.ilike.%${word}%`).join(","));

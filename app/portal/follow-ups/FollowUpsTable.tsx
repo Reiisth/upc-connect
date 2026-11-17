@@ -1,4 +1,5 @@
 "use client";
+import { usePortalBranch } from "@/components/portal-branch-context";
 import { useListState } from "@/lib/use-list-state";
 import { FeedbackMessage } from "@/components/ui/feedback-message";
 
@@ -25,10 +26,12 @@ import { filterFollowUps, getDueStatus, FOLLOW_UP_METHODS, FOLLOW_UP_OUTCOMES, M
 
 const initialFilters = { search: "", branch: "", method: "", outcome: "", dateFrom: "", dateTo: "", due: "all" as DueFilter };
 
-export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
+export default function FollowUpsTable({ rows, today, canUpdate }: {
   rows: FollowUpRecord[]; branches: FollowUpBranch[]; today: string; canUpdate: boolean;
 }) {
-  const [filters, setFilters] = useListState("filters", initialFilters);
+  const [savedFilters, setFilters] = useListState("filters", initialFilters);
+  const branchId = usePortalBranch().branchId;
+  const filters = useMemo(() => ({...savedFilters, branch: branchId ?? ""}), [savedFilters,branchId]);
   const [page, setPage] = useListState("page", 1);
   const [period, setPeriod] = useListState("period", "all");
   const [dateFrom, setDateFrom] = useListState("dateFrom", "");
@@ -50,7 +53,7 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
   const totalPages = Math.max(1, Math.ceil(filtered.length / 10));
   const currentPage = Math.min(page, totalPages);
   const pageRows = filtered.slice((currentPage - 1) * 10, currentPage * 10);
-  const hasClearableFilters = Boolean(filters.search.trim() || filters.branch || filters.method || filters.outcome || filters.due !== "all");
+  const hasClearableFilters = Boolean(filters.search.trim() || filters.method || filters.outcome || filters.due !== "all");
   function clearFilters() {
     setPage(1);
     setFilters((current) => ({ ...current, search: "", branch: "", method: "", outcome: "", due: "all" }));
@@ -75,9 +78,6 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
       </form>
       <TableToolbar className="lg:items-end [&>div]:w-full lg:[&>div]:flex-1">
         <FormField label="Search members" htmlFor="follow-ups-search"><SearchInput id="follow-ups-search" value={filters.search} onChange={(event) => field("search", event.target.value)} placeholder="Member name" /></FormField>
-        <FormField label="Branch" htmlFor="follow-ups-branch"><Select id="follow-ups-branch" value={filters.branch} onChange={(event) => field("branch", event.target.value)}>
-          <option value="">All accessible branches</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}{branch.isActive ? "" : " (Inactive branch)"}</option>)}
-        </Select></FormField>
         {hasClearableFilters && <div className="flex items-end"><ClearFiltersButton onClick={clearFilters} /></div>}
       </TableToolbar>
       {!rows.length ? <EmptyState title="No follow-ups recorded" description="A record appears only when staff records a follow-up action." /> : (

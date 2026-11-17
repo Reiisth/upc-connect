@@ -1,3 +1,4 @@
+import { getPortalBranchId } from "@/lib/portal-branch-server";
 import "server-only";
 import { unstable_rethrow } from "next/navigation";
 import { requirePermission } from "@/lib/permissions-server";
@@ -21,6 +22,9 @@ export async function generateDecisionSupportInsights(filters: unknown = {}): Pr
   let release: (() => void) | undefined;
   try {
     const request = validateDecisionSupportFilters(filters);
+    const selectedBranch = await getPortalBranchId();
+    if (selectedBranch && request.branchId && selectedBranch !== request.branchId) return decisionSupportFailure("BRANCH_NOT_ACCESSIBLE");
+    request.branchId = selectedBranch ?? request.branchId;
     const branches = await getAnalyticsBranchOptions();
     if (request.branchId && !branches.some((branch) => branch.id === request.branchId)) return decisionSupportFailure("BRANCH_NOT_ACCESSIBLE");
     if (!branches.length) return decisionSupportFailure("NO_BRANCH_ACCESS");

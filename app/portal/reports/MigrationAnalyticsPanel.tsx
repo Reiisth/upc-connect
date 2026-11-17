@@ -6,6 +6,7 @@ import type { MigrationAnalytics } from "@/lib/member-migrations/server";
 import { formatManilaTimestamp } from "@/lib/manila-time";
 import { manilaDateFromTimestamp } from "@/lib/inactivity/calculate";
 import ReportChart from "./ReportChart";
+import MigrationFlow from "./MigrationFlow";
 
 export default function MigrationAnalyticsPanel({ data, range, headingLevel = 2 }: {
   data: MigrationAnalytics; range: AnalyticsDateRange; headingLevel?: 2 | 3;
@@ -22,6 +23,7 @@ export default function MigrationAnalyticsPanel({ data, range, headingLevel = 2 
       ].map(([label,value]) => <Card key={label} className="min-w-0"><CardContent className="p-4"><p className="text-xs font-medium text-slate-500">{label}</p><p className="mt-2 break-words text-2xl font-semibold text-[#203264]">{Number(value).toLocaleString("en-PH")}</p></CardContent></Card>)}
     </div>
     <p className="text-xs text-slate-500">A member can move multiple times. Transfers within the selected branches count once as an event, once in, and once out. Net movement = transfers in + returns − transfers out − departures; it is not total membership growth.</p>
+    <MigrationFlow data={data} />
     <ReportChart title="Member Movement Over Time" kind="bar" labels={data.trend.map(point => point.periodStart)}
       series={([ ["Transfers In", "incoming", "#16836B"], ["Transfers Out", "outgoing", "#365FA6"], ["Departures", "departures", "#B7791F"], ["Returns", "returns", "#8B5CB5"] ] as const).map(([label,key,color]) => ({ label, color, values: data.trend.map(point => point[key]) }))}
       emptyMessage="No recorded movements match this branch and date range." />

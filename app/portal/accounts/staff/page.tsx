@@ -1,3 +1,4 @@
+import { getPortalBranchId } from "@/lib/portal-branch-server";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -167,6 +168,7 @@ async function StaffAccountsContent() {
     );
   }
 
+  const selectedBranch = await getPortalBranchId();
   const staffAccounts: StaffAccount[] = [...authUsers.values()]
     .filter((user) => roleMap.has(user.id))
     .map((user) => {
@@ -237,7 +239,7 @@ async function StaffAccountsContent() {
       <AccountsTabs permissions={access.permissions} />
 
       <StaffAccountsTable
-        accounts={staffAccounts}
+        accounts={staffAccounts.filter(account => !selectedBranch || account.hasAllBranchAccess || account.branchAccess.some(branch => branch.id === selectedBranch))}
         branches={branches}
         canArchive={canArchive}
         canRestore={canRestore}

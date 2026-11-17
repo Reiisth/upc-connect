@@ -1,4 +1,5 @@
 "use client";
+import { usePortalBranch } from "@/components/portal-branch-context";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
@@ -107,7 +108,7 @@ export default function StaffAccountsTable({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [branchFilter, setBranchFilter] = useState("all");
+  const branchFilter = usePortalBranch().branchId ?? "all";
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedAccount, setSelectedAccount] = useState<{
     account: StaffAccount;
@@ -169,13 +170,12 @@ export default function StaffAccountsTable({
   const hasFilters =
     search.trim() !== "" ||
     roleFilter !== "all" ||
-    branchFilter !== "all" ||
+
     statusFilter !== "all";
 
   function clearFilters() {
     setSearch("");
     setRoleFilter("all");
-    setBranchFilter("all");
     setStatusFilter("all");
   }
 
@@ -280,7 +280,7 @@ export default function StaffAccountsTable({
               <TableHead>Staff</TableHead>
               <TableHead>Email</TableHead>
               <TableHead><div className="flex items-center gap-1">Roles<TableColumnFilter label="Role" value={roleFilter} onChange={setRoleFilter} options={[{ value: "all", label: "All roles" }, ...roleOptions.map((role) => ({ value: role.key, label: role.displayName }))]} /></div></TableHead>
-              <TableHead><div className="flex items-center gap-1">Branch Access<TableColumnFilter label="Branch Access" value={branchFilter} onChange={setBranchFilter} options={[{ value: "all", label: "All branches" }, ...branches.map((branch) => ({ value: branch.id, label: `${branch.name}${branch.isActive ? "" : " (Inactive)"}` }))]} /></div></TableHead>
+              <TableHead><div className="flex items-center gap-1">Branch Access</div></TableHead>
               <TableHead><div className="flex items-center gap-1">Status<TableColumnFilter label="Account Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "All statuses" }, ...statusOptions.map((status) => ({ value: status, label: statusLabels[status] }))]} /></div></TableHead>
               <TableHead>Last Sign-in</TableHead>
               <TableHead>Created</TableHead>

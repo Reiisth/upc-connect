@@ -1,3 +1,4 @@
+import { getPortalBranchId } from "@/lib/portal-branch-server";
 import "server-only";
 import { requirePermission } from "@/lib/permissions-server";
 import { getUserBranchScope } from "@/lib/branch-access";
@@ -24,6 +25,9 @@ export async function getMigrationReportingContext() {
 
 export async function getMigrationAnalytics(request: AnalyticsRequest = {}): Promise<MigrationAnalytics> {
   const { access, admin, branches } = await getMigrationReportingContext();
+  const selectedBranch = await getPortalBranchId();
+  if (selectedBranch && request.branchId && selectedBranch !== request.branchId) throw new Error("The current branch has changed. Refresh and try again.");
+  request = {...request,branchId:selectedBranch ?? request.branchId};
   if (request.branchId && !branches.some(branch => branch.id === request.branchId)) throw new Error("Selected branch is outside your access.");
   const range = resolveAnalyticsDateRange(request.range);
   const grouping = request.grouping ?? "week";
@@ -50,6 +54,7 @@ export async function getMigrationEvents(filters: { memberId?: string; page?: nu
   const admin = createAdminClient();
   const branches = await getHistoricalRecordBranches(scope, admin);
   const ids = branches.map(branch => branch.id);
+  filters = {...filters,branch:(await getPortalBranchId()) ?? filters.branch};
   const currentPage = Number.isSafeInteger(filters.page) && filters.page! > 0 ? Math.min(filters.page!,100000) : 1;
   if (filters.kind && !["transfer","departure","return"].includes(filters.kind)) throw new Error("Select a valid movement type.");
   if (filters.branch && !ids.includes(filters.branch)) throw new Error("Selected branch is outside your access.");

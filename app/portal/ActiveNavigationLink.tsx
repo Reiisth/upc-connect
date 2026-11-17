@@ -9,9 +9,10 @@ export default function ActiveNavigationLink({
   className,
   activeClassName,
   inactiveClassName,
-  children,
+  children, label,
 }: {
   href: string;
+  label?: string;
   className: string;
   activeClassName: string;
   inactiveClassName: string;
@@ -25,6 +26,8 @@ export default function ActiveNavigationLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
+      title={label}
+      aria-label={label}
       className={`${className} ${active ? activeClassName : inactiveClassName}`}
     >
       {children}

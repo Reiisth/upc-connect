@@ -75,14 +75,15 @@ function NavigationLink({ item, mobile = false }: { item: Item; mobile?: boolean
   return (
     <ActiveNavigationLink
       href={item.href}
+      label={item.label}
       className={mobile
-        ? "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6]"
-        : "flex min-h-11 items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6]"}
+        ? "portal-nav-link flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6]"
+        : "portal-nav-link flex min-h-11 items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6]"}
       activeClassName="bg-[#EEF3FB] text-[#203264]"
       inactiveClassName="text-muted-foreground hover:bg-[#EEF3FB] hover:text-[#203264]"
     >
       <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-      <span className={mobile ? "max-w-full break-words text-center leading-tight" : undefined}>{mobile ? ({ "Reports & Analytics": "Reports", "Inactivity Monitoring": "Inactivity", "My Profiles": "Profiles", "My Account": "Account" }[item.label] ?? item.label) : item.label}</span>
+      <span className={mobile ? "max-w-full break-words text-center leading-tight" : "portal-nav-label"}>{mobile ? ({ "Reports & Analytics": "Reports", "Inactivity Monitoring": "Inactivity", "My Profiles": "Profiles", "My Account": "Account" }[item.label] ?? item.label) : item.label}</span>
     </ActiveNavigationLink>
   );
 }
@@ -134,7 +135,7 @@ export default function PortalNavigation({ permissions, variant }: PortalNavigat
     <nav aria-label="Primary navigation" className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
       {visibleGroups.map((group) => (
         <section key={group.label} aria-label={group.label}>
-          <h2 className="px-4 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{group.label}</h2>
+          <h2 className="portal-nav-group-title px-4 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{group.label}</h2>
           <div className="space-y-1">
             {group.items.map((item) => <NavigationLink key={item.href} item={item} />)}
           </div>

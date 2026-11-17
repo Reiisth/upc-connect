@@ -1,3 +1,4 @@
+import { getPortalBranchId } from "@/lib/portal-branch-server";
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { FollowUpAccess } from "./access";
@@ -79,9 +80,11 @@ function mapRecord(row: RecordRow): FollowUpRecord {
 }
 
 export async function loadFollowUpRecords(access: FollowUpAccess, admin: Admin, memberId?: string): Promise<FollowUpRecord[]> {
-  if (!access.branchIds.length) return [];
+  const branchId = await getPortalBranchId();
+  const branchIds = branchId ? access.branchIds.filter(id => id === branchId) : access.branchIds;
+  if (!branchIds.length) return [];
   const rows = await allRows((from, to) => {
-    let query = admin.from("member_follow_ups").select(recordSelect).in("church_branch_id", access.branchIds);
+    let query = admin.from("member_follow_ups").select(recordSelect).in("church_branch_id", branchIds);
     if (memberId) query = query.eq("member_id", memberId);
     return query.order("follow_up_date", { ascending: false }).order("created_at", { ascending: false }).order("id").range(from, to);
   });

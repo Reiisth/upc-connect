@@ -1,3 +1,4 @@
+import { getPortalBranchId } from "@/lib/portal-branch-server";
 import "server-only";
 import { briefReportDescription } from "@/app/portal/reports/presentation";
 import { requirePermission } from "@/lib/permissions-server";
@@ -19,6 +20,9 @@ async function context() {
 export async function saveReportDocument(result: SavedReportResult, filters: unknown) {
   const { user, branches, admin } = await context();
   const request = validateDecisionSupportFilters(filters);
+  const selectedBranch = await getPortalBranchId();
+  if (selectedBranch && request.branchId && selectedBranch !== request.branchId) throw new Error("Report branch has changed.");
+  request.branchId = selectedBranch ?? request.branchId;
   const ids = branches.filter(branch => !request.branchId || branch.id === request.branchId).map(branch => branch.id);
   if (!ids.length || ids.length !== result.branchLabels.length || branches.filter(branch => ids.includes(branch.id)).some(branch => !result.branchLabels.some(label => label.displayName === branch.name))) throw new Error("Report scope changed before saving.");
   const description = briefReportDescription(`${result.reportingContext.dateRange.from} to ${result.reportingContext.dateRange.to}: ${result.insight.executiveSummary}`);
@@ -33,10 +37,12 @@ export async function listReportDocuments(page: number) {
   if (!Number.isSafeInteger(page) || page < 1 || page > 100000) throw new Error("Invalid document page.");
   const { user, branches, admin } = await context();
   if (!branches.length) return { rows: [] as ReportDocumentRow[], total: 0 };
-  const { data, error, count } = await admin.from("ai_report_documents")
+  const selectedBranch = await getPortalBranchId();
+  let query = admin.from("ai_report_documents")
     .select("id, created_at, description", { count: "exact" })
-    .eq("created_by", user.id).containedBy("branch_ids", branches.map(branch => branch.id))
-    .order("created_at", { ascending: false }).order("id", { ascending: false }).range((page - 1) * 5, page * 5 - 1);
+    .eq("created_by", user.id).containedBy("branch_ids", branches.map(branch => branch.id));
+  if (selectedBranch) query = query.contains("branch_ids",[selectedBranch]);
+  const {data,error,count} = await query.order("created_at", { ascending: false }).order("id", { ascending: false }).range((page - 1) * 5, page * 5 - 1);
   if (error) throw new Error("Saved reports could not be loaded.");
   return { rows: (data ?? []) as ReportDocumentRow[], total: count ?? 0 };
 }

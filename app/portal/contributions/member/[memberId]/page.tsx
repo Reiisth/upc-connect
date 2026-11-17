@@ -1,3 +1,4 @@
+import { selectPortalBranches } from "@/lib/portal-branch-server";
 import { Pagination } from "@/components/ui/pagination";
 import { MemberStatus } from "@/components/ui/member-status";
 import { cacheLife, cacheTag } from "next/cache";
@@ -38,7 +39,7 @@ async function Content({ params, searchParams }: Props) {
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(access, admin);
   if (!branches.length) notFound();
-  const ids = branches.map(branch => branch.id);
+  const ids = (await selectPortalBranches(branches)).map(branch => branch.id);
   const readPage = (from: number) => admin.from("financial_contributions")
     .select("id,amount,contribution_type,contribution_date,payment_method,church_branch_id,notes")
     .eq("contributor_type", "member").eq("member_id", memberId).in("church_branch_id", ids)

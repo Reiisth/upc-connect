@@ -68,8 +68,8 @@ test('portal shell loads and exposes identity context on desktop and from the mo
   const navigation = fs.readFileSync('app/portal/PortalNavigation.tsx', 'utf8');
   assert.match(layout, /getPortalUserContext\(/);
   assert.match(layout, /user\.id,/);
-  assert.match(layout, /<PortalIdentitySummary context=\{identity\}/);
-  assert.match(layout, /<MobileProfileInfo><PortalIdentitySummary context=\{identity\}/);
+  assert.match(layout, /<PortalFrame.*identity=\{identity\}/);
+  assert.match(fs.readFileSync('app/portal/PortalFrame.tsx','utf8'), /Account menu for/);
   assert.doesNotMatch(navigation, /PortalIdentitySummary/);
 });
 

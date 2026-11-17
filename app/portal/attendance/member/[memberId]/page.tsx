@@ -1,3 +1,4 @@
+import { selectPortalBranches } from "@/lib/portal-branch-server";
 import { Pagination } from "@/components/ui/pagination";
 import { MemberStatus } from "@/components/ui/member-status";
 import { cacheLife, cacheTag } from "next/cache";
@@ -36,7 +37,7 @@ async function Content({ params, searchParams }: Props) {
   const admin = createAdminClient();
   const branches = await getAccessibleActiveBranches(access, admin);
   if (!branches.length) notFound();
-  const ids = branches.map(branch => branch.id);
+  const ids = (await selectPortalBranches(branches)).map(branch => branch.id);
   // Host-service branch scopes every history read, including after transfers.
   const historyQuery = () => admin.from("attendance_records")
     .select("id,attendance_status,check_in_time,method,service:services!inner(id,name,service_date,church_branch_id,status)", { count: "exact" })

@@ -1,4 +1,5 @@
 "use client";
+import { usePortalBranch } from "@/components/portal-branch-context";
 import { useListState } from "@/lib/use-list-state";
 import { FeedbackMessage } from "@/components/ui/feedback-message";
 
@@ -73,7 +74,7 @@ export default function ContributionsTable({
   const [page,setPage]=useListState("page", 1);
   const [sortBy, setSortBy] = useListState("sortBy", "newest");
   const [search, setSearch] = useListState("search", "");
-  const [branchFilter, setBranchFilter] = useListState("branchFilter", "all");
+  const branchFilter = usePortalBranch().branchId ?? "all";
   const [typeFilter, setTypeFilter] = useListState("typeFilter", "all");
   const [paymentFilter, setPaymentFilter] = useListState("paymentFilter", "all");
   const [dateFrom, setDateFrom] = useListState("dateFrom", dashboard?.from??"");
@@ -154,17 +155,16 @@ export default function ContributionsTable({
 
   const hasFilters =
     search.trim() !== "" ||
-    branchFilter !== "all" ||
+
     typeFilter !== "all" ||
     paymentFilter !== "all" ||
     dateFrom !== "" ||
     dateTo !== "";
-  const hasClearableFilters = search.trim() !== "" || branchFilter !== "all" || typeFilter !== "all" || paymentFilter !== "all";
+  const hasClearableFilters = search.trim() !== "" ||  typeFilter !== "all" || paymentFilter !== "all";
 
   function clearFilters() {
     setPage(1);
     setSearch("");
-    setBranchFilter("all");
     setTypeFilter("all");
     setPaymentFilter("all");
   }
@@ -194,18 +194,7 @@ export default function ContributionsTable({
           />
 
         <div className="w-full shrink-0 sm:w-56">
-          <Select
-            value={branchFilter}
-            onChange={(event) => {setBranchFilter(event.target.value);setPage(1);}}
-            aria-label="Filter contributions by branch"
-          >
-            <option value="all">All branches</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </Select>
+
 
 
         </div>

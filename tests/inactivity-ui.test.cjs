@@ -101,8 +101,8 @@ test('page scopes branch selection and summary rendering under its Suspense boun
   assert.ok(html.includes('Monitoring') && html.includes('Needs Follow-up') && html.includes('Unknown'));
   assert.ok(html.includes('Pedro Reyes'));
   const forbidden = Page({ searchParams: Promise.resolve({ branch: 'unassigned' }) }).props.children;
-  await assert.rejects(forbidden.type(forbidden.props), /redirect:\/access-denied/);
-  assert.deepEqual(loadedBranches, ['a'], 'An unauthorized branch must not load member data');
+  await forbidden.type(forbidden.props);
+  assert.deepEqual(loadedBranches, ['a','a'], 'Legacy URL input cannot override the shared branch scope');
 });
 
 test('page offers only accessible branch choices and an empty state when none are available', async () => {
@@ -118,7 +118,7 @@ test('page offers only accessible branch choices and an empty state when none ar
     }).default;
     const content = Page({ searchParams: Promise.resolve({}) }).props.children;
     const html = renderToStaticMarkup(await content.type(content.props));
-    assert.ok(html.includes(branches.length ? 'View branch' : 'No active branch access'));
+    assert.ok(html.includes(branches.length ? 'All accessible branches' : 'No active branch access'));
     if (branches.length) assert.ok(html.includes('Second Church'));
   }
 });

@@ -1,3 +1,4 @@
+import { getPortalBranchId } from "@/lib/portal-branch-server";
 import { loadMonitoringParticipation } from "@/lib/inactivity/participation";
 import "server-only";
 import { cache } from "react";
@@ -27,6 +28,9 @@ const getAnalyticsContext = cache(async () => {
     const scope = await getUserBranchScope(access.user.id);
     const admin = createAdminClient();
     const ids = [...new Set(scope.branchIds)];
+    const selectedBranch = await getPortalBranchId();
+    // System administrators may select a closed branch for historical reporting.
+    if (scope.isSystemAdmin && selectedBranch && !ids.includes(selectedBranch)) ids.push(selectedBranch);
     const rows = ids.length ? await allRows((from, to) => admin.from("church_branches")
       .select("id, name, code, is_active, inactivity_threshold_weeks").in("id", ids).order("id").range(from, to)) : [];
     const branches: AnalyticsBranch[] = rows.map((row) => ({ id: row.id, name: row.name, code: row.code,
@@ -71,6 +75,9 @@ const loadInactivityInputs = cache(async function loadInactivityInputs(admin: Re
 
 export async function getAnalyticsOverview(request: AnalyticsRequest = {}): Promise<AnalyticsOverview> {
   const context = await getAnalyticsContext();
+  const selectedBranch = await getPortalBranchId();
+  if (selectedBranch && request.branchId && selectedBranch !== request.branchId) throw new Error("The current branch has changed. Refresh and try again.");
+  request = {...request, branchId: selectedBranch ?? request.branchId};
   const asOfDate = analyticsToday(new Date());
   const range = resolveAnalyticsDateRange(request.range, asOfDate);
   const grouping = request.grouping ?? "week";

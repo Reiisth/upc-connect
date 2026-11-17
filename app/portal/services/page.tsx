@@ -1,3 +1,4 @@
+import { selectPortalBranches } from "@/lib/portal-branch-server";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { effectiveStoredServiceStatus } from "@/app/portal/services/lifecycle";
@@ -47,10 +48,10 @@ async function ServicesContent() {
   cacheTag("portal:services");
   const access = await requireServicesPermission("services.view");
   const admin = createAdminClient();
-  const branches = await getAccessibleActiveBranches(
+  const branches = await selectPortalBranches(await getAccessibleActiveBranches(
     access,
     admin,
-  );
+  ));
   const branchIds = branches.map((branch) => branch.id);
   const labelsPromise = Promise.resolve(admin.from("service_types").select("key,name,is_active").order("name"));
 

@@ -186,7 +186,7 @@ test('service type report labels resolve current names while report data retains
   assert.equal(grouped.serviceType, 'midweek_service');
 });
 
-function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)], isSystemAdmin = false, rpcFailure = false, branchFailure = false, migrationFailure = false } = {}) {
+function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)], isSystemAdmin = false, rpcFailure = false, branchFailure = false, migrationFailure = false, selectedBranch = null } = {}) {
   const calls = { rpc: [], permission: [], branchScope: [], migrations: [] };
   const db = { church_branches: branches.map((branch) => ({ id: branch.id, name: branch.name, code: null, is_active: branch.isActive, inactivity_threshold_weeks: branch.inactivityThresholdWeeks })), members: [], service_types: [{ key: 'prayer_meeting', name: 'Wednesday Prayer', is_active: true }] };
   class Query {
@@ -205,6 +205,7 @@ function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)]
   };
   const api = loadTypeScript('lib/analytics/server.ts', {
     'server-only': {},
+    '@/lib/portal-branch-server': {getPortalBranchId:async()=>selectedBranch},
     '@/lib/permissions-server': { requirePermission: async (permission) => {
       calls.permission.push(permission);
       if (!permissions.includes(permission)) throw new Error('redirect:/access-denied');
@@ -215,6 +216,7 @@ function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)]
     './date-range': { ...dates, analyticsToday: () => today },
   });
   const Page = loadTypeScript('app/portal/reports/page.tsx', { ...withLinks,
+    '@/lib/portal-branch-server': {getPortalBranchId:async()=>selectedBranch},
     './actions': { generateReportInsights: () => assert.fail('Normal Reports rendering must not request AI insights') },
     '@/lib/analytics/server': api,
     '@/lib/member-migrations/server': { getMigrationAnalytics: async request => {
@@ -258,7 +260,7 @@ test('reports.view is required and a custom Reports-only account can use the act
 });
 
 test('dashboard migration tab shares applied filters and replaces Weekly Participation without a header shortcut', async () => {
-  const h=pageHarness();
+  const h=pageHarness({selectedBranch:id(1)});
   const html=await h.html({branch:id(1),range:'custom',from:'2026-10-01',to:'2026-10-29',grouping:'day'});
   assert.match(html,/Migration Analytics/);assert.doesNotMatch(html,/Weekly Participation|href="\/portal\/reports\/migrations"/);
   assert.equal(h.calls.migrations.length,1);
@@ -292,7 +294,7 @@ test('selected and all-branch requests use only scope IDs; system administrator 
     assert.deepEqual(Array.from(h.calls.rpc[0].args.p_branch_ids), [id(2)]);
     assert.ok(!html.includes('Branch 1') && !html.includes('Inaccessible Branch'));
   }
-  const h = pageHarness();
+  const h = pageHarness({selectedBranch:id(1)});
   const html = await h.html({ branch: id(1), range: 'last_7_days', grouping: 'day' });
   assert.deepEqual(Array.from(h.calls.rpc[0].args.p_branch_ids), [id(1)]);
   assert.equal(h.calls.rpc[0].args.p_from, '2026-10-23');
@@ -302,11 +304,11 @@ test('selected and all-branch requests use only scope IDs; system administrator 
   assert.equal(h.calls.insightFilters.range.from, h.calls.rpc[0].args.p_from);
   assert.equal(h.calls.insightFilters.range.to, h.calls.rpc[0].args.p_to);
   assert.equal(h.calls.insightFilters.grouping, 'day');
-  assert.ok(html.includes('Branch 2'), 'Selector retains all accessible options when one branch is selected');
+  assert.ok(!html.includes('name="branch"'), 'Branch selection belongs to the top bar');
   assert.ok(!html.includes('Branch Comparison'));
   const rejected = pageHarness();
-  await assert.rejects(rejected.html({ branch: id(3) }), /redirect:\/access-denied/);
-  assert.equal(rejected.calls.rpc.length, 0);
+  await rejected.html({ branch: id(3) });
+  assert.deepEqual(Array.from(rejected.calls.rpc[0].args.p_branch_ids),[id(1),id(2)], 'URL branch is ignored; only authorized shared context applies');
 });
 
 test('invalid dates show a repairable filter error, failed loads never display zeros or private errors, and no scope has its own state', async () => {
@@ -332,13 +334,13 @@ test('GET filters restore applied values, stack on mobile and enable date contro
   const values = parseReportFilters({ branch: id(2), range: 'custom', from: '2026-10-01', to: today, grouping: 'month' }, today).values;
   const html = renderToStaticMarkup(React.createElement(Filters, { branches: branches.slice(0, 2), values }));
   assert.ok(html.includes('action="/portal/reports"') && html.includes('method="get"'));
-  assert.ok(html.includes(`value="${id(2)}" selected=""`));
+  assert.ok(!html.includes('name="branch"'));
   assert.ok(html.includes('value="custom" selected=""') && html.includes('value="month" selected=""'));
   assert.ok(html.includes('value="2026-10-01"') && html.includes('value="2026-10-29"'));
   assert.ok(!html.includes('disabled=""'));
   const presetHtml = renderToStaticMarkup(React.createElement(Filters, { branches: branches.slice(0, 2), values: parseReportFilters({}, today).values }));
   assert.equal((presetHtml.match(/disabled=""/g) || []).length, 2);
-  assert.ok(html.includes('sm:grid-cols-2') && html.includes('xl:grid-cols-4'));
+  assert.ok(html.includes('sm:grid-cols-2') && html.includes('xl:grid-cols-3'));
   const Dashboard = loadTypeScript('app/portal/reports/ReportsDashboard.tsx').default;
   const dashboardHtml = renderToStaticMarkup(React.createElement(Dashboard, { overview: overviewFixture() }));
   assert.ok(dashboardHtml.includes('min-w-0') && dashboardHtml.includes('role="tabpanel"'));

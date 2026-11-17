@@ -1,3 +1,4 @@
+import { selectPortalBranches } from "@/lib/portal-branch-server";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { loadModuleSummary } from "@/lib/module-summary";
@@ -39,7 +40,7 @@ async function ContributionsContent() {
     "contributions.view",
   );
   const admin = createAdminClient();
-  const branches = await getHistoricalRecordBranches(access, admin);
+  const branches = await selectPortalBranches(await getHistoricalRecordBranches(access, admin));
   const [records, dashboard] = await Promise.all([
     loadContributionRecords(admin, branches),
     loadModuleSummary(admin, "contributions", branches.map(branch => branch.id)),

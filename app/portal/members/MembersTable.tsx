@@ -1,4 +1,5 @@
 "use client";
+import { usePortalBranch } from "@/components/portal-branch-context";
 import { Pagination } from "@/components/ui/pagination";
 
 import { MemberStatus } from "@/components/ui/member-status";
@@ -77,7 +78,7 @@ export default function MembersTable({
   const [memberStatusFilter, setMemberStatusFilter] = useState(paging?.filters.status ?? "all");
   const [accountStatusFilter, setAccountStatusFilter] = useState(paging?.filters.account ?? "all");
   const [profileStatusFilter, setProfileStatusFilter] = useState(paging?.filters.profile ?? "all");
-  const [branchFilter, setBranchFilter] = useState(paging?.filters.branch ?? "all");
+  const branchFilter = usePortalBranch().branchId ?? "all";
   const [archiveFilter, setArchiveFilter] = useState(paging?.filters.archive ?? "active");
   const [sortBy, setSortBy] = useState(paging?.filters.sort ?? "newest");
   const [currentPage, setCurrentPage] = useState(paging?.filters.page ?? 1);
@@ -96,7 +97,6 @@ export default function MembersTable({
   }, [queryKey, router]);
 
 
-  const branchOptions = useMemo(() => paging?.branches ?? [...new Map(members.flatMap(member => member.church_branch ? [[member.church_branch.id, member.church_branch] as const] : [])).values()].sort((a, b) => a.name.localeCompare(b.name)), [members, paging?.branches]);
 
   const filteredMembers = useMemo(() => {
     if (paging) return members;
@@ -202,12 +202,11 @@ export default function MembersTable({
 
   const hasActions = canArchive || canLinkAccount;
   const hasClearableFilters = Boolean(
-    search.trim() || branchFilter !== "all" || memberStatusFilter !== "all" || accountStatusFilter !== "all" || profileStatusFilter !== "all",
+    search.trim() ||  memberStatusFilter !== "all" || accountStatusFilter !== "all" || profileStatusFilter !== "all",
   );
 
   function clearFilters() {
     setSearch("");
-    setBranchFilter("all");
     setMemberStatusFilter("all");
     setAccountStatusFilter("all");
     setProfileStatusFilter("all");
@@ -241,10 +240,7 @@ export default function MembersTable({
           />
 
         <div className="grid grid-cols-2 items-center gap-3 sm:grid-cols-3 lg:flex">
-          <Select value={branchFilter} onChange={event => setBranchFilter(event.target.value)} className="lg:w-44" aria-label="Filter members by branch">
-            <option value="all">All branches</option>
-            {branchOptions.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-          </Select>
+
           <Select value={archiveFilter} onChange={(event) => setArchiveFilter(event.target.value)} className="lg:w-36" aria-label="Filter by archive status">
             <option value="active">Active Members</option>
             <option value="archived">Archived Members</option>

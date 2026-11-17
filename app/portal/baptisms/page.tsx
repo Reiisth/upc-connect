@@ -1,3 +1,4 @@
+import { selectPortalBranches } from "@/lib/portal-branch-server";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { loadModuleSummary } from "@/lib/module-summary";
@@ -43,7 +44,7 @@ async function BaptismsContent() {
   cacheTag("portal:baptisms");
   const access = await requireBaptismPermission("baptisms.view");
   const admin = createAdminClient();
-  const branches = await getHistoricalRecordBranches(access, admin);
+  const branches = await selectPortalBranches(await getHistoricalRecordBranches(access, admin));
   const [records, dashboard] = await Promise.all([
     loadBaptismRecords(admin, branches),
     loadModuleSummary(admin, "baptisms", branches.map(branch => branch.id)),

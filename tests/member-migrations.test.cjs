@@ -68,7 +68,7 @@ test('departure confirmation explains operational effect and invokes explicit ac
 test('migration report renders consistent metrics and chart from one filtered aggregate, without member-management access',async()=>{
  const charts=[];let request;
  const data={trackingStartedAt:'2026-11-16T00:00:00Z',totals:{events:5,members:3,transfers:3,incoming:1,outgoing:3,departures:2,returns:0,net:-4},trend:[{periodStart:'2026-11-16',incoming:1,outgoing:3,departures:2,returns:0}],branches:[{id:a,name:'North',incoming:1,outgoing:3,departures:2,returns:0,net:-4}],flows:[{source:'North',destination:'Outside accessible branches',transfers:3}]};
- const Page=loadTypeScript('app/portal/reports/migrations/page.tsx',{
+ const Page=loadTypeScript('app/portal/reports/migrations/page.tsx',{'@/lib/portal-branch-server':{getPortalBranchId:async()=> a},
    '@/lib/member-migrations/server':{getMigrationReportingContext:async()=>({access:{permissions:['reports.view']},branches:[{id:a,name:'North',code:null,isActive:true}]}),getMigrationAnalytics:async value=>{request=value;return data;}},
    './ReportChart':{__esModule:true,default:props=>{charts.push(props);return null;}},
  }).default;

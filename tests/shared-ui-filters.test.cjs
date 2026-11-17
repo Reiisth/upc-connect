@@ -79,11 +79,12 @@ test('filtered money aggregation retains precision above Number safe range', () 
 });
 
 test('Services summary uses the complete filtered result rather than its current page', () => {
-  const h=clientHooks('app/portal/services/ServicesTable.tsx',{'./ServiceLifecycleActions':{__esModule:true,default:()=>null}});
+  let selected=null;
+  const h=clientHooks('app/portal/services/ServicesTable.tsx',{'@/components/portal-branch-context':{usePortalBranch:()=>({branchId:selected})},'./ServiceLifecycleActions':{__esModule:true,default:()=>null}});
   const props={services:Array.from({length:23},(_,i)=>({id:String(i),name:`Service ${i}`,churchBranchId:i<12?'a':'b',serviceType:'worship',status:'scheduled',serviceDate:'2026-11-14',startTime:'09:00',branch:null})),branches:[],serviceTypes:[],serviceTypeNames:{},canEdit:false};
   let tree=h.render(props);
   assert.equal(findElement(tree,e=>e.props.label==='Visible Services').props.value,23);
-  findElement(tree,e=>e.props['aria-label']==='Filter by branch').props.onChange({target:{value:'a'}});
+  selected='a';
   tree=h.render(props);assert.equal(findElement(tree,e=>e.props.label==='Visible Services').props.value,12);
   findElement(tree,e=>e.type.name==='Pagination').props.onPageChange(2);
   tree=h.render(props);assert.equal(findElement(tree,e=>e.props.label==='Visible Services').props.value,12);
@@ -104,7 +105,7 @@ test('Members server cards apply branch, archive, status and search constraints 
     order(){return this;}range(){return this;}
     then(resolve,reject){const rows=this.rows.filter(row=>this.filters.every(filter=>filter(row)));return Promise.resolve({data:rows,count:rows.length,error:null}).then(resolve,reject);}
   }
-  const Page=loadTypeScript('app/portal/members/page.tsx',{'./access':{requireMembersPermission:async()=>({isSystemAdmin:false,branchIds:['a','b'],permissions:[]})},'@/lib/supabase/admin':{createAdminClient:()=>({from:table=>new Query(table)})}}).default;
+  const Page=loadTypeScript('app/portal/members/page.tsx',{'@/lib/portal-branch-server':{getPortalBranchId:async()=> 'a'},'./access':{requireMembersPermission:async()=>({isSystemAdmin:false,branchIds:['a','b'],permissions:[]})},'@/lib/supabase/admin':{createAdminClient:()=>({from:table=>new Query(table)})}}).default;
   const render=async filters=>{const shell=Page({searchParams:Promise.resolve(filters)});return shell.props.children.type(shell.props.children.props);};
   const active=await render({branch:'a',search:'Ana'});
   assert.equal(findElement(active,e=>e.props.label==='Total Members').props.value,1);

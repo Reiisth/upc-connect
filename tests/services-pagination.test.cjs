@@ -12,7 +12,7 @@ test('Services paginates after filtering, resets all filters to page one and cla
   const first = rows(tree).map(e => e.key);
   button(tree, 'Next').props.onClick(); tree = render(); assert.equal(rows(tree).length, 10); assert.ok(rows(tree).every(e => !first.includes(e.key)));
   button(tree, 'Next').props.onClick(); tree = render(); assert.equal(rows(tree).length, 3); assert.equal(button(tree, 'Next').props.disabled, true);
-  for (const [label, value] of [['Filter by branch', 'a'], ['Service Type', 'worship'], ['Service Status', 'completed']]) {
+  for (const [label, value] of [['Service Type', 'worship'], ['Service Status', 'completed']]) {
     tree = render(); const filter = findElement(tree, e => e.props['aria-label'] === label || e.props.label === label);
     filter.props.onChange(label === 'Filter by branch' ? { target: { value } } : value);
     tree = render(); assert.equal(rows(tree).length, 10); assert.equal(button(tree, 'Previous').props.disabled, true);

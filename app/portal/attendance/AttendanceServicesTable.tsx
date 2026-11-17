@@ -1,4 +1,5 @@
 "use client";
+import { usePortalBranch } from "@/components/portal-branch-context";
 import { useListState } from "@/lib/use-list-state";
 import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
 
@@ -18,7 +19,6 @@ import { useMemo } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { ClearFiltersButton } from "@/components/ui/clear-filters-button";
-import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -56,7 +56,7 @@ export default function AttendanceServicesTable({
   serviceTypeNames,
 }: AttendanceServicesTableProps) {
   const [search, setSearch] = useListState("search", "");
-  const [branchFilter, setBranchFilter] = useListState("branchFilter", "all");
+  const branchFilter = usePortalBranch().branchId ?? "all";
   const [dateFilter, setDateFilter] = useListState("dateFilter", "");
   const [typeFilter, setTypeFilter] = useListState("typeFilter", "all");
 
@@ -94,20 +94,19 @@ export default function AttendanceServicesTable({
 
   const hasFilters =
     search.trim() !== "" ||
-    branchFilter !== "all" ||
+
     dateFilter !== "" ||
     typeFilter !== "all";
 
   function clearFilters() {
     setSearch("");
-    setBranchFilter("all");
     setDateFilter("");
     setTypeFilter("all");
   }
 
   return (
     <div className="space-y-4">
-      {dashboard && <AttendanceMiniDashboard initial={dashboard} branches={branches} branchFilter={branchFilter} onBranchChange={setBranchFilter} dateFilter={dateFilter} onDateChange={setDateFilter} search={search} serviceType={typeFilter} />}
+      {dashboard && <AttendanceMiniDashboard initial={dashboard} branches={branches} branchFilter={branchFilter} dateFilter={dateFilter} onDateChange={setDateFilter} search={search} serviceType={typeFilter} />}
       <TableToolbar>
         <SearchInput
             value={search}
@@ -117,7 +116,7 @@ export default function AttendanceServicesTable({
           />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:flex">
-          {!dashboard && <Select aria-label="Filter attendance by branch" value={branchFilter} onChange={event=>setBranchFilter(event.target.value)}><option value="all">All branches</option>{branches.map(branch=><option key={branch.id} value={branch.id}>{branch.name}</option>)}</Select>}
+
           {!dashboard && <Input
             type="date"
             value={dateFilter}

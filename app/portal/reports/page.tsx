@@ -1,3 +1,4 @@
+import { getPortalBranchId } from "@/lib/portal-branch-server";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
@@ -32,7 +33,7 @@ async function CachedReportsContent({ searchParams }: { searchParams: ReportSear
   // This read requires reports.view before accessing request filters or branch metadata.
   // Its request-scoped context is reused by getAnalyticsOverview below.
   const branches = await getAnalyticsBranchOptions();
-  const parsed = parseReportFilters(searchParams, analyticsToday(new Date()));
+  const parsed = parseReportFilters({...searchParams,branch: (await getPortalBranchId()) ?? ""}, analyticsToday(new Date()));
   if (parsed.values.branch && !branches.some((branch) => branch.id === parsed.values.branch)) redirect("/access-denied");
   let overview: AnalyticsOverview | null = null;
   let previous: AnalyticsOverview | null = null;

@@ -1,3 +1,4 @@
+import { getPortalBranchId } from "@/lib/portal-branch-server";
 import { Suspense } from "react";
 import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
@@ -22,7 +23,7 @@ async function CachedContent({ searchParams }: { searchParams: ReportSearchParam
   "use cache: private";
   cacheLife({ stale: 30 });cacheTag("portal:reports");
   const { branches, access } = await getMigrationReportingContext();
-  const parsed = parseReportFilters(searchParams, analyticsToday(new Date()));
+  const parsed = parseReportFilters({...searchParams,branch: (await getPortalBranchId()) ?? ""}, analyticsToday(new Date()));
   if (parsed.values.branch && !branches.some(branch => branch.id === parsed.values.branch)) redirect("/access-denied");
   let data: MigrationAnalytics | null = null, error = parsed.error;
   if (parsed.request) {
