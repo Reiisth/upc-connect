@@ -48,9 +48,10 @@ async function PortalShell({
 
   return (
     <PortalRuntime userId={user.id} revision={portalSessionRevision(user.id, permissions, scope.branchIds, scope.isSystemAdmin)} routes={getPortalNavigationRoutes(permissions)}>
+    <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[10000] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-[#203264] focus:shadow-lg focus:outline focus:outline-2 focus:outline-[#365FA6]">Skip to main content</a>
     <div className="min-h-screen bg-[#EEF3FB] md:flex">
       {/* DESKTOP SIDEBAR */}
-      <aside className="hidden h-screen w-64 shrink-0 flex-col border-r bg-white md:sticky md:top-0 md:flex">
+      <aside className="hidden h-dvh w-64 shrink-0 flex-col border-r border-slate-200 bg-white md:sticky md:top-0 md:flex">
         <div className="flex items-center gap-3 border-b px-5 py-5">
           <Image
             src="/upc-logo.png"
@@ -94,7 +95,7 @@ async function PortalShell({
       {/* MAIN AREA */}
       <div className="min-w-0 flex-1">
         {/* MOBILE HEADER */}
-        <div className="flex items-center justify-between border-b bg-white px-4 py-3 md:hidden">
+        <header className="portal-mobile-header flex min-h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 md:hidden">
           <div className="flex items-center gap-2">
             <Image
               src="/upc-logo.png"
@@ -122,16 +123,16 @@ async function PortalShell({
               type="submit"
               aria-label="Logout"
               title="Logout"
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-red-600 transition hover:bg-red-50"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-red-600 transition hover:bg-red-50"
             >
               <LogOut className="h-5 w-5" />
             </Button>
           </form>
           </div>
-        </div>
+        </header>
 
-        <main className="min-w-0 pb-24 md:pb-0">
-          <div className="p-2 sm:p-3 lg:p-4">
+        <main id="main-content" tabIndex={-1} className="portal-main min-w-0 md:pb-0">
+          <div className="portal-page-padding px-3 py-4 sm:p-5 lg:p-6">
             {children}
           </div>
         </main>

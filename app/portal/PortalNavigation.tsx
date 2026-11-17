@@ -7,7 +7,6 @@ import {
   Droplets,
   HandCoins,
   IdCardLanyard,
-  MoreHorizontal,
   Settings,
   UserRound,
   UserRoundCog,
@@ -20,6 +19,7 @@ import {
   type PermissionKey,
 } from "@/lib/permissions";
 import ActiveNavigationLink from "./ActiveNavigationLink";
+import MobileNavigation from "./MobileNavigation";
 
 type Item = {
   label: string;
@@ -76,13 +76,13 @@ function NavigationLink({ item, mobile = false }: { item: Item; mobile?: boolean
     <ActiveNavigationLink
       href={item.href}
       className={mobile
-        ? "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium transition"
-        : "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition"}
+        ? "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6]"
+        : "flex min-h-11 items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6]"}
       activeClassName="bg-[#EEF3FB] text-[#203264]"
       inactiveClassName="text-muted-foreground hover:bg-[#EEF3FB] hover:text-[#203264]"
     >
       <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-      <span className={mobile ? "max-w-full truncate" : undefined}>{item.label}</span>
+      <span className={mobile ? "max-w-full break-words text-center leading-tight" : undefined}>{mobile ? ({ "Reports & Analytics": "Reports", "Inactivity Monitoring": "Inactivity", "My Profiles": "Profiles", "My Account": "Account" }[item.label] ?? item.label) : item.label}</span>
     </ActiveNavigationLink>
   );
 }
@@ -104,7 +104,12 @@ export default function PortalNavigation({ permissions, variant }: PortalNavigat
 
   if (variant === "mobile") {
     const items = visibleGroups.flatMap((group) => group.items);
-    const primary = items.length <= 3 ? items : items.slice(0, 2);
+    if (!items.length) return null;
+    const priority = ["/portal/members", "/portal/attendance", "/portal/services", "/portal/reports", "/portal/profile"];
+    const primary = items.length <= 4 ? items : [...items].sort((a, b) => {
+      const rank = (href: string) => priority.includes(href) ? priority.indexOf(href) : priority.length;
+      return rank(a.href) - rank(b.href);
+    }).slice(0, 3);
     const primaryHrefs = new Set(primary.map((item) => item.href));
     const moreGroups = visibleGroups.map((group) => ({
       ...group,
@@ -112,27 +117,16 @@ export default function PortalNavigation({ permissions, variant }: PortalNavigat
     })).filter((group) => group.items.length > 0);
 
     return (
-      <nav aria-label="Primary navigation" className="fixed inset-x-0 bottom-0 z-50 border-t bg-white md:hidden">
-        <div className="flex items-stretch gap-1 px-2 py-2">
-          {primary.map((item) => <NavigationLink key={item.href} item={item} mobile />)}
-          {moreGroups.length > 0 && <details className="group relative min-w-0 flex-1">
-            <summary className="flex h-full cursor-pointer list-none flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium text-muted-foreground hover:bg-[#F8FAFD] hover:text-[#203264] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5D94E8]">
-              <MoreHorizontal className="h-5 w-5" aria-hidden="true" />
-              <span>More</span>
-            </summary>
-            <div className="absolute bottom-full right-0 mb-2 max-h-[70vh] w-72 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl border bg-white p-3 shadow-xl">
+      <MobileNavigation primary={primary.map((item) => <NavigationLink key={item.href} item={item} mobile />)} moreRoutes={moreGroups.flatMap(group => group.items.map(item => item.href))}>
               {moreGroups.map((group) => (
                 <section key={group.label} className="mb-3 last:mb-0">
-                  <h2 className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{group.label}</h2>
+                  <h3 className="px-4 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{group.label}</h3>
                   <div className="space-y-1">
                     {group.items.map((item) => <NavigationLink key={item.href} item={item} />)}
                   </div>
                 </section>
               ))}
-            </div>
-          </details>}
-        </div>
-      </nav>
+      </MobileNavigation>
     );
   }
 
@@ -140,7 +134,7 @@ export default function PortalNavigation({ permissions, variant }: PortalNavigat
     <nav aria-label="Primary navigation" className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
       {visibleGroups.map((group) => (
         <section key={group.label} aria-label={group.label}>
-          <h2 className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{group.label}</h2>
+          <h2 className="px-4 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{group.label}</h2>
           <div className="space-y-1">
             {group.items.map((item) => <NavigationLink key={item.href} item={item} />)}
           </div>

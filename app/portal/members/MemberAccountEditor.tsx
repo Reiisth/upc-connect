@@ -27,9 +27,9 @@ export default function MemberAccountEditor({ memberId, displayName, canEditName
     return () => { clearTimeout(timer); setShowSaved(false); };
   }, [showSaved]);
   return <Card><CardContent className="space-y-4 p-4 sm:p-5">
-    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-1">
-      <h2 className="flex items-center gap-2 font-semibold text-[#203264]"><Link2 className="h-4 w-4 text-[#5D94E8]" aria-hidden="true" />Account</h2>
-      {canEditName && !editing && <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-full [&_svg]:size-3.5" aria-label="Edit account information" title="Edit account information" onClick={() => { setShowSaved(false); setEditing(true); }}><Pencil aria-hidden="true" /></Button>}
+    <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap items-center gap-2">
+      <h2 className="flex items-center gap-2 font-semibold text-[#203264]"><Link2 className="h-4 w-4 text-[#365FA6]" aria-hidden="true" />Account</h2>
+      {canEditName && !editing && <Button type="button" size="sm" variant="ghost" className="min-h-11" onClick={() => { setShowSaved(false); setEditing(true); }}><Pencil aria-hidden="true" />Edit account information</Button>}
     </div>{badge}</div>
     {editing ? <form action={action} className="space-y-4">
       <fieldset disabled={pending} className="grid gap-4 sm:grid-cols-2">

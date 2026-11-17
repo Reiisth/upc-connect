@@ -9,7 +9,7 @@ export default function StatusPage() {
       <div className="h-2 bg-gradient-to-r from-[#5D94E8] to-[#203264]" />
       <CardContent className="p-8 text-center sm:p-10">
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#EEF3FB] text-[#203264]"><ShieldLock className="h-8 w-8" aria-hidden="true" /></div>
-        <p className="text-sm font-semibold uppercase tracking-widest text-[#5D94E8]">Access denied</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#365FA6]">Access denied</p>
         <h1 className="mt-3 font-radio-canada text-3xl font-semibold text-[#203264]">You do not have access</h1>
         <p className="mt-4 leading-relaxed text-slate-600">Your account does not have permission to view this page. Contact your church administrator if you need access.</p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">

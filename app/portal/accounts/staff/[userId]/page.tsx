@@ -260,7 +260,7 @@ async function StaffAccountDetailsContent({
       <Card>
         <CardContent className="p-5 sm:p-6">
           <div className="mb-5 flex items-center gap-2">
-            <UserRoundCog className="h-5 w-5 text-[#5D94E8]" />
+            <UserRoundCog className="h-5 w-5 text-[#365FA6]" />
 
             <div>
               <h2 className="font-prompt text-lg font-semibold text-[#203264]">

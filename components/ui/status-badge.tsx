@@ -44,7 +44,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
+        "inline-flex max-w-full items-center break-words rounded-full px-2.5 py-1 text-xs font-medium",
         variantClasses[variant],
         className,
       )}

@@ -70,6 +70,8 @@ export type BranchComparisonMetrics = {
   followUps: FollowUpMetrics; contributions: ContributionMetrics; baptisms: BaptismMetrics;
 };
 export type AnalyticsOverview = AnalyticsMetrics & {
+  /** All registrations through the inclusive Manila end date in the authorized branch scope. */
+  membersAtEndDate: number;
   range: AnalyticsDateRange; grouping: AnalyticsGrouping; asOfDate: string;
   branches: BranchComparisonMetrics[];
 };

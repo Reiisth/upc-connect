@@ -10,6 +10,10 @@ function nav(pathname, permissions, variant = 'desktop') {
   const Navigation = loadTypeScript('app/portal/PortalNavigation.tsx', {
     'next/link': link,
     'next/navigation': { usePathname: () => pathname },
+    // Inspect server-selected destinations independently from the closed modal island.
+    './MobileNavigation': { __esModule: true, default: ({primary,moreRoutes,children}) => React.createElement('div', null,
+      React.createElement('nav', { 'data-mobile-bar': true }, primary, moreRoutes.length ? React.createElement('button',null,'More') : null),
+      moreRoutes.length ? React.createElement('section', { 'data-more-panel': true }, children) : null) },
     '@/lib/permissions': {
       PERMISSION_KEYS: ['reports.view', 'members.view', 'services.view', 'attendance.view', 'inactivity.view',
         'follow_ups.view', 'baptisms.view', 'contributions.view', 'accounts.view', 'accounts.manage_branch_access',
@@ -70,7 +74,7 @@ test('mobile navigation uses a compact bar and More contains permission-filtered
   const html = nav('/portal/members', ['members.view', 'services.view', 'attendance.view', 'profile.view'], 'mobile');
   assert.ok(html.includes('More'));
   assert.ok(!html.includes('overflow-x-auto'));
-  assert.ok(html.includes('Services &amp; Attendance'));
+  assert.ok(html.includes('Attendance') && html.includes('Services'));
   assert.ok(html.includes('My Profiles'));
   assert.ok(!html.includes('Reports &amp; Analytics'));
   assert.ok(!html.includes('Administration'));
@@ -186,16 +190,19 @@ test('member and follow-up contextual account/member actions are permission-gate
   assert.ok(followUp.includes('canCreate ?'));
 });
 
-test('mobile bar shows every allowed destination through three tabs, then first two plus More', () => {
+test('mobile bar shows up to four destinations and prioritizes people and attendance when More is needed', () => {
   for (const permissions of [[], ['profile.view'], ['members.view', 'services.view']]) {
     const html = nav('/portal', permissions, 'mobile');
     assert.ok(!html.includes('<summary'));
     assert.equal((html.match(/<a /g) || []).length, permissions.length ? permissions.length + 1 : 0);
   }
-  const html = nav('/portal', ['reports.view', 'members.view', 'services.view'], 'mobile');
-  const bar = html.split('<details')[0];
-  assert.equal((bar.match(/<a /g) || []).length, 2);
-  assert.ok(bar.includes('Reports &amp; Analytics') && bar.includes('Members'));
-  assert.ok(!bar.includes('Services'));
-  assert.ok(html.includes('<summary') && html.includes('Services') && html.includes('My Account'));
+  const small = nav('/portal', ['reports.view', 'members.view', 'services.view'], 'mobile');
+  assert.equal((small.match(/<a /g) || []).length, 4);
+  assert.ok(!small.includes('More'));
+  const html = nav('/portal', ['reports.view', 'members.view', 'services.view', 'attendance.view', 'profile.view'], 'mobile');
+  const bar = html.split('</nav>')[0];
+  assert.equal((bar.match(/<a /g) || []).length, 3);
+  assert.ok(bar.includes('Members') && bar.includes('Services') && bar.includes('Attendance') && bar.includes('More'));
+  assert.ok(!bar.includes('Reports'));
+  assert.ok(html.includes('Reports &amp; Analytics') && html.includes('My Profiles') && html.includes('My Account'));
 });

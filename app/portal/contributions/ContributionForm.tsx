@@ -3,7 +3,8 @@ import { FeedbackMessage } from "@/components/ui/feedback-message";
 
 
 import MemberAutocomplete from "./MemberAutocomplete";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
+import { WorkingContextField } from "@/components/ui/working-context-field";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -124,6 +125,7 @@ export function ContributionForm({
 
   return (
     <form action={formAction} className="space-y-6">
+      <WorkingContextField fallback="/portal/contributions" />
       {actionState.error && (
         <FeedbackMessage>
           <p className="font-semibold">Unable to save contribution</p>
@@ -315,7 +317,7 @@ export function ContributionForm({
 
         <FormActions>
           <Button variant="outline" asChild>
-            <Link href="/portal/contributions">Cancel</Link>
+            <Link restoreContext href="/portal/contributions">Cancel</Link>
           </Button>
 
           <ContributionSubmitButton label={submitLabel} />

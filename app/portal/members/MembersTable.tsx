@@ -276,7 +276,7 @@ export default function MembersTable({
             description="There are no members in this branch and archive view."
           />
         ) : (
-          <Table className="min-w-[850px]">
+          <Table mobileCards className="min-w-[850px]">
             <TableHeader>
               <TableRow>
                 <TableHead><ColumnHeading label="Name"><TableColumnFilter label="Member Status" value={memberStatusFilter} onChange={setMemberStatusFilter} options={[{ value: "all", label: "All statuses" }, { value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }]} /></ColumnHeading></TableHead>
@@ -309,13 +309,13 @@ export default function MembersTable({
 
                 return (
                   <TableRow key={member.id}>
-                    <TableCell>
+                    <TableCell data-label="Member">
                       <div className="flex items-start gap-3">
                         <MemberStatus status={member.member_status} className="mt-1" />
                         <div className="min-w-0">
                       <Link
-                        href={`/portal/members/${member.id}`}
-                        className="block w-full text-left font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline"
+                        preserveContext href={`/portal/members/${member.id}?returnTo=${encodeURIComponent(paging ? memberListUrl(paging.filters) : "/portal/members")}`}
+                        className="block w-full text-left font-medium text-[#203264] transition hover:text-[#365FA6] hover:underline"
                       >
                         <span className="flex w-full flex-col items-start gap-1 text-left"><span className="inline-flex items-center gap-1.5">{fullName}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></span>
                           {member.departed_at ? <StatusBadge variant="warning">Departed</StatusBadge> : member.is_archived && <StatusBadge variant="muted">Archived</StatusBadge>}
@@ -328,7 +328,7 @@ export default function MembersTable({
 
 
 
-                    <TableCell>
+                    <TableCell data-label="Account status">
                       <StatusBadge
                         variant={
                           member.account_status === "connected"
@@ -346,7 +346,7 @@ export default function MembersTable({
                       </StatusBadge>
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell data-label="Profile status">
                       <StatusBadge
                         variant={
                           member.profile_status === "completed"
@@ -361,7 +361,7 @@ export default function MembersTable({
                     </TableCell>
 
                     {hasActions && (
-                      <TableCell>
+                      <TableCell data-label="Actions">
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                           {!member.is_archived && canLinkAccount && (
                             member.account_status === "no_account" ? (

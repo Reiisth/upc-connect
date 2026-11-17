@@ -1,4 +1,5 @@
 "use client";
+import { useListState } from "@/lib/use-list-state";
 import { FeedbackMessage } from "@/components/ui/feedback-message";
 
 import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
@@ -27,11 +28,11 @@ const initialFilters = { search: "", branch: "", method: "", outcome: "", dateFr
 export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
   rows: FollowUpRecord[]; branches: FollowUpBranch[]; today: string; canUpdate: boolean;
 }) {
-  const [filters, setFilters] = useState(initialFilters);
-  const [page, setPage] = useState(1);
-  const [period, setPeriod] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [filters, setFilters] = useListState("filters", initialFilters);
+  const [page, setPage] = useListState("page", 1);
+  const [period, setPeriod] = useListState("period", "all");
+  const [dateFrom, setDateFrom] = useListState("dateFrom", "");
+  const [dateTo, setDateTo] = useListState("dateTo", "");
   const [rangeError, setRangeError] = useState("");
   function choosePeriod(value: string) {
     setPeriod(value); setRangeError("");
@@ -59,15 +60,15 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
       <form onSubmit={applyRange} aria-label="Follow-up date range">
         <fieldset aria-labelledby="follow-ups-range-title" className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
           <h2 id="follow-ups-range-title" className="mb-3 text-sm font-semibold text-[#203264]">Follow-up date range</h2>
-          <div className="grid grid-cols-2 items-end gap-3 lg:grid-cols-[1fr_1fr_1fr_auto]">
-            <FormField label="Period" htmlFor="follow-ups-period" className="col-span-2 lg:col-span-1">
+          <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto]">
+            <FormField label="Period" htmlFor="follow-ups-period" className="col-span-1 sm:col-span-2 lg:col-span-1">
               <Select id="follow-ups-period" value={period} onChange={e => choosePeriod(e.target.value)}>
                 <option value="all">All time</option><option value="month">This month</option><option value="last30">Last 30 days</option><option value="year">Year to date</option><option value="custom">Custom range</option>
               </Select>
             </FormField>
             <FormField label="From" htmlFor="follow-ups-from"><Input id="follow-ups-from" type="date" value={dateFrom} max={dateTo || undefined} onChange={e => { setDateFrom(e.target.value); setPeriod("custom"); }} aria-invalid={Boolean(rangeError)} /></FormField>
             <FormField label="To" htmlFor="follow-ups-to"><Input id="follow-ups-to" type="date" value={dateTo} min={dateFrom || undefined} onChange={e => { setDateTo(e.target.value); setPeriod("custom"); }} aria-invalid={Boolean(rangeError)} /></FormField>
-            <Button type="submit" className="col-span-2 lg:col-span-1">Apply range</Button>
+            <Button type="submit" className="col-span-1 sm:col-span-2 lg:col-span-1">Apply range</Button>
           </div>
           {rangeError && <FeedbackMessage className="mt-2">{rangeError}</FeedbackMessage>}
         </fieldset>
@@ -80,7 +81,7 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
         {hasClearableFilters && <div className="flex items-end"><ClearFiltersButton onClick={clearFilters} /></div>}
       </TableToolbar>
       {!rows.length ? <EmptyState title="No follow-ups recorded" description="A record appears only when staff records a follow-up action." /> : (
-        <Table className="min-w-[1080px]" aria-label="Historical member follow-ups">
+        <Table mobileCards className="min-w-[1080px]" aria-label="Historical member follow-ups">
           <TableHeader><TableRow>
             <TableHead>Follow-up Date</TableHead><TableHead>Member</TableHead>
             <TableHead><div className="flex items-center gap-1">Method<TableColumnFilter label="Follow-up Method" value={filters.method || "all"} onChange={(value) => field("method", value === "all" ? "" : value)} options={[{ value: "all", label: "All methods" }, ...FOLLOW_UP_METHODS.map((method) => ({ value: method, label: METHOD_LABELS[method] }))]} /></div></TableHead>
@@ -94,14 +95,14 @@ export default function FollowUpsTable({ rows, branches, today, canUpdate }: {
           ) : pageRows.map((row) => {
             const due = getDueStatus(row.nextFollowUpDate, today);
             return <TableRow key={row.id}>
-              <TableCell className="whitespace-nowrap">{formatAttendanceDate(row.followUpDate)}</TableCell>
-              <TableCell className="min-w-40"><p className="font-medium">{row.memberName}</p><p className="mt-1 text-xs text-slate-500">{row.branchName}</p></TableCell><TableCell>{METHOD_LABELS[row.method]}</TableCell>
-              <TableCell><FollowUpOutcomeBadge outcome={row.outcome} /></TableCell>
-              <TableCell>{row.performerName || "Not specified / account removed"}</TableCell>
-              <TableCell className="whitespace-nowrap">{formatAttendanceDate(row.nextFollowUpDate)}{due && <p className="mt-1 text-xs text-slate-500">{due === "today" ? "Due Today" : due === "overdue" ? "Overdue" : "Upcoming"}</p>}</TableCell>
-              <TableCell><div className="flex flex-wrap gap-3">
-                <TableActionButton href={`/portal/follow-ups/member/${row.memberId}?returnTo=/portal/follow-ups`} icon={<History />}>History</TableActionButton>
-                {canUpdate && row.branchIsActive && <TableActionButton href={`/portal/follow-ups/${row.id}/edit`} icon={<Pencil />}>Edit</TableActionButton>}
+              <TableCell data-label="Follow-up date" className="whitespace-nowrap">{formatAttendanceDate(row.followUpDate)}</TableCell>
+              <TableCell data-label="Member" className="min-w-40"><p className="font-medium">{row.memberName}</p><p className="mt-1 text-xs text-slate-500">{row.branchName}</p></TableCell><TableCell data-label="Method">{METHOD_LABELS[row.method]}</TableCell>
+              <TableCell data-label="Outcome"><FollowUpOutcomeBadge outcome={row.outcome} /></TableCell>
+              <TableCell data-label="Followed up by">{row.performerName || "Not specified / account removed"}</TableCell>
+              <TableCell data-label="Next follow-up" className="whitespace-nowrap">{formatAttendanceDate(row.nextFollowUpDate)}{due && <p className="mt-1 text-xs text-slate-500">{due === "today" ? "Due Today" : due === "overdue" ? "Overdue" : "Upcoming"}</p>}</TableCell>
+              <TableCell data-label="Actions"><div className="flex flex-wrap gap-3">
+                <TableActionButton preserveContext href={`/portal/follow-ups/member/${row.memberId}?returnTo=/portal/follow-ups`} icon={<History />}>History</TableActionButton>
+                {canUpdate && row.branchIsActive && <TableActionButton preserveContext href={`/portal/follow-ups/${row.id}/edit`} icon={<Pencil />}>Edit</TableActionButton>}
               </div></TableCell>
             </TableRow>;
           })}</TableBody>

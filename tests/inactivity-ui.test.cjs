@@ -130,9 +130,9 @@ test('navigation and default portal routing use inactivity.view without operatio
   }).default;
   for (const variant of ['desktop', 'mobile']) {
     const visible = renderToStaticMarkup(React.createElement(Navigation, { permissions: ['inactivity.view'], variant }));
-    assert.ok(visible.includes('Inactivity Monitoring'));
+    assert.ok(visible.includes('href="/portal/inactivity"'));
     const hidden = renderToStaticMarkup(React.createElement(Navigation, { permissions: ['attendance.view'], variant }));
-    assert.ok(!hidden.includes('Inactivity Monitoring'));
+    assert.ok(!hidden.includes('href="/portal/inactivity"'));
   }
   const Portal = loadTypeScript('app/portal/page.tsx', {
     'next/navigation': { redirect: (url) => { throw new Error(`redirect:${url}`); } },

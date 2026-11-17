@@ -3,7 +3,8 @@ import { FeedbackMessage } from "@/components/ui/feedback-message";
 
 
 import MemberAutocomplete from "../contributions/MemberAutocomplete";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
+import { WorkingContextField } from "@/components/ui/working-context-field";
 import { useActionState, useLayoutEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -113,6 +114,7 @@ function BaptismFormFields({
 
   return (
     <form action={formAction} className="space-y-6">
+      <WorkingContextField fallback="/portal/baptisms" />
 
 
       <FormSection
@@ -288,7 +290,7 @@ function BaptismFormFields({
 
         <FormActions>
           <Button variant="outline" asChild>
-            <Link href="/portal/baptisms" onClick={onReset}>Cancel</Link>
+            <Link restoreContext href="/portal/baptisms" onClick={onReset}>Cancel</Link>
           </Button>
 
           <BaptismSubmitButton label={submitLabel} />

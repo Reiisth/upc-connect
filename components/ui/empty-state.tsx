@@ -20,7 +20,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center",
+        "flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center sm:px-6 sm:py-12",
         className,
       )}
     >
@@ -30,12 +30,12 @@ export function EmptyState({
         </div>
       )}
 
-      <h3 className="font-prompt text-base font-semibold text-[#203264]">
+      <h3 className="font-radio-canada text-base font-semibold text-[#203264]">
         {title}
       </h3>
 
       {description && (
-        <p className="mt-2 max-w-md text-sm text-slate-500">
+        <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
           {description}
         </p>
       )}

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Activity, CalendarCheck, ClipboardPen, Coins, UsersRound, UserRoundX } from "lucide-react";
+import { Activity, CalendarCheck, ClipboardPen, Coins, UserRoundX } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { AnalyticsOverview } from "@/lib/analytics/types";
@@ -9,15 +9,18 @@ import { METHOD_LABELS, OUTCOME_LABELS, type FollowUpMethod, type FollowUpOutcom
 import ReportChart from "./ReportChart";
 import ReportDashboardGroups from "./ReportDashboardGroups";
 import ReportComparisonTicker, { type ReportComparison } from "./ReportComparisonTicker";
+import MembershipOverviewCard from "./MembershipOverviewCard";
+import MigrationAnalyticsPanel from "./MigrationAnalyticsPanel";
+import type { MigrationAnalytics } from "@/lib/member-migrations/server";
+import { FeedbackMessage } from "@/components/ui/feedback-message";
 import { formatReportDate, formatReportMoney, formatReportNumber, formatReportPercent } from "./presentation";
 
 const count = (value: number | null) => formatReportNumber(value);
-function Stats({ items, comparisons }: { comparisons: Record<string, ReportComparison>; items: { label: string; value: string; note?: string }[] }) {
+function Stats({ items, comparisons }: { comparisons: Record<string, ReportComparison>; items: { label: string; value: string }[] }) {
   return <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{items.map((item) => <div key={item.label} className="min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-4">
     <dt className="text-xs font-medium text-slate-500">{item.label}</dt>
     <dd className="mt-2 break-words text-xl font-semibold tabular-nums text-[#203264]">{item.value}</dd>
     {comparisons[item.label] && <ReportComparisonTicker comparison={comparisons[item.label]} />}
-    {item.note && <dd className="mt-1 text-xs text-slate-500">{item.note}</dd>}
   </div>)}</dl>;
 }
 function Section({ id, title, description, current, children }: { id: string; title: string; description: string; current?: string; children: ReactNode }) {
@@ -29,7 +32,7 @@ function Section({ id, title, description, current, children }: { id: string; ti
   </section>;
 }
 
-export default function ReportsDashboard({ overview: data, previous = null, serviceTypeNames = {} }: { overview: AnalyticsOverview; previous?: AnalyticsOverview | null; serviceTypeNames?: Record<string, string> }) {
+export default function ReportsDashboard({ overview: data, previous = null, serviceTypeNames = {}, migration = null }: { overview: AnalyticsOverview; previous?: AnalyticsOverview | null; serviceTypeNames?: Record<string, string>; migration?: MigrationAnalytics | null }) {
   const { membership, attendance, inactivity, followUps, contributions, baptisms, branches } = data;
   const compare = (current: number | string | null, prior: number | string | null | undefined): ReportComparison => ({ current, previous: prior ?? null });
   const comparisons: Record<string, ReportComparison> = {
@@ -38,8 +41,7 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
     "Avg Attendance / Completed Service": compare(attendance.averagePerService, previous?.attendance.averagePerService),
     "Physical Check-ins": compare(attendance.physicalCheckIns, previous?.attendance.physicalCheckIns),
     "Unique Attendees": compare(attendance.uniqueMembers, previous?.attendance.uniqueMembers),
-    "Full Finished Service Weeks": compare(attendance.eligibleCompletedServiceWeeks, previous?.attendance.eligibleCompletedServiceWeeks),
-    "Member Records Added": compare(membership.recordsAddedInRange, previous?.membership.recordsAddedInRange),
+    "Registered Members": compare(membership.recordsAddedInRange, previous?.membership.recordsAddedInRange),
     "Follow-ups": compare(followUps.total, previous?.followUps.total),
     "Follow-ups in Period": compare(followUps.total, previous?.followUps.total),
     "Unique Members Followed Up": compare(followUps.uniqueMembers, previous?.followUps.uniqueMembers),
@@ -54,39 +56,40 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
   const multiple = branches.length > 1;
   const periodLabels = (points: { periodStart: string }[]) => points.map((point) => formatReportDate(point.periodStart));
   const periodNote = "Period start dates; activity is limited to the selected range. Periods without activity are omitted.";
-  return <div className="min-w-0 space-y-7">
+  return <div className="min-w-0 space-y-7 tabular-nums">
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm">
       <p className="font-medium text-[#203264]">{formatReportDate(data.range.from)} – {formatReportDate(data.range.to)}</p>
       <p className="text-slate-600">{multiple ? `${branches.length} accessible branches` : branches[0]?.branch.name ?? "No branches"} · Asia/Manila</p>
     </div>
 
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Report overview">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.9fr)]" aria-label="Report overview">
+      <MembershipOverviewCard overview={data} previous={previous} />
+      <div className="grid grid-cols-2 gap-3">
       {[
-        { label: "Total Members", value: count(membership.nonArchivedMembers), note: "Current non-archived members", icon: UsersRound },
-        { label: "Completed Services", value: count(attendance.completedServices), note: "In the selected period", icon: CalendarCheck },
-        { label: "Avg Attendance / Service", value: count(attendance.averagePerService), note: "Physical attendance at completed services", icon: Activity },
-        { label: "Members Needing Follow-up", value: count(inactivity.needsFollowUpMembers), note: `Current attendance flag · ${currentDate}`, icon: UserRoundX },
-        { label: "Follow-ups", value: count(followUps.total), note: "Recorded in the selected period", icon: ClipboardPen },
-        { label: "Total Contributions", value: formatReportMoney(contributions.totalAmount), note: "Includes Member, Visitor, and Anonymous contributions", icon: Coins },
-      ].map(({ label, value, note, icon: Icon }) => <Card key={label}><CardContent className="min-w-0 p-5">
-        <div className="flex items-center justify-between gap-2"><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p><Icon className="h-5 w-5 shrink-0 text-[#5D94E8]" aria-hidden="true" /></div>
-        <p className="mt-3 break-words text-2xl font-semibold tabular-nums text-[#203264]">{value}</p>{comparisons[label] && <ReportComparisonTicker comparison={comparisons[label]} />}<p className="mt-2 text-xs text-slate-500">{note}</p>
+        { label: "Completed Services", value: count(attendance.completedServices), icon: CalendarCheck },
+        { label: "Avg Attendance / Service", value: count(attendance.averagePerService), icon: Activity },
+        { label: "Members Needing Follow-up", value: count(inactivity.needsFollowUpMembers), icon: UserRoundX },
+        { label: "Follow-ups", value: count(followUps.total), icon: ClipboardPen },
+        { label: "Total Contributions", value: formatReportMoney(contributions.totalAmount), icon: Coins },
+      ].map(({ label, value, icon: Icon }) => <Card key={label} className={`min-w-0 ${label === "Total Contributions" ? "col-span-2" : ""}`}><CardContent className="min-w-0 p-4">
+        <div className="flex items-start justify-between gap-2"><p className="text-xs font-medium text-slate-500">{label}</p><Icon className="h-4 w-4 shrink-0 text-[#365FA6]" aria-hidden="true" /></div>
+        <p className="mt-2 break-words text-xl font-semibold tabular-nums text-[#203264] sm:text-2xl">{value}</p>{comparisons[label] && <ReportComparisonTicker comparison={comparisons[label]} />}
       </CardContent></Card>)}
+      </div>
     </div>
 
-    <p className="text-xs text-slate-500">{previous ? `Tickers compare with ${formatReportDate(previous.range.from)} - ${formatReportDate(previous.range.to)} (the preceding equal-length period).` : "Previous-period comparisons are unavailable."}</p>
     <ReportDashboardGroups groups={[
 { id: "membership", label: "Membership", content: (
-<Section id="membership" title="Membership" description="Current member counts and records added during the selected period. Record creation is not a guaranteed official membership start date.">
+<Section id="membership" title="Membership" description="Member registrations in the selected period, alongside current membership status.">
       <Stats comparisons={comparisons} items={[
         { label: "Non-archived Members", value: count(membership.nonArchivedMembers) },
-        { label: " Active Members", value: count(membership.storedActiveMembers), note: "Current Member Status" },
-        { label: "Member Records Added", value: count(membership.recordsAddedInRange), note: "Based on record creation date" },
-        { label: "Archived Members", value: count(membership.archivedMembers), note: "Current archive state" },
+        { label: " Active Members", value: count(membership.storedActiveMembers) },
+        { label: "Registered Members", value: count(membership.recordsAddedInRange) },
+        { label: "Archived Members", value: count(membership.archivedMembers) },
       ]} />
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
-        <ReportChart title="Member Records Added" description={periodNote} labels={periodLabels(membership.recordCreationTrend)}
-          series={[{ label: "Records Added", values: membership.recordCreationTrend.map((point) => point.value) }]} kind="line" emptyMessage="No member records were created in this period." />
+        <ReportChart title="Member Registrations" description={periodNote} labels={periodLabels(membership.recordCreationTrend)}
+          series={[{ label: "Registrations", values: membership.recordCreationTrend.map((point) => point.value) }]} kind="line" emptyMessage="No members registered in this period." />
         <ReportChart title="Recorded First Attendances" description="Historical reference dates for when people first attended church." labels={periodLabels(membership.firstAttendanceTrend)}
           series={[{ label: "First Attendances", values: membership.firstAttendanceTrend.map((point) => point.value), color: "#16836B" }]} kind="line" emptyMessage="No first-attendance dates were recorded in this period." />
       </div>
@@ -96,7 +99,7 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
 <Section id="attendance" title="Attendance" description="Physical attendance is present only at completed services. Excused entries are excluded, and each member is counted once per service.">
       <Stats comparisons={comparisons} items={[
         { label: "Completed Services", value: count(attendance.completedServices) }, { label: "Physical Check-ins", value: count(attendance.physicalCheckIns) },
-        { label: "Unique Attendees", value: count(attendance.uniqueMembers), note: "Deduplicated across the selected scope" }, { label: "Avg Attendance / Completed Service", value: count(attendance.averagePerService) },
+        { label: "Unique Attendees", value: count(attendance.uniqueMembers) }, { label: "Avg Attendance / Completed Service", value: count(attendance.averagePerService) },
       ]} />
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
         <ReportChart title="Attendance Trend" description={periodNote} labels={periodLabels(attendance.trend)} kind="line"
@@ -108,24 +111,19 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
       </div>
     </Section>
 ) },
-{ id: "weekly", label: "Weekly Participation", content: (
-<Section id="weekly" title="Weekly Participation" description="Unique attendees in Monday–Sunday weeks. Current and clipped weeks can show activity but do not count as full finished completed-service weeks.">
-      <Stats comparisons={comparisons} items={[
-        { label: "Full Finished Service Weeks", value: count(attendance.eligibleCompletedServiceWeeks) },
-        { label: "Participation Rate", value: "Unavailable", note: "Not enough reliable historical eligibility data" },
-      ]} />
-      <ReportChart title="Weekly Unique Attendees" description="Weekly counts stay weekly regardless of the trend grouping filter." labels={attendance.weekly.map((point) => `${formatReportDate(point.weekStart)}${!point.isFinished ? " · unfinished" : point.isPartialRange ? " · partial" : ""}`)} kind="line"
-        series={[{ label: "Unique Attendees", values: attendance.weekly.map((point) => point.uniqueMembers) }]} emptyMessage="No weekly physical attendance is available for this period." />
-    </Section>
+{ id: "migrations", label: "Migration Analytics", content: (
+<Section id="migrations" title="Migration Analytics" description="Branch transfers, departures and returns in the selected period.">
+  {migration ? <MigrationAnalyticsPanel data={migration} range={data.range} headingLevel={3} /> : <FeedbackMessage>Migration analytics could not be loaded. Try applying the filters again.</FeedbackMessage>}
+</Section>
 ) },
 { id: "inactivity", label: "Inactivity", content: (
 <Section id="inactivity" title="Attendance Follow-up Flags" current={currentDate} description="Based on consecutive absent eligible weeks and each active branch’s threshold. These flags identify cases for human follow-up and never set administrative Member Status. The selected date range does not change current flags.">
       <Stats comparisons={comparisons} items={[
         { label: "Monitoring", value: count(inactivity.monitoringMembers) }, { label: "Needs Follow-up", value: count(inactivity.needsFollowUpMembers) },
-        { label: "Unknown", value: count(inactivity.unknownMembers), note: "Missing or invalid UPC Connect registration date" },
+        { label: "Unknown", value: count(inactivity.unknownMembers) },
         { label: "Needs Follow-up Among Calculable Members", value: formatReportPercent(inactivity.needsFollowUpPercent) },
         { label: "Approaching Threshold", value: count(inactivity.approachingFollowUpThreshold) },
-        { label: "Average Absent-week Streak", value: count(inactivity.averageConsecutiveAbsentWeeks), note: "Calculable members only" },
+        { label: "Average Absent-week Streak", value: count(inactivity.averageConsecutiveAbsentWeeks) },
       ]} />
       <ReportChart title="Current Attendance Flag" labels={["Monitoring", "Needs Follow-up", "Unknown"]} horizontal
         series={[{ label: "Members", values: [inactivity.monitoringMembers, inactivity.needsFollowUpMembers, inactivity.unknownMembers] }]}
@@ -137,8 +135,8 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
 <Section id="follow-ups" title="Follow-ups" description="Activity charts cover the selected period. Current needs and overdue dates use only each member’s latest follow-up within the selected branch scope; a later resolution supersedes an earlier need.">
       <Stats comparisons={comparisons} items={[
         { label: "Follow-ups in Period", value: count(followUps.total) }, { label: "Unique Members Followed Up", value: count(followUps.uniqueMembers) },
-        { label: "Needs Follow-up · Current", value: count(followUps.latestNeedsFollowUpMembers), note: `Latest outcome as of ${currentDate}` },
-        { label: "Overdue Next Follow-ups · Current", value: count(followUps.overdueLatestNextFollowUps), note: "Latest explicit next date is before today" },
+        { label: "Needs Follow-up · Current", value: count(followUps.latestNeedsFollowUpMembers) },
+        { label: "Overdue Next Follow-ups · Current", value: count(followUps.overdueLatestNextFollowUps) },
       ]} />
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
         <ReportChart title="Follow-ups by Outcome" description="Outcomes recorded during the selected period; these are historical actions." labels={followUps.byOutcome.map((point) => OUTCOME_LABELS[point.outcome as FollowUpOutcome] ?? point.outcome)} horizontal
@@ -172,7 +170,7 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
 <Section id="baptisms" title="Baptisms" description="Date-range totals use recorded baptism dates. Undated historical records are shown separately and are excluded from these totals and trends.">
       <Stats comparisons={comparisons} items={[
         { label: "Baptisms in Period", value: count(baptisms.total) }, { label: "Water Baptisms", value: count(baptisms.water) },
-        { label: "Holy Ghost Baptisms", value: count(baptisms.holyGhost) }, { label: "Undated Baptism Records", value: count(baptisms.undatedRecords), note: "Current data quality · outside date-range totals" },
+        { label: "Holy Ghost Baptisms", value: count(baptisms.holyGhost) }, { label: "Undated Baptism Records", value: count(baptisms.undatedRecords) },
       ]} />
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
         <ReportChart title="Baptism Trend" description={periodNote} labels={periodLabels(baptisms.trend)} kind="line"

@@ -1,4 +1,5 @@
 "use server";
+import { safeListReturnHref } from "@/lib/list-context-navigation";
 
 import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 import { redirect } from "next/navigation";
@@ -310,7 +311,7 @@ export async function createBaptism(
     revalidatePath(`${baptismsPath}/${baptismId}/edit`);
   }
 
-  redirect(baptismsPath);
+  redirect(safeListReturnHref(baptismsPath, formData.get("returnTo")));
 }
 
 export async function updateBaptism(
@@ -413,5 +414,5 @@ export async function updateBaptism(
   revalidatePath("/portal/reports");
   revalidatePath(`${baptismsPath}/${baptismId}/edit`);
 
-  redirect(baptismsPath);
+  redirect(safeListReturnHref(baptismsPath, formData.get("returnTo")));
 }

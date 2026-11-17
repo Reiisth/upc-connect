@@ -1,3 +1,4 @@
+import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { ClipboardPen } from "lucide-react";
@@ -13,7 +14,7 @@ import { createFollowUp } from "../actions";
 import { loadFollowUpFormOptions } from "../data";
 import FollowUpForm from "../FollowUpForm";
 
-type Props = { searchParams: Promise<{ memberId?: string | string[]; branchId?: string | string[]; saved?: string }> };
+type Props = { searchParams: Promise<{ memberId?: string | string[]; branchId?: string | string[]; saved?: string; returnTo?: string | string[] }> };
 export default function NewFollowUpPage(props: Props) {
   return <Suspense fallback={<PageSkeleton kind="form" fields={8} metrics={0} columns={5} label="follow ups new" />}><NewFollowUpContent {...props} /></Suspense>;
 }
@@ -27,13 +28,14 @@ async function NewFollowUpContent({ searchParams }: Props) {
   const branchId = requestedBranch || member?.branchId || options.branches[0]?.id || "";
   if ((requestedMember && !member) || (requestedBranch && !options.branches.some((b) => b.id === branchId)) || (member && member.branchId !== branchId)) notFound();
   const canView = hasPermission(access.permissions, "follow_ups.view");
+  const navigation = memberHistoryNavigation(member?.id ?? "", params.returnTo, canView ? "/portal/follow-ups" : "/portal", canView ? "Back to Follow-ups" : "Back to Portal");
   return <PageContainer>
-    <PageHeader backHref={canView ? "/portal/follow-ups" : "/portal"} backLabel={canView ? "Back to Follow-ups" : "Back to Portal"}
+    <PageHeader backHref={navigation.backHref} backLabel={navigation.backLabel}
       eyebrow="Follow-ups" eyebrowIcon={<ClipboardPen className="h-4 w-4" />}
       title="Record Follow-up" description="Record a contact or attempted contact that took place. Members do not need to be inactive." />
     {params.saved === "1" && <p role="status" className="text-sm text-emerald-700">Follow-up recorded successfully.</p>}
     {!options.branches.length ? <EmptyState title="No active branch access" description="An accessible active branch is required to record a follow-up." /> :
-      <FollowUpForm {...options} action={createFollowUp} cancelHref={canView ? "/portal/follow-ups" : "/portal"}
+      <FollowUpForm {...options} action={createFollowUp} cancelHref={navigation.backHref}
         initialValues={{ branchId, memberId: member?.id ?? "", followUpDate: manilaDate(new Date()), method: "call", outcome: "contacted",
           followedUpBy: "", notes: "", nextFollowUpDate: "" }} />}
   </PageContainer>;

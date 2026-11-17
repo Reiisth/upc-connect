@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
             <KeyRound className="h-5 w-5" aria-hidden="true" />
           </div>
 
-          <p className="mt-5 text-sm font-medium text-[#5D94E8]">
+          <p className="mt-5 text-sm font-medium text-[#365FA6]">
             Account recovery
           </p>
           <h1 className="mt-1 font-body text-2xl font-semibold text-[#203264]">

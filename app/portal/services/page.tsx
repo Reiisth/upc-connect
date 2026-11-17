@@ -1,7 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { effectiveStoredServiceStatus } from "@/app/portal/services/lifecycle";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import { Suspense } from "react";
 import { CalendarDays, Plus } from "lucide-react";
 
@@ -115,7 +115,7 @@ async function ServicesContent() {
         action={
           canCreate ? (
             <Button asChild>
-              <Link href="/portal/services/new">
+              <Link preserveContext href="/portal/services/new">
                 <Plus />
                 New Service
               </Link>

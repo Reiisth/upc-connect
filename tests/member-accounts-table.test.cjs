@@ -16,20 +16,20 @@ function render(overrides={}){
 }
 test('member accounts default to active email order and combine status with email',()=>{
  const html=render();assert.ok(html.indexOf('a@example.test')<html.indexOf('z@example.test'));
- assert.doesNotMatch(html,/old@example.test/);assert.match(html,/Account status: Active/);
+ assert.doesNotMatch(html,/old@example.test/);assert.match(html,/>Active<\/span>/);
  assert.match(html,/Email<button>Filter Account Status/);assert.doesNotMatch(html,/>Status<\/th>/);
  assert.match(html,/a@example.test<svg/);assert.match(html,/Sort member accounts/);
 });
 test('member account sorting applies after search and status filtering',()=>{
  const descending=render({2:'email-desc'});assert.ok(descending.indexOf('z@example.test')<descending.indexOf('a@example.test'));
  const counts=render({2:'members-desc'});assert.ok(counts.indexOf('a@example.test')<counts.indexOf('z@example.test'));
- const archived=render({3:'archived'});assert.match(archived,/old@example.test/);assert.doesNotMatch(archived,/z@example.test/);assert.match(archived,/Account status: Archived/);
+ const archived=render({3:'archived'});assert.match(archived,/old@example.test/);assert.doesNotMatch(archived,/z@example.test/);assert.match(archived,/>Archived<\/span>/);
  const search=render({0:'Three'});assert.match(search,/a@example.test/);assert.doesNotMatch(search,/z@example.test/);
 });
 
 
-test('account status is circular when collapsed and filters expose the clear action',()=>{
- const normal=render();assert.match(normal,/inline-flex h-3 shrink-0/);assert.match(normal,/h-3 w-3 shrink-0/);
+test('account status remains visible without hover and filters expose the clear action',()=>{
+ const normal=render();assert.match(normal,/>Active<\/span>/);assert.doesNotMatch(normal,/max-w-0|group-hover:max-w|tabindex="0"/);
  assert.match(normal,/Email: A to Z/);assert.match(normal,/Email: Z to A/);assert.doesNotMatch(normal,/A\?Z|Z\?A/);
  assert.doesNotMatch(normal,/>Clear filters</);
  for(const filters of [{0:'Three'},{1:'multiple'},{3:'archived'},{2:'email-desc'}])assert.match(render(filters),/Clear filters/);

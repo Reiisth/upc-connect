@@ -1,4 +1,5 @@
 "use client";
+import { useListState } from "@/lib/use-list-state";
 import { FeedbackMessage } from "@/components/ui/feedback-message";
 
 import { Pagination } from "@/components/ui/pagination";
@@ -16,7 +17,7 @@ import {
   Pencil,
   SearchX,
 } from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { refreshBaptismSummary } from "./dashboard-actions";
 import { resolveAnalyticsDateRange, validAnalyticsDate } from "@/lib/analytics/date-range";
@@ -69,18 +70,26 @@ export default function BaptismsTable({
   canUpdateWater,
   canUpdateHolyGhost,
 }: BaptismsTableProps) {
-  const [page,setPage]=useState(1);
-  const [sortBy, setSortBy] = useState("newest");
-  const [search, setSearch] = useState("");
-  const [branchFilter, setBranchFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState(dashboard?.from??"");
-  const [dateTo, setDateTo] = useState(dashboard?.to??"");
-  const [range,setRange]=useState({from:dashboard?.from??"",to:dashboard?.to??"",includeUndated:!dashboard});
+  const [page,setPage]=useListState("page", 1);
+  const [sortBy, setSortBy] = useListState("sortBy", "newest");
+  const [search, setSearch] = useListState("search", "");
+  const [branchFilter, setBranchFilter] = useListState("branchFilter", "all");
+  const [typeFilter, setTypeFilter] = useListState("typeFilter", "all");
+  const [dateFrom, setDateFrom] = useListState("dateFrom", dashboard?.from??"");
+  const [dateTo, setDateTo] = useListState("dateTo", dashboard?.to??"");
+  const [range,setRange]=useListState("range", {from:dashboard?.from??"",to:dashboard?.to??"",includeUndated:!dashboard});
   const [summary,setSummary]=useState(dashboard);
   const [rangeError,setRangeError]=useState("");
   const [pending,startTransition]=useTransition();
-  const [preset,setPreset]=useState("recent");
+  const [preset,setPreset]=useListState("preset", "recent");
+  useEffect(() => {
+    if (!dashboard || !validAnalyticsDate(range.from) || !validAnalyticsDate(range.to) || range.from > range.to || (summary?.from === range.from && summary?.to === range.to)) return;
+    let cancelled = false;
+    refreshBaptismSummary(range.from, range.to).then(next => {
+      if (!cancelled) { setSummary(next); setRangeError(""); }
+    }).catch(() => { if (!cancelled) setRangeError("Unable to restore date-range analytics. Apply the range to try again."); });
+    return () => { cancelled = true; };
+  }, [dashboard, range.from, range.to, summary?.from, summary?.to]);
   function applyRange(event:React.FormEvent<HTMLFormElement>){
     event.preventDefault();setRangeError("");
     if(!validAnalyticsDate(dateFrom)||!validAnalyticsDate(dateTo)||dateFrom>dateTo){setRangeError("Choose a valid start and end date, with From on or before To.");return;}
@@ -114,7 +123,7 @@ export default function BaptismsTable({
       return matchesSearch && matchesBranch && matchesType;
     });
   }, [records, search, branchFilter, typeFilter]);
-  const filteredSummary = useMemo(() => summary ? filteredModuleSummary(summary, contextRecords) : undefined, [summary, contextRecords]);
+  const filteredSummary = useMemo(() => summary && summary.from === range.from && summary.to === range.to ? filteredModuleSummary(summary, contextRecords) : undefined, [summary, contextRecords, range.from, range.to]);
 
   const filteredRecords = useMemo(() => {
     return [...contextRecords]
@@ -157,15 +166,16 @@ export default function BaptismsTable({
       <form onSubmit={applyRange} noValidate aria-label="Baptism date range">
         <fieldset aria-labelledby="baptism-range-title" className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
           <h2 id="baptism-range-title" className="mb-3 text-sm font-semibold text-[#203264]">Date range</h2>
-          <div className="grid grid-cols-2 items-end gap-3 lg:grid-cols-[minmax(150px,1fr)_minmax(150px,1fr)_minmax(150px,1fr)_auto]">
-            <FormField label="Period" htmlFor="baptism-period" className="col-span-2 lg:col-span-1"><Select id="baptism-period" value={preset} onChange={e=>choosePreset(e.target.value)}><option value="recent">Recent 12 months</option><option value="month">This month</option><option value="last_30_days">Last 30 days</option><option value="year_to_date">Year to date</option><option value="all">All time</option><option value="custom">Custom range</option></Select></FormField>
+          <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(150px,1fr)_minmax(150px,1fr)_minmax(150px,1fr)_auto]">
+            <FormField label="Period" htmlFor="baptism-period" className="col-span-1 sm:col-span-2 lg:col-span-1"><Select id="baptism-period" value={preset} onChange={e=>choosePreset(e.target.value)}><option value="recent">Recent 12 months</option><option value="month">This month</option><option value="last_30_days">Last 30 days</option><option value="year_to_date">Year to date</option><option value="all">All time</option><option value="custom">Custom range</option></Select></FormField>
             <FormField label="From" htmlFor="baptisms-from"><Input id="baptisms-from" type="date" value={dateFrom} max={dateTo||undefined} onChange={(event)=>{setDateFrom(event.target.value);setPreset("custom");}} aria-label="Baptisms from date" aria-invalid={Boolean(rangeError)||undefined}/></FormField>
             <FormField label="To" htmlFor="baptisms-to"><Input id="baptisms-to" type="date" value={dateTo} min={dateFrom||undefined} onChange={(event)=>{setDateTo(event.target.value);setPreset("custom");}} aria-label="Baptisms to date" aria-invalid={Boolean(rangeError)||undefined}/></FormField>
-            <Button type="submit" className="col-span-2 lg:col-span-1" loading={pending} disabled={pending}>{pending?"Applying...":"Apply range"}</Button>
+            <Button type="submit" className="col-span-1 sm:col-span-2 lg:col-span-1" loading={pending} disabled={pending}>{pending?"Applying...":"Apply range"}</Button>
           </div>
           {rangeError&&<FeedbackMessage className="mt-2">{rangeError}</FeedbackMessage>}
         </fieldset>
       </form>
+      {summary && !filteredSummary && !rangeError && <p role="status" className="text-sm text-slate-500">Restoring date-range analytics...</p>}
       {filteredSummary && <ModuleMiniDashboard data={filteredSummary} branchId="all" branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
       <TableToolbar>
         <SearchInput
@@ -211,7 +221,7 @@ export default function BaptismsTable({
           }
         />
       ) : (
-        <Table className="min-w-[1100px]">
+        <Table mobileCards className="min-w-[1100px]">
           <TableHeader>
             <TableRow>
               <TableHead>Member</TableHead>
@@ -229,21 +239,21 @@ export default function BaptismsTable({
               <TableRow><TableCell colSpan={7}><p role="status" className="py-3 text-center text-sm text-slate-500">No baptism records match the current filters.</p></TableCell></TableRow>
             ) : pageRecords.map((record) => (
               <TableRow key={record.id}>
-                <TableCell>
+                <TableCell data-label="Member">
                   <div className="flex items-start gap-3">
                     <div className={`mt-0.5 rounded-xl p-2 ${record.baptismType==="water"?"bg-sky-50 text-sky-600":"bg-amber-50 text-amber-600"}`}>
                       {record.baptismType==="water"?<Droplets className="h-4 w-4" />:<Flame className="h-4 w-4" />}
                     </div>
 
                     <div className="min-w-0">
-                      <Link href={`/portal/baptisms/member/${record.memberId}?returnTo=/portal/baptisms`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">{record.memberName}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link>
+                      <Link preserveContext href={`/portal/baptisms/member/${record.memberId}?returnTo=/portal/baptisms`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#365FA6] hover:underline">{record.memberName}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link>
 
                       <p className="mt-1 text-xs text-slate-500">{formatBaptismDate(record.baptismDate)}</p>
                     </div>
                   </div>
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Baptism type">
                   <StatusBadge
                     variant={baptismTypeVariants[record.baptismType]}
                   >
@@ -251,7 +261,7 @@ export default function BaptismsTable({
                   </StatusBadge>
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Branch">
                   {record.branch ? (
                     <div>
                       <p className="font-medium text-slate-800">
@@ -271,22 +281,23 @@ export default function BaptismsTable({
                   )}
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Officiated by">
                   {record.officiatedBy ?? "—"}
                 </TableCell>
 
-                <TableCell>{record.location ?? "—"}</TableCell>
+                <TableCell data-label="Location">{record.location ?? "—"}</TableCell>
 
-                <TableCell>
+                <TableCell data-label="Recorded by">
                   {record.recordedByName ??
                     (record.recordedBy ? "Staff account" : "—")}
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Actions">
                   {(record.baptismType === "water"
                     ? canUpdateWater
                     : canUpdateHolyGhost) ? (
                     <TableActionButton
+                      preserveContext
                       href={`/portal/baptisms/${record.id}/edit`}
                       icon={<Pencil />}
                     >

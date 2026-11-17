@@ -92,7 +92,7 @@ async function Content({ params, searchParams }: Props) {
         return <Card key={record.id}><CardContent className="space-y-2 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              <span className="inline-flex items-center gap-1.5 font-semibold text-[#203264]"><CalendarDays className="h-4 w-4 text-[#5D94E8]" aria-hidden="true" />{new Date(`${service.service_date}T00:00:00+08:00`).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" })}</span>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-[#203264]"><CalendarDays className="h-4 w-4 text-[#365FA6]" aria-hidden="true" />{new Date(`${service.service_date}T00:00:00+08:00`).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" })}</span>
               <span className="inline-flex items-center gap-1.5 text-slate-500"><MethodIcon className="h-4 w-4" aria-hidden="true" />{record.method === "qr" ? "QR" : "Manual"}</span>
             </div>
             <StatusBadge variant={record.attendance_status === "present" ? "success" : record.attendance_status === "excused" ? "info" : "muted"}>{record.attendance_status === "present" ? "Present" : record.attendance_status === "excused" ? "Excused" : "Absent"}</StatusBadge>

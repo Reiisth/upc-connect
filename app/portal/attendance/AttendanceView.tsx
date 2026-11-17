@@ -12,7 +12,7 @@ import {
   Search,
   SearchX,
 } from "lucide-react";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -74,6 +74,8 @@ export default function AttendanceView({
   canCorrect,
 }: AttendanceViewProps) {
   const router = useRouter();
+  const editor = useRef<HTMLFormElement>(null);
+  const statusControl = useRef<HTMLSelectElement>(null);
   const [lookupBranch, setLookupBranch] = useState("");
   const [lookupMessage, setLookupMessage] = useState("");
   const [lookupBusy, setLookupBusy] = useState(false);
@@ -146,7 +148,7 @@ export default function AttendanceView({
 
   const canEdit = canRecord || canCorrect;
 
-  function selectMember(row: AttendanceMemberRow) {
+  function selectMember(row: AttendanceMemberRow, focusEditor = false) {
     setSelectedMemberId(row.member.id);
     setSelectedStatus(row.attendance?.status ?? "present");
     setCheckInTime(
@@ -156,6 +158,10 @@ export default function AttendanceView({
     );
     setErrorMessage(null);
     setSuccessMessage(null);
+    if (focusEditor) {
+      editor.current?.scrollIntoView({ block: "start", behavior: "auto" });
+      statusControl.current?.focus({ preventScroll: true });
+    }
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -187,7 +193,8 @@ export default function AttendanceView({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {canEdit && <Button asChild variant="outline" className="w-full md:hidden"><a href="#attendance-entry">{canRecord ? "Record Attendance" : "Correct Attendance"}</a></Button>}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <AttendanceSummaryCard
           label="Currently Eligible Members"
           value={summary.totalEligible}
@@ -235,7 +242,7 @@ export default function AttendanceView({
                 : "Correct existing attendance records. New records require the attendance.record permission."
           }
         >
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form ref={editor} id="attendance-entry" tabIndex={-1} onSubmit={handleSubmit} className="scroll-mt-4 space-y-5">
             <input type="hidden" name="attendance_record_id"
               value={selectionRows.find((row) => row.member.id === selectedMemberId)?.attendance?.id ?? ""} />
             {canRecord && <div className="grid gap-5 md:grid-cols-2">
@@ -287,6 +294,7 @@ export default function AttendanceView({
                 required
               >
                 <Select
+                  ref={statusControl}
                   id="attendance-status"
                   name="attendance_status"
                   value={selectedStatus}
@@ -389,7 +397,7 @@ export default function AttendanceView({
             }
           />
         ) : (
-          <Table className="min-w-[1050px]">
+          <Table mobileCards className="min-w-[1050px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
@@ -409,8 +417,8 @@ export default function AttendanceView({
 
                 return (
                   <TableRow key={row.member.id}>
-                    <TableCell>
-                      <Link href={`/portal/attendance/member/${row.member.id}?returnTo=${encodeURIComponent(`/portal/attendance/${serviceId}`)}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">
+                    <TableCell data-label="Member">
+                      <Link href={`/portal/attendance/member/${row.member.id}?returnTo=${encodeURIComponent(`/portal/attendance/${serviceId}`)}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#365FA6] hover:underline">
                         {formatMemberName(row.member)}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       </Link>
                       {isVisitingMember(row.member.churchBranchId, serviceBranchId) && <p className="text-xs text-slate-500">Visiting Member · {row.member.homeBranchName ?? "Home branch unknown"}</p>}
@@ -418,7 +426,7 @@ export default function AttendanceView({
                       {!row.isCurrentlyEligible && (row.member.isArchived || !["active", "inactive"].includes(row.member.memberStatus ?? "")) && <p className="text-xs text-slate-500">Historical attendee{row.member.isArchived ? " · Archived" : ""}</p>}
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell data-label="Status">
                       <StatusBadge variant={statusVariants[rowStatus]}>
                         {row.attendance
                           ? formatAttendanceStatus(row.attendance.status)
@@ -426,30 +434,30 @@ export default function AttendanceView({
                       </StatusBadge>
                     </TableCell>
 
-                    <TableCell className="whitespace-nowrap">
+                    <TableCell data-label="Check-in time" className="whitespace-nowrap">
                       {row.attendance?.checkInTime
                         ? formatManilaTimestamp(row.attendance.checkInTime)
                         : "—"}
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell data-label="Method">
                       {row.attendance?.method
                         ? formatAttendanceStatus(row.attendance.method)
                         : "—"}
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell data-label="Recorded by">
                       {row.attendance?.recordedByName ??
                         (row.attendance?.recordedBy
                           ? "Staff account"
                           : "—")}
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell data-label="Actions">
                       {row.attendance && canCorrect ? (
                         <TableActionButton
                           type="button"
-                          onClick={() => selectMember(row)}
+                          onClick={() => selectMember(row, true)}
                           icon={<Pencil />}
                         >
                           Correct
@@ -457,7 +465,7 @@ export default function AttendanceView({
                       ) : !row.attendance && canRecord && row.isCurrentlyEligible ? (
                         <TableActionButton
                           type="button"
-                          onClick={() => selectMember(row)}
+                          onClick={() => selectMember(row, true)}
                           icon={<Plus />}
                         >
                           Record
@@ -491,20 +499,20 @@ function AttendanceSummaryCard({
   valueClassName?: string;
 }) {
   return (
-    <Card>
-      <CardContent className="p-5">
+    <Card className="min-w-0">
+      <CardContent className="p-3 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-medium leading-5 text-slate-600 sm:uppercase sm:tracking-wide">
               {label}
             </p>
 
-            <p className={`mt-3 text-3xl font-semibold ${valueClassName}`}>
+            <p className={`mt-2 break-words text-2xl font-semibold tabular-nums sm:text-3xl ${valueClassName}`}>
               {value}
             </p>
           </div>
 
-          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
+          <div className="hidden shrink-0 rounded-xl bg-[#EEF3FB] p-2.5 sm:block text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
             {icon}
           </div>
         </div>

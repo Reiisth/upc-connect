@@ -156,7 +156,7 @@ export function StaffAccessManagement({
       <Card>
         <CardContent className="p-5 sm:p-6">
           <div className="mb-5 flex items-start gap-3">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#5D94E8]" />
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#365FA6]" />
 
             <div>
               <h2 className="font-prompt text-lg font-semibold text-[#203264]">
@@ -279,7 +279,7 @@ export function StaffAccessManagement({
       <Card>
         <CardContent className="p-5 sm:p-6">
           <div className="mb-5 flex items-start gap-3">
-            <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-[#5D94E8]" />
+            <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-[#365FA6]" />
 
             <div>
               <h2 className="font-prompt text-lg font-semibold text-[#203264]">

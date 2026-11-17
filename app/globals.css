@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 6%;
 
-    --primary: 216 76% 64%;
+    --primary: 218 51% 43%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 218 52% 26%;
@@ -39,6 +39,7 @@
     --brand-start: #5d94e8;
     --brand-end: #203264;
     --brand-light: #eef3fb;
+    --portal-nav-clearance: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   * {
@@ -49,6 +50,43 @@
     @apply bg-background text-foreground;
     font-family: var(--font-radio-canada), sans-serif;
   }
+
+  :where(input, select, textarea, button, a) {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :where(h1, h2, h3) { text-wrap: balance; }
+  :where(p) { text-wrap: pretty; }
+}
+
+/* These tables retain a single set of records, controls and semantic roles. */
+@media (max-width: 767px) {
+  .portal-mobile-header { padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); padding-left: max(1rem, env(safe-area-inset-left, 0px)); padding-right: max(1rem, env(safe-area-inset-right, 0px)); }
+  .portal-page-padding { padding-left: max(0.75rem, env(safe-area-inset-left, 0px)); padding-right: max(0.75rem, env(safe-area-inset-right, 0px)); }
+  .portal-mobile-nav { padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px)); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .portal-navigation-sheet { padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)); }
+  .portal-main { padding-bottom: var(--portal-nav-clearance); }
+  .mobile-records-shell { overflow: visible; border: 0; background: transparent; box-shadow: none; }
+  .mobile-records { display: block; width: 100%; min-width: 0 !important; }
+  .mobile-records > thead { display: block; margin-bottom: 0.75rem; background: transparent; }
+  .mobile-records > thead > tr { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .mobile-records > thead th { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .mobile-records > thead th:has([data-table-filter]) { position: static; width: auto; height: auto; overflow: visible; clip-path: none; font-size: 0; white-space: normal; }
+  .mobile-records .mobile-filter-label { display: inline; }
+  .mobile-records [data-table-filter] { max-width: 100%; white-space: normal; text-align: left; }
+  .mobile-records > tbody { display: grid; gap: 0.75rem; border: 0; }
+  .mobile-records > tbody > tr { display: block; min-width: 0; overflow: hidden; border: 1px solid #dce3ee; border-radius: 1rem; background: #fff; box-shadow: 0 2px 6px rgb(32 50 100 / 3%); }
+  .mobile-records > tbody > tr > td { display: block; width: 100%; min-width: 0; max-width: none; padding: 0.625rem 1rem; white-space: normal; overflow-wrap: anywhere; text-align: left; }
+  .mobile-records > tbody > tr > td:first-child { padding-top: 1rem; }
+  .mobile-records > tbody > tr > td:last-child { padding-bottom: 1rem; }
+  .mobile-records > tbody > tr > td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 0.25rem; color: #64748b; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  .mobile-records > tbody > tr > td[data-label="Actions"] { margin-top: 0.375rem; border-top: 1px solid #eef2f7; padding-top: 0.75rem; }
+  .mobile-records > tbody > tr > td[data-label="Actions"]::before { display: none; }
+  .mobile-records :where(a, button) { scroll-margin-block: 5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
 
 @layer utilities {

@@ -3,7 +3,6 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { ChartNoAxesCombined, CircleAlert } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
@@ -11,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { analyticsToday, validAnalyticsDate, resolveAnalyticsDateRange } from "@/lib/analytics/date-range";
 import { getAnalyticsBranchOptions, getAnalyticsOverview } from "@/lib/analytics/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getMigrationAnalytics, type MigrationAnalytics } from "@/lib/member-migrations/server";
 import type { AnalyticsOverview } from "@/lib/analytics/types";
 import { parseReportFilters, reportFilterUrl, type ReportSearchParams } from "./filters";
 import ReportsDashboard from "./ReportsDashboard";
@@ -36,6 +36,7 @@ async function CachedReportsContent({ searchParams }: { searchParams: ReportSear
   if (parsed.values.branch && !branches.some((branch) => branch.id === parsed.values.branch)) redirect("/access-denied");
   let overview: AnalyticsOverview | null = null;
   let previous: AnalyticsOverview | null = null;
+  let migration: MigrationAnalytics | null = null;
   let serviceTypeNames: Record<string, string> = {};
   let loadFailed = false;
   if (parsed.request && branches.length) {
@@ -44,22 +45,23 @@ async function CachedReportsContent({ searchParams }: { searchParams: ReportSear
     const duration = Date.parse(`${range.to}T00:00:00Z`) - start + 86400000;
     const from = new Date(start - duration).toISOString().slice(0, 10);
     const to = new Date(start - 86400000).toISOString().slice(0, 10);
-    const [currentResult, previousResult, typesResult] = await Promise.allSettled([
+    const [currentResult, previousResult, typesResult, migrationResult] = await Promise.allSettled([
       getAnalyticsOverview(parsed.request),
       validAnalyticsDate(from) && validAnalyticsDate(to)
         ? getAnalyticsOverview({ ...parsed.request, range: { preset: "custom", from, to } })
         : Promise.resolve(null),
       createAdminClient().from("service_types").select("key,name"),
+      getMigrationAnalytics({ ...parsed.request, range: { preset: "custom", from: range.from, to: range.to } }),
     ]);
     if (currentResult.status === "fulfilled") overview = currentResult.value;
     else loadFailed = true;
     if (previousResult.status === "fulfilled") previous = previousResult.value;
     if (typesResult.status === "fulfilled") serviceTypeNames = Object.fromEntries((typesResult.value.data ?? []).map(row => [row.key, row.name]));
+    if (migrationResult.status === "fulfilled") migration = migrationResult.value;
   }
   return <PageContainer className="min-w-0">
     <PageHeader eyebrow="Insights" eyebrowIcon={<ChartNoAxesCombined className="h-4 w-4" />} title="Reports & Analytics"
-      description="Membership, attendance, member care, and giving across your accessible branches."
-      action={<Button variant="outline" asChild><Link href="/portal/reports/migrations">Member Migration</Link></Button>} />
+      description="Membership, attendance, member care, and giving across your accessible branches." />
     <ReportsView key={reportFilterUrl(parsed.values)} branches={branches} values={parsed.values}
       insightFilters={overview && parsed.request ? {
         ...(parsed.request.branchId ? { branchId: parsed.request.branchId } : {}),
@@ -72,7 +74,7 @@ async function CachedReportsContent({ searchParams }: { searchParams: ReportSear
       <p className="mt-2 text-sm text-slate-600">Your data could not be retrieved. Try again or choose another filter.</p>
       <Button asChild variant="outline" className="mt-4"><a href={reportFilterUrl(parsed.values)}>Try again</a></Button>
     </div> : !branches.length ? <EmptyState title="No branch access" description="Your account has no accessible branches for reporting." /> :
-      overview && <ReportsDashboard overview={overview} previous={previous} serviceTypeNames={serviceTypeNames} />}
+      overview && <ReportsDashboard overview={overview} previous={previous} serviceTypeNames={serviceTypeNames} migration={migration} />}
     </ReportsView>
   </PageContainer>;
 }

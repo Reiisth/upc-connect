@@ -1,7 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { loadModuleSummary } from "@/lib/module-summary";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import { Suspense } from "react";
 import {
   Droplets,
@@ -71,7 +71,7 @@ async function BaptismsContent() {
         action={
           canCreate ? (
             <Button asChild>
-              <Link href="/portal/baptisms/new">
+              <Link preserveContext href="/portal/baptisms/new">
                 <Plus />
                 New Baptism Record
               </Link>

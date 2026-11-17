@@ -1,9 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 
 type ConfirmActionModalProps = {
   children?: ReactNode;
@@ -33,27 +34,18 @@ export function ConfirmActionModal({
   onConfirm,
   onClose,
 }: ConfirmActionModalProps) {
+  const id = useId();
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
+    <Dialog open={open} onClose={onClose} dismissible={!loading} busy={loading} labelledBy={`${id}-title`} describedBy={`${id}-description`}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-prompt text-lg font-semibold text-[#203264]">
+            <h2 id={`${id}-title`} className="font-radio-canada text-lg font-semibold text-[#203264]">
               {title}
             </h2>
 
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p id={`${id}-description`} className="mt-2 text-sm leading-6 text-slate-600">
               {description}
             </p>
           </div>
@@ -61,7 +53,8 @@ export function ConfirmActionModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            disabled={loading}
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#365FA6] disabled:opacity-50"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -76,6 +69,7 @@ export function ConfirmActionModal({
             variant="outline"
             onClick={onClose}
             disabled={loading}
+            data-dialog-initial-focus
           >
             {cancelLabel}
           </Button>
@@ -89,7 +83,6 @@ export function ConfirmActionModal({
             {loading ? loadingLabel : confirmLabel}
           </Button>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }

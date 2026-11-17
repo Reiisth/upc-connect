@@ -1,3 +1,4 @@
+import { safeListReturnHref } from "@/lib/list-context-navigation";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -23,23 +24,28 @@ import { requireAccountTarget } from "../target-scope";
 import { requireAccountsPermission } from "../access";
 
 export default function AccountDetailsPage({
-  params,
+  params, searchParams,
 }: {
   params: Promise<{ userId: string }>;
+  searchParams?: Promise<{ returnTo?: string | string[] }>;
 }) {
   return (
     <Suspense fallback={<PageSkeleton kind="detail" fields={4} metrics={0} columns={5} label="accounts" />}>
-      <AccountDetailsContent params={params} />
+      <AccountDetailsContent params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
 async function AccountDetailsContent({
-  params,
+  params, searchParams,
 }: {
   params: Promise<{ userId: string }>;
+  searchParams?: Promise<{ returnTo?: string | string[] }>;
 }) {
   const access = await requireAccountsPermission("accounts.view");
+  const returnTo = (await searchParams)?.returnTo;
+  const memberAccountsHref = safeListReturnHref("/portal/accounts/members", returnTo);
+  const fromMemberAccounts = typeof returnTo === "string" && returnTo.split("?")[0] === "/portal/accounts/members";
   const canLinkMembers = hasPermission(
     access.permissions,
     "members.link_account",
@@ -83,8 +89,8 @@ async function AccountDetailsContent({
   return (
     <PageContainer className="max-w-4xl">
       <PageHeader
-        backHref="/portal/accounts"
-        backLabel="Back to Accounts"
+        backHref={fromMemberAccounts ? memberAccountsHref : "/portal/accounts"}
+        backLabel={fromMemberAccounts ? "Back to Member Accounts" : "Back to Accounts"}
         eyebrow="Account Management"
         eyebrowIcon={<UserRoundCog className="h-4 w-4" />}
         title="Account Details"
@@ -107,7 +113,7 @@ async function AccountDetailsContent({
         <CardContent className="p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
             <div className="flex items-center gap-2">
-              <UsersRound className="h-5 w-5 text-[#5D94E8]" />
+              <UsersRound className="h-5 w-5 text-[#365FA6]" />
               <div>
                 <h2 className="font-prompt text-lg font-semibold text-[#203264]">Linked Members</h2>
                 <p className="text-xs text-slate-500">

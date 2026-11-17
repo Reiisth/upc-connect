@@ -1,18 +1,21 @@
+"use client";
 import * as React from "react";
+import { useFormControl } from "./form-field-context";
 
 import { cn } from "@/lib/utils";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
+    const control = useFormControl(props);
     return (
       <input
         type={type}
         className={cn(
-          "flex h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition placeholder:text-slate-400 hover:border-slate-400 focus-visible:border-[#5D94E8] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#5D94E8]/10 focus-visible:ring-offset-0 aria-invalid:border-red-400 aria-invalid:focus-visible:border-red-400 aria-invalid:focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 disabled:opacity-70 disabled:hover:border-slate-300",
+          "flex h-11 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-4 py-2 text-base text-slate-900 md:text-sm transition placeholder:text-slate-400 hover:border-slate-400 focus-visible:border-[#5D94E8] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#5D94E8]/10 focus-visible:ring-offset-0 aria-invalid:border-red-400 aria-invalid:focus-visible:border-red-400 aria-invalid:focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 disabled:opacity-70 disabled:hover:border-slate-300",
           className,
         )}
         ref={ref}
-        {...props}
+        {...control}
       />
     );
   },

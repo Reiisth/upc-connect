@@ -46,8 +46,8 @@ export default function MemberAutocomplete({members,value,onChange,branchId,id="
   {open&&!disabled&&<div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
    <ul id={`${id}-options`} role="listbox" aria-label="Matching Members" className="max-h-64 overflow-y-auto p-1">
     {options.map((member,index)=><li key={member.id} role="presentation"><button type="button" role="option" id={`${id}-option-${index}`} tabIndex={-1} aria-selected={active===index}
-     className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[#EEF3FB] ${active===index?"bg-[#EEF3FB]":""}`}
-     onMouseDown={event=>event.preventDefault()} onMouseEnter={()=>setActive(index)} onClick={()=>select(member)}>
+     className={`block min-h-11 w-full rounded-lg px-3 py-3 text-left text-sm hover:bg-[#EEF3FB] ${active===index?"bg-[#EEF3FB]":""}`}
+     onPointerDown={event=>event.preventDefault()} onMouseEnter={()=>setActive(index)} onClick={()=>select(member)}>
      <span className="block font-medium text-slate-900">{member.fullName}</span>{showContext&&<span className="block text-xs text-slate-500">{context(member)}</span>}
     </button></li>)}
    </ul>

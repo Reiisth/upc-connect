@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,14 @@ export default function LoginPage() {
   const [generalError, setGeneralError] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const emailInput = useRef<HTMLInputElement>(null);
+  const passwordInput = useRef<HTMLInputElement>(null);
+  const errorSummary = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (emailError) emailInput.current?.focus();
+    else if (passwordError) passwordInput.current?.focus();
+    else if (generalError) errorSummary.current?.focus();
+  }, [emailError, passwordError, generalError]);
 
   async function handleLogin(
     event: React.FormEvent<HTMLFormElement>,
@@ -139,11 +147,11 @@ export default function LoginPage() {
         </div>
 
         <div className="max-w-lg">
-          <h1 className="font-body text-4xl font-semibold leading-tight">
+          <h2 className="font-body text-4xl font-semibold leading-tight">
             One church.
             <br />
             One connected community.
-          </h1>
+          </h2>
 
           <p className="mt-5 max-w-md text-sm leading-7 text-white/75">
             Access your UPC Connect account to manage the
@@ -182,13 +190,13 @@ export default function LoginPage() {
 
           <div className="rounded-3xl border bg-white p-6 shadow-sm sm:p-8">
             <div>
-              <p className="text-sm font-medium text-[#5D94E8]">
+              <p className="text-sm font-medium text-[#365FA6]">
                 Welcome back
               </p>
 
-              <h2 className="mt-1 font-body text-2xl font-semibold text-[#203264]">
+              <h1 className="mt-1 font-body text-2xl font-semibold text-[#203264]">
                 Sign in to your account
-              </h2>
+              </h1>
 
               <p className="mt-2 text-sm text-muted-foreground">
                 Enter your account credentials to continue.
@@ -210,6 +218,8 @@ export default function LoginPage() {
 
                 <Input
                   id="email"
+                  ref={emailInput}
+                  aria-describedby={emailError ? "login-email-error" : undefined}
                   type="email"
                   value={email}
                   onChange={(event) => {
@@ -230,7 +240,7 @@ export default function LoginPage() {
                 />
 
                 {emailError && (
-                  <p className="mt-2 text-xs font-medium text-red-600">
+                  <p id="login-email-error" role="alert" className="mt-2 text-sm font-medium text-red-700">
                     {emailError}
                   </p>
                 )}
@@ -248,7 +258,7 @@ export default function LoginPage() {
 
                   <Link
                     href="/forgot-password"
-                    className="text-xs font-medium text-[#5D94E8] transition hover:text-[#203264]"
+                    className="text-xs font-medium text-[#365FA6] transition hover:text-[#203264]"
                   >
                     Forgot password?
                   </Link>
@@ -257,6 +267,8 @@ export default function LoginPage() {
                 <div className="relative">
                   <Input
                     id="password"
+                    ref={passwordInput}
+                    aria-describedby={passwordError ? "login-password-error" : undefined}
                     type={
                       showPassword
                         ? "text"
@@ -294,7 +306,8 @@ export default function LoginPage() {
                         ? "Hide password"
                         : "Show password"
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-[#203264]"
+                    aria-pressed={showPassword}
+                    className="absolute right-0.5 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-slate-600 transition hover:text-[#203264] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6]"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -305,7 +318,7 @@ export default function LoginPage() {
                 </div>
 
                 {passwordError && (
-                  <p className="mt-2 text-xs font-medium text-red-600">
+                  <p id="login-password-error" role="alert" className="mt-2 text-sm font-medium text-red-700">
                     {passwordError}
                   </p>
                 )}
@@ -313,7 +326,7 @@ export default function LoginPage() {
 
               {/* LOGIN ERROR */}
               {generalError && (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div ref={errorSummary} tabIndex={-1} role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   {generalError}
                 </div>
               )}

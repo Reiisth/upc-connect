@@ -1,7 +1,8 @@
 "use client";
 
 import { X } from "lucide-react";
-import { createPortal } from "react-dom";
+import { useId } from "react";
+import { Dialog } from "@/components/ui/dialog";
 import MemberCard from "../components/MemberCard";
 
 type MemberCardModalProps = {
@@ -13,27 +14,21 @@ export default function MemberCardModal({
   onClose,
   member,
 }: MemberCardModalProps) {
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-[460px]"
-        onClick={(event) => event.stopPropagation()}
-      >
+  const id = useId();
+  return <Dialog open onClose={onClose} labelledBy={id} className="max-w-[460px] border-0 p-0">
+      <div className="flex items-center justify-between gap-3 border-b px-4 py-2">
+        <h2 id={id} className="font-radio-canada text-lg font-semibold text-[#203264]">Member card</h2>
         <button
           type="button"
           onClick={onClose}
-          className="absolute left-0 top-0 z-20 rounded-xl bg-white p-2.5 text-slate-500 shadow-sm transition hover:bg-slate-100 hover:text-slate-700"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6]"
+          data-dialog-initial-focus
           aria-label="Close member card"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <MemberCard member={member} />
       </div>
-    </div>,
-    document.body,
-  );
+      <MemberCard member={member} />
+    </Dialog>;
 }

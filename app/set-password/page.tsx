@@ -164,7 +164,7 @@ export default function SetPasswordPage() {
 
             <Card className="rounded-3xl"><CardContent className="p-6 sm:p-8">
               <div>
-                <p className="text-sm font-medium text-[#5D94E8]">
+                <p className="text-sm font-medium text-[#365FA6]">
                   Account Setup
                 </p>
 

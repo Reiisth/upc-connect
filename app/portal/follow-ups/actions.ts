@@ -1,4 +1,5 @@
 "use server";
+import { safeListReturnHref } from "@/lib/list-context-navigation";
 
 import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 import { redirect } from "next/navigation";
@@ -49,12 +50,22 @@ function failure(error: unknown): FollowUpActionState {
   return { error: "The follow-up could not be saved. Please try again." };
 }
 
-function finish(access: FollowUpAccess, memberId: string, recordId: string, edit: boolean): never {
+function finish(access: FollowUpAccess, memberId: string, recordId: string, edit: boolean, returnTo: unknown): never {
   revalidatePath("/portal/follow-ups");
   revalidatePath(`/portal/follow-ups/member/${memberId}`);
   revalidatePath(`/portal/follow-ups/${recordId}/edit`);
   revalidatePath("/portal/inactivity");
   revalidatePath("/portal/reports");
+  const sources = [
+    ...(hasPermission(access.permissions, "follow_ups.view") ? ["/portal/follow-ups", `/portal/follow-ups/member/${memberId}`] : []),
+    ...(hasPermission(access.permissions, "inactivity.view") ? ["/portal/inactivity"] : []),
+  ];
+  for (const source of sources) {
+    if (typeof returnTo !== "string" || returnTo.split("?")[0] !== source) continue;
+    const target = new URL(safeListReturnHref(source, returnTo), "http://portal.invalid");
+    target.searchParams.set("saved", "1");
+    redirect(target.pathname + target.search);
+  }
   if (hasPermission(access.permissions, "follow_ups.view")) redirect(`/portal/follow-ups/member/${memberId}?saved=1`);
   redirect(edit ? `/portal/follow-ups/${recordId}/edit?saved=1` : "/portal/follow-ups/new?saved=1");
 }
@@ -77,7 +88,7 @@ export async function createFollowUp(_state: FollowUpActionState, form: FormData
     if (!result.data) throw new Error("Insert returned no follow-up.");
     recordId = result.data.id; memberId = payload.memberId;
   } catch (error) { return failure(error); }
-  finish(access, memberId, recordId, false);
+  finish(access, memberId, recordId, false, form.get("returnTo"));
 }
 
 export async function updateFollowUp(id: string, _state: FollowUpActionState, form: FormData): Promise<FollowUpActionState> {
@@ -104,5 +115,5 @@ export async function updateFollowUp(id: string, _state: FollowUpActionState, fo
     if (!result.data) throw new FollowUpValidationError("This follow-up is no longer available. Reload the page and try again.");
     memberId = existing.member_id;
   } catch (error) { return failure(error); }
-  finish(access, memberId, id, true);
+  finish(access, memberId, id, true, form.get("returnTo"));
 }

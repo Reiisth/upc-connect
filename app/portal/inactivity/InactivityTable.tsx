@@ -1,4 +1,5 @@
 "use client";
+import { useListState } from "@/lib/use-list-state";
 import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
 
 import { MemberStatus } from "@/components/ui/member-status";
@@ -8,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Pagination } from "@/components/ui/pagination";
 
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { CircleAlert, CircleCheck, CircleHelp, UsersRound, ClipboardPen, History, UserRoundCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -23,10 +24,10 @@ import { getMonitoringCounts, filterInactivityRows, formatAttendanceDate, format
 export default function InactivityTable({ rows, canCreateFollowUps = false, canViewFollowUps = false, canViewMemberStatus = false, canUpdateMemberStatus = false }: {
   rows: InactivityMemberRow[]; canCreateFollowUps?: boolean; canViewFollowUps?: boolean; canViewMemberStatus?: boolean; canUpdateMemberStatus?: boolean;
 }) {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<AttendanceFlag | "all">("all");
-  const [minimum, setMinimum] = useState("");
+  const [page, setPage] = useListState("page", 1);
+  const [search, setSearch] = useListState("search", "");
+  const [status, setStatus] = useListState<AttendanceFlag | "all">("status", "all");
+  const [minimum, setMinimum] = useListState("minimum", "");
   const filtered = useMemo(() => filterInactivityRows(rows, {
     search, status, minimumAbsences: Number(minimum) || 0,
   }), [rows, search, status, minimum]);
@@ -39,7 +40,7 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
 
   return (
     <section aria-label="Member inactivity results" className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Selected branch monitoring totals">
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Selected branch monitoring totals">
             {[
               { label: "Total Monitored", value: counts.total, icon: UsersRound, note: "Non-archived branch members" },
               { label: "Monitoring", value: counts.monitoring, icon: CircleCheck, note: "Below the follow-up threshold" },
@@ -50,7 +51,7 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-                    <Icon className="h-5 w-5 shrink-0 text-[#5D94E8]" aria-hidden="true" />
+                    <Icon className="h-5 w-5 shrink-0 text-[#365FA6]" aria-hidden="true" />
                   </div>
                   <p className="mt-3 text-3xl font-semibold tabular-nums text-[#203264]">{value.toLocaleString("en-PH")}</p>
                   <p className="mt-2 text-xs text-slate-500">{note}</p>
@@ -90,7 +91,7 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
       ) : (
         <>
           <p className="text-xs text-slate-500 md:hidden">Swipe the table to see all attendance details.</p>
-          <Table className="min-w-[700px]" aria-label="Weekly attendance follow-up flags by member">
+          <Table mobileCards className="min-w-[700px]" aria-label="Weekly attendance follow-up flags by member">
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
@@ -105,7 +106,7 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
                 const derivedStatus = getAttendanceFlag(row);
                 return (
                   <TableRow key={row.memberId}>
-                    <TableCell className="min-w-48 max-w-xs text-left">
+                    <TableCell data-label="Member" className="min-w-48 max-w-xs text-left">
                       <div className="flex items-center gap-2">
                         {canViewMemberStatus && <MemberStatus status={row.memberStatus} />}
                         <p className="font-medium text-slate-900">{row.memberName}</p>
@@ -122,17 +123,17 @@ export default function InactivityTable({ rows, canCreateFollowUps = false, canV
                         <p className="mt-1 text-xs text-slate-500">No eligible completed weeks yet</p>
                       )}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap tabular-nums">
+                    <TableCell data-label="Absent weeks" className="whitespace-nowrap tabular-nums">
                       {row.consecutiveAbsentWeeks === null ? "—" : `${row.consecutiveAbsentWeeks} / ${row.inactivityThresholdWeeks} weeks`}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap">{formatAttendanceDate(row.lastAttendedDate)}</TableCell>
-                    <TableCell className="whitespace-nowrap tabular-nums">{formatRecentRate(row)}</TableCell>
-                    {(canCreateFollowUps || canViewFollowUps || canUpdateMemberStatus) && <TableCell>
+                    <TableCell data-label="Last attendance" className="whitespace-nowrap">{formatAttendanceDate(row.lastAttendedDate)}</TableCell>
+                    <TableCell data-label="Recent rate" className="whitespace-nowrap tabular-nums">{formatRecentRate(row)}</TableCell>
+                    {(canCreateFollowUps || canViewFollowUps || canUpdateMemberStatus) && <TableCell data-label="Actions">
                       <div className="flex min-w-44 flex-col items-start gap-2">
-                        {canCreateFollowUps && derivedStatus === "needs_follow_up" && <TableActionButton href={`/portal/follow-ups/new?memberId=${row.memberId}&branchId=${row.branchId}`}
+                        {canCreateFollowUps && derivedStatus === "needs_follow_up" && <TableActionButton preserveContext href={`/portal/follow-ups/new?memberId=${row.memberId}&branchId=${row.branchId}`}
                           icon={<ClipboardPen />} className="text-[#203264]">Record Follow-up</TableActionButton>}
-                        {canViewFollowUps && <TableActionButton href={`/portal/follow-ups/member/${row.memberId}?returnTo=/portal/inactivity`} icon={<History />}>View Follow-ups</TableActionButton>}
-                        {canUpdateMemberStatus && <TableActionButton href={`/portal/members/${row.memberId}/edit`} icon={<UserRoundCog />}>Review Member Status</TableActionButton>}
+                        {canViewFollowUps && <TableActionButton preserveContext href={`/portal/follow-ups/member/${row.memberId}?returnTo=/portal/inactivity`} icon={<History />}>View Follow-ups</TableActionButton>}
+                        {canUpdateMemberStatus && <TableActionButton preserveContext href={`/portal/members/${row.memberId}/edit`} icon={<UserRoundCog />}>Review Member Status</TableActionButton>}
                       </div>
                     </TableCell>}
                   </TableRow>

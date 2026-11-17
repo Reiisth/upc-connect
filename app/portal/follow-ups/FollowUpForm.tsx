@@ -2,7 +2,8 @@
 import { FeedbackMessage } from "@/components/ui/feedback-message";
 
 
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
+import { WorkingContextField } from "@/components/ui/working-context-field";
 import MemberAutocomplete from "../contributions/MemberAutocomplete";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ export default function FollowUpForm({ branches, members, initialValues, action,
 
   return (
     <form action={formAction}>
+      <WorkingContextField fallback={cancelHref} />
       <FormSection title="Follow-up Details">
         {state.error && <FeedbackMessage>{state.error}</FeedbackMessage>}
         <fieldset disabled={pending} className="grid gap-5 md:grid-cols-2">
@@ -81,7 +83,7 @@ export default function FollowUpForm({ branches, members, initialValues, action,
           </FormField>
         </fieldset>
         <FormActions>
-          <Button variant="outline" asChild><Link href={cancelHref}>Cancel</Link></Button>
+          <Button variant="outline" asChild><Link restoreContext href={cancelHref}>Cancel</Link></Button>
           <Button type="submit" disabled={pending || !values.memberId}>{pending ? "Saving…" : immutable ? "Save Changes" : "Record Follow-up"}</Button>
         </FormActions>
       </FormSection>

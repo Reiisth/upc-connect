@@ -33,13 +33,15 @@ export function TableColumnFilter({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
+          data-table-filter
           type="button"
           aria-label={`Filter ${label}${activeLabel ? `, currently ${activeLabel}` : ""}`}
           aria-pressed={active}
           aria-haspopup="menu"
-          className={`relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg outline-none transition focus-visible:ring-2 focus-visible:ring-[#5D94E8] focus-visible:ring-offset-2 ${active ? "bg-blue-50 text-[#203264]" : "text-slate-500 hover:bg-slate-100 hover:text-[#203264]"}`}
+          className={`relative inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-sm normal-case tracking-normal outline-none transition focus-visible:ring-2 focus-visible:ring-[#365FA6] focus-visible:ring-offset-2 md:h-9 md:min-w-9 md:rounded-lg md:px-0 ${active ? "bg-blue-50 text-[#203264]" : "bg-slate-100 text-slate-600 hover:bg-slate-200 md:bg-transparent"}`}
         >
           <Filter className="h-4 w-4" aria-hidden="true" />
+          <span className="mobile-filter-label hidden font-medium">{label}: {activeLabel ?? "All"}</span>
           {active && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />}
           {active && <span className="sr-only">Active filter: {activeLabel}</span>}
         </button>

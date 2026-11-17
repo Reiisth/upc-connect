@@ -1,4 +1,5 @@
 "use server";
+import { safeListReturnHref } from "@/lib/list-context-navigation";
 
 import { redirect, unstable_rethrow } from "next/navigation";
 import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
@@ -118,7 +119,7 @@ export async function createService(formData: FormData) {
     revalidatePath(`${servicesPath}/${data.id}/edit`);
   }
 
-  redirect(servicesPath);
+  redirect(safeListReturnHref(servicesPath, formData.get("returnTo")));
 }
 
 export async function updateService(
@@ -210,7 +211,7 @@ export async function updateService(
   revalidatePath("/portal/attendance");
   revalidatePath(`/portal/attendance/${serviceId}`);
 
-  redirect(servicesPath);
+  redirect(safeListReturnHref(servicesPath, formData.get("returnTo")));
 }
 
 

@@ -2,7 +2,7 @@ import { MemberStatus } from "@/components/ui/member-status";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { memberHistoryNavigation } from "@/lib/member-history-navigation";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { CalendarDays, ClipboardPen, Handshake, MapPin, MessageSquare, MoreHorizontal, Pencil, Phone, Plus, UserRoundCog } from "lucide-react";
@@ -49,9 +49,9 @@ async function MemberFollowUpContent({ params, searchParams }: Props) {
     <PageHeader backHref={navigation.backHref} backLabel={navigation.backLabel} eyebrow="Follow-ups" eyebrowIcon={<ClipboardPen className="h-4 w-4" />} title="Follow-up History"
       description="Recorded staff actions, newest first. History stays with its original branch after a member transfers."
       action={<>
-        {hasPermission(access.permissions, "members.view") && member.branchId && access.branchIds.includes(member.branchId) && <Button asChild variant="outline"><Link href={`/portal/members/${member.id}`}>Open Member</Link></Button>}
-        {hasPermission(access.permissions, "members.update") && member.branchId && access.branchIds.includes(member.branchId) && <Button asChild variant="outline"><Link href={`/portal/members/${member.id}/edit`}><UserRoundCog />Review Member Status</Link></Button>}
-        {canCreate ? <Button asChild><Link href={`/portal/follow-ups/new?memberId=${member.id}&branchId=${member.branchId}`}><Plus />Record Follow-up</Link></Button> : undefined}
+        {hasPermission(access.permissions, "members.view") && member.branchId && access.branchIds.includes(member.branchId) && <Button asChild variant="outline"><Link preserveContext href={`/portal/members/${member.id}`}>Open Member</Link></Button>}
+        {hasPermission(access.permissions, "members.update") && member.branchId && access.branchIds.includes(member.branchId) && <Button asChild variant="outline"><Link preserveContext href={`/portal/members/${member.id}/edit`}><UserRoundCog />Review Member Status</Link></Button>}
+        {canCreate ? <Button asChild><Link preserveContext href={`/portal/follow-ups/new?memberId=${member.id}&branchId=${member.branchId}`}><Plus />Record Follow-up</Link></Button> : undefined}
       </>} />
     {(await searchParams).saved === "1" && <p role="status" className="text-sm text-emerald-700">Follow-up saved successfully.</p>}
     <Card><CardContent className="space-y-4 p-5 sm:p-6">
@@ -85,9 +85,9 @@ async function MemberFollowUpContent({ params, searchParams }: Props) {
         const MethodIcon = { call: Phone, message: MessageSquare, visit: MapPin, in_person: Handshake, other: MoreHorizontal }[row.method];
         return <Card key={row.id}>
         <CardHeader className="p-4 pb-2"><div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"><span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4 text-[#5D94E8]" aria-hidden="true" />{formatAttendanceDate(row.followUpDate)}</span><span className="inline-flex items-center gap-1.5 font-medium"><MethodIcon className="h-4 w-4 text-slate-400" aria-hidden="true" />{METHOD_LABELS[row.method]}</span></CardTitle>
+          <CardTitle className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"><span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4 text-[#365FA6]" aria-hidden="true" />{formatAttendanceDate(row.followUpDate)}</span><span className="inline-flex items-center gap-1.5 font-medium"><MethodIcon className="h-4 w-4 text-slate-400" aria-hidden="true" />{METHOD_LABELS[row.method]}</span></CardTitle>
           <div className="flex items-center gap-3"><FollowUpOutcomeBadge outcome={row.outcome} />
-            {hasPermission(access.permissions, "follow_ups.update") && row.branchIsActive && <TableActionButton href={`/portal/follow-ups/${row.id}/edit`} icon={<Pencil />}>Edit</TableActionButton>}
+            {hasPermission(access.permissions, "follow_ups.update") && row.branchIsActive && <TableActionButton preserveContext href={`/portal/follow-ups/${row.id}/edit`} icon={<Pencil />}>Edit</TableActionButton>}
           </div>
         </div></CardHeader>
         <CardContent className="space-y-2 p-4 pt-0 text-sm text-slate-600">

@@ -1,3 +1,4 @@
+import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { ClipboardPen } from "lucide-react";
@@ -12,7 +13,7 @@ import { updateFollowUp } from "../../actions";
 import { loadFollowUpForEdit } from "../../data";
 import FollowUpForm from "../../FollowUpForm";
 
-type Props = { params: Promise<{ followUpId: string }>; searchParams: Promise<{ saved?: string }> };
+type Props = { params: Promise<{ followUpId: string }>; searchParams: Promise<{ saved?: string; returnTo?: string | string[] }> };
 export default function EditFollowUpPage(props: Props) {
   return <Suspense fallback={<PageSkeleton kind="form" fields={8} metrics={0} columns={5} label="follow ups edit" />}><EditFollowUpContent {...props} /></Suspense>;
 }
@@ -22,9 +23,10 @@ async function EditFollowUpContent({ params, searchParams }: Props) {
   const { followUpId } = await params;
   const row = await loadFollowUpForEdit(access, admin, followUpId);
   if (!row) notFound();
-  const back = hasPermission(access.permissions, "follow_ups.view") ? `/portal/follow-ups/member/${row.memberId}` : "/portal";
+  const navigation = memberHistoryNavigation(row.memberId, (await searchParams).returnTo, hasPermission(access.permissions, "follow_ups.view") ? `/portal/follow-ups/member/${row.memberId}` : "/portal", "Back to Follow-up History");
+  const back = navigation.backHref;
   return <PageContainer>
-    <PageHeader eyebrow="Follow-ups" eyebrowIcon={<ClipboardPen className="h-4 w-4" />} title="Edit Follow-up" backHref={back} backLabel="Back"
+    <PageHeader eyebrow="Follow-ups" eyebrowIcon={<ClipboardPen className="h-4 w-4" />} title="Edit Follow-up" backHref={back} backLabel={navigation.backLabel}
       description="Correct this historical action. Its original member, branch and recorder remain unchanged." />
     {(await searchParams).saved === "1" && <p role="status" className="text-sm text-emerald-700">Follow-up updated successfully.</p>}
     {!row.branchIsActive ? <EmptyState title="This branch is inactive" description="History is preserved. Corrections require the record’s stored branch to be active." /> :

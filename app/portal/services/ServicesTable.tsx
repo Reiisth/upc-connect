@@ -1,18 +1,19 @@
 "use client";
+import { useListState } from "@/lib/use-list-state";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { Pagination } from "@/components/ui/pagination";
 
 import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
 
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import ServiceLifecycleActions from "./ServiceLifecycleActions";
 import ServiceStatusIcon from "./ServiceStatusIcon";
 
 import { serviceTimestamp } from "@/lib/manila-time";
 
 import { CalendarDays, CheckCircle2, Clock3, ExternalLink, SearchX } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -54,12 +55,12 @@ export default function ServicesTable({
   branches,
   canEdit,
 }: ServicesTableProps) {
-  const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState("schedule");
-  const [search, setSearch] = useState("");
-  const [branchFilter, setBranchFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useListState("page", 1);
+  const [sortBy, setSortBy] = useListState("sortBy", "schedule");
+  const [search, setSearch] = useListState("search", "");
+  const [branchFilter, setBranchFilter] = useListState("branchFilter", "all");
+  const [typeFilter, setTypeFilter] = useListState("typeFilter", "all");
+  const [statusFilter, setStatusFilter] = useListState("statusFilter", "all");
 
   const filteredServices = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -117,7 +118,7 @@ export default function ServicesTable({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <ServiceSummaryCard
           label="Visible Services"
           value={filteredServices.length}
@@ -183,7 +184,7 @@ export default function ServicesTable({
           }
         />
       ) : (
-        <Table className="min-w-[700px]">
+        <Table mobileCards className="min-w-[700px]">
           <TableHeader>
             <TableRow>
               <TableHead><div className="flex items-center gap-1">Service<TableColumnFilter label="Service Status" value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={[{ value: "all", label: "All statuses" }, ...SERVICE_STATUSES.map((status) => ({ value: status, label: formatServiceStatus(status) }))]} /></div></TableHead>
@@ -196,19 +197,20 @@ export default function ServicesTable({
               <TableRow><TableCell colSpan={2}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
             ) : paginatedServices.map((service) => (
               <TableRow key={service.id}>
-                <TableCell>
+                <TableCell data-label="Service">
                   <div className="flex items-start gap-3">
-                    <div className="shrink-0">{canEdit && (service.status === "ongoing" || service.status === "scheduled") ? <ServiceLifecycleActions id={service.id} status={service.status} iconOnly /> : <ServiceStatusIcon status={service.status} />}</div>
                     <div className="min-w-0">
-                      <Link href={`/portal/services/${service.id}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">{service.name}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link>
+                      <div className="mb-2"><ServiceStatusIcon status={service.status} /></div>
+                      <Link preserveContext href={`/portal/services/${service.id}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#365FA6] hover:underline">{service.name}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link>
 
                       <p className="mt-1 text-xs text-slate-500">{service.branch?.name ?? "Unknown branch"}</p>
                       <p className="mt-1 text-xs text-slate-500">{formatServiceDate(service.serviceDate)} · {formatStartTime(service.startTime)}</p>
+                      {canEdit && <div className="mt-2"><ServiceLifecycleActions id={service.id} status={service.status} /></div>}
                     </div>
                   </div>
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Type">
                   {formatServiceType(service.serviceType, serviceTypeNames)}
                 </TableCell>
 
@@ -292,20 +294,20 @@ function ServiceSummaryCard({
   valueClassName?: string;
 }) {
   return (
-    <Card>
-      <CardContent className="p-5">
+    <Card className="min-w-0">
+      <CardContent className="p-3 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-medium leading-5 text-slate-600 sm:uppercase sm:tracking-wide">
               {label}
             </p>
 
-            <p className={`mt-3 text-3xl font-semibold ${valueClassName}`}>
+            <p className={`mt-2 break-words text-2xl font-semibold tabular-nums sm:text-3xl ${valueClassName}`}>
               {value}
             </p>
           </div>
 
-          <div className="rounded-xl bg-[#EEF3FB] p-2.5 text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
+          <div className="hidden shrink-0 rounded-xl bg-[#EEF3FB] p-2.5 sm:block text-[#203264] [&_svg]:h-5 [&_svg]:w-5">
             {icon}
           </div>
         </div>

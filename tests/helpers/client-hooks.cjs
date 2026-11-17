@@ -8,7 +8,10 @@ exports.clientHooks = function clientHooks(entry, stubs = {}, exportName = 'defa
   const work = [];
   let cursor = 0, pending = 0;
   const hooks = { ...React,
+    // Event-handler tests have no mounted DOM. Browser checks cover focus effects.
+    useEffect() {},
     useMemo(factory) { return factory(); },
+    useId() { const slot = cursor++; if (!(slot in slots)) slots[slot] = `test-id-${slot}`; return slots[slot]; },
     useState(initial) {
       const slot = cursor++;
       if (!(slot in slots)) slots[slot] = typeof initial === 'function' ? initial() : initial;

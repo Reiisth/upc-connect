@@ -1,4 +1,5 @@
 "use server";
+import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 
 import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -77,7 +78,7 @@ async function saveChurchInformation(memberId: string, form: FormData) {
 
 export async function updateMember(memberId: string, form: FormData) {
   const access = await saveChurchInformation(memberId, form);
-  redirect(hasPermission(access.permissions, "members.view") ? `/portal/members/${memberId}` : `/portal/members/${memberId}/edit`);
+  redirect(memberHistoryNavigation(memberId, form.get("returnTo"), hasPermission(access.permissions, "members.view") ? `/portal/members/${memberId}` : `/portal/members/${memberId}/edit`, "Back to Member").backHref);
 }
 
 export async function saveMemberChurchInformation(memberId: string, _state: { error: string | null; saved?: boolean }, form: FormData): Promise<{ error: string | null; saved?: boolean }> {

@@ -13,6 +13,8 @@ import { formatReportMoney, formatReportNumber, relativeMoneyCoordinates } from 
 
 ChartJS.register(Filler, ArcElement, DoughnutController, BarController, BarElement, CategoryScale, LinearScale, LineController, LineElement, PointElement, Legend, Tooltip);
 const COLORS = ["#365FA6", "#16836B", "#B7791F", "#8B5CB5"];
+// Canvas text does not inherit CSS font-variant-numeric; use fixed-width digits here.
+const NUMERIC_FONT = { family: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" };
 export type ReportChartSeries = { label: string; values: (number | string | null)[]; color?: string };
 export type ReportChartProps = {
   title: string; description?: string; labels: string[]; series: ReportChartSeries[];
@@ -42,7 +44,7 @@ export default function ReportChart({ title, description, labels, series, compac
     stacked, beginAtZero: true, min: 0, max: relativeMoney ? 100 : scale.max,
     grid: { color: refined ? "#F0F4FA" : "#E8EDF5" }, border: { display: false },
     title: { display: money, text: relativeMoney?"Relative amount":"Amount (PHP)", color: "#64748B", font: { size: 11 } },
-    ticks: { maxTicksLimit: 5, precision: 0, color: refined ? "#8593A8" : "#64748B", font: { size: 11 },
+    ticks: { maxTicksLimit: 5, precision: 0, color: refined ? "#8593A8" : "#64748B", font: { ...NUMERIC_FONT, size: 11 },
       callback: (value: string | number) => money ? relativeMoney?`${value}%`:new Intl.NumberFormat("en-PH",{style:"currency",currency:"PHP",minimumFractionDigits:0,maximumFractionDigits:2}).format(Number(value)) : formatReportNumber(Number(value), 0) },
   };
   const categoryAxis = { stacked, grid: { display: false }, border: { display: false },
@@ -53,7 +55,7 @@ export default function ReportChart({ title, description, labels, series, compac
     interaction: { mode: "index" as const, intersect: false },
     plugins: {
       legend: { display: series.length > 1 || Boolean(series[0]?.color), position: "bottom" as const, labels: { color: "#475569", boxWidth: 10, boxHeight: 10, padding: 16, usePointStyle:refined, pointStyle:"circle" as const } },
-      tooltip: { backgroundColor: "#203264", cornerRadius:refined?10:6, padding: refined?10:12, callbacks: {
+      tooltip: { bodyFont: NUMERIC_FONT, backgroundColor: "#203264", cornerRadius:refined?10:6, padding: refined?10:12, callbacks: {
         title: (items: { dataIndex: number }[]) => labels[items[0]?.dataIndex] ?? "",
         label: (item: { dataIndex: number; datasetIndex: number }) => `${series[item.datasetIndex].label}: ${formatValue(series[item.datasetIndex].values[item.dataIndex])}`,
       } },
@@ -63,7 +65,7 @@ export default function ReportChart({ title, description, labels, series, compac
 
   const doughnutData = {labels, datasets:[{label:series[0]?.label ?? "Records",data:coordinates[0] ?? [],backgroundColor:categoryColors ?? COLORS,borderColor:refined?"#FFFFFF":"#64748B",borderWidth:refined?3:1,hoverOffset:refined?3:0}]};
   const doughnutOptions: ChartOptions<"doughnut"> = {responsive:true,maintainAspectRatio:false,animation:false,cutout:refined?"80%":"72%",
-    plugins:{legend:{position:"bottom",labels:{color:"#475569",boxWidth:10,padding:14,usePointStyle:refined,pointStyle:"circle"}},tooltip:{backgroundColor:"#203264",cornerRadius:10,padding:10,callbacks:{label:item=>`${item.label}: ${formatReportNumber(Number(item.raw),0)} records`}}}};
+    plugins:{legend:{position:"bottom",labels:{color:"#475569",boxWidth:10,padding:14,usePointStyle:refined,pointStyle:"circle"}},tooltip:{bodyFont:NUMERIC_FONT,backgroundColor:"#203264",cornerRadius:10,padding:10,callbacks:{label:item=>`${item.label}: ${formatReportNumber(Number(item.raw),0)} records`}}}};
   return <Card className={`min-w-0 ${refined?"rounded-2xl border-slate-100 shadow-sm":""}`}>
     <CardHeader className={compact ? "p-4 pb-2" : undefined}><CardTitle><h3 id={`${id}-title`} className="text-base leading-snug">{title}</h3></CardTitle>
       {description && <p className="text-xs leading-relaxed text-slate-500">{description}</p>}
@@ -86,7 +88,7 @@ export default function ReportChart({ title, description, labels, series, compac
         {kind === "doughnut" && <p className="mt-2 text-xs text-slate-500">Slices show proportions. Compare the total and chart data for changes in volume.</p>}
       </>}
       {labels.length > 0 && <details className="mt-4 text-xs text-slate-600">
-        <summary className="w-fit cursor-pointer rounded py-1 font-medium text-[#365FA6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">View chart data</summary>
+        <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-lg px-2 font-medium text-[#365FA6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">View chart data</summary>
         <div className="mt-3 max-h-72 overflow-y-auto">
           <Table><caption className="sr-only">{title} data</caption>
             <TableHeader><TableRow><TableHead scope="col">Period / Category</TableHead>{series.map((item) => <TableHead key={item.label} scope="col" className="text-right">{item.label}</TableHead>)}</TableRow></TableHeader>

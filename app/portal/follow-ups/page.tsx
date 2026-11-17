@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import { Suspense } from "react";
 import { ClipboardPen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ async function FollowUpsContent() {
   return <PageContainer>
     <PageHeader eyebrow="Member Care" eyebrowIcon={<ClipboardPen className="h-4 w-4" />} title="Follow-ups"
       description="Historical staff actions and next contact dates. Outcomes remain separate from attendance-based inactivity."
-      action={hasPermission(access.permissions, "follow_ups.create") && branches.some((b) => b.isActive) ? <Button asChild><Link href="/portal/follow-ups/new"><Plus />Record Follow-up</Link></Button> : undefined} />
+      action={hasPermission(access.permissions, "follow_ups.create") && branches.some((b) => b.isActive) ? <Button asChild><Link preserveContext href="/portal/follow-ups/new"><Plus />Record Follow-up</Link></Button> : undefined} />
     {!branches.length ? <EmptyState title="No branch access" description="Your account has no accessible branches for follow-up history." /> :
       <FollowUpsTable rows={rows} branches={branches} today={manilaDate(new Date())} canUpdate={hasPermission(access.permissions, "follow_ups.update")} />}
   </PageContainer>;

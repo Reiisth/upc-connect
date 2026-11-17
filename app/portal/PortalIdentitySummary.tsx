@@ -7,7 +7,7 @@ export function PortalIdentitySummary({ context }: { context: PortalUserContext 
     <section aria-label="Your account access" className="rounded-2xl border border-slate-200 bg-[#F8FAFD] p-3">
       <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-[#203264]">
         <UserRound className="h-4 w-4 shrink-0" />
-        <span className="truncate">{context.displayName}</span>
+        <span className="min-w-0 break-words">{context.displayName}</span>
       </div>
       <div className="mt-2 flex items-start gap-2">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />

@@ -128,7 +128,7 @@ test('Member detail prioritizes church information and gates secondary actions b
 test('account lists expose archived status and gate restore by permission plus target scope', () => {
   const members = fs.readFileSync('app/portal/accounts/members/MemberAccountsTable.tsx', 'utf8');
   const staff = fs.readFileSync('app/portal/accounts/staff/StaffAccountsTable.tsx', 'utf8');
-  assert.match(members, /useState\("active"\)/);
+  assert.match(members, /useListState\("statusFilter", "active"\)/);
   assert.match(members, /TableColumnFilter label="Account Status"/);
   assert.match(members, /value: "archived", label: "Archived"/);
   assert.match(members, /account\.archivedAt && canRestore && account\.canChangeAccount/);

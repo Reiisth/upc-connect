@@ -13,7 +13,7 @@ export function ClearFiltersButton({
       variant="ghost"
       size="sm"
       onClick={onClick}
-      className={`h-auto rounded-none px-0 py-0 text-sm font-medium text-slate-500 hover:bg-transparent hover:text-[#203264] hover:underline ${className ?? ""}`}
+      className={`h-auto min-h-11 rounded-lg px-1 py-2 text-sm font-medium text-slate-600 hover:bg-transparent hover:text-[#203264] hover:underline md:min-h-9 ${className ?? ""}`}
     >
       Clear filters
     </Button>

@@ -246,7 +246,7 @@ export default function StaffAccountForm({
       >
         {hasSystemAdmin ? (
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4">
-            <Building2 className="h-5 w-5 shrink-0 text-[#5D94E8]" />
+            <Building2 className="h-5 w-5 shrink-0 text-[#365FA6]" />
             <div>
               <StatusBadge variant="info">All active branches</StatusBadge>
               <p className="mt-2 text-sm text-slate-600">

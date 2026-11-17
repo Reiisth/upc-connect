@@ -1,4 +1,5 @@
 "use client";
+import { useListState } from "@/lib/use-list-state";
 import { FeedbackMessage } from "@/components/ui/feedback-message";
 
 import { Pagination } from "@/components/ui/pagination";
@@ -14,7 +15,7 @@ import {
   Pencil,
   SearchX,
 } from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { refreshContributionSummary } from "./dashboard-actions";
 import { resolveAnalyticsDateRange, validAnalyticsDate } from "@/lib/analytics/date-range";
@@ -69,19 +70,27 @@ export default function ContributionsTable({
   branches,
   canUpdate,
 }: ContributionsTableProps) {
-  const [page,setPage]=useState(1);
-  const [sortBy, setSortBy] = useState("newest");
-  const [search, setSearch] = useState("");
-  const [branchFilter, setBranchFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [paymentFilter, setPaymentFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState(dashboard?.from??"");
-  const [dateTo, setDateTo] = useState(dashboard?.to??"");
-  const [range,setRange]=useState({from:dashboard?.from??"",to:dashboard?.to??""});
+  const [page,setPage]=useListState("page", 1);
+  const [sortBy, setSortBy] = useListState("sortBy", "newest");
+  const [search, setSearch] = useListState("search", "");
+  const [branchFilter, setBranchFilter] = useListState("branchFilter", "all");
+  const [typeFilter, setTypeFilter] = useListState("typeFilter", "all");
+  const [paymentFilter, setPaymentFilter] = useListState("paymentFilter", "all");
+  const [dateFrom, setDateFrom] = useListState("dateFrom", dashboard?.from??"");
+  const [dateTo, setDateTo] = useListState("dateTo", dashboard?.to??"");
+  const [range,setRange]=useListState("range", {from:dashboard?.from??"",to:dashboard?.to??""});
   const [summary,setSummary]=useState(dashboard);
   const [rangeError,setRangeError]=useState("");
   const [pending,startTransition]=useTransition();
-  const [preset,setPreset]=useState("recent");
+  const [preset,setPreset]=useListState("preset", "recent");
+  useEffect(() => {
+    if (!dashboard || !validAnalyticsDate(range.from) || !validAnalyticsDate(range.to) || range.from > range.to || (summary?.from === range.from && summary?.to === range.to)) return;
+    let cancelled = false;
+    refreshContributionSummary(range.from, range.to).then(next => {
+      if (!cancelled) { setSummary(next); setRangeError(""); }
+    }).catch(() => { if (!cancelled) setRangeError("Unable to restore date-range analytics. Apply the range to try again."); });
+    return () => { cancelled = true; };
+  }, [dashboard, range.from, range.to, summary?.from, summary?.to]);
   function applyRange(event:React.FormEvent<HTMLFormElement>){
     event.preventDefault();setRangeError("");
     if(!validAnalyticsDate(dateFrom)||!validAnalyticsDate(dateTo)||dateFrom>dateTo){setRangeError("Choose a valid start and end date, with From on or before To.");return;}
@@ -119,7 +128,7 @@ export default function ContributionsTable({
       return matchesSearch && matchesBranch && matchesType && matchesPayment;
     });
   }, [records, search, branchFilter, typeFilter, paymentFilter]);
-  const filteredSummary = useMemo(() => summary ? filteredModuleSummary(summary, contextRecords) : undefined, [summary, contextRecords]);
+  const filteredSummary = useMemo(() => summary && summary.from === range.from && summary.to === range.to ? filteredModuleSummary(summary, contextRecords) : undefined, [summary, contextRecords, range.from, range.to]);
 
   const filteredRecords = useMemo(() => {
     return [...contextRecords]
@@ -165,15 +174,16 @@ export default function ContributionsTable({
       <form onSubmit={applyRange} noValidate aria-label="Contribution date range">
         <fieldset aria-labelledby="contribution-range-title" className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
           <h2 id="contribution-range-title" className="mb-3 text-sm font-semibold text-[#203264]">Date range</h2>
-          <div className="grid grid-cols-2 items-end gap-3 lg:grid-cols-[minmax(150px,1fr)_minmax(150px,1fr)_minmax(150px,1fr)_auto]">
-            <FormField label="Period" htmlFor="contribution-period" className="col-span-2 lg:col-span-1"><Select id="contribution-period" value={preset} onChange={e=>choosePreset(e.target.value)}><option value="recent">Recent 6 months</option><option value="month">This month</option><option value="last_30_days">Last 30 days</option><option value="year_to_date">Year to date</option><option value="all">All time</option><option value="custom">Custom range</option></Select></FormField>
+          <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(150px,1fr)_minmax(150px,1fr)_minmax(150px,1fr)_auto]">
+            <FormField label="Period" htmlFor="contribution-period" className="col-span-1 sm:col-span-2 lg:col-span-1"><Select id="contribution-period" value={preset} onChange={e=>choosePreset(e.target.value)}><option value="recent">Recent 6 months</option><option value="month">This month</option><option value="last_30_days">Last 30 days</option><option value="year_to_date">Year to date</option><option value="all">All time</option><option value="custom">Custom range</option></Select></FormField>
             <FormField label="From" htmlFor="contributions-from"><Input id="contributions-from" type="date" value={dateFrom} max={dateTo||undefined} onChange={(event)=>{setDateFrom(event.target.value);setPreset("custom");}} aria-label="Contributions from date" aria-invalid={Boolean(rangeError)||undefined}/></FormField>
             <FormField label="To" htmlFor="contributions-to"><Input id="contributions-to" type="date" value={dateTo} min={dateFrom||undefined} onChange={(event)=>{setDateTo(event.target.value);setPreset("custom");}} aria-label="Contributions to date" aria-invalid={Boolean(rangeError)||undefined}/></FormField>
-            <Button type="submit" className="col-span-2 lg:col-span-1" loading={pending} disabled={pending}>{pending?"Applying...":"Apply range"}</Button>
+            <Button type="submit" className="col-span-1 sm:col-span-2 lg:col-span-1" loading={pending} disabled={pending}>{pending?"Applying...":"Apply range"}</Button>
           </div>
           {rangeError&&<FeedbackMessage className="mt-2">{rangeError}</FeedbackMessage>}
         </fieldset>
       </form>
+      {summary && !filteredSummary && !rangeError && <p role="status" className="text-sm text-slate-500">Restoring date-range analytics...</p>}
       {filteredSummary && <ModuleMiniDashboard data={filteredSummary} branchId="all" branchName={branchFilter === "all" ? "All accessible branches" : branches.find(b => b.id === branchFilter)?.name ?? "Selected branch"} />}
       <TableToolbar>
         <SearchInput
@@ -215,7 +225,7 @@ export default function ContributionsTable({
           }
         />
       ) : (
-        <Table className="min-w-[1280px]">
+        <Table mobileCards className="min-w-[1280px]">
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
@@ -235,15 +245,15 @@ export default function ContributionsTable({
               <TableRow><TableCell colSpan={9}><p role="status" className="py-3 text-center text-sm text-slate-500">No contributions match the current filters.</p></TableCell></TableRow>
             ) : pageRecords.map((record) => (
               <TableRow key={record.id}>
-                <TableCell className="whitespace-nowrap">
+                <TableCell data-label="Date" className="whitespace-nowrap">
                   {formatContributionDate(record.contributionDate)}
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Contributor">
                   <div className="flex items-start gap-3">
 
                     <div className="min-w-0">
-                      {record.contributorType === "member" && record.memberId ? <Link href={`/portal/contributions/member/${record.memberId}?returnTo=/portal/contributions`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#5D94E8] hover:underline">{contributorName(record)}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link> : <p className="font-medium text-slate-900">{contributorName(record)}</p>}
+                      {record.contributorType === "member" && record.memberId ? <Link preserveContext href={`/portal/contributions/member/${record.memberId}?returnTo=/portal/contributions`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:text-[#365FA6] hover:underline">{contributorName(record)}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Link> : <p className="font-medium text-slate-900">{contributorName(record)}</p>}
 
                       <p className="text-xs text-slate-500">{formatContributionType(record.contributorType)}{record.contributorType === "member" && record.memberHomeBranchName ? ` · ${record.memberHomeBranchName}` : ""}</p>
                       {record.notes && (
@@ -255,7 +265,7 @@ export default function ContributionsTable({
                   </div>
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Type">
                   <StatusBadge
                     variant={
                       contributionTypeVariants[
@@ -267,7 +277,7 @@ export default function ContributionsTable({
                   </StatusBadge>
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Branch">
                   {record.branch ? (
                     <div>
                       <p className="font-medium text-slate-800">
@@ -287,26 +297,27 @@ export default function ContributionsTable({
                   )}
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Service">
                   {record.serviceName ?? "—"}
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Payment method">
                   {formatPaymentMethod(record.paymentMethod)}
                 </TableCell>
 
-                <TableCell className="whitespace-nowrap font-semibold text-slate-900">
+                <TableCell data-label="Amount" className="whitespace-nowrap font-semibold text-slate-900">
                   {formatAmount(record.amount)}
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Recorded by">
                   {record.recordedByName ??
                     (record.recordedBy ? "Staff account" : "—")}
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Actions">
                   {canUpdate ? (
                     <TableActionButton
+                      preserveContext
                       href={`/portal/contributions/${record.id}/edit`}
                       icon={<Pencil />}
                     >

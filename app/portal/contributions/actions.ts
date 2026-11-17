@@ -1,4 +1,5 @@
 "use server";
+import { safeListReturnHref } from "@/lib/list-context-navigation";
 
 import { redirect } from "next/navigation";
 import { revalidatePortalPath as revalidatePath } from "@/lib/portal-invalidation";
@@ -306,7 +307,7 @@ export async function createContribution(
     revalidatePath(`${contributionsPath}/${contributionId}/edit`);
   }
 
-  redirect(contributionsPath);
+  redirect(safeListReturnHref(contributionsPath, formData.get("returnTo")));
 }
 
 export async function updateContribution(
@@ -400,5 +401,5 @@ export async function updateContribution(
   revalidatePath("/portal/reports");
   revalidatePath(`${contributionsPath}/${contributionId}/edit`);
 
-  redirect(contributionsPath);
+  redirect(safeListReturnHref(contributionsPath, formData.get("returnTo")));
 }

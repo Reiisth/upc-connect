@@ -3,7 +3,13 @@
 `/portal/reports` is a server-rendered, Reports-permission-protected dashboard.
 All request data stays under Suspense. The shared analytics server context
 authenticates `reports.view` and loads only existing branch-scope descriptors.
-One `getAnalyticsOverview` call supplies every section; charts make no requests.
+`getAnalyticsOverview` supplies the core sections; charts make no requests.
+Migration Analytics replaces Weekly Participation in the dashboard tabs and uses
+the existing Reports-authorized migration loader with the same applied branch,
+date range and grouping. Its totals, trend, branch movements and transfer routes
+reuse the standalone migration page's shared panel. A migration-load failure is
+isolated to this tab. The reports header no longer has a migration shortcut.
+The standalone migration route remains available to existing links.
 The analytics RPC and metric definitions are unchanged.
 
 ## Filters
@@ -18,6 +24,29 @@ again. Date fields are enabled only for Custom. Back/forward and refresh restore
 applied filters; changes apply together on submit.
 
 ## Presentation
+
+The overview features Total Members as its largest card. This tile counts all
+members registered **on or before the selected end date**, including those
+registered before the start date. The server performs an exact head-only count
+within the authorized branch scope, through 23:59:59.999999 Asia/Manila on that
+end date, using `members.created_at`. No member rows are downloaded for this
+count and no migration is needed. Historical registrations remain counted if a
+member is later archived; this does not reconstruct historical branch/status
+changes. Current status totals remain separate in the Membership section.
+
+The membership ticker compares the cumulative total with the cumulative total
+at the preceding period's end date. A zero previous count shows an absolute
+increase instead of an undefined percentage; an unavailable comparison stays
+unavailable. This is registration growth, not net transfers/departures or an
+inferred church acceptance date.
+
+The featured SVG sparkline starts with the population registered before the
+selected range and accumulates the registration trend through the end date.
+Quiet periods carry the previous total. It retains a zero-based scale when filters reduce values.
+Very long ranges combine adjacent buckets into at most 64 miniature intervals
+without losing registrations; detailed charts retain their original buckets.
+The five other overview metrics are smaller. Per-card explanatory footnotes have
+been removed from overview and section metrics; labels, values and tickers remain.
 
 Shared cards, tables, form fields, empty states, and skeletons follow the existing
 light-only system. Mobile filters/cards stack, chart containers shrink to their

@@ -24,6 +24,7 @@ export function emptyAnalyticsAggregates(): AnalyticsAggregates {
 export function assembleAnalytics(input: {
   aggregates: AnalyticsAggregates; branches: readonly AnalyticsBranch[]; inactivity: readonly MemberInactivitySummary[];
   range: AnalyticsDateRange; grouping: AnalyticsGrouping; asOfDate: string;
+  membersAtEndDate?: number;
 }): AnalyticsOverview {
   const data = input.aggregates;
   function group<T extends { branchId: string | null }>(rows: readonly T[], id: string | null): Omit<T, "branchId">[] {
@@ -52,7 +53,7 @@ export function assembleAnalytics(input: {
       baptisms: { ...group(data.baptisms, id)[0] ?? { total: 0, water: 0, holyGhost: 0, undatedRecords: 0 }, trend: group(data.baptismTrend, id) },
     };
   }
-  return { ...metrics(null), range: input.range, grouping: input.grouping, asOfDate: input.asOfDate,
+  return { ...metrics(null), membersAtEndDate: input.membersAtEndDate ?? 0, range: input.range, grouping: input.grouping, asOfDate: input.asOfDate,
     branches: input.branches.map((branch) => {
       const values = metrics(branch.id);
       return { ...values, branch, inactivity: branch.isActive ? values.inactivity : null };

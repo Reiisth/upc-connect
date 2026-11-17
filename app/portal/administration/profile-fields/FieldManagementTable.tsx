@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card } from "@/components/ui/card";
+import { Dialog } from "@/components/ui/dialog";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import { useEffect, useState } from "react";
 import {
@@ -389,7 +389,7 @@ export default function FieldManagementTable({
           <Button
             type="button"
             disabled={busy}
-            onClick={() => setShowAddField(true)}
+            onClick={() => { setErrorMessage(null);setShowAddField(true); }}
             variant="outline"
           >
             <Plus className="h-4 w-4" />
@@ -630,15 +630,14 @@ export default function FieldManagementTable({
         </Table>
       </div>
       {showAddField && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
-          <Card role="dialog" aria-modal="true" aria-labelledby="add-field-title" className="w-full max-w-lg p-6 shadow-xl">
+        <Dialog open={showAddField} onClose={() => setShowAddField(false)} labelledBy="add-field-title" describedBy="add-field-description" className="max-w-lg">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 id="add-field-title" className="font-body text-xl font-semibold text-[#203264]">
                   Add Custom Field
                 </h2>
 
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p id="add-field-description" className="mt-1 text-sm text-muted-foreground">
                   Create a new field for member profiles.
                 </p>
               </div>
@@ -652,13 +651,18 @@ export default function FieldManagementTable({
               </Button>
             </div>
 
+            {errorMessage && <FeedbackMessage id="new-field-error" className="mt-4">{errorMessage}</FeedbackMessage>}
             <div className="mt-6 space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-[#203264]">
+                <label htmlFor="new-field-label" className="mb-1.5 block text-sm font-medium text-[#203264]">
                   Field Label
                 </label>
 
                 <Input
+                  id="new-field-label"
+                  data-dialog-initial-focus
+                  aria-invalid={Boolean(errorMessage)||undefined}
+                  aria-describedby={errorMessage ? "new-field-error" : undefined}
                   type="text"
                   value={newFieldLabel}
                   onChange={(event) => setNewFieldLabel(event.target.value)}
@@ -668,11 +672,12 @@ export default function FieldManagementTable({
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-[#203264]">
+                <label htmlFor="new-field-type" className="mb-1.5 block text-sm font-medium text-[#203264]">
                   Input Type
                 </label>
 
                 <Select
+                  id="new-field-type"
                   value={newFieldType}
                   onChange={(event) => setNewFieldType(event.target.value)}
                   className="w-full rounded-xl border bg-white px-3 py-2.5 outline-none transition focus:border-[#5D94E8]"
@@ -706,8 +711,7 @@ export default function FieldManagementTable({
                 Add Field
               </Button>
             </div>
-          </Card>
-        </div>
+        </Dialog>
       )}
 
       <ConfirmActionModal

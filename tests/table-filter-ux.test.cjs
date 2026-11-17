@@ -104,7 +104,8 @@ test('column filter is keyboard-operable, specific, stateful and clears only its
   const menu = source('components/ui/dropdown-menu.tsx');
   assert.match(filter, /aria-label=\{`Filter \$\{label\}/);
   assert.match(filter, /Active filter: \{activeLabel\}/);
-  assert.match(filter, /h-9 w-9/);
+  assert.match(filter, /h-11 min-w-11/);
+  assert.match(filter, /mobile-filter-label/);
   assert.match(filter, /DropdownMenuRadioGroup/);
   assert.match(filter, /onSelect=\{\(\) => onChange\("all"\)\}/);
   assert.match(menu, /DropdownMenuPrimitive\.Portal/);
@@ -144,7 +145,8 @@ test('branch and role administration tables keep their existing unfiltered layou
 test('filtered tables share the Services clear action and preserve broader context', () => {
   const clearButton = source('components/ui/clear-filters-button.tsx');
   assert.match(clearButton, /variant="ghost"/);
-  assert.match(clearButton, /text-slate-500 hover:bg-transparent hover:text-\[#203264\] hover:underline/);
+  assert.match(clearButton, /text-slate-600 hover:bg-transparent hover:text-\[#203264\] hover:underline/);
+  assert.match(clearButton, /min-h-11/);
   assert.match(clearButton, /type="button"/);
   for (const file of [
     'app/portal/services/ServicesTable.tsx',
@@ -191,11 +193,12 @@ test('shared form controls use login focus, radius and disabled/error states', (
   const input = source('components/ui/input.tsx');
   const textarea = source('components/ui/textarea.tsx');
   const select = source('components/ui/select.tsx');
-  assert.match(input, /h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-3/);
+  assert.match(input, /h-11 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-4 py-2 text-base/);
   assert.match(input, /focus-visible:ring-4 focus-visible:ring-\[#5D94E8\]\/10/);
   assert.match(input, /aria-invalid:border-red-400/);
   assert.match(input, /disabled:cursor-not-allowed/);
   for (const control of [textarea, select]) {
+    assert.match(control, /text-base text-slate-900 md:text-sm/);
     assert.match(control, /rounded-xl border border-slate-300 bg-white/);
     assert.match(control, /focus-visible:ring-4 focus-visible:ring-\[#5D94E8\]\/10/);
     assert.match(control, /disabled:cursor-not-allowed/);

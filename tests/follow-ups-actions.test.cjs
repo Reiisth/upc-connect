@@ -4,6 +4,12 @@ const { followUpsHarness, ids, id } = require('./helpers/follow-ups-harness.cjs'
 const initial = { error: null };
 const succeeds = (promise) => assert.rejects(promise, /redirect:/);
 
+test('successful saves preserve a validated filtered source and reject external return destinations', async () => {
+  const h = followUpsHarness();
+  await assert.rejects(h.actions().createFollowUp(initial, h.form({returnTo:'/portal/follow-ups?view.page=3'})), /redirect:\/portal\/follow-ups\?view.page=3&saved=1/);
+  await assert.rejects(h.actions().updateFollowUp(ids.record, initial, h.form({returnTo:'https://evil.example'})), /redirect:\/portal\/follow-ups\/member\//);
+});
+
 test('authorized create accepts both active and inactive members; only a follow-up row is written', async () => {
   for (const memberStatus of ['active', 'inactive']) {
     const h = followUpsHarness({ memberStatus });

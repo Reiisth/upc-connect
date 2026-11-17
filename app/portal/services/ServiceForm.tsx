@@ -3,7 +3,8 @@ import { FeedbackMessage } from "@/components/ui/feedback-message";
 
 import { useState, useTransition } from "react";
 import { unstable_rethrow } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
+import { WorkingContextField } from "@/components/ui/working-context-field";
 
 import { Button } from "@/components/ui/button";
 import { FormActions } from "@/components/ui/form-actions";
@@ -63,6 +64,7 @@ export function ServiceForm({
         catch(error) { unstable_rethrow(error); setError(error instanceof Error ? error.message : "Unable to save Service."); }
       });
     }} className="space-y-6">
+      <WorkingContextField fallback="/portal/services" />
       <FormSection
         title="Service Information"
         description="Schedule a service for one of your assigned active church branches."
@@ -182,7 +184,7 @@ export function ServiceForm({
         {error && <FeedbackMessage>{error}</FeedbackMessage>}
         <FormActions>
           <Button variant="outline" asChild>
-            <Link href="/portal/services">Cancel</Link>
+            <Link restoreContext href="/portal/services">Cancel</Link>
           </Button>
 
           <Button type="submit" loading={pending} pendingLabel="Saving service..." disabled={pending || branches.length === 0 || serviceTypes.length === 0}>

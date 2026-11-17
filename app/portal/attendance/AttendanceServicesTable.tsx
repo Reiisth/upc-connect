@@ -1,4 +1,5 @@
 "use client";
+import { useListState } from "@/lib/use-list-state";
 import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
 
 import ServiceLifecycleActions from "../services/ServiceLifecycleActions";
@@ -12,7 +13,7 @@ import {
   ExternalLink,
   SearchX,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -27,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import { TableColumnFilter } from "@/components/ui/table-column-filter";
 
 import {
@@ -54,10 +55,10 @@ export default function AttendanceServicesTable({
   serviceTypes,
   serviceTypeNames,
 }: AttendanceServicesTableProps) {
-  const [search, setSearch] = useState("");
-  const [branchFilter, setBranchFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [search, setSearch] = useListState("search", "");
+  const [branchFilter, setBranchFilter] = useListState("branchFilter", "all");
+  const [dateFilter, setDateFilter] = useListState("dateFilter", "");
+  const [typeFilter, setTypeFilter] = useListState("typeFilter", "all");
 
   const filteredServices = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -133,7 +134,7 @@ export default function AttendanceServicesTable({
       {(["ongoing","scheduled"] as const).map(group => <section key={group} className="space-y-3">
         <div className="flex flex-wrap items-center gap-3"><h2 className={`text-lg font-semibold ${group === "ongoing" ? "text-[#203264]" : "text-slate-600"}`}>{group === "ongoing" ? "Ongoing Services" : "Upcoming Services"}</h2><StatusBadge variant={group === "ongoing" ? "success" : "muted"}>{group === "ongoing" ? "Attendance Open" : "Preparation Only"}</StatusBadge></div>
         {!services.some(service => service.status === group) ? <EmptyState icon={<SearchX className="h-5 w-5" />} title={group === "ongoing" ? "No services are currently ongoing." : "No upcoming services."} description="No Services match this section and the current filters." /> : (
-        <Table className="min-w-[500px]">
+        <Table mobileCards className="min-w-[500px]">
           <TableHeader>
             <TableRow>
               <TableHead>Service</TableHead>
@@ -146,21 +147,22 @@ export default function AttendanceServicesTable({
               <TableRow><TableCell colSpan={2}><p role="status" className="py-3 text-center text-sm text-slate-500">No services match the current filters.</p></TableCell></TableRow>
             ) : filteredServices.filter(service => service.status === group).map((service) => (
               <TableRow key={service.id}>
-                <TableCell>
+                <TableCell data-label="Service">
                   <div className="flex items-start gap-3">
-                    <div className="shrink-0">{canEditServices ? <ServiceLifecycleActions id={service.id} status={service.status} iconOnly /> : <ServiceStatusIcon status={service.status} />}</div>
                     <div className="min-w-0">
-                      <Link href={`/portal/attendance/${service.id}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] transition hover:text-[#5D94E8] hover:underline">
+                      <div className="mb-2"><ServiceStatusIcon status={service.status} /></div>
+                      <Link preserveContext href={`/portal/attendance/${service.id}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] transition hover:text-[#365FA6] hover:underline">
                         {service.name}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       </Link>
 
                       <p className="mt-1 text-xs text-slate-500">{service.branch?.name ?? "Unknown branch"}</p>
                       <p className="mt-1 text-xs text-slate-500">{formatServiceDate(service.serviceDate)} · {formatStartTime(service.startTime)}</p>
+                      {canEditServices && <div className="mt-2"><ServiceLifecycleActions id={service.id} status={service.status} /></div>}
                     </div>
                   </div>
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Type">
                   {formatServiceType(service.serviceType, serviceTypeNames)}
                 </TableCell>
 

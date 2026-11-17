@@ -12,11 +12,36 @@ test('shared pagination clamps pages, handles empty results and retains navigati
   assert.equal(renderToStaticMarkup(React.createElement(Pagination,{page:1,pageSize:10,total:0,label:'Empty',onPageChange(){}})), '');
 });
 
+test('server link pagination never passes event handlers to client buttons at page boundaries', () => {
+  const { Pagination } = loadTypeScript('components/ui/pagination.tsx');
+  for (const [page, total] of [[1,30],[2,30],[3,30],[1,1],[9,12]]) {
+    const tree = Pagination({page,pageSize:10,total,label:'Migration history',hrefForPage:p=>`/members/1/migrations?page=${p}`});
+    const children = tree.props.children[1].props.children;
+    const controls = [children[0], children[2]];
+    assert.equal(controls.length,2);
+    for (const control of controls) {
+      assert.equal(Object.values(control.props).some(value=>typeof value==='function'),false);
+      if (control.props.disabled) assert.equal(control.props.onClick,undefined);
+      else assert.match(control.props.children.props.href,/\/members\/1\/migrations\?page=\d+/);
+    }
+  }
+});
+
+test('client callback pagination continues to navigate interactively', () => {
+  const { Pagination } = loadTypeScript('components/ui/pagination.tsx');
+  const calls=[];
+  const tree=Pagination({page:2,pageSize:10,total:30,label:'Records',onPageChange:page=>calls.push(page)});
+  const controls=tree.props.children[1].props.children;
+  controls[0].props.onClick();
+  controls[2].props.onClick();
+  assert.deepEqual(calls,[1,3]);
+});
+
 test('member status distinguishes unknown values and feedback announces error/success consistently', () => {
   const { MemberStatus } = loadTypeScript('components/ui/member-status.tsx');
   for(const status of ['active','inactive',null]){
     const html=renderToStaticMarkup(React.createElement(MemberStatus,{status}));
-    assert.ok(html.includes(`Member status: ${status??'unknown'}`));assert.match(html,/tabindex="0"/);
+    assert.ok(html.includes(`Member status: ${status??'unknown'}`));assert.doesNotMatch(html,/tabindex=/);assert.doesNotMatch(html,/max-w-0/);
   }
   const { FeedbackMessage } = loadTypeScript('components/ui/feedback-message.tsx');
   assert.match(renderToStaticMarkup(React.createElement(FeedbackMessage,{},'Failed')),/role="alert"/);

@@ -11,7 +11,7 @@ test('navigation delegates intent to the shared default-prefetch link',()=>{
 });
 test('table links restore default partial prefetch on intent and preserve external event handlers',()=>{
  for(const intent of [false,true]){
-  let changed,called=false;const Link=loadTypeScript('components/ui/intent-link.tsx',{react:{...React,useState:()=>[intent,value=>{changed=value;}]}}).default;
+  let changed,called=false;const Link=loadTypeScript('components/ui/intent-link.tsx',{react:{...React,useEffect(){},useState:()=>[intent,value=>{changed=value;}]}}).default;
   const node=Link({href:'/portal/members/member',children:'Member',onFocus:()=>{called=true;}});
   assert.equal(node.props.prefetch,intent?null:false);node.props.onFocus({});assert.equal(changed,true);assert.equal(called,true);
  }

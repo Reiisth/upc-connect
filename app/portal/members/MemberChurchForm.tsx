@@ -1,4 +1,5 @@
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
+import { WorkingContextField } from "@/components/ui/working-context-field";
 import { Button } from "@/components/ui/button";
 import { FormActions } from "@/components/ui/form-actions";
 import { FormField } from "@/components/ui/form-field";
@@ -16,6 +17,7 @@ export function MemberChurchForm({ action, branches, departments = [], member, e
   cancelHref?: string; onCancel?: () => void; pending?: boolean; embedded?: boolean;
 }) {
   return <form action={action} className="space-y-6">
+    {!embedded && <WorkingContextField fallback={cancelHref} />}
     <FormSection className={embedded ? "border-0 p-0 shadow-none" : undefined} title={embedded ? undefined : editing ? "Church Information" : "Member Information"}
       description={editing ? "Update church-controlled information." : "Add a member record. Personal details can be completed after an account is connected."}>
       <fieldset disabled={pending} className="grid gap-5 md:grid-cols-2">
@@ -45,7 +47,7 @@ export function MemberChurchForm({ action, branches, departments = [], member, e
         </FormField>}
       </fieldset>
       <FormActions>
-        {onCancel ? <Button type="button" variant="outline" disabled={pending} onClick={onCancel}>Cancel</Button> : <Button variant="outline" asChild><Link href={cancelHref}>Cancel</Link></Button>}
+        {onCancel ? <Button type="button" variant="outline" disabled={pending} onClick={onCancel}>Cancel</Button> : <Button variant="outline" asChild><Link restoreContext href={cancelHref}>Cancel</Link></Button>}
         <Button type="submit" disabled={pending || !branches.length}>{pending ? "Saving..." : editing ? "Save Changes" : "Save Member"}</Button>
       </FormActions>
     </FormSection>

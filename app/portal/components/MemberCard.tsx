@@ -232,7 +232,7 @@ export default function MemberCard({
 
               {/* QR CODE */}
               <div className="mt-6 flex flex-col items-center rounded-2xl bg-[#EEF3FB] p-5">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#5D94E8]">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#365FA6]">
                   Attendance QR
                 </p>
 
@@ -250,7 +250,7 @@ export default function MemberCard({
           {/* BACK */}
           <div data-member-card-side className="col-start-1 row-start-1 rounded-3xl border bg-white p-5 shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <div className="border-b pb-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#5D94E8]">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#365FA6]">
                 Member Details
               </p>
 
@@ -261,7 +261,7 @@ export default function MemberCard({
 
             <div className="mt-5 space-y-5">
               <section>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#5D94E8]">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#365FA6]">
                   Personal
                 </p>
 
@@ -289,7 +289,7 @@ export default function MemberCard({
               <div className="border-t" />
 
               <section>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#5D94E8]">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#365FA6]">
                   Contact
                 </p>
 
@@ -311,7 +311,7 @@ export default function MemberCard({
               <div className="border-t" />
 
               <section>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#5D94E8]">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#365FA6]">
                   Church
                 </p>
 

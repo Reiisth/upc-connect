@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 
 import "./globals.css";
@@ -11,6 +11,13 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "UPC Connect",
   description: "Integrated church management system for UPC Batangas",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#203264",
 };
 
 const prompt = localFont({

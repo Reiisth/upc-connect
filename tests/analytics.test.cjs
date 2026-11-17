@@ -79,8 +79,8 @@ test('assembly preserves aggregate decimal strings, global distinct counts and s
   assert.ok(!Object.hasOwn(result.attendance, 'branchId'));
 });
 
-function serverHarness({ permissions = ['reports.view'], branchIds = ['a', 'b'], rpcError = false, inactiveBranch = false, memberCount = 3, registrationDate = '2026-01-01T00:00:00Z' } = {}) {
-  const calls = [], reads = [];
+function serverHarness({ permissions = ['reports.view'], branchIds = ['a', 'b'], rpcError = false, inactiveBranch = false, memberCount = 3, registrationDate = '2026-01-01T00:00:00Z', countError = false } = {}) {
+  const calls = [], reads = [], countReads = [];
   const tables = {
     church_branches: [
       { id: 'a', name: 'Main', code: null, is_active: !inactiveBranch, inactivity_threshold_weeks: 3 },
@@ -101,14 +101,14 @@ function serverHarness({ permissions = ['reports.view'], branchIds = ['a', 'b'],
   class Query {
     constructor(table) { this.table = table; this.rows = [...tables[table]]; }
     value(row, key) { return key.split('.').reduce((value, part) => value?.[part], row); }
-    select() { return this; }
+    select(columns, options = {}) { this.columns = columns; this.options = options; return this; }
     eq(key, value) { this.rows = this.rows.filter((row) => this.value(row, key) === value); return this; }
     in(key, values) { this.rows = this.rows.filter((row) => values.includes(this.value(row, key))); return this; }
     gte(key, value) { this.rows = this.rows.filter((row) => this.value(row, key) >= value); return this; }
-    lte(key, value) { this.rows = this.rows.filter((row) => this.value(row, key) <= value); return this; }
+    lte(key, value) { this.cutoff = value; this.rows = this.rows.filter((row) => this.value(row, key) != null && (key === 'created_at' ? Date.parse(this.value(row, key)) <= Date.parse(value) : this.value(row, key) <= value)); return this; }
     order(key) { this.rows.sort((a, b) => String(a[key]).localeCompare(String(b[key]))); return this; }
     range(from, to) { this.rows = this.rows.slice(from, to + 1); return this; }
-    then(resolve, reject) { reads.push(this.table); return Promise.resolve({ data: this.rows, error: null }).then(resolve, reject); }
+    then(resolve, reject) { reads.push(this.table); if(this.options.head)countReads.push({columns:this.columns,options:this.options,cutoff:this.cutoff});return Promise.resolve({ data: this.options.head ? null : this.rows, count: this.options.count ? this.rows.length : null, error: this.options.head && countError ? {message:'PRIVATE_COUNT_ERROR'} : null }).then(resolve, reject); }
   }
   const admin = {
     from: (table) => { assert.ok(Object.hasOwn(tables, table), `Analytics must not fetch ${table} raw`); return new Query(table); },
@@ -121,7 +121,7 @@ function serverHarness({ permissions = ['reports.view'], branchIds = ['a', 'b'],
     '@/lib/supabase/admin': { createAdminClient: () => admin },
     './date-range': { resolveAnalyticsDateRange, validateAnalyticsGrouping, validAnalyticsDate: loadTypeScript('lib/analytics/date-range.ts').validAnalyticsDate, analyticsToday: () => today },
   });
-  return { ...api, tables, calls, reads };
+  return { ...api, tables, calls, reads, countReads };
 }
 
 test('sole server entry requires reports.view, honors selected scope, and does not need operational module permissions', async () => {
@@ -142,6 +142,29 @@ test('sole server entry requires reports.view, honors selected scope, and does n
   await assert.rejects(denied.getAnalyticsOverview(), /Access denied/);
   assert.equal(denied.reads.length, 0);
   assert.equal(denied.calls.length, 0);
+});
+
+test('end-date membership includes earlier registrations, honors Manila midnight and ignores the start date', async () => {
+  const h = serverHarness();
+  const member = (id, branch, created, archived = false) => ({id,church_branch_id:branch,created_at:created,is_archived:archived,member_status:'active'});
+  h.tables.members.splice(0,h.tables.members.length,
+    member('earlier','a','2020-01-01T00:00:00Z'),
+    member('before-start','a','2026-09-30T00:00:00Z'),
+    member('last-millisecond','a','2026-10-29T15:59:59.999Z'),
+    member('next-day','a','2026-10-29T16:00:00Z'),
+    member('archived-registration','a','2021-01-01T00:00:00Z',true),
+    member('other-branch','b','2020-01-01T00:00:00Z'),
+    member('inaccessible','outside','2020-01-01T00:00:00Z'),
+    member('unknown-date','a',null));
+  const report = (from,to,branchId='a') => h.getAnalyticsOverview({branchId,range:{preset:'custom',from,to}});
+  assert.equal((await report('2026-10-01','2026-10-29')).membersAtEndDate,4);
+  assert.equal((await report('2026-10-20','2026-10-29')).membersAtEndDate,4);
+  assert.equal((await report('2026-09-01','2026-09-30')).membersAtEndDate,3);
+  assert.equal((await h.getAnalyticsOverview({range:{preset:'custom',from:'2026-10-01',to:'2026-10-29'}})).membersAtEndDate,5);
+  assert.equal(h.countReads[0].cutoff,'2026-10-29T23:59:59.999999+08:00');
+  assert.equal(h.countReads[0].options.head,true);assert.equal(h.countReads[0].options.count,'exact');
+  assert.equal((await serverHarness({branchIds:[]}).getAnalyticsOverview()).membersAtEndDate,0);
+  await assert.rejects(serverHarness({countError:true}).getAnalyticsOverview(),error=>/Unable to load reporting/.test(error.message)&&!error.message.includes('PRIVATE_COUNT_ERROR'));
 });
 
 test('all accessible branches keep differing thresholds and never expand to foreign branches', async () => {
@@ -180,7 +203,8 @@ test('minimal inactivity input streams paginate beyond API row caps and never qu
   const h = serverHarness({ memberCount: 507 });
   const result = await h.getAnalyticsOverview();
   assert.equal(result.inactivity.monitoredMembers, 507);
-  assert.equal(h.reads.filter((table) => table === 'members').length, 2);
+  assert.equal(h.reads.filter((table) => table === 'members').length, 3, 'Two paginated monitoring reads plus one exact head count');
+  assert.equal(h.countReads.length, 1);
   assert.equal(h.reads.filter((table) => table === 'services').length, 1);
   assert.equal(h.calls.length, 1);
 });

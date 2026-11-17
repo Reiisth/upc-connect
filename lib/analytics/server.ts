@@ -81,13 +81,18 @@ export async function getAnalyticsOverview(request: AnalyticsRequest = {}): Prom
     const branches = request.branchId ? context.branches.filter((branch) => branch.id === request.branchId) : context.branches;
     if (request.branchId && !branches.length) throw new Error("Reporting branch no longer exists.");
     if (!branches.length) return assembleAnalytics({ aggregates: emptyAnalyticsAggregates(), branches, inactivity: [], range, grouping, asOfDate });
-    const [{ data, error }, inactivity] = await Promise.all([
+    const [{ data, error }, inactivity, memberTotal] = await Promise.all([
       admin.rpc("get_reports_analytics", { p_branch_ids: branches.map((branch) => branch.id), p_from: range.from, p_to: range.to, p_grouping: grouping, p_as_of: asOfDate }),
       loadInactivityInputs(admin, branches, asOfDate),
+      admin.from("members").select("id", { count: "exact", head: true })
+        .in("church_branch_id", branches.map(branch => branch.id))
+        .lte("created_at", `${range.to}T23:59:59.999999+08:00`),
     ]);
     if (error) throw error;
+    if (memberTotal.error) throw memberTotal.error;
+    if (typeof memberTotal.count !== "number" || !Number.isSafeInteger(memberTotal.count) || memberTotal.count < 0) throw new Error("Membership total is unavailable.");
     if (!data || data.version !== 1) throw new Error("Analytics aggregation migration is unavailable or incompatible.");
-    return assembleAnalytics({ aggregates: data as AnalyticsAggregates, branches, inactivity, range, grouping, asOfDate });
+    return assembleAnalytics({ aggregates: data as AnalyticsAggregates, branches, inactivity, range, grouping, asOfDate, membersAtEndDate: memberTotal.count });
   } catch (error) {
     console.error("Analytics load failed", error);
     throw new Error("Unable to load reporting data. Verify the analytics migration is applied and try again.");

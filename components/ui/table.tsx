@@ -4,12 +4,13 @@ import { cn } from "@/lib/utils";
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+  React.HTMLAttributes<HTMLTableElement> & { mobileCards?: boolean }
+>(({ className, mobileCards = false, ...props }, ref) => (
+  <div className={cn("w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm", mobileCards && "mobile-records-shell")}>
     <table
       ref={ref}
-      className={cn("w-full text-sm", className)}
+      role="table"
+      className={cn("w-full text-sm", className, mobileCards && "mobile-records")}
       {...props}
     />
   </div>
@@ -21,6 +22,7 @@ const TableHeader = React.forwardRef<
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
   <thead
+    role="rowgroup"
     ref={ref}
     className={cn(
       "bg-slate-50 text-left text-slate-600",
@@ -36,6 +38,7 @@ const TableBody = React.forwardRef<
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
   <tbody
+    role="rowgroup"
     ref={ref}
     className={cn(
       "divide-y divide-slate-200",
@@ -51,6 +54,7 @@ const TableRow = React.forwardRef<
   React.HTMLAttributes<HTMLTableRowElement>
 >(({ className, ...props }, ref) => (
   <tr
+    role="row"
     ref={ref}
     className={cn(
       "transition hover:bg-slate-50/70",
@@ -64,8 +68,10 @@ TableRow.displayName = "TableRow";
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+>(({ className, scope = "col", ...props }, ref) => (
   <th
+    role={scope === "row" || scope === "rowgroup" ? "rowheader" : "columnheader"}
+    scope={scope}
     ref={ref}
     className={cn(
       "whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500",
@@ -81,6 +87,7 @@ const TableCell = React.forwardRef<
   React.TdHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => (
   <td
+    role="cell"
     ref={ref}
     className={cn(
       "px-4 py-4 align-middle text-slate-700",

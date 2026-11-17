@@ -25,9 +25,9 @@ export default function MemberChurchEditor({ memberId, canEdit, children, ...opt
     return () => { clearTimeout(timer); setShowSaved(false); };
   }, [showSaved]);
   return <Card><CardContent className="space-y-4 p-4 sm:p-5">
-    <div className="flex items-center gap-1">
-      <h2 className="flex items-center gap-2 font-semibold text-[#203264]"><Church className="h-4 w-4 text-[#5D94E8]" aria-hidden="true" />Church Information</h2>
-      {canEdit && !editing && <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-full [&_svg]:size-3.5" title="Edit church information" aria-label="Edit church information" onClick={() => { setShowSaved(false); setEditing(true); }}><Pencil aria-hidden="true" /></Button>}
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h2 className="flex items-center gap-2 font-semibold text-[#203264]"><Church className="h-4 w-4 text-[#365FA6]" aria-hidden="true" />Church Information</h2>
+      {canEdit && !editing && <Button type="button" size="sm" variant="ghost" className="min-h-11" onClick={() => { setShowSaved(false); setEditing(true); }}><Pencil aria-hidden="true" />Edit church information</Button>}
     </div>
     {editing ? <>
       <MemberChurchForm {...options} embedded editing action={action} onCancel={() => setEditing(false)} pending={pending} />

@@ -1,7 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import { notFound } from "next/navigation";
 import { CalendarDays, Pencil, ClipboardCheck } from "lucide-react";
 import { PageContainer } from "@/components/ui/page-container";
@@ -56,12 +56,12 @@ async function Content({ params }: Props) {
   return <PageContainer>
     <PageHeader eyebrow="Services" eyebrowIcon={<CalendarDays className="h-4 w-4" />} title={service.name} description={type?.name ?? service.service_type} backHref="/portal/services" backLabel="Back to Services" />
     <Card><CardContent className="space-y-4 p-5">
-      <div className="flex items-center justify-between gap-3">
-        <ServiceStatusIcon status={status} expanded />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <ServiceStatusIcon status={status} />
         <div className="ml-auto flex flex-wrap items-center justify-end gap-1">
-      {canEdit && status === "scheduled" && <Button size="icon" variant="ghost" asChild><Link href={`/portal/services/${service.id}/edit`} title="Edit Service" aria-label="Edit Service"><Pencil aria-hidden="true" /></Link></Button>}
+      {canEdit && status === "scheduled" && <Button size="sm" variant="outline" asChild><Link forwardContext href={`/portal/services/${service.id}/edit`}><Pencil aria-hidden="true" />Edit Service</Link></Button>}
       {canEdit && <ServiceLifecycleActions id={service.id} status={status} toolbar />}
-      {hasPermission(access.permissions, "attendance.view") && <Button size="icon" variant="ghost" asChild><Link href={`/portal/attendance/${service.id}`} title={status === "ongoing" ? "Manage Attendance" : "View Attendance History"} aria-label={status === "ongoing" ? "Manage Attendance" : "View Attendance History"}><ClipboardCheck aria-hidden="true" /></Link></Button>}
+      {hasPermission(access.permissions, "attendance.view") && <Button size="sm" variant="outline" asChild><Link forwardContext href={`/portal/attendance/${service.id}`}><ClipboardCheck aria-hidden="true" />{status === "ongoing" ? "Manage Attendance" : "View Attendance History"}</Link></Button>}
     </div>
       </div>
       <dl className="grid gap-4 sm:grid-cols-2">

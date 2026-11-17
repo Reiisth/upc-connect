@@ -2,7 +2,7 @@
 import { FeedbackMessage } from "@/components/ui/feedback-message";
 
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, LockKeyhole } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,18 @@ export default function ChangePasswordForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!error) return;
+    const first = Object.keys(fieldErrors)[0];
+    formRef.current?.querySelector<HTMLElement>(first ? `#${first}` : "[data-password-error]")?.focus();
+  }, [error, fieldErrors]);
+
+  function editField(id: string, value: string, setter: (value: string) => void) {
+    setter(value);setError("");setSuccess("");
+    setFieldErrors(current => { const next = { ...current };delete next[id];return next; });
+  }
 
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>,
@@ -34,26 +46,16 @@ export default function ChangePasswordForm() {
 
     setError("");
     setSuccess("");
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setError("Please complete all password fields.");
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters.");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError("New passwords do not match.");
-      return;
-    }
-
-    if (currentPassword === newPassword) {
-      setError(
-        "Your new password must be different from your current password.",
-      );
+    const errors: Record<string,string> = {};
+    if (!currentPassword) errors.current_password = "Enter your current password.";
+    if (!newPassword) errors.new_password = "Enter a new password.";
+    else if (newPassword.length < 8) errors.new_password = "Use at least 8 characters.";
+    else if (currentPassword === newPassword) errors.new_password = "Choose a password different from your current password.";
+    if (!confirmPassword) errors.confirm_password = "Re-enter your new password.";
+    else if (newPassword !== confirmPassword) errors.confirm_password = "The passwords do not match.";
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) {
+      setError("Review the highlighted password fields.");
       return;
     }
 
@@ -83,14 +85,21 @@ export default function ChangePasswordForm() {
 
   return (
     <form
+      ref={formRef}
+      noValidate
       onSubmit={handleSubmit}
       className="max-w-xl space-y-5"
     >
+      {error && <FeedbackMessage tabIndex={-1} data-password-error>{error}
+        {Object.keys(fieldErrors).length > 0 && <ul className="mt-2 list-disc space-y-1 pl-5">{Object.entries(fieldErrors).map(([id,message]) => <li key={id}><a className="underline" href={`#${id}`} onClick={event => { event.preventDefault();formRef.current?.querySelector<HTMLElement>(`#${id}`)?.focus(); }}>{message}</a></li>)}</ul>}
+      </FeedbackMessage>}
       <PasswordField
         id="current_password"
         label="Current Password"
         value={currentPassword}
-        onChange={setCurrentPassword}
+        onChange={value => editField("current_password", value, setCurrentPassword)}
+        error={fieldErrors.current_password}
+        disabled={loading}
         visible={showCurrent}
         onToggle={() => setShowCurrent((current) => !current)}
       />
@@ -99,7 +108,10 @@ export default function ChangePasswordForm() {
         id="new_password"
         label="New Password"
         value={newPassword}
-        onChange={setNewPassword}
+        onChange={value => editField("new_password", value, setNewPassword)}
+        error={fieldErrors.new_password}
+        description="Use at least 8 characters and choose a password different from your current password."
+        disabled={loading}
         visible={showNew}
         onToggle={() => setShowNew((current) => !current)}
       />
@@ -108,14 +120,13 @@ export default function ChangePasswordForm() {
         id="confirm_password"
         label="Confirm New Password"
         value={confirmPassword}
-        onChange={setConfirmPassword}
+        onChange={value => editField("confirm_password", value, setConfirmPassword)}
+        error={fieldErrors.confirm_password}
+        description="Re-enter your new password exactly as entered above."
+        disabled={loading}
         visible={showConfirm}
         onToggle={() => setShowConfirm((current) => !current)}
       />
-
-      {error && (
-        <FeedbackMessage>{error}</FeedbackMessage>
-      )}
 
       {success && (
         <FeedbackMessage variant="success">{success}</FeedbackMessage>
@@ -151,6 +162,9 @@ function PasswordField({
   onChange,
   visible,
   onToggle,
+  description,
+  error,
+  disabled,
 }: {
   id: string;
   label: string;
@@ -158,12 +172,19 @@ function PasswordField({
   onChange: (value: string) => void;
   visible: boolean;
   onToggle: () => void;
+  description?: string;
+  error?: string;
+  disabled: boolean;
 }) {
   return (
-    <FormField label={label} htmlFor={id}>
+    <FormField label={label} htmlFor={id} required description={description} error={error}>
       <div className="relative">
         <Input
           id={id}
+          name={id}
+          required
+          minLength={id === "new_password" ? 8 : undefined}
+          disabled={disabled}
           type={visible ? "text" : "password"}
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -180,8 +201,10 @@ function PasswordField({
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          aria-label={visible ? "Hide password" : "Show password"}
-          className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-slate-400"
+          aria-label={`${visible ? "Hide" : "Show"} ${label.toLowerCase()}`}
+          aria-pressed={visible}
+          disabled={disabled}
+          className="absolute right-0.5 top-1/2 h-10 w-10 -translate-y-1/2 text-slate-600"
         >
           {visible ? (
             <EyeOff className="h-5 w-5" />

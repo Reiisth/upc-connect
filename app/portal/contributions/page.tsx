@@ -1,7 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { loadModuleSummary } from "@/lib/module-summary";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import { Suspense } from "react";
 import {
   HandCoins,
@@ -63,7 +63,7 @@ async function ContributionsContent() {
         action={
           canCreate ? (
             <Button asChild>
-              <Link href="/portal/contributions/new">
+              <Link preserveContext href="/portal/contributions/new">
                 <Plus />
                 New Contribution
               </Link>

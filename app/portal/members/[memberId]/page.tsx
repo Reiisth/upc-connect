@@ -1,7 +1,8 @@
 import { MemberStatus } from "@/components/ui/member-status";
 import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
+import { memberHistoryNavigation } from "@/lib/member-history-navigation";
 import { Suspense } from "react";
 import { ArrowUpRight, ClipboardPen, HeartPulse, HandCoins, Droplets, UsersRound, MapPin, UserRound, Activity } from "lucide-react";
 
@@ -21,15 +22,18 @@ import MemberCardButton from "../MemberCardButton";
 import { loadMemberAccountEmail } from "../account-email";
 import { MemberDepartureControl } from "../MemberDepartureControl";
 
-export default function MemberPage(props: { params: Promise<{ memberId: string }> }) {
+type Props = { params: Promise<{ memberId: string }>; searchParams?: Promise<{ returnTo?: string | string[] }> };
+
+export default function MemberPage(props: Props) {
   return <Suspense fallback={<PageSkeleton kind="detail" fields={4} metrics={0} columns={5} label="members" />}><Content {...props} /></Suspense>;
 }
 
-async function Content({ params }: { params: Promise<{ memberId: string }> }) {
+async function Content({ params, searchParams }: Props) {
   "use cache: private";
   cacheLife({ stale: 120 });
   cacheTag("portal:members");
   const { memberId } = await params;
+  const navigation = memberHistoryNavigation(memberId, (await searchParams)?.returnTo, "/portal/members", "Back to Members");
   const { member, access, admin } = await requireStaffMember(memberId, "members.view");
   const can = (permission: typeof access.permissions[number]) => hasPermission(access.permissions, permission);
   const [{ data: branch }, { data: department }] = await Promise.all([
@@ -57,11 +61,11 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
       eyebrowIcon={<UsersRound className="h-4 w-4" />}
       title="Member Details"
       description={member.is_archived ? "Archived member record" : "Member identity and church information"}
-      backHref="/portal/members"
-      backLabel="Back to Members"
+      backHref={navigation.backHref}
+      backLabel={navigation.backLabel}
       action={<div className="flex flex-wrap gap-2">
         {member.account_status === "no_account" && !member.is_archived && can("members.link_account") &&
-          <Button variant="outline" asChild><Link href={`/portal/members/invite?memberId=${memberId}&returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}>Connect Account</Link></Button>}
+          <Button variant="outline" asChild><Link preserveContext href={`/portal/members/invite?memberId=${memberId}&returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}>Connect Account</Link></Button>}
       </div>}
     />
 
@@ -80,7 +84,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
 
     </CardContent></Card>
 
-    <Button variant="outline" asChild><Link href={`/portal/members/${memberId}/migrations`}>View Migration History</Link></Button>
+    <Button variant="outline" asChild><Link preserveContext href={`/portal/members/${memberId}/migrations`}>View Migration History</Link></Button>
 
     <MemberChurchEditor memberId={memberId} member={member} branches={branches} departments={departmentOptions} canEdit={canEditChurch}>
         <dl className="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -101,7 +105,7 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
     <Card>
       <CardContent className="p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-semibold text-[#203264]"><UserRound className="h-4 w-4 text-[#5D94E8]" aria-hidden="true" />Personal Information</h2>
+        <h2 className="flex items-center gap-2 font-semibold text-[#203264]"><UserRound className="h-4 w-4 text-[#365FA6]" aria-hidden="true" />Personal Information</h2>
           <StatusBadge variant={member.profile_status === "completed" ? "info" : "muted"}>{profileStatus}</StatusBadge>
         </div>
         <dl className="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-2">
@@ -115,13 +119,13 @@ async function Content({ params }: { params: Promise<{ memberId: string }> }) {
 
     {(can("baptisms.view") || can("contributions.view") || can("attendance.view") || can("follow_ups.view") || can("follow_ups.create")) && <Card>
       <CardContent className="p-4 sm:p-5">
-        <h2 className="flex items-center gap-2 font-semibold text-[#203264]"><Activity className="h-4 w-4 text-[#5D94E8]" aria-hidden="true" />Care and Activity</h2>
+        <h2 className="flex items-center gap-2 font-semibold text-[#203264]"><Activity className="h-4 w-4 text-[#365FA6]" aria-hidden="true" />Care and Activity</h2>
         <div className="mt-4 flex flex-wrap gap-3">
-          {can("baptisms.view") && <Button variant="outline" asChild><Link href={`/portal/baptisms/member/${memberId}?returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}><Droplets />View Baptism Records</Link></Button>}
-          {can("contributions.view") && <Button variant="outline" asChild><Link href={`/portal/contributions/member/${memberId}?returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}><HandCoins />View Contribution History</Link></Button>}
-          {can("attendance.view") && <Button variant="outline" asChild><Link href={`/portal/attendance/member/${memberId}?returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}><HeartPulse />View Attendance History</Link></Button>}
-          {can("follow_ups.view") && <Button variant="outline" asChild><Link href={`/portal/follow-ups/member/${memberId}?returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}><ClipboardPen />Follow-up History</Link></Button>}
-          {can("follow_ups.create") && <Button variant="outline" asChild><Link href={`/portal/follow-ups/new?memberId=${memberId}`}><ArrowUpRight />Record Follow-up</Link></Button>}
+          {can("baptisms.view") && <Button variant="outline" asChild><Link preserveContext href={`/portal/baptisms/member/${memberId}?returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}><Droplets />View Baptism Records</Link></Button>}
+          {can("contributions.view") && <Button variant="outline" asChild><Link preserveContext href={`/portal/contributions/member/${memberId}?returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}><HandCoins />View Contribution History</Link></Button>}
+          {can("attendance.view") && <Button variant="outline" asChild><Link preserveContext href={`/portal/attendance/member/${memberId}?returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}><HeartPulse />View Attendance History</Link></Button>}
+          {can("follow_ups.view") && <Button variant="outline" asChild><Link preserveContext href={`/portal/follow-ups/member/${memberId}?returnTo=${encodeURIComponent(`/portal/members/${memberId}`)}`}><ClipboardPen />Follow-up History</Link></Button>}
+          {can("follow_ups.create") && <Button variant="outline" asChild><Link preserveContext href={`/portal/follow-ups/new?memberId=${memberId}`}><ArrowUpRight />Record Follow-up</Link></Button>}
         </div>
       </CardContent>
     </Card>}

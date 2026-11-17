@@ -215,9 +215,7 @@ export default function MemberProfileForm({
     setFieldErrors(errors);
 
     if (Object.keys(errors).length > 0) {
-      const firstInvalidField = requiredFields.find(
-        (field) => errors[field],
-      );
+      const firstInvalidField = Object.keys(errors)[0];
 
       if (firstInvalidField) {
         const element = form.querySelector<HTMLElement>(

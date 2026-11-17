@@ -1,10 +1,11 @@
 "use client";
+import { useListState } from "@/lib/use-list-state";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { SearchInput, TableToolbar } from "@/components/ui/table-toolbar";
 
 
-import Link from "next/link";
+import Link from "@/components/ui/intent-link";
 import { Select } from "@/components/ui/select";
 import { useEffect, useMemo, useState } from "react";
 import { UserRoundCog, UsersRound, Archive, ExternalLink, RotateCcw, SearchX, UserPlus } from "lucide-react";
@@ -52,10 +53,10 @@ export default function MemberAccountsTable({
   canRestore,
   canLinkAccount,
 }: MemberAccountsTableProps) {
-  const [search, setSearch] = useState("");
-  const [memberCountFilter, setMemberCountFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("email-asc");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [search, setSearch] = useListState("search", "");
+  const [memberCountFilter, setMemberCountFilter] = useListState("memberCountFilter", "all");
+  const [sortBy, setSortBy] = useListState("sortBy", "email-asc");
+  const [statusFilter, setStatusFilter] = useListState("statusFilter", "active");
   const [selectedAccount, setSelectedAccount] = useState<{
     account: Account;
     action: "archive" | "restore";
@@ -225,7 +226,7 @@ export default function MemberAccountsTable({
           }
         />
       ) : (
-        <Table className="min-w-[760px]">
+        <Table mobileCards className="min-w-[760px]">
           <TableHeader>
             <TableRow>
               <TableHead><div className="flex items-center gap-1">Email<TableColumnFilter label="Account Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "active", label: "Active" }, { value: "archived", label: "Archived" }, { value: "all", label: "All statuses" }]} /></div></TableHead>
@@ -240,20 +241,16 @@ export default function MemberAccountsTable({
               <TableRow><TableCell colSpan={4}><p role="status" className="py-3 text-center text-sm text-slate-500">No accounts match the current filters.</p></TableCell></TableRow>
             ) : filteredAccounts.map((account) => (
               <TableRow key={account.userId}>
-                <TableCell>
+                <TableCell data-label="Account">
                   <div className="flex items-center gap-2">
-                    <span tabIndex={0} aria-label={`Account status: ${account.archivedAt ? "Archived" : "Active"}`}
-                      className={`group inline-flex h-3 shrink-0 items-center rounded-full transition-all hover:h-6 focus:h-6 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${account.archivedAt ? "bg-slate-400 focus-visible:ring-slate-400" : "bg-emerald-500 focus-visible:ring-emerald-500"}`}>
-                      <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" />
-                      <span aria-hidden="true" className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium text-white opacity-0 transition-all group-hover:max-w-24 group-hover:pr-2 group-hover:opacity-100 group-focus:max-w-24 group-focus:pr-2 group-focus:opacity-100">{account.archivedAt ? "Archived" : "Active"}</span>
-                    </span>
-                    <Link href={`/portal/accounts/${account.userId}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:underline focus-visible:underline">
+                    <StatusBadge variant={account.archivedAt ? "muted" : "success"}>{account.archivedAt ? "Archived" : "Active"}</StatusBadge>
+                    <Link preserveContext href={`/portal/accounts/${account.userId}`} className="inline-flex items-center gap-1.5 font-medium text-[#203264] hover:underline focus-visible:underline">
                       {account.email}<ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     </Link>
                   </div>
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Linked members">
                   <div className="flex flex-wrap gap-2">
                     {account.members.map((member) => (
                       <StatusBadge
@@ -266,14 +263,14 @@ export default function MemberAccountsTable({
                   </div>
                 </TableCell>
 
-                <TableCell>
+                <TableCell data-label="Count">
                   <StatusBadge variant="muted">
                     {account.members.length}
                   </StatusBadge>
                 </TableCell>
 
 
-                <TableCell>
+                <TableCell data-label="Actions">
                   <div className="flex items-center gap-3">
                     {account.archivedAt && canRestore && account.canChangeAccount ? (
                       <TableActionButton

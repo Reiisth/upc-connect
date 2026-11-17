@@ -69,12 +69,13 @@ function aiServerHarness({ permissions = ['reports.view'], scopeIds = [id(1), id
   const db = { church_branches: branchOptions.map((row) => ({ id: row.id, name: row.name, code: row.code, is_active: row.isActive, inactivity_threshold_weeks: row.inactivityThresholdWeeks })), members: [], service_types: [{ key: 'prayer_meeting', name: 'Prayer Meeting' }] };
   class Query {
     constructor(table) { this.table = table; this.rows = [...db[table]]; }
-    select() { return this; }
+    select(_columns, options = {}) { this.options = options; return this; }
     eq(key, value) { this.rows = this.rows.filter((row) => row[key] === value); return this; }
     in(key, values) { this.rows = this.rows.filter((row) => values.includes(row[key])); return this; }
+    lte(key, value) { this.rows = this.rows.filter(row => row[key] != null && Date.parse(row[key]) <= Date.parse(value)); return this; }
     order() { return this; }
     range(from, to) { this.rows = this.rows.slice(from, to + 1); return this; }
-    then(resolve, reject) { calls.reads.push(this.table); return Promise.resolve({ data: this.rows, error: branchFailure ? { message: 'PRIVATE_BRANCH_ERROR' } : null }).then(resolve, reject); }
+    then(resolve, reject) { calls.reads.push(this.table); return Promise.resolve({ data: this.options.head ? null : this.rows, count: this.options.count ? this.rows.length : null, error: branchFailure ? { message: 'PRIVATE_BRANCH_ERROR' } : null }).then(resolve, reject); }
   }
   const admin = {
     from: (table) => { assert.ok(Object.hasOwn(db, table), `Unexpected raw source read: ${table}`); return new Query(table); },
@@ -103,6 +104,7 @@ function aiServerHarness({ permissions = ['reports.view'], scopeIds = [id(1), id
   function loadReportsPage() {
     return loadTypeScript('app/portal/reports/page.tsx', { ...serverOnly,
       '@/lib/analytics/server': analytics, '@/lib/analytics/date-range': { ...dates, analyticsToday: () => today },
+      '@/lib/member-migrations/server': { getMigrationAnalytics: async () => ({trackingStartedAt:'2026-11-16T00:00:00Z',totals:{events:0,members:0,transfers:0,incoming:0,outgoing:0,departures:0,returns:0,net:0},trend:[],branches:[],flows:[]}) },
       '@/lib/supabase/admin': { createAdminClient: () => admin },
       'next/navigation': navigation,
       'next/link': { __esModule: true, default: (props) => require('react').createElement('a', props) },

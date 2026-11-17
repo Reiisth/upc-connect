@@ -17,6 +17,7 @@ const withLinks = { 'next/link': { __esModule: true, default: (props) => React.c
 function overviewFixture() {
   const result = assembleAnalytics({ aggregates: emptyAnalyticsAggregates(), branches: branches.slice(0, 2), inactivity: [],
     range: dates.resolveAnalyticsDateRange(undefined, today), grouping: 'week', asOfDate: today });
+  result.membersAtEndDate = 108;
   result.membership.nonArchivedMembers = 108;
   result.membership.storedActiveMembers = 99;
   result.membership.recordsAddedInRange = 2;
@@ -48,6 +49,45 @@ function stat(html, label) {
   assert.ok(match, `Missing metric ${label}`);
   return match[1];
 }
+
+test('featured member card uses cumulative end-date totals for its value, growth and sparkline', () => {
+  let sparkline;
+  const MembershipCard = loadTypeScript('app/portal/reports/MembershipOverviewCard.tsx', {
+    '@/components/ui/sparkline': { Sparkline: props => { sparkline = props; return React.createElement('svg', { 'aria-label': props.label }); } },
+  }).default;
+  const overview = overviewFixture(), previous = overviewFixture();
+  previous.membersAtEndDate = 106;
+  previous.membership.recordsAddedInRange = 40; // Period additions are not the growth denominator.
+  const render = () => renderToStaticMarkup(React.createElement(MembershipCard, { overview, previous }));
+  let html = render();
+  assert.match(html, />108<\/p>/);assert.doesNotMatch(html, />2<\/p>/);
+  assert.match(html, /Membership growth: \+1.9% vs previous period/);
+  assert.match(sparkline.label, /2026-09-30 to 2026-10-29, ending at 108/);
+  assert.deepEqual(Array.from(sparkline.values), [106,106,108,108,108,108]);
+  overview.membersAtEndDate = 54;
+  overview.membership.recordCreationTrend = [{periodStart:'2026-10-12',value:4}];
+  html = render();assert.match(html, />54<\/p>/);assert.match(html, /49.1% vs previous period/);
+  assert.deepEqual(Array.from(sparkline.values), [50,50,50,54,54,54]);
+  overview.membership.recordsAddedInRange = 0;overview.membership.recordCreationTrend = [];
+  html = render();assert.match(html, />54<\/p>/);
+  assert.deepEqual(Array.from(sparkline.values), [54,54,54,54,54,54]);
+  overview.membersAtEndDate = 0;previous.membersAtEndDate = 0;
+  html = render();assert.match(html, /0% vs previous period/);assert.doesNotMatch(html,/NaN|Infinity/);
+  overview.membersAtEndDate = 3;
+  html = render();assert.match(html, /\+3 vs previous period/);assert.doesNotMatch(html,/NaN|Infinity/);
+  html = renderToStaticMarkup(React.createElement(MembershipCard,{overview,previous:null}));
+  assert.match(html,/No previous comparison/);
+});
+
+test('analytics overview and section metrics omit the removed card footnotes', () => {
+  const Dashboard = loadTypeScript('app/portal/reports/ReportsDashboard.tsx', {
+    './ReportDashboardGroups': { __esModule: true, default: ({groups}) => React.createElement('div',null,...groups.map(group=>group.content)) },
+  }).default;
+  const html = renderToStaticMarkup(React.createElement(Dashboard,{overview:overviewFixture()}));
+  for (const text of ['Current non-archived members','In the selected period','Physical attendance at completed services','Recorded in the selected period','Includes Member, Visitor, and Anonymous contributions','Current Member Status','Current archive state']) assert.ok(!html.includes(text),text);
+  assert.match(html,/Membership trend/);assert.match(html,/Member Registrations/);
+  assert.equal(stat(html,'Registered Members'),'2');
+});
 
 test('URL presets, custom dates and grouping reuse inclusive Manila analytics boundaries', () => {
   for (const [preset, from] of [['last_7_days', '2026-10-23'], ['last_30_days', '2026-09-30'], ['last_90_days', '2026-08-01'], ['year_to_date', '2026-01-01']]) {
@@ -117,7 +157,7 @@ test('dashboard displays DTO states separately: stored status, derived status, l
   assert.equal(stat(html, 'Monitoring'), '7');
   assert.equal(stat(html, 'Needs Follow-up'), '2');
   assert.equal(stat(html, 'Needs Follow-up \u00b7 Current'), '0', 'Historical needs do not override latest resolved state');
-  assert.equal(stat(html, 'Participation Rate'), 'Unavailable');
+  assert.doesNotMatch(html, /Weekly Participation|Participation Rate/);
   assert.equal(stat(html, 'Baptisms in Period'), '0');
   assert.equal(stat(html, 'Undated Baptism Records'), '3');
   assert.ok(html.includes('\u20b199,999,999,999,900.01'));
@@ -146,17 +186,18 @@ test('service type report labels resolve current names while report data retains
   assert.equal(grouped.serviceType, 'midweek_service');
 });
 
-function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)], isSystemAdmin = false, rpcFailure = false, branchFailure = false } = {}) {
-  const calls = { rpc: [], permission: [], branchScope: [] };
+function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)], isSystemAdmin = false, rpcFailure = false, branchFailure = false, migrationFailure = false } = {}) {
+  const calls = { rpc: [], permission: [], branchScope: [], migrations: [] };
   const db = { church_branches: branches.map((branch) => ({ id: branch.id, name: branch.name, code: null, is_active: branch.isActive, inactivity_threshold_weeks: branch.inactivityThresholdWeeks })), members: [], service_types: [{ key: 'prayer_meeting', name: 'Wednesday Prayer', is_active: true }] };
   class Query {
     constructor(table) { this.table = table; this.rows = [...db[table]]; }
-    select() { return this; }
+    select(_columns, options = {}) { this.options = options; return this; }
     in(key, values) { this.rows = this.rows.filter((row) => values.includes(row[key])); return this; }
     eq(key, value) { this.rows = this.rows.filter((row) => row[key] === value); return this; }
+    lte(key, value) { this.rows = this.rows.filter(row => row[key] != null && Date.parse(row[key]) <= Date.parse(value)); return this; }
     order() { return this; }
     range(from, to) { this.rows = this.rows.slice(from, to + 1); return this; }
-    then(resolve, reject) { return Promise.resolve({ data: this.rows, error: branchFailure ? { message: 'PRIVATE_SCHEMA_ERROR' } : null }).then(resolve, reject); }
+    then(resolve, reject) { return Promise.resolve({ data: this.options.head ? null : this.rows, count: this.options.count ? this.rows.length : null, error: branchFailure ? { message: 'PRIVATE_SCHEMA_ERROR' } : null }).then(resolve, reject); }
   }
   const admin = {
     from: (table) => { assert.ok(Object.hasOwn(db, table), `No per-chart source fetch: ${table}`); return new Query(table); },
@@ -176,6 +217,11 @@ function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)]
   const Page = loadTypeScript('app/portal/reports/page.tsx', { ...withLinks,
     './actions': { generateReportInsights: () => assert.fail('Normal Reports rendering must not request AI insights') },
     '@/lib/analytics/server': api,
+    '@/lib/member-migrations/server': { getMigrationAnalytics: async request => {
+      calls.migrations.push(request);
+      if (migrationFailure) throw new Error('PRIVATE_MIGRATION_ERROR');
+      return {trackingStartedAt:'2026-11-16T00:00:00Z',totals:{events:0,members:0,transfers:0,incoming:0,outgoing:0,departures:0,returns:0,net:0},trend:[],branches:[],flows:[]};
+    } },
     '@/lib/analytics/date-range': { ...dates, analyticsToday: () => today },
     '@/lib/supabase/admin': { createAdminClient: () => admin },
     'next/navigation': { redirect: (url) => { throw new Error(`redirect:${url}`); } },
@@ -209,6 +255,34 @@ test('reports.view is required and a custom Reports-only account can use the act
   assert.equal(time(current.p_from) - time(previous.p_to), 86400000);
   assert.equal(time(current.p_to) - time(current.p_from), time(previous.p_to) - time(previous.p_from));
   assert.deepEqual(Array.from(current.p_branch_ids), Array.from(previous.p_branch_ids));
+});
+
+test('dashboard migration tab shares applied filters and replaces Weekly Participation without a header shortcut', async () => {
+  const h=pageHarness();
+  const html=await h.html({branch:id(1),range:'custom',from:'2026-10-01',to:'2026-10-29',grouping:'day'});
+  assert.match(html,/Migration Analytics/);assert.doesNotMatch(html,/Weekly Participation|href="\/portal\/reports\/migrations"/);
+  assert.equal(h.calls.migrations.length,1);
+  assert.equal(h.calls.migrations[0].branchId,id(1));assert.equal(h.calls.migrations[0].grouping,'day');
+  assert.deepEqual({...h.calls.migrations[0].range},{preset:'custom',from:'2026-10-01',to:'2026-10-29'});
+  const failed=await pageHarness({migrationFailure:true}).html();
+  assert.match(failed,/Reports &amp; Analytics/);assert.doesNotMatch(failed,/Reports could not be loaded|PRIVATE_MIGRATION_ERROR/);
+  const invalid=pageHarness();await invalid.html({range:'custom',from:'bad',to:'bad'});assert.equal(invalid.calls.migrations.length,0);
+});
+
+test('migration tab renders the shared movement panel and isolates missing migration data',()=>{
+  const {findElement}=require('./helpers/client-hooks.cjs');const charts=[];
+  const Dashboard=loadTypeScript('app/portal/reports/ReportsDashboard.tsx',{
+    './ReportChart':{__esModule:true,default:props=>{charts.push(props);return null;}},
+  }).default;
+  const overview=overviewFixture();
+  const migration={trackingStartedAt:'2026-11-16T00:00:00Z',totals:{events:3,members:2,transfers:2,incoming:1,outgoing:2,departures:1,returns:0,net:-2},trend:[{periodStart:'2026-10-05',incoming:1,outgoing:2,departures:1,returns:0}],branches:[],flows:[]};
+  const groups=data=>findElement(Dashboard({overview,migration:data}),e=>e.type.name==='ReportDashboardGroups').props.groups;
+  const items=groups(migration);assert.equal(items[2].id,'migrations');assert.ok(!items.some(group=>group.id==='weekly'));
+  const html=renderToStaticMarkup(items[2].content);
+  assert.match(html,/Net Movement|Departures/);assert.match(html,/>-2<\/p>/);assert.doesNotMatch(html,/<form/);
+  assert.equal(charts[0].title,'Member Movement Over Time');assert.equal(charts[0].series[2].values[0],1);
+  const failure=renderToStaticMarkup(groups(null)[2].content);
+  assert.match(failure,/role="alert"/);assert.match(failure,/Migration analytics could not be loaded/);assert.doesNotMatch(failure,/PRIVATE_|Transfer Events/);
 });
 
 test('selected and all-branch requests use only scope IDs; system administrator visibility comes exclusively from scope', async () => {
