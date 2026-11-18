@@ -37,26 +37,29 @@ export default function PortalFrame({userId,identity,branches,branchId,desktopNa
   return <PortalBranchContext.Provider value={{branchId,branches}}>
     <div className="portal-chrome min-h-screen bg-[#EEF3FB] md:flex" data-sidebar-collapsed={collapsed?"true":undefined}>
       <aside id={`${id}-sidebar`} className="portal-sidebar sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
-        <Link href="/portal" aria-label="UPC Connect home" className="flex min-h-20 items-center gap-3 border-b border-slate-200 px-5 py-4">
-          <Image src="/upc-logo.png" alt="" width={40} height={40} priority className="shrink-0" />
-          <span className="portal-sidebar-brand min-w-0"><span className="block font-heading text-base font-semibold text-[#203264]">UPC CONNECT</span><span className="text-xs text-slate-500">Unified Portal</span></span>
+        <Link href="/portal" aria-label="UPC Connect home" className="portal-sidebar-home flex h-20 shrink-0 items-center gap-1.5 border-b border-slate-200 px-4">
+          <Image src="/upc-logo.png" alt="" width={56} height={56} priority className="shrink-0" />
+          <span className="portal-sidebar-brand flex min-w-0 flex-col gap-0"><span className="block whitespace-nowrap font-heading text-xl font-semibold leading-none text-[#203264]">UPC CONNECT</span><span className="block text-sm leading-none text-slate-500">Unified Portal</span></span>
         </Link>
         {desktopNavigation}
       </aside>
       <div className="min-w-0 flex-1">
-        <header className="portal-topbar sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur-md sm:px-5">
-          <div className="flex flex-wrap items-center gap-3">
+        <header className="portal-topbar sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur-md sm:px-5 sm:py-0">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:min-h-[79px] sm:grid-cols-[minmax(0,1fr)_auto_auto] md:grid-cols-[auto_minmax(0,1fr)_auto_auto]">
+            <Link href="/portal" aria-label="UPC Connect home" className="col-span-2 col-start-1 row-start-1 flex h-11 w-11 items-center justify-center justify-self-center sm:hidden">
+              <Image src="/upc-logo.png" alt="" width={36} height={36} priority />
+            </Link>
             <Button type="button" variant="ghost" size="icon" className="hidden shrink-0 md:inline-flex" onClick={toggleSidebar} aria-controls={`${id}-sidebar`} aria-expanded={!collapsed} aria-label={collapsed?"Expand sidebar":"Collapse sidebar"} title={collapsed?"Expand sidebar":"Collapse sidebar"}>{collapsed?<PanelLeftOpen aria-hidden="true"/>:<PanelLeftClose aria-hidden="true"/>}</Button>
-            <p className="min-w-0 flex-1 truncate font-body text-base font-semibold text-[#203264] sm:text-lg">{portalPageName(pathname)}</p>
-            <div className="order-3 flex w-full items-center gap-2 sm:order-none sm:w-auto">
-              <label className="shrink-0 text-xs font-medium text-slate-600" htmlFor={`${id}-branch`}>Branch</label>
-              <Select id={`${id}-branch`} aria-label="Current branch throughout the portal" value={branchId??"all"} disabled={pending||!branches.length} onChange={event=>changeBranch(event.target.value)} className="min-w-0 flex-1 sm:w-52">
+            <p className="col-start-1 row-start-2 min-w-0 break-words font-body text-xl font-semibold leading-tight text-[#203264] sm:row-start-1 sm:text-2xl md:col-start-2">{portalPageName(pathname)}</p>
+            <div className="col-start-2 row-start-2 flex items-center gap-2 sm:row-start-1 md:col-start-3">
+              <label className="sr-only shrink-0 text-xs font-medium text-slate-600 lg:not-sr-only" htmlFor={`${id}-branch`}>Branch</label>
+              <Select id={`${id}-branch`} aria-label="Current branch throughout the portal" value={branchId??"all"} disabled={pending||!branches.length} onChange={event=>changeBranch(event.target.value)} className="w-32 min-w-0 px-2 sm:w-36 lg:w-40">
                 <option value="all">All branches</option>{branches.map(branch=><option key={branch.id} value={branch.id}>{branch.name}{branch.isActive?"":" (inactive)"}</option>)}
               </Select>
             </div>
-            <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className="flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-xl px-2 text-left hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6] sm:max-w-64" aria-label={`Account menu for ${identity.displayName}`}>
+            <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className="col-start-2 row-start-1 flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 justify-self-end rounded-xl px-1 text-left hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6] sm:col-start-3 md:col-start-4 xl:max-w-64 xl:justify-start xl:px-2" aria-label={`Account menu for ${identity.displayName}`}>
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EEF3FB] text-[#365FA6]"><UserRound className="h-5 w-5" aria-hidden="true"/></span>
-              <span className="min-w-0"><span className="block truncate text-sm font-semibold text-[#203264]">{identity.displayName}</span><span className="block truncate text-xs text-slate-500">{identity.roles[0]?.displayName??"Account"}{identity.roles.length>1?` +${identity.roles.length-1}`:""}</span></span><ChevronDown className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true"/>
+              <span className="hidden min-w-0 xl:block"><span className="block truncate text-sm font-semibold text-[#203264]">{identity.displayName}</span><span className="block truncate text-xs text-slate-500">{identity.roles[0]?.displayName??"Account"}{identity.roles.length>1?` +${identity.roles.length-1}`:""}</span></span><ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-500 xl:block" aria-hidden="true"/>
             </button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel className="break-words">{identity.displayName}</DropdownMenuLabel>

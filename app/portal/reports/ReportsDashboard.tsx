@@ -62,7 +62,7 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
       <p className="text-slate-600">{multiple ? `${branches.length} accessible branches` : branches[0]?.branch.name ?? "No branches"} · Asia/Manila</p>
     </div>
 
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.9fr)]" aria-label="Report overview">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.9fr)]" aria-label="Dashboard overview">
       <MembershipOverviewCard overview={data} previous={previous} />
       <div className="grid grid-cols-2 gap-3">
       {[

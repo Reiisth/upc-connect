@@ -48,15 +48,15 @@ test('portal landing prioritizes Reports, then the first workspace, then profile
   await assert.rejects(portal(['departments.view']), /redirect:\/portal\/administration/);
 });
 
-test('landing and navigation use permissions without a Dashboard route', async () => {
+test('landing and Dashboard navigation retain existing permission and route compatibility', async () => {
   const source = require('node:fs').readFileSync('app/portal/page.tsx', 'utf8');
   assert.doesNotMatch(source, /system_admin|pastor|accounting_officer|dashboard\.view/);
   assert.doesNotMatch(require('node:fs').readFileSync('lib/permissions.ts', 'utf8'), /dashboard\.view/);
   assert.match(require('node:fs').readFileSync('lib/permissions.ts', 'utf8'), /"reports\.view"/);
   assert.doesNotMatch(require('node:fs').readFileSync('app/portal/administration/roles/RolePermissionsSelector.tsx', 'utf8'), /dashboard: "Dashboard"/);
   const desktop = nav('/portal/reports', ['reports.view']);
-  assert.ok(desktop.includes('Reports &amp; Analytics'));
-  assert.ok(!desktop.includes('Dashboard'));
+  assert.ok(desktop.includes('Dashboard'));
+  assert.ok(!desktop.includes('Reports &amp; Analytics'));
   assert.ok(!desktop.includes('Field Management'));
 });
 
@@ -66,7 +66,7 @@ test('desktop navigation groups workspaces and personal destinations', () => {
   for (const group of ['Overview', 'People & Care', 'Services & Attendance', 'Church Records', 'Management', 'Personal']) {
     assert.ok(html.includes(`aria-label="${group.replaceAll('&', '&amp;')}"`), group);
   }
-  for (const label of ['Reports &amp; Analytics', 'Members', 'Inactivity Monitoring', 'Follow-ups', 'Services', 'Attendance',
+  for (const label of ['Dashboard', 'Members', 'Inactivity Monitoring', 'Follow-ups', 'Services', 'Attendance',
     'Baptisms', 'Contributions', 'Accounts', 'Administration', 'My Profiles', 'My Account']) assert.ok(html.includes(label), label);
 });
 
@@ -76,7 +76,7 @@ test('mobile navigation uses a compact bar and More contains permission-filtered
   assert.ok(!html.includes('overflow-x-auto'));
   assert.ok(html.includes('Attendance') && html.includes('Services'));
   assert.ok(html.includes('My Profiles'));
-  assert.ok(!html.includes('Reports &amp; Analytics'));
+  assert.ok(!html.includes('Dashboard'));
   assert.ok(!html.includes('Administration'));
 });
 
@@ -204,5 +204,5 @@ test('mobile bar shows up to four destinations and prioritizes people and attend
   assert.equal((bar.match(/<a /g) || []).length, 3);
   assert.ok(bar.includes('Members') && bar.includes('Services') && bar.includes('Attendance') && bar.includes('More'));
   assert.ok(!bar.includes('Reports'));
-  assert.ok(html.includes('Reports &amp; Analytics') && html.includes('My Profiles') && html.includes('My Account'));
+  assert.ok(html.includes('Dashboard') && html.includes('My Profiles') && html.includes('My Account'));
 });

@@ -36,7 +36,7 @@ type PortalNavigationProps = {
 
 const groups: Group[] = [
   { label: "Overview", items: [
-    { label: "Reports & Analytics", href: "/portal/reports", icon: BarChart3, requiredPermission: "reports.view" },
+    { label: "Dashboard", href: "/portal/reports", icon: BarChart3, requiredPermission: "reports.view" },
   ] },
   { label: "People & Care", items: [
     { label: "Members", href: "/portal/members", icon: UsersRound, requiredPermission: "members.view" },
@@ -83,7 +83,7 @@ function NavigationLink({ item, mobile = false }: { item: Item; mobile?: boolean
       inactiveClassName="text-muted-foreground hover:bg-[#EEF3FB] hover:text-[#203264]"
     >
       <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-      <span className={mobile ? "max-w-full break-words text-center leading-tight" : "portal-nav-label"}>{mobile ? ({ "Reports & Analytics": "Reports", "Inactivity Monitoring": "Inactivity", "My Profiles": "Profiles", "My Account": "Account" }[item.label] ?? item.label) : item.label}</span>
+      <span className={mobile ? "max-w-full break-words text-center leading-tight" : "portal-nav-label"}>{mobile ? ({ "Inactivity Monitoring": "Inactivity", "My Profiles": "Profiles", "My Account": "Account" }[item.label] ?? item.label) : item.label}</span>
     </ActiveNavigationLink>
   );
 }

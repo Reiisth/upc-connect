@@ -248,7 +248,7 @@ test('reports.view is required and a custom Reports-only account can use the act
   await assert.rejects(denied.api.getAnalyticsBranchOptions(), /redirect:\/access-denied/);
   const custom = pageHarness();
   const html = await custom.html();
-  assert.ok(html.includes('Reports &amp; Analytics'));
+  assert.ok(html.includes('Dashboard'));
   assert.ok(html.includes('AI Decision Support') && html.includes('Generate AI Insights'));
   assert.ok(custom.calls.permission.every((key) => key === 'reports.view'));
   assert.equal(custom.calls.rpc.length, 2, 'One current aggregation and one previous-period aggregation supply all cards');
@@ -267,7 +267,7 @@ test('dashboard migration tab shares applied filters and replaces Weekly Partici
   assert.equal(h.calls.migrations[0].branchId,id(1));assert.equal(h.calls.migrations[0].grouping,'day');
   assert.deepEqual({...h.calls.migrations[0].range},{preset:'custom',from:'2026-10-01',to:'2026-10-29'});
   const failed=await pageHarness({migrationFailure:true}).html();
-  assert.match(failed,/Reports &amp; Analytics/);assert.doesNotMatch(failed,/Reports could not be loaded|PRIVATE_MIGRATION_ERROR/);
+  assert.match(failed,/Dashboard/);assert.doesNotMatch(failed,/Dashboard could not be loaded|PRIVATE_MIGRATION_ERROR/);
   const invalid=pageHarness();await invalid.html({range:'custom',from:'bad',to:'bad'});assert.equal(invalid.calls.migrations.length,0);
 });
 
@@ -314,12 +314,12 @@ test('selected and all-branch requests use only scope IDs; system administrator 
 test('invalid dates show a repairable filter error, failed loads never display zeros or private errors, and no scope has its own state', async () => {
   const invalid = pageHarness();
   const invalidHtml = await invalid.html({ range: 'custom', from: today, to: '2026-01-01' });
-  assert.ok(invalidHtml.includes('Check your report filters'));
+  assert.ok(invalidHtml.includes('Check your dashboard filters'));
   assert.equal(invalid.calls.rpc.length, 0);
-  assert.ok(!invalidHtml.includes('Report overview'));
+  assert.ok(!invalidHtml.includes('Dashboard overview'));
   const failed = await pageHarness({ rpcFailure: true }).html();
-  assert.ok(failed.includes('Reports could not be loaded') && failed.includes('Try again'));
-  assert.ok(!failed.includes('PRIVATE_RPC_ERROR') && !failed.includes('Report overview'));
+  assert.ok(failed.includes('Dashboard could not be loaded') && failed.includes('Try again'));
+  assert.ok(!failed.includes('PRIVATE_RPC_ERROR') && !failed.includes('Dashboard overview'));
   const empty = pageHarness({ scopeIds: [] });
   assert.ok((await empty.html()).includes('No branch access'));
   assert.equal(empty.calls.rpc.length, 0);
@@ -344,9 +344,9 @@ test('GET filters restore applied values, stack on mobile and enable date contro
   const Dashboard = loadTypeScript('app/portal/reports/ReportsDashboard.tsx').default;
   const dashboardHtml = renderToStaticMarkup(React.createElement(Dashboard, { overview: overviewFixture() }));
   assert.ok(dashboardHtml.includes('min-w-0') && dashboardHtml.includes('role="tabpanel"'));
-  assert.ok(dashboardHtml.includes('aria-label="Report sections"'));
+  assert.ok(dashboardHtml.includes('aria-label="Dashboard sections"'));
   const loading = loadTypeScript('app/portal/reports/loading.tsx').default;
-  assert.ok(renderToStaticMarkup(React.createElement(loading)).includes('Loading reports'));
+  assert.ok(renderToStaticMarkup(React.createElement(loading)).includes('Loading dashboard'));
   for (const file of ['page.tsx', 'ReportsDashboard.tsx', 'ReportChart.tsx', 'ReportFilters.tsx', 'ReportsView.tsx', 'DecisionSupportSection.tsx', 'loading.tsx', 'error.tsx']) {
     const source = readFileSync(`app/portal/reports/${file}`, 'utf8');
     assert.ok(!source.includes('dark:'));

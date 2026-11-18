@@ -4,10 +4,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { loadModuleSummary } from "@/lib/module-summary";
 import Link from "@/components/ui/intent-link";
 import { Suspense } from "react";
-import {
-  Droplets,
-  Plus,
-} from "lucide-react";
+import { Droplets, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -32,7 +29,7 @@ import {
 
 export default function BaptismsPage() {
   return (
-    <Suspense fallback={<PageSkeleton kind="dashboard" fields={6} metrics={4} columns={5} label="baptisms" />}>
+    <Suspense fallback={<PageSkeleton showHeader={false} kind="dashboard" fields={6} metrics={4} columns={5} label="baptisms" />}>
       <BaptismsContent />
     </Suspense>
   );
@@ -64,11 +61,8 @@ async function BaptismsContent() {
 
   return (
     <PageContainer>
-      <PageHeader
-        eyebrow="Spiritual Ministry"
-        eyebrowIcon={<Droplets className="h-4 w-4" />}
+      <PageHeader variant="overview"
         title="Baptism Records"
-        description="Review baptism history and maintain accurate spiritual ministry records."
         action={
           canCreate ? (
             <Button asChild>

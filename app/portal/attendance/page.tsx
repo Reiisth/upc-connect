@@ -6,9 +6,7 @@ import { hasPermission } from "@/lib/permissions";
 import { effectiveStoredServiceStatus } from "@/app/portal/services/lifecycle";
 import { loadAttendanceDashboard } from "@/lib/attendance-dashboard";
 import { Suspense } from "react";
-import {
-  ClipboardCheck,
-} from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
@@ -33,7 +31,7 @@ type ServiceRow = {
 
 export default function AttendancePage() {
   return (
-    <Suspense fallback={<PageSkeleton kind="dashboard" fields={6} metrics={4} columns={5} label="attendance" />}>
+    <Suspense fallback={<PageSkeleton showHeader={false} kind="dashboard" fields={6} metrics={4} columns={5} label="attendance" />}>
       <AttendanceContent />
     </Suspense>
   );
@@ -94,9 +92,7 @@ async function AttendanceContent() {
   const dashboard = await dashboardPromise;
   return (
     <PageContainer>
-      <PageHeader
-        eyebrow="Attendance Operations"
-        eyebrowIcon={<ClipboardCheck className="h-4 w-4" />}
+      <PageHeader variant="overview"
         title="Attendance"
         description="Record attendance for Ongoing Services and prepare for Upcoming Services. Refresh when a start time is reached."
       />

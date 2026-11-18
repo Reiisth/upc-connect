@@ -122,7 +122,7 @@ test('normal Reports loads and filter navigation never call Gemini, with or with
       assert.equal(element.type, React.Suspense);
       const content = element.props.children;
       const html = renderToStaticMarkup(await content.type(content.props));
-      assert.ok(html.includes('Reports &amp; Analytics'));
+      assert.ok(html.includes('Dashboard'));
       assert.ok(html.includes('AI Decision Support') && html.includes('Generate AI Insights'));
     }
     assert.equal(h.calls.provider.length, 0);

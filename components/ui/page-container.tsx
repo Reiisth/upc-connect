@@ -14,7 +14,7 @@ export function PageContainer({
   return (
     <div
       className={cn(
-        "mx-auto w-full min-w-0 max-w-[1440px] space-y-5 py-1 sm:space-y-6 sm:py-2",
+        "mx-auto w-full min-w-0 max-w-[1440px] space-y-5 py-1 sm:space-y-6 sm:py-2 [&>[data-page-heading-only]+*]:!mt-0",
         className,
       )}
     >

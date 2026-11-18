@@ -63,6 +63,7 @@
 .portal-sidebar { transition: width 160ms ease; }
 @media (min-width: 768px) {
   .portal-chrome[data-sidebar-collapsed="true"] .portal-sidebar { width: 5rem; }
+  .portal-chrome[data-sidebar-collapsed="true"] .portal-sidebar-home { justify-content: center; padding-left: 0; padding-right: 0; }
   .portal-chrome[data-sidebar-collapsed="true"] .portal-sidebar .portal-nav-label,
   .portal-chrome[data-sidebar-collapsed="true"] .portal-sidebar-brand,
   .portal-chrome[data-sidebar-collapsed="true"] .portal-sidebar .portal-nav-group-title { display: none; }

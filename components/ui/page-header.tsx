@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 type PageHeaderProps = {
   title: string;
+  variant?: "detail" | "overview";
   description?: string;
 
   eyebrow?: string;
@@ -20,6 +21,7 @@ type PageHeaderProps = {
 
 export function PageHeader({
   title,
+  variant = "detail",
   description,
   eyebrow,
   eyebrowIcon,
@@ -28,6 +30,15 @@ export function PageHeader({
   action,
   className,
 }: PageHeaderProps) {
+  if (variant === "overview") {
+    const headingOnly = !description && !action;
+    return <div data-page-heading-only={headingOnly || undefined}
+      className={cn(headingOnly ? "sr-only" : "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",className)}>
+      <h1 className="sr-only">{title}</h1>
+      {description && <p className="max-w-2xl text-sm leading-6 text-slate-600">{description}</p>}
+      {action && <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto [&>a]:flex-1 [&>button]:flex-1 sm:[&>a]:flex-none sm:[&>button]:flex-none">{action}</div>}
+    </div>;
+  }
   return (
     <div className={cn("space-y-3 border-b border-slate-200/80 pb-5", className)}>
       {backHref && (

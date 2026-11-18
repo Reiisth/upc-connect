@@ -32,7 +32,7 @@ async function CachedContent({ searchParams }: { searchParams: ReportSearchParam
   }
   const range = parsed.request ? resolveAnalyticsDateRange(parsed.request.range) : null;
   return <PageContainer>
-    <PageHeader title="Member Migration" backHref="/portal/reports" backLabel="Back to Reports"
+    <PageHeader title="Member Migration" backHref="/portal/reports" backLabel="Back to Dashboard"
       description="New branch transfers, departures from the church, and returns. Inactivity and ordinary archives are not departures."
       action={hasPermission(access.permissions, "members.view") ? <Link className="text-sm font-medium text-[#365FA6] hover:underline" href="/portal/members/migrations">View movement records</Link> : undefined} />
     <ReportFilters key={JSON.stringify(parsed.values)} action="/portal/reports/migrations" values={parsed.values} branches={branches.map(branch => ({ ...branch, inactivityThresholdWeeks: 0 }))} />

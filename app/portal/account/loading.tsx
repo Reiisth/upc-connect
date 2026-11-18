@@ -1,2 +1,2 @@
 import { PageSkeleton } from "@/components/ui/page-skeleton";
-export default function Loading() { return <PageSkeleton kind="detail" fields={3} metrics={0} columns={5} label="account" />; }
+export default function Loading() { return <PageSkeleton showHeader={false} kind="detail" fields={3} metrics={0} columns={5} label="account" />; }

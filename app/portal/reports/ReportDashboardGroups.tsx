@@ -12,7 +12,7 @@ export default function ReportDashboardGroups({ groups }: {
   const active = groups.find(group => group.id === selected) ?? groups[0];
   if (!active) return null;
   return <div className="min-w-0 space-y-4">
-    <nav aria-label="Report sections" className="flex flex-wrap items-center gap-2">
+    <nav aria-label="Dashboard sections" className="flex flex-wrap items-center gap-2">
       <div role="tablist" aria-label="Dashboard chart groups" className="flex flex-wrap gap-2">
         {groups.map((group, index) => <button key={group.id} type="button" role="tab"
           id={`${prefix}-tab-${group.id}`} aria-controls={`${prefix}-panel`}

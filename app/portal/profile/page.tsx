@@ -4,14 +4,14 @@ import { Suspense } from "react";
 import { requirePermission } from "@/lib/permissions-server";
 import { createClient } from "@/lib/supabase/server";
 import ProfileSelector from "./ProfileSelector";
-import { IdCardLanyard } from "lucide-react";
+
 import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<PageSkeleton kind="profiles" fields={6} metrics={0} columns={5} label="profile" />}>
+    <Suspense fallback={<PageSkeleton showHeader={false} kind="profiles" fields={6} metrics={0} columns={5} label="profile" />}>
       <ProfileContent />
     </Suspense>
   );
@@ -77,11 +77,8 @@ async function ProfileContent() {
 
   return (
     <PageContainer>
-      <PageHeader
-        eyebrow="Personal"
-        eyebrowIcon={<IdCardLanyard className="h-4 w-4" />}
+      <PageHeader variant="overview"
         title="My Profiles"
-        description="Manage the member profiles linked to your account."
       />
 
       <ProfileSelector members={members} />

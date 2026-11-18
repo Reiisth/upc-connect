@@ -4,10 +4,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { loadModuleSummary } from "@/lib/module-summary";
 import Link from "@/components/ui/intent-link";
 import { Suspense } from "react";
-import {
-  HandCoins,
-  Plus,
-} from "lucide-react";
+import { HandCoins, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -26,7 +23,7 @@ import ContributionsTable from "./ContributionsTable";
 
 export default function ContributionsPage() {
   return (
-    <Suspense fallback={<PageSkeleton kind="dashboard" fields={6} metrics={4} columns={5} label="contributions" />}>
+    <Suspense fallback={<PageSkeleton showHeader={false} kind="dashboard" fields={6} metrics={4} columns={5} label="contributions" />}>
       <ContributionsContent />
     </Suspense>
   );
@@ -56,11 +53,8 @@ async function ContributionsContent() {
 
   return (
     <PageContainer>
-      <PageHeader
-        eyebrow="Financial Operations"
-        eyebrowIcon={<HandCoins className="h-4 w-4" />}
+      <PageHeader variant="overview"
         title="Contributions"
-        description="Review branch contributions and maintain accurate financial records."
         action={
           canCreate ? (
             <Button asChild>

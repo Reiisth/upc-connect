@@ -20,7 +20,7 @@ import StaffAccountsTable, {
 import { getAccountTargetScopes } from "../target-scope";
 import { getAuthUsersByIds } from "../auth-users";
 import { requireStaffAccountAccess } from "../access";
-import { UserPlus, UserRoundCog } from "lucide-react";
+import { UserPlus } from "lucide-react";
 
 type ProfileRow = {
   id: string;
@@ -48,7 +48,7 @@ type StaffRoleRow = {
 
 export default function StaffAccountsPage() {
   return (
-    <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="accounts staff" />}>
+    <Suspense fallback={<PageSkeleton showHeader={false} kind="table" fields={6} metrics={0} columns={5} label="accounts staff" />}>
       <StaffAccountsContent />
     </Suspense>
   );
@@ -219,11 +219,8 @@ async function StaffAccountsContent() {
 
   return (
     <PageContainer>
-      <PageHeader
-        eyebrow="Account Management"
-        eyebrowIcon={<UserRoundCog className="h-4 w-4" />}
+      <PageHeader variant="overview"
         title="Staff Accounts"
-        description="Manage login accounts assigned to staff roles."
         action={
           canInvite ? (
             <Button asChild>

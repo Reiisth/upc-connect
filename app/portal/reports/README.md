@@ -1,6 +1,7 @@
-# Reports dashboard
+# Dashboard
 
-`/portal/reports` is a server-rendered, Reports-permission-protected dashboard.
+`/portal/reports` displays Dashboard throughout the UI. The existing route and
+`reports.view` permission key remain compatible with saved links and roles.
 All request data stays under Suspense. The shared analytics server context
 authenticates `reports.view` and loads only existing branch-scope descriptors.
 `getAnalyticsOverview` supplies the core sections; charts make no requests.

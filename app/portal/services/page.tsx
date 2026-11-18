@@ -36,7 +36,7 @@ type ServiceRow = {
 
 export default function ServicesPage() {
   return (
-    <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="services" />}>
+    <Suspense fallback={<PageSkeleton showHeader={false} kind="table" fields={6} metrics={0} columns={5} label="services" />}>
       <ServicesContent />
     </Suspense>
   );
@@ -108,11 +108,8 @@ async function ServicesContent() {
 
   return (
     <PageContainer>
-      <PageHeader
-        eyebrow="Attendance Operations"
-        eyebrowIcon={<CalendarDays className="h-4 w-4" />}
+      <PageHeader variant="overview"
         title="Services"
-        description="View branch service schedules and manage upcoming services."
         action={
           canCreate ? (
             <Button asChild>

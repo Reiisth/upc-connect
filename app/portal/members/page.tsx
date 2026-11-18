@@ -3,13 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import Link from "next/link";
-import {
-  CircleCheckBig,
-  CircleUserRound,
-  Plus,
-  UserCheck,
-  UsersRound,
-} from "lucide-react";
+import { CircleCheckBig, CircleUserRound, Plus, UserCheck, UsersRound } from "lucide-react";
 
 import MembersTable from "./MembersTable";
 import { requireMembersPermission } from "./access";
@@ -27,7 +21,7 @@ import { PageHeader } from "@/components/ui/page-header";
 
 export default function PortalMembersPage(props: {searchParams?: Promise<MemberListSearch>}) {
   return (
-    <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="members" />}>
+    <Suspense fallback={<PageSkeleton showHeader={false} kind="table" fields={6} metrics={0} columns={5} label="members" />}>
       <MembersPageContent {...props} />
     </Suspense>
   );
@@ -59,7 +53,7 @@ async function CachedMembersPageContent({searchParams}: {searchParams?: MemberLi
 
   const admin = createAdminClient();
 
-  if (!isSystemAdmin && !branchIds.length) return <PageContainer><PageHeader title="Members" eyebrow="Member Management" /><EmptyState title="No branch assigned" description="Your account is not currently assigned to a church branch." /></PageContainer>;
+  if (!isSystemAdmin && !branchIds.length) return <PageContainer><PageHeader variant="overview" title="Members" /><EmptyState title="No branch assigned" description="Your account is not currently assigned to a church branch." /></PageContainer>;
   const filters = parseMemberListFilters({...searchParams,branch: (await getPortalBranchId()) ?? "all"});
   function scopedQuery() {
     const query = admin.from("members");
@@ -109,11 +103,8 @@ async function CachedMembersPageContent({searchParams}: {searchParams?: MemberLi
   const normalizedMembers = (rows.data ?? []).map(member => ({...member, church_branch: Array.isArray(member.church_branch) ? member.church_branch[0] ?? null : member.church_branch ?? null}));
   return (
     <PageContainer>
-      <PageHeader
-        eyebrow="Member Management"
-        eyebrowIcon={<UsersRound className="h-4 w-4" />}
+      <PageHeader variant="overview"
         title="Members"
-        description="Manage church member records, account connections, and profile completion."
         action={
           canCreate ? (
             <><Button variant="outline" asChild><Link href="/portal/members/migrations">Migration Records</Link></Button><Button asChild>

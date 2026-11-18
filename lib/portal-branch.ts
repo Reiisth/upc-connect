@@ -21,6 +21,6 @@ export function portalBranchSwitchUrl(href: string) {
 }
 
 export function portalPageName(pathname: string) {
-  const names: Record<string,string> = {reports:"Reports & Analytics",services:"Services",attendance:"Attendance",members:"Members",inactivity:"Inactivity Monitoring","follow-ups":"Follow-ups",contributions:"Contributions",baptisms:"Baptisms",accounts:"Accounts",administration:"Administration",profile:"My Profiles",account:"My Account"};
+  const names: Record<string,string> = {reports:"Dashboard",services:"Services",attendance:"Attendance",members:"Members",inactivity:"Inactivity Monitoring","follow-ups":"Follow-ups",contributions:"Contributions",baptisms:"Baptisms",accounts:"Accounts",administration:"Administration",profile:"My Profiles",account:"My Account"};
   return names[pathname.split("/")[2]] ?? "UPC Connect";
 }

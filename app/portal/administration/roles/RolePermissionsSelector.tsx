@@ -25,7 +25,7 @@ const groupLabels: Record<string, string> = {
   inactivity: "Inactivity",
   members: "Members",
   profile: "Profile",
-  reports: "Reports",
+  reports: "Dashboard",
   roles: "Roles",
   service_types: "Service Types",
   services: "Services",
@@ -40,6 +40,7 @@ function getGroupLabel(groupKey: string) {
 }
 
 function getPermissionLabel(permission: PermissionRecord) {
+  if (permission.key === "reports.view") return "View Dashboard";
   const databaseName = permission.name?.trim();
 
   if (databaseName && databaseName !== permission.key) {
@@ -134,7 +135,7 @@ export function RolePermissionsSelector({
 
                     {permission.description && (
                       <span className="mt-2 block text-xs leading-5 text-slate-500">
-                        {permission.description}
+                        {permission.key === "reports.view" ? "View the Dashboard, including membership, attendance, giving, and migration analytics." : permission.description}
                       </span>
                     )}
                   </span>

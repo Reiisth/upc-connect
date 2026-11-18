@@ -6,7 +6,7 @@ import { PageContainer } from "@/components/ui/page-container";
 import { PageHeader } from "@/components/ui/page-header";
 
 import MemberAccountsTable from "./MemberAccountsTable";
-import { UserPlus, UserRoundCog } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import AccountsTabs from "../AccountsTabs";
 import { Suspense } from "react";
 
@@ -18,7 +18,7 @@ import { requireAccountsPermission } from "../access";
 
 export default function MemberAccountsPage() {
   return (
-    <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={0} columns={5} label="accounts members" />}>
+    <Suspense fallback={<PageSkeleton showHeader={false} kind="table" fields={6} metrics={0} columns={5} label="accounts members" />}>
       <MemberAccountsContent />
     </Suspense>
   );
@@ -140,12 +140,9 @@ async function MemberAccountsContent() {
 
   return (
     <PageContainer>
-      <PageHeader
-        eyebrow="Account Management"
-        eyebrowIcon={<UserRoundCog className="h-4 w-4" />}
+      <PageHeader variant="overview"
         title="Member Accounts"
         action={canLinkAccount ? <Button asChild><Link href="/portal/members/invite?returnTo=/portal/accounts/members"><UserPlus aria-hidden="true" />New Member Account</Link></Button> : undefined}
-        description="View member accounts, review their linked profiles, and connect additional members to existing accounts."
       />
 
       <AccountsTabs permissions={access.permissions} />

@@ -3,7 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { ChartNoAxesCombined, CircleAlert } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/ui/page-container";
@@ -17,9 +17,11 @@ import { parseReportFilters, reportFilterUrl, type ReportSearchParams } from "./
 import ReportsDashboard from "./ReportsDashboard";
 import ReportsView from "./ReportsView";
 
+export const metadata = { title: "Dashboard | UPC Connect" };
+
 type PageProps = { searchParams: Promise<ReportSearchParams> };
 export default function ReportsPage(props: PageProps) {
-  return <Suspense fallback={<PageSkeleton kind="dashboard" fields={6} metrics={4} columns={5} label="reports" />}><ReportsContent {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton showHeader={false} kind="dashboard" fields={6} metrics={4} columns={5} label="dashboard" />}><ReportsContent {...props} /></Suspense>;
 }
 
 async function ReportsContent({ searchParams }: PageProps) {
@@ -61,17 +63,17 @@ async function CachedReportsContent({ searchParams }: { searchParams: ReportSear
     if (migrationResult.status === "fulfilled") migration = migrationResult.value;
   }
   return <PageContainer className="min-w-0">
-    <PageHeader eyebrow="Insights" eyebrowIcon={<ChartNoAxesCombined className="h-4 w-4" />} title="Reports & Analytics"
-      description="Membership, attendance, member care, and giving across your accessible branches." />
+    <PageHeader variant="overview" title="Dashboard"
+       />
     <ReportsView key={reportFilterUrl(parsed.values)} branches={branches} values={parsed.values}
       insightFilters={overview && parsed.request ? {
         ...(parsed.request.branchId ? { branchId: parsed.request.branchId } : {}),
         range: { preset: "custom", from: overview.range.from, to: overview.range.to }, grouping: overview.grouping,
       } : null}>
     {parsed.error ? <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-      <p className="font-semibold">Check your report filters</p><p className="mt-1">{parsed.error}</p>
+      <p className="font-semibold">Check your dashboard filters</p><p className="mt-1">{parsed.error}</p>
     </div> : loadFailed ? <div role="alert" className="rounded-2xl border border-red-200 bg-white p-6">
-      <div className="flex items-center gap-2 font-semibold text-red-700"><CircleAlert className="h-5 w-5" aria-hidden="true" />Reports could not be loaded</div>
+      <div className="flex items-center gap-2 font-semibold text-red-700"><CircleAlert className="h-5 w-5" aria-hidden="true" />Dashboard could not be loaded</div>
       <p className="mt-2 text-sm text-slate-600">Your data could not be retrieved. Try again or choose another filter.</p>
       <Button asChild variant="outline" className="mt-4"><a href={reportFilterUrl(parsed.values)}>Try again</a></Button>
     </div> : !branches.length ? <EmptyState title="No branch access" description="Your account has no accessible branches for reporting." /> :

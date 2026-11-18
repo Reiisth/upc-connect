@@ -15,7 +15,7 @@ import ThresholdSettings from "./ThresholdSettings";
 type PageProps = { searchParams: Promise<{ branch?: string | string[] }> };
 
 export default function InactivityPage(props: PageProps) {
-  return <Suspense fallback={<PageSkeleton kind="table" fields={6} metrics={2} columns={5} label="inactivity" />}><InactivityContent {...props} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton showHeader={false} kind="table" fields={6} metrics={2} columns={5} label="inactivity" />}><InactivityContent {...props} /></Suspense>;
 }
 
 async function InactivityContent({ searchParams }: PageProps) {
@@ -34,7 +34,7 @@ async function CachedInactivityContent() {
 
   return (
     <PageContainer>
-      <PageHeader eyebrow="Attendance" eyebrowIcon={<Activity className="h-4 w-4" />}
+      <PageHeader variant="overview"
         title="Attendance Follow-up Monitoring"
         description="Attendance monitoring begins when the Member is registered in UPC Connect. Weekly flags help staff identify members for human follow-up and never change administrative Member Status." />
 

@@ -58,7 +58,7 @@ test('Generate sends only applied filters, disables and announces pending work, 
   assert.deepEqual(Object.keys(calls[0]).sort(), ['branchId', 'grouping', 'range']);
   const pending = h.render(props);
   assert.equal(button(pending).props.disabled, true);
-  assert.ok(html(pending).includes('Analyzing report data...') && html(pending).includes('role="status"'));
+  assert.ok(html(pending).includes('Analyzing dashboard data...') && html(pending).includes('role="status"'));
   finish(resultFixture());
   await h.settle();
   const success = h.render(props);

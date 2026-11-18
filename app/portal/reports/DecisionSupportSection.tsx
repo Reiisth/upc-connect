@@ -133,13 +133,13 @@ export default function DecisionSupportSection({ filters, filtersChanged = false
         <div className="mt-4 flex flex-col items-start gap-3">
           <Button type="button" onClick={generate} disabled={pending || filtersChanged} aria-describedby="ai-privacy ai-cooldown">
             {pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <Sparkles aria-hidden="true" />}
-            {pending ? "Analyzing report data..." : result ? "Regenerate Insights" : "Generate AI Insights"}
+            {pending ? "Analyzing dashboard data..." : result ? "Regenerate Insights" : "Generate AI Insights"}
           </Button>
           <p id="ai-privacy" className="max-w-3xl text-xs leading-relaxed text-slate-500">Only aggregated report metrics are sent for AI analysis. Member names, contact information, attendance rows, contribution identities, and follow-up notes are not included.</p>
           <p id="ai-cooldown" className="text-xs text-slate-500">Requests for the same report filters have a 30-second cooldown.</p>
         </div>
         <p role="status" aria-live="polite" aria-atomic="true" className="mt-3 text-sm text-slate-600">
-          {filtersChanged ? "Report filters changed. Apply filters before generating new insights." : pending ? "Analyzing report data..." : result ? "AI insights generated. Review the advisory interpretation below." : "Insights are generated only when you choose Generate AI Insights."}
+          {filtersChanged ? "Dashboard filters changed. Apply filters before generating new insights." : pending ? "Analyzing dashboard data..." : result ? "AI insights generated. Review the advisory interpretation below." : "Insights are generated only when you choose Generate AI Insights."}
         </p>
         {error && <p role="alert" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{error}</p>}
       </div>
@@ -147,7 +147,7 @@ export default function DecisionSupportSection({ filters, filtersChanged = false
       {result?.documentId && <p role="status" className="text-sm text-emerald-700">Report document saved. <a className="underline" href={`/api/reports/documents/${result.documentId}`} target="_blank" rel="noopener noreferrer">Open / Print report</a></p>}
       {result && <DecisionSupportResults result={result} />}
       <SavedReportDocuments refreshKey={result?.documentId ?? ""} />
-      <p className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm leading-relaxed text-[#203264]">AI insights may be incomplete or incorrect. Verify important conclusions using the underlying Reports data.</p>
+      <p className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm leading-relaxed text-[#203264]">AI insights may be incomplete or incorrect. Verify important conclusions using the underlying Dashboard data.</p>
     </CardContent></Card>
   </section>;
 }

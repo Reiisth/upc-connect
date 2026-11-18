@@ -1,13 +1,6 @@
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Suspense } from "react";
-import {
-  Building2,
-  Network,
-  CalendarDays,
-  SlidersHorizontal,
-  Settings,
-  ShieldCheck,
-} from "lucide-react";
+import { Building2, Network, CalendarDays, SlidersHorizontal, ShieldCheck } from "lucide-react";
 
 import { hasPermission } from "@/lib/permissions";
 import { getAdministrationHubPermissions } from "./access";
@@ -18,7 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 
 export default function AdministrationPage() {
   return (
-    <Suspense fallback={<PageSkeleton kind="profiles" fields={6} metrics={0} columns={5} label="administration" />}>
+    <Suspense fallback={<PageSkeleton showHeader={false} kind="profiles" fields={6} metrics={0} columns={5} label="administration" />}>
       <AdministrationContent />
     </Suspense>
   );
@@ -41,11 +34,8 @@ async function AdministrationContent() {
 
   return (
     <PageContainer>
-      <PageHeader
-        eyebrow="System Management"
-        eyebrowIcon={<Settings className="h-4 w-4" />}
+      <PageHeader variant="overview"
         title="Administration"
-        description="Manage system-wide settings, church branches, and staff access."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

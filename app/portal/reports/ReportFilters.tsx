@@ -16,7 +16,7 @@ export default function ReportFilters({ branches, values, onFiltersChange, actio
   const [preset, setPreset] = useState(values.preset);
   return <Card><CardContent className="p-5">
     <form action={action} method="get" onChange={onFiltersChange} onSubmit={onFiltersChange}
-      className="grid min-w-0 items-end gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Report filters">
+      className="grid min-w-0 items-end gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Dashboard filters">
       <FormField label="Date Range" htmlFor="report-range">
         <Select id="report-range" name="range" value={preset} onChange={(event) => setPreset(event.target.value as typeof preset)}>
           {REPORT_PRESETS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
