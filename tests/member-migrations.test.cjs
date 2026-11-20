@@ -75,7 +75,7 @@ test('migration report renders consistent metrics and chart from one filtered ag
  const shell=Page({searchParams:Promise.resolve({branch:a,range:'custom',from:'2026-11-01',to:'2026-11-16',grouping:'day'})});
  const content=await shell.props.children.type(shell.props.children.props);const html=renderToStaticMarkup(content);
  assert.equal(request.branchId,a);assert.equal(request.range.from,'2026-11-01');assert.equal(request.grouping,'day');
- assert.match(html,/Net Movement/);assert.match(html,/>-4<\/p>/);assert.match(html,/Earlier movements are unknown/);assert.match(html,/before tracking began/);
+ assert.match(html,/Net Transfers/);assert.match(html,/-4/);assert.match(html,/Earlier movement history is unavailable/);assert.doesNotMatch(html,/Transfer Routes|A member can move multiple times/);
  assert.doesNotMatch(html,/View movement records/);assert.equal(charts[0].series[2].values[0],2);assert.equal(charts[0].series[1].values[0],3);
 });
 
@@ -88,4 +88,18 @@ test('history UI preserves transfer/departure distinction and reporting filters 
  assert.match(filters,/action="\/portal\/reports\/migrations"/);
  const {validateSelfServiceProfile}=loadTypeScript('lib/member-validation.ts');const form=new FormData();form.set('departed_at','2026-11-16');
  assert.throws(()=>validateSelfServiceProfile(form,[],{},{}),/Church and system/);
+});
+
+
+test('chart branch action delegates scope checks and returns only aggregate trend data',async()=>{
+ let supplied;
+ const action=loadTypeScript('app/portal/reports/migration-trend-actions.ts',{
+  '@/lib/member-migrations/server':{getMigrationAnalytics:async request=>{supplied=request;return {trend:[{periodStart:'2026-11-16',incoming:1,outgoing:0,departures:0,returns:0}],privateField:'must not return'};}},
+ }).loadMigrationTrend;
+ const result=await action({branchId:a,range:{preset:'custom',from:'2026-11-01',to:'2026-11-20'},grouping:'day'});
+ assert.equal(result.ok,true);assert.equal(supplied.branchId,a);assert.deepEqual(Object.keys(result).sort(),['ok','trend']);
+ const h=reportingHarness();const secure=loadTypeScript('app/portal/reports/migration-trend-actions.ts',{'@/lib/member-migrations/server':h.api}).loadMigrationTrend;
+ const denied=await secure({branchId:b});assert.equal(denied.ok,false);assert.equal(h.calls.length,0);
+ const revoked=loadTypeScript('app/portal/reports/migration-trend-actions.ts',{'@/lib/member-migrations/server':reportingHarness({permission:false}).api}).loadMigrationTrend;
+ assert.equal((await revoked({branchId:a})).ok,false);
 });

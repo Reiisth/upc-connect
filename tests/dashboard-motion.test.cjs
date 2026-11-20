@@ -148,3 +148,71 @@ test('service-type checkbox switches totals to averages per completed service an
   await act(async()=>checkbox.click());assert.equal(checkbox.getAttribute('aria-checked'),'false');assert.deepEqual(Array.from(chart.series[0].values),[80,51,0]);
  }finally{await ui.close();}
 });
+
+
+test('migration movement switches independently select line series and recover from all-off',async()=>{
+ let chart;
+ const MovementChart=loadTypeScript('app/portal/reports/MigrationMovementChart.tsx',{
+  './ReportChart':{__esModule:true,default:props=>{chart=props;return React.createElement('div',null,props.headerActions);}},
+ }).default;
+ const ui=await mount(React.createElement(MovementChart,{trend:[{periodStart:'2026-11-16',incoming:3,outgoing:2,departures:1,returns:4}]}));
+ try{
+  assert.equal(chart.kind,'line');assert.equal(chart.appearance,'sparkline');assert.equal(chart.showLegend,false);assert.equal(chart.series.length,4);
+  const boxes=[...ui.host.querySelectorAll('[role=checkbox]')];assert.equal(boxes.length,4);
+  await act(async()=>boxes[0].click());assert.equal(chart.series.length,3);assert.ok(!chart.series.some(series=>series.label==='Transfers In'));assert.deepEqual(Array.from(chart.series.find(series=>series.label==='Departures').values),[1]);
+  await act(async()=>{boxes[1].click();boxes[2].click();boxes[3].click();});assert.equal(chart.series.length,0);assert.equal(chart.labels.length,0);assert.match(chart.emptyMessage,/Select a movement/);
+  await act(async()=>boxes[3].click());assert.equal(chart.series.length,1);assert.equal(chart.series[0].label,'Returns');assert.deepEqual(Array.from(chart.series[0].values),[4]);
+ }finally{await ui.close();}
+});
+
+
+test('movement trend branch selector preserves filters and ignores stale responses',async()=>{
+ let chart;const requests=[];
+ const MovementChart=loadTypeScript('app/portal/reports/MigrationMovementChart.tsx',{
+  './ReportChart':{__esModule:true,default:props=>{chart=props;return React.createElement('div',null,props.headerActions);}},
+  '@/components/ui/select':{Select:props=>React.createElement('select',props)},
+  './migration-trend-actions':{loadMigrationTrend:request=>new Promise(resolve=>requests.push({request,resolve}))},
+ }).default;
+ const point=value=>[{periodStart:'2026-11-16',incoming:value,outgoing:2,departures:1,returns:0}];
+ const props={trend:point(10),branches:[{id:'a',name:'North'},{id:'b',name:'South'}],range:{from:'2026-11-01',to:'2026-11-20',timeZone:'Asia/Manila'},grouping:'month'};
+ const ui=await mount(React.createElement(MovementChart,props));
+ try{
+  const select=ui.host.querySelector('select');assert.ok(select);assert.equal(select.options.length,3);assert.equal(chart.series[0].values[0],10);
+  await act(async()=>{select.value='a';select.dispatchEvent(new win.Event('change',{bubbles:true}));});assert.equal(chart.series[0].values.length,0);assert.match(chart.emptyMessage,/Loading/);
+  assert.deepEqual(JSON.parse(JSON.stringify(requests[0].request)),{branchId:'a',range:{preset:'custom',from:'2026-11-01',to:'2026-11-20'},grouping:'month'});
+  await act(async()=>{select.value='b';select.dispatchEvent(new win.Event('change',{bubbles:true}));});
+  await act(async()=>requests[1].resolve({ok:true,trend:point(7)}));assert.equal(chart.series[0].values[0],7);
+  await act(async()=>requests[0].resolve({ok:true,trend:point(99)}));assert.equal(chart.series[0].values[0],7);
+  await act(async()=>{select.value='';select.dispatchEvent(new win.Event('change',{bubbles:true}));});assert.equal(chart.series[0].values[0],10);
+  await act(async()=>{select.value='a';select.dispatchEvent(new win.Event('change',{bubbles:true}));});
+  await act(async()=>requests[2].resolve({ok:false,error:'Unable to load movements'}));assert.match(chart.emptyMessage,/Unable to load/);assert.equal(chart.series[0].values.length,0);assert.match(ui.host.textContent,/Try again/);
+ }finally{await ui.close();}
+ const single=await mount(React.createElement(MovementChart,{...props,branches:[props.branches[0]]}));try{assert.equal(single.host.querySelector('select'),null);}finally{await single.close();}
+});
+
+
+test('scoped analytics charts switch authorized branch aggregates and independently toggle baptism series',async()=>{
+ let chart;
+ const ScopedChart=loadTypeScript('app/portal/reports/ScopedReportChart.tsx',{
+  './ReportChart':{__esModule:true,default:props=>{chart=props;return React.createElement('div',null,props.headerActions);}},
+  '@/components/ui/select':{Select:props=>React.createElement('select',props)},
+ }).default;
+ const props={title:'Baptisms',kind:'line',allowSeriesSelection:true,labels:['Nov 1'],series:[{label:'Water',values:[10]},{label:'Holy Ghost',values:[20]}],emptyMessage:'None',branches:[
+  {id:'a',name:'North',labels:['Nov 2'],series:[{label:'Water',values:[3]},{label:'Holy Ghost',values:[4]}]},
+  {id:'b',name:'South',labels:['Nov 3'],series:[{label:'Water',values:[7]},{label:'Holy Ghost',values:[16]}]},
+ ]};
+ const ui=await mount(React.createElement(ScopedChart,props));
+ try{
+  const select=ui.host.querySelector('select');assert.equal(chart.series[0].values[0],10);
+  await act(async()=>{select.value='a';select.dispatchEvent(new win.Event('change',{bubbles:true}));});assert.equal(chart.series[0].values[0],3);assert.equal(chart.labels[0],'Nov 2');
+  const boxes=[...ui.host.querySelectorAll('[role=checkbox]')];await act(async()=>boxes[0].click());assert.equal(chart.series.length,1);assert.equal(chart.series[0].label,'Holy Ghost');assert.equal(chart.series[0].values[0],4);
+  await act(async()=>boxes[1].click());assert.equal(chart.series.length,0);assert.equal(chart.labels.length,0);assert.match(chart.emptyMessage,/Select a series/);
+  await act(async()=>boxes[0].click());assert.equal(chart.series[0].label,'Water');
+  await act(async()=>{select.value='';select.dispatchEvent(new win.Event('change',{bubbles:true}));});assert.equal(chart.series[0].values[0],10);
+ }finally{await ui.close();}
+ const money=await mount(React.createElement(ScopedChart,{title:'Contributions',money:true,labels:['Nov 1'],series:[{label:'Contributions',values:['99999999999900.01']}],branches:[{id:'a',name:'North',labels:['Nov 2'],series:[{label:'Contributions',values:['99999999999900.02']}]},{id:'b',name:'Closed',labels:[],series:[{label:'Contributions',values:[]}],unavailable:true}],emptyMessage:'None'}));
+ try{
+  const select=money.host.querySelector('select');await act(async()=>{select.value='a';select.dispatchEvent(new win.Event('change',{bubbles:true}));});assert.equal(chart.series[0].values[0],'99999999999900.02');
+  await act(async()=>{select.value='b';select.dispatchEvent(new win.Event('change',{bubbles:true}));});assert.match(chart.emptyMessage,/unavailable for this branch/);
+ }finally{await money.close();}
+});

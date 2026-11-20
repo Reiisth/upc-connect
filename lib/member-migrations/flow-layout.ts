@@ -52,8 +52,8 @@ export type PositionedFlowNode = FlowNode & { x: number; y: number; height: numb
 export type PositionedFlow = MigrationFlow & { thickness: number; path: string; labelX: number; labelY: number };
 
 /** Two independent columns prevent reciprocal transfers from becoming circular paths. */
-export function layoutMigrationFlows(model: MigrationFlowModel) {
-  const width = 960, sourceX = 196, targetX = 746, barWidth = 18, gap = 24, minimum = 44;
+export function layoutMigrationFlows(model: MigrationFlowModel, compact = false) {
+  const width = compact ? 760 : 960, sourceX = 196, targetX = width - 214, barWidth = 18, gap = 24, minimum = 44;
   const total = model.flows.reduce((sum,flow) => sum+flow.count,0);
   const sources = model.nodes.filter(node => model.flows.some(flow => flow.source === node.id));
   const targets = model.nodes.filter(node => model.flows.some(flow => flow.destination === node.id));

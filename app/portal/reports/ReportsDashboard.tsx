@@ -8,6 +8,7 @@ import { formatContributionType, formatPaymentMethod } from "@/app/portal/contri
 import { formatServiceType } from "@/app/portal/services/types";
 import { METHOD_LABELS, OUTCOME_LABELS, type FollowUpMethod, type FollowUpOutcome } from "@/app/portal/follow-ups/types";
 import ReportChart from "./ReportChart";
+import ScopedReportChart from "./ScopedReportChart";
 import ServiceTypeAttendanceChart from "./ServiceTypeAttendanceChart";
 import ReportDashboardGroups from "./ReportDashboardGroups";
 import ReportComparisonTicker, { type ReportComparison } from "./ReportComparisonTicker";
@@ -17,9 +18,10 @@ import type { MigrationAnalytics } from "@/lib/member-migrations/server";
 import { FeedbackMessage } from "@/components/ui/feedback-message";
 import { formatReportDate, formatReportMoney, formatReportNumber, formatReportPercent } from "./presentation";
 
+const HOLY_GHOST_COLOR = "#D97706";
 const count = (value: number | null) => formatReportNumber(value);
 function Stats({ items, comparisons }: { comparisons: Record<string, ReportComparison>; items: { label: string; value: string; detail?: { value: string; label: string }; animate?: boolean }[] }) {
-  return <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{items.map((item) => <div key={item.label} className="grid min-w-0 grid-cols-1 gap-y-1 rounded-xl border border-slate-200 bg-white px-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-x-3">
+  return <dl className={`grid gap-3 sm:grid-cols-2 ${items.length === 3 || items.length === 6 ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>{items.map((item) => <div key={item.label} className="grid min-w-0 grid-cols-1 gap-y-1 rounded-xl border border-slate-200 bg-white px-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-x-3">
     <dt className="col-span-full text-sm font-medium text-slate-500 sm:text-base">{item.label}</dt>
     {item.animate === false ? <dd title={item.value} className="min-w-0 line-clamp-2 break-words text-xl font-semibold text-[#203264]">{item.value}</dd> : <AnimatedNumber as="dd" className="break-words text-xl font-semibold tabular-nums text-[#203264]" value={item.value} />}
     {item.detail && <dd aria-label={`${item.detail.value} ${item.detail.label}`} className="min-w-0 tabular-nums lg:max-w-28 lg:text-right"><AnimatedNumber className="block text-base font-semibold text-[#203264]" value={item.detail.value} /><span className="mt-0.5 block text-xs font-normal leading-tight text-slate-500">{item.detail.label}</span></dd>}
@@ -67,7 +69,6 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
   const currentDate = formatReportDate(data.asOfDate);
   const multiple = branches.length > 1;
   const periodLabels = (points: { periodStart: string }[]) => points.map((point) => formatReportDate(point.periodStart));
-  const periodNote = "Period start dates; activity is limited to the selected range. Periods without activity are omitted.";
   return <div className="min-w-0 space-y-7 tabular-nums">
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.9fr)]" aria-label="Dashboard overview">
       <MembershipOverviewCard overview={data} previous={previous} departures={migration?.totals.departures ?? null} />
@@ -136,12 +137,12 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
     </Section>
 ) },
 { id: "migrations", label: "Migration Analytics", content: (
-<Section id="migrations" title="Migration Analytics" description="Branch transfers, departures and returns in the selected period.">
-  {migration ? <MigrationAnalyticsPanel data={migration} range={data.range} headingLevel={3} /> : <FeedbackMessage>Migration analytics could not be loaded. Try applying the filters again.</FeedbackMessage>}
+<Section id="migrations" title="Migration Analytics">
+  {migration ? <MigrationAnalyticsPanel data={migration} range={data.range} grouping={data.grouping} headingLevel={3} /> : <FeedbackMessage>Migration analytics could not be loaded. Try applying the filters again.</FeedbackMessage>}
 </Section>
 ) },
 { id: "inactivity", label: "Inactivity", content: (
-<Section id="inactivity" title="Attendance Follow-up Flags" current={currentDate} description="Based on consecutive absent eligible weeks and each active branch’s threshold. These flags identify cases for human follow-up and never set administrative Member Status. The selected date range does not change current flags.">
+<Section id="inactivity" title="Attendance Follow-up Flags" current={currentDate}>
       <Stats comparisons={comparisons} items={[
         { label: "Monitoring", value: count(inactivity.monitoringMembers) }, { label: "Needs Follow-up", value: count(inactivity.needsFollowUpMembers) },
         { label: "Unknown", value: count(inactivity.unknownMembers) },
@@ -149,60 +150,63 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
         { label: "Approaching Threshold", value: count(inactivity.approachingFollowUpThreshold) },
         { label: "Average Absent-week Streak", value: count(inactivity.averageConsecutiveAbsentWeeks) },
       ]} />
-      <ReportChart title="Current Attendance Flag" labels={["Monitoring", "Needs Follow-up", "Unknown"]} horizontal
+      <ScopedReportChart title="Current Attendance Flag"
+        branches={branches.map(row => ({id:row.branch.id,name:row.branch.name,labels:["Monitoring","Needs Follow-up","Unknown"],unavailable:!row.inactivity,series:[{label:"Members",values:row.inactivity ? [row.inactivity.monitoringMembers,row.inactivity.needsFollowUpMembers,row.inactivity.unknownMembers] : [null,null,null]}]}))} appearance="sparkline" compactHeader labels={["Monitoring", "Needs Follow-up", "Unknown"]} horizontal
         series={[{ label: "Members", values: [inactivity.monitoringMembers, inactivity.needsFollowUpMembers, inactivity.unknownMembers] }]}
         emptyMessage="There are no current monitoring members in the selected active branches." />
-      {branches.some((row) => !row.branch.isActive) && <p className="text-xs text-slate-500">Inactive branches retain historical reports but are excluded from current inactivity monitoring.</p>}
     </Section>
 ) },
 { id: "follow-ups", label: "Follow-ups", content: (
-<Section id="follow-ups" title="Follow-ups" description="Activity charts cover the selected period. Current needs and overdue dates use only each member’s latest follow-up within the selected branch scope; a later resolution supersedes an earlier need.">
+<Section id="follow-ups" title="Follow-ups">
       <Stats comparisons={comparisons} items={[
         { label: "Follow-ups in Period", value: count(followUps.total) }, { label: "Unique Members Followed Up", value: count(followUps.uniqueMembers) },
         { label: "Needs Follow-up · Current", value: count(followUps.latestNeedsFollowUpMembers) },
         { label: "Overdue Next Follow-ups · Current", value: count(followUps.overdueLatestNextFollowUps) },
       ]} />
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
-        <ReportChart title="Follow-ups by Outcome" description="Outcomes recorded during the selected period; these are historical actions." labels={followUps.byOutcome.map((point) => OUTCOME_LABELS[point.outcome as FollowUpOutcome] ?? point.outcome)} horizontal
+        <ReportChart title="Follow-ups by Outcome" appearance="sparkline" compactHeader labels={followUps.byOutcome.map((point) => OUTCOME_LABELS[point.outcome as FollowUpOutcome] ?? point.outcome)} horizontal
           series={[{ label: "Follow-ups", values: followUps.byOutcome.map((point) => point.count) }]} emptyMessage="No follow-up outcomes were recorded in this period." />
-        <ReportChart title="Follow-ups by Method" labels={followUps.byMethod.map((point) => METHOD_LABELS[point.method as FollowUpMethod] ?? point.method)} horizontal
+        <ReportChart title="Follow-ups by Method" appearance="sparkline" compactHeader labels={followUps.byMethod.map((point) => METHOD_LABELS[point.method as FollowUpMethod] ?? point.method)} horizontal
           series={[{ label: "Follow-ups", values: followUps.byMethod.map((point) => point.count) }]} emptyMessage="No follow-up methods were recorded in this period." />
-        <ReportChart title="Follow-up Trend" description={periodNote} labels={periodLabels(followUps.trend)} kind="line"
+        <ScopedReportChart title="Follow-up Trend"
+          branches={branches.map(row => ({id:row.branch.id,name:row.branch.name,labels:periodLabels(row.followUps.trend),series:[{label:"Follow-ups",values:row.followUps.trend.map(point => point.value)}]}))} appearance="sparkline" compactHeader labels={periodLabels(followUps.trend)} kind="line" plotHeight={160}
           series={[{ label: "Follow-ups", values: followUps.trend.map((point) => point.value) }]} emptyMessage="No follow-ups were recorded in this period." />
       </div>
     </Section>
 ) },
 { id: "contributions", label: "Contributions", content: (
-<Section id="contributions" title="Contributions" description="Contributions dated within the selected period, including Member, Visitor, and Anonymous contributions. All displayed peso amounts preserve exact decimal values.">
+<Section id="contributions" title="Contributions">
       <Stats comparisons={comparisons} items={[
         { label: "Total Contributions", value: formatReportMoney(contributions.totalAmount) }, { label: "Contribution Count", value: count(contributions.count) },
         { label: "Average Contribution", value: formatReportMoney(contributions.averageAmount) },
       ]} />
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
-        <ReportChart title="Contribution Trend" description={periodNote} labels={periodLabels(contributions.trend)} money kind="line"
+        <ScopedReportChart title="Contribution Trend"
+          branches={branches.map(row => ({id:row.branch.id,name:row.branch.name,labels:periodLabels(row.contributions.trend),series:[{label:"Contributions",values:row.contributions.trend.map(point => point.totalAmount)}]}))} appearance="sparkline" compactHeader labels={periodLabels(contributions.trend)} money kind="line" plotHeight={160}
           series={[{ label: "Contributions", values: contributions.trend.map((point) => point.totalAmount) }]} emptyMessage="No contributions were recorded in this period." />
-        <ReportChart title="Contributions by Type" labels={contributions.byContributionType.map((point) => formatContributionType(point.contributionType))} money horizontal
+        <ReportChart title="Contributions by Type" appearance="sparkline" compactHeader labels={contributions.byContributionType.map((point) => formatContributionType(point.contributionType))} money horizontal
           series={[{ label: "Contributions", values: contributions.byContributionType.map((point) => point.totalAmount) }]} emptyMessage="There are no contribution types to compare in this period." />
-        <ReportChart title="Contributions by Payment Method" labels={contributions.byPaymentMethod.map((point) => formatPaymentMethod(point.paymentMethod))} money horizontal
+        <ReportChart title="Contributions by Payment Method" appearance="sparkline" compactHeader labels={contributions.byPaymentMethod.map((point) => formatPaymentMethod(point.paymentMethod))} money horizontal
           series={[{ label: "Contributions", values: contributions.byPaymentMethod.map((point) => point.totalAmount) }]} emptyMessage="There are no payment methods to compare in this period." />
-        {multiple && <ReportChart title="Contributions by Branch" labels={branches.map((row) => row.branch.name)} money horizontal
+        {multiple && <ReportChart title="Contributions by Branch" appearance="sparkline" compactHeader labels={branches.map((row) => row.branch.name)} money horizontal
           series={[{ label: "Contributions", values: branches.map((row) => row.contributions.totalAmount) }]} emptyMessage="No contributions were recorded in these branches during this period." />}
       </div>
     </Section>
 ) },
 { id: "baptisms", label: "Baptisms", content: (
-<Section id="baptisms" title="Baptisms" description="Date-range totals use recorded baptism dates. Undated historical records are shown separately and are excluded from these totals and trends.">
+<Section id="baptisms" title="Baptisms">
       <Stats comparisons={comparisons} items={[
         { label: "Baptisms in Period", value: count(baptisms.total) }, { label: "Water Baptisms", value: count(baptisms.water) },
         { label: "Holy Ghost Baptisms", value: count(baptisms.holyGhost) }, { label: "Undated Baptism Records", value: count(baptisms.undatedRecords) },
       ]} />
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
-        <ReportChart title="Baptism Trend" description={periodNote} labels={periodLabels(baptisms.trend)} kind="line"
-          series={[{ label: "Water", values: baptisms.trend.map((point) => point.water) }, { label: "Holy Ghost", values: baptisms.trend.map((point) => point.holyGhost) }]} emptyMessage="No dated baptisms were recorded in this period." />
-        <ReportChart title="Water vs Holy Ghost" labels={["Water", "Holy Ghost"]} horizontal
+        <ScopedReportChart title="Baptism Trend" allowSeriesSelection
+          branches={branches.map(row => ({id:row.branch.id,name:row.branch.name,labels:periodLabels(row.baptisms.trend),series:[{label:"Water",values:row.baptisms.trend.map(point => point.water)},{label:"Holy Ghost",color:HOLY_GHOST_COLOR,values:row.baptisms.trend.map(point => point.holyGhost)}]}))} appearance="sparkline" compactHeader labels={periodLabels(baptisms.trend)} kind="line" plotHeight={160}
+          series={[{ label: "Water", values: baptisms.trend.map((point) => point.water) }, { label: "Holy Ghost", color: HOLY_GHOST_COLOR, values: baptisms.trend.map((point) => point.holyGhost) }]} emptyMessage="No dated baptisms were recorded in this period." />
+        <ReportChart title="Water vs Holy Ghost" categoryColors={["#5D94E8", HOLY_GHOST_COLOR]} appearance="sparkline" compactHeader labels={["Water", "Holy Ghost"]} horizontal
           series={[{ label: "Baptisms", values: [baptisms.water, baptisms.holyGhost] }]} emptyMessage="No dated baptisms are available to compare in this period." />
-        {multiple && <ReportChart title="Baptisms by Branch" labels={branches.map((row) => row.branch.name)} horizontal
-          series={[{ label: "Water", values: branches.map((row) => row.baptisms.water) }, { label: "Holy Ghost", values: branches.map((row) => row.baptisms.holyGhost) }]} emptyMessage="No dated baptisms were recorded in these branches during this period." />}
+        {multiple && <ScopedReportChart title="Baptisms by Branch" allowSeriesSelection appearance="sparkline" compactHeader labels={branches.map((row) => row.branch.name)} horizontal
+          series={[{ label: "Water", values: branches.map((row) => row.baptisms.water) }, { label: "Holy Ghost", color: HOLY_GHOST_COLOR, values: branches.map((row) => row.baptisms.holyGhost) }]} emptyMessage="No dated baptisms were recorded in these branches during this period." />}
       </div>
     </Section>
 ) },

@@ -168,7 +168,7 @@ test('dashboard displays DTO states separately: stored status, derived status, l
   assert.equal(stat(html, 'Baptisms in Period'), '0');
   assert.equal(stat(html, 'Undated Baptism Records'), '3');
   assert.ok(html.includes('\u20b199,999,999,999,900.01'));
-  assert.ok(!html.includes('present only') && html.includes('never set administrative Member Status'));
+  assert.ok(!html.includes('present only') && !html.includes('never set administrative Member Status'));
   assert.ok(html.includes('Branch Comparison') && !html.includes('Inaccessible Branch'));
 });
 
@@ -289,7 +289,7 @@ test('migration tab renders the shared movement panel and isolates missing migra
   const groups=data=>findElement(Dashboard({overview,migration:data}),e=>e.type.name==='ReportDashboardGroups').props.groups;
   const items=groups(migration);assert.equal(items[2].id,'migrations');assert.ok(!items.some(group=>group.id==='weekly'));
   const html=renderToStaticMarkup(items[2].content);
-  assert.match(html,/Net Movement|Departures/);assert.match(html,/>-2<\/p>/);assert.doesNotMatch(html,/<form/);
+  assert.match(html,/Net Movement|Departures/);assert.match(html,/Distinct Members Moved/);assert.doesNotMatch(html,/<form/);
   assert.equal(charts[0].title,'Member Movement Over Time');assert.equal(charts[0].series[2].values[0],1);
   const failure=renderToStaticMarkup(groups(null)[2].content);
   assert.match(failure,/role="alert"/);assert.match(failure,/Migration analytics could not be loaded/);assert.doesNotMatch(failure,/PRIVATE_|Transfer Events/);

@@ -19,6 +19,7 @@ const COLORS = ["#5D94E8", "#16836B", "#B7791F", "#8B5CB5"];
 export type ReportChartSeries = { label: string; values: (number | string | null)[]; color?: string };
 export type ReportChartProps = {
   headerActions?: ReactNode;
+  showLegend?: boolean;
   plotHeight?: number;
   compactHeader?: boolean;
   className?: string;
@@ -27,7 +28,7 @@ export type ReportChartProps = {
   moneyScale?: "relative"|"absolute"; appearance?: "attendance" | "sparkline"; categoryColors?: string[]; compact?: boolean; kind?: "line" | "bar" | "doughnut"; stacked?: boolean; centerValue?: number | string; cutout?: `${number}%`; centerLabel?: string; valueUnit?: string; money?: boolean; horizontal?: boolean; emptyMessage: string;
 };
 
-export default function ReportChart({ title, description, labels, series, headerActions, plotHeight, compactHeader = false, className = "", showZeroData = false, compact = false, kind = "bar", stacked = false, cutout, centerValue, centerLabel = "Total records", valueUnit = "records", categoryColors, appearance, money = false, moneyScale="absolute", horizontal = false, emptyMessage }: ReportChartProps) {
+export default function ReportChart({ title, description, labels, series, headerActions, showLegend = true, plotHeight, compactHeader = false, className = "", showZeroData = false, compact = false, kind = "bar", stacked = false, cutout, centerValue, centerLabel = "Total records", valueUnit = "records", categoryColors, appearance, money = false, moneyScale="absolute", horizontal = false, emptyMessage }: ReportChartProps) {
   const id = useId();
   const modern = appearance === "sparkline";
   const chartWrapper = useRef<HTMLDivElement>(null);
@@ -88,8 +89,8 @@ export default function ReportChart({ title, description, labels, series, header
     labels: labels.map((label) => label.length > 26 ? `${label.slice(0, 25)}…` : label),
     datasets: series.map((item, index) => ({ label: item.label, data: coordinates[index],
       valueLabels: item.values.map(value => value === null ? null : formatValue(value)),
-      backgroundColor: modern && kind === "line" ? fadingFill(colors[index]) : refined && kind === "line" ? "rgba(93,148,232,0.10)" : colors[index], borderColor: colors[index],
-      hoverBackgroundColor: colors[index], hoverBorderColor: colors[index], pointHoverBackgroundColor: colors[index], pointHoverBorderColor: "#FFFFFF", pointHoverBorderWidth: 2,
+      backgroundColor: kind === "bar" && series.length === 1 && categoryColors ? categoryColors : modern && kind === "line" ? fadingFill(colors[index]) : refined && kind === "line" ? "rgba(93,148,232,0.10)" : colors[index], borderColor: colors[index],
+      hoverBackgroundColor: kind === "bar" && series.length === 1 && categoryColors ? categoryColors : colors[index], hoverBorderColor: colors[index], pointHoverBackgroundColor: colors[index], pointHoverBorderColor: "#FFFFFF", pointHoverBorderWidth: 2,
       borderRadius: refined ? 6 : 4, borderSkipped: refined ? false : undefined, borderWidth: kind === "line" ? 2 : 0, pointRadius: modern ? (coordinates[index].filter(value => value !== null).length === 1 ? 3 : 0) : refined ? 2 : 3, pointHoverRadius: 5, pointBackgroundColor:colors[index], tension: modern ? 0 : refined ? 0.3 : 0.15, cubicInterpolationMode: refined ? "monotone" as const : "default" as const, fill:(modern || refined) && kind === "line", spanGaps: false,
     })),
   };
@@ -142,7 +143,7 @@ export default function ReportChart({ title, description, labels, series, header
     indexAxis: horizontal ? "y" as const : "x" as const,
     interaction: { mode: kind === "bar" ? "nearest" as const : "index" as const, axis: kind === "bar" ? "xy" as const : horizontal ? "y" as const : "x" as const, intersect: kind === "bar" },
     plugins: {
-      legend: { display: series.length > 1 || Boolean(series[0]?.color), position: "bottom" as const, labels: { font: chartFont, color: "#475569", boxWidth: 10, boxHeight: 10, padding: 16, usePointStyle:refined, pointStyle:"circle" as const } },
+      legend: { display: showLegend && (series.length > 1 || Boolean(series[0]?.color)), position: "bottom" as const, labels: { font: chartFont, color: "#475569", boxWidth: 10, boxHeight: 10, padding: 16, usePointStyle:refined, pointStyle:"circle" as const } },
       tooltip: { enabled: !modern, external: modern ? ({ tooltip }) => {
         if (!tooltip.opacity) { scheduleClose(); return; }
         cancelClose(); setActiveIndex(tooltip.dataPoints?.[0]?.dataIndex ?? null); setActiveDataset(tooltip.dataPoints?.[0]?.datasetIndex ?? 0);
@@ -156,7 +157,7 @@ export default function ReportChart({ title, description, labels, series, header
 
   const doughnutData = {labels, datasets:[{label:series[0]?.label ?? "Records",data:coordinates[0] ?? [],backgroundColor:categoryColors ?? COLORS,hoverBackgroundColor:categoryColors ?? COLORS,borderColor:refined || modern?"#FFFFFF":"#64748B",hoverBorderColor:refined || modern?"#FFFFFF":"#64748B",borderWidth:refined || modern?3:1,borderRadius:modern?5:0,spacing:modern?2:0,hoverOffset:refined || modern?3:0}]};
   const doughnutOptions: ChartOptions<"doughnut"> = {responsive:true,maintainAspectRatio:false,animation:reduceMotion?false:{duration:800,easing:"easeOutQuart",animateRotate:true,animateScale:true},cutout:cutout ?? (refined?"80%":modern?"78%":"72%"),
-    plugins:{legend:{position:"bottom",labels:{font:chartFont,color:"#475569",boxWidth:10,padding:14,usePointStyle:refined || modern,pointStyle:"circle"}},tooltip:{enabled:!modern,external:modern?({tooltip})=>{
+    plugins:{legend:{display:showLegend,position:"bottom",labels:{font:chartFont,color:"#475569",boxWidth:10,padding:14,usePointStyle:refined || modern,pointStyle:"circle"}},tooltip:{enabled:!modern,external:modern?({tooltip})=>{
       if(!tooltip.opacity){scheduleClose();return;}cancelClose();setActiveIndex(tooltip.dataPoints?.[0]?.dataIndex??null);
     }:undefined,bodyFont:chartFont,titleFont:chartFont,backgroundColor:"#FFFFFF",titleColor:"#203264",bodyColor:"#64748B",borderColor:"#E2E8F0",borderWidth:1,cornerRadius:12,padding:12,callbacks:{label:item=>`${item.label}: ${formatReportNumber(Number(item.raw),0)} ${valueUnit}`}}}};
   const scaleControls = (<div className={`${compactHeader ? "" : "mb-2"} flex flex-wrap items-center justify-between gap-x-3 gap-y-1`}>
@@ -199,7 +200,7 @@ export default function ReportChart({ title, description, labels, series, header
               const difference = typeof value === "number" && typeof prior === "number" ? value - prior : null;
               const total = kind === "doughnut" ? coordinates[0].reduce<number>((sum,value) => sum+(value??0),0) : 0;
               return <div key={item.label} className="mt-2 space-y-1 border-t border-slate-100 pt-2">
-                <p className="flex justify-between gap-3"><span>{kind === "doughnut" ? valueUnit : item.label}</span><strong className="tabular-nums" style={{color:kind === "doughnut" ? (categoryColors ?? COLORS)[tooltipIndex] : colors[index]}}>{formatValue(value)}</strong></p>
+                <p className="flex justify-between gap-3"><span>{kind === "doughnut" ? valueUnit : item.label}</span><strong className="tabular-nums" style={{color:kind === "doughnut" || (kind === "bar" && series.length === 1 && categoryColors) ? (categoryColors ?? COLORS)[tooltipIndex] : colors[index]}}>{formatValue(value)}</strong></p>
                 {kind === "doughnut" && total > 0 && typeof value === "number" && <p className="text-slate-500">{formatReportNumber(value/total*100,1)}% of {valueUnit}</p>}
                 {prior !== null && prior !== undefined && <>
                   <p className="flex justify-between gap-3 text-slate-500"><span>Previous point · {labels[tooltipIndex-1]}</span><strong className="tabular-nums">{formatValue(prior)}</strong></p>

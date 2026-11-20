@@ -7,20 +7,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { MigrationAnalytics } from "@/lib/member-migrations/server";
+import type { AnalyticsDateRange } from "@/lib/analytics/types";
+import { formatReportDate } from "./presentation";
 import { layoutMigrationFlows, migrationFlowModel, migrationFlowSummary, wrapFlowLabel, type MigrationFlow as Flow, type PositionedFlowNode } from "@/lib/member-migrations/flow-layout";
 
 const number = (value: number) => value.toLocaleString("en-PH");
 const kindLabel = (flow: Flow) => flow.kind === "departure" ? "departure" : flow.kind === "return" ? "return" : "transfer";
 const quantity = (flow: Flow) => `${number(flow.count)} ${kindLabel(flow)}${flow.count === 1 ? "" : "s"}`;
 
-export default function MigrationFlow({ data }: { data: MigrationAnalytics }) {
+export default function MigrationFlow({ data, compact = false, range }: { data: MigrationAnalytics; compact?: boolean; range?: AnalyticsDateRange }) {
   const prefix = useId();
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [includeExternal, setIncludeExternal] = useState(false);
   const [inspected, setInspected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const model = useMemo(() => migrationFlowModel(data,includeExternal),[data,includeExternal]);
-  const layout = useMemo(() => layoutMigrationFlows(model),[model]);
+  const layout = useMemo(() => layoutMigrationFlows(model,compact),[model,compact]);
   const nodes = new Map(model.nodes.map(node => [node.id,node]));
   const branches = model.nodes.filter(node => node.category === "branch");
   // A new applied scope may remove the previously selected branch.
@@ -53,13 +55,13 @@ export default function MigrationFlow({ data }: { data: MigrationAnalytics }) {
         if (event.key === "Enter" || event.key === " ") { event.preventDefault();select(); }
       } : undefined} opacity={related ? 1 : 0.4}>
       <title>{node.label}</title>
-      <rect x={side === "from" ? 0 : 738} y={node.y} width={222} height={node.height} rx={10}
+      <rect x={side === "from" ? 0 : layout.width-222} y={node.y} width={222} height={node.height} rx={10}
         fill={chosen ? "#EEF3FB" : "transparent"} stroke="transparent" strokeWidth={2} className="group-focus-visible:stroke-[#365FA6]" />
       <rect x={node.x} y={node.y} width={18} height={node.height} rx={5} fill={node.color} />
-      <text x={side === "from" ? 180 : 780} y={center-(lines.length-1)*8-4} textAnchor={side === "from" ? "end" : "start"} fontSize={14} fontWeight={600} fill="#203264">
-        {lines.map((line,index) => <tspan key={index} x={side === "from" ? 180 : 780} dy={index ? 16 : 0}>{line}</tspan>)}
+      <text x={side === "from" ? 180 : layout.width-180} y={center-(lines.length-1)*8-4} textAnchor={side === "from" ? "end" : "start"} fontSize={compact ? 16 : 14} fontWeight={600} fill="#203264">
+        {lines.map((line,index) => <tspan key={index} x={side === "from" ? 180 : layout.width-180} dy={index ? 16 : 0}>{line}</tspan>)}
       </text>
-      <text x={side === "from" ? 180 : 780} y={center+(lines.length-1)*8+16} textAnchor={side === "from" ? "end" : "start"} fontSize={12} fill="#64748B" className="tabular-nums">{number(node.total)} {includeExternal ? "movements" : "transfers"}</text>
+      <text x={side === "from" ? 180 : layout.width-180} y={center+(lines.length-1)*8+16} textAnchor={side === "from" ? "end" : "start"} fontSize={compact ? 14 : 12} fill="#64748B" className="tabular-nums">{number(node.total)} {includeExternal ? "movements" : "transfers"}</text>
     </g>;
   }
   function routeCards() {
@@ -77,10 +79,9 @@ export default function MigrationFlow({ data }: { data: MigrationAnalytics }) {
     </ul>;
   }
 
-  return <Card className="min-w-0"><CardContent className="space-y-4 p-4 sm:p-5">
+  return <Card className="h-full min-w-0"><CardContent className="space-y-4 p-4 sm:p-5">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><h3 id={`${prefix}-title`} className="flex items-center gap-2 text-lg font-semibold text-[#203264]"><ArrowRightLeft className="h-5 w-5 text-[#365FA6]" aria-hidden="true" />Member Flow</h3>
-        <p className="mt-1 text-sm text-slate-600">Follow the routes between branches. Wider bands mean more {includeExternal ? "movements" : "transfers"}.</p>
       </div>
       <span className="rounded-full bg-[#EEF3FB] px-3 py-1.5 text-sm font-semibold tabular-nums text-[#203264]">{number(total)} {includeExternal ? "movements" : "transfers"}</span>
     </div>
@@ -95,15 +96,17 @@ export default function MigrationFlow({ data }: { data: MigrationAnalytics }) {
       <p className="mb-2 text-xs font-medium text-slate-600">{selection === "all" ? "All branches" : nodes.get(selection)!.label} · {includeExternal ? "All shown movements" : "Transfers only"}</p>
       <dl className="grid grid-cols-3 gap-3">{[[includeExternal ? "Incoming" : "Transfers in",summary.incoming],[includeExternal ? "Outgoing" : "Transfers out",summary.outgoing],[includeExternal ? "Net Movement" : "Net Transfers",summary.net]].map(([label,value]) => <div key={label} className="min-w-0"><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1 break-words text-lg font-semibold tabular-nums text-[#203264]">{Number(value) > 0 && String(label).startsWith("Net ") ? "+" : ""}{number(Number(value))}</dd></div>)}</dl>
     </div>
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600">
-      <span>Transfers use the source branch color</span>
-      {includeExternal && <><span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#B7791F]" aria-hidden="true" />Departures</span><span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#16836B]" aria-hidden="true" />Returns</span></>}
-    </div>
+    {includeExternal && <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600">
+      <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#B7791F]" aria-hidden="true" />Departures</span><span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#16836B]" aria-hidden="true" />Returns</span>
+    </div>}
     <p role="status" aria-live="polite" className="min-h-6 text-sm font-medium text-[#203264]">{activeRoute ? routeLabel(activeRoute) : selection === "all" ? "Select a branch to highlight its routes." : `Showing routes involving ${nodes.get(selection)!.label}.`}</p>
     {!visible.length ? <EmptyState title={includeExternal ? "No movements in this selection" : "No transfers in this selection"} description={includeExternal ? "Try another branch or date range." : "Try another branch or date range, or include departures and returns."} /> : <>
       <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white xl:block">
-        <div className="flex justify-between border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"><span>From branch</span><span>To branch</span></div>
-        <div className="max-h-[38rem] overflow-y-auto p-3">
+        <div className="flex justify-between gap-3 border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <span>From branch{range && <time dateTime={range.from} aria-label={`Period start: ${formatReportDate(range.from)}`} className="mt-1 block font-normal normal-case tracking-normal">{formatReportDate(range.from)}</time>}</span>
+          <span className="text-right">To branch{range && <time dateTime={range.to} aria-label={`Period end: ${formatReportDate(range.to)}`} className="mt-1 block font-normal normal-case tracking-normal">{formatReportDate(range.to)}</time>}</span>
+        </div>
+        <div className={`${compact ? "max-h-80" : "max-h-[38rem]"} overflow-y-auto p-3`}>
           <svg viewBox={`0 0 ${layout.width} ${layout.height}`} className="dashboard-chart-enter block h-auto w-full" role="group" aria-labelledby={`${prefix}-title`} aria-describedby={`${prefix}-description`}>
             <desc id={`${prefix}-description`}>Recorded movements flow from left to right. Each band represents events, not distinct members. Select a branch or route using the keyboard or pointer.</desc>
             {layout.links.map(flow => <g key={flow.id}>
@@ -123,7 +126,10 @@ export default function MigrationFlow({ data }: { data: MigrationAnalytics }) {
           </svg>
         </div>
       </div>
-      <div className="xl:hidden" aria-label="Directional migration routes">{routeCards()}</div>
+      <div className="xl:hidden" aria-label="Directional migration routes">
+        {range && <div className="mb-3 flex justify-between gap-3 text-xs text-slate-500"><span>From <time dateTime={range.from}>{formatReportDate(range.from)}</time></span><span>Through <time dateTime={range.to}>{formatReportDate(range.to)}</time></span></div>}
+        {routeCards()}
+      </div>
       <details className="hidden xl:block"><summary className="inline-flex min-h-11 cursor-pointer items-center rounded-lg px-1 text-sm font-medium text-[#365FA6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#365FA6]">View routes and exact counts</summary><div className="mt-2">{routeCards()}</div></details>
     </>}
   </CardContent></Card>;

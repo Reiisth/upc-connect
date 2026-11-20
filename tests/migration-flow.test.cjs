@@ -72,3 +72,12 @@ test('departures-only and genuinely empty selections keep controls available wit
   findElement(tree,e=>String(e.props.id??'').endsWith('-external')).props.onCheckedChange(true);
   tree=h.render({data});assert.ok(findElement(tree,e=>e.type==='path'&&e.props['aria-label']?.includes('2 departures')));
 });
+
+
+test('compact Sankey shortens the flow span while preserving route counts and proportions',()=>{
+ const model=migrationFlowModel(fixture(),true),wide=layoutMigrationFlows(model),compact=layoutMigrationFlows(model,true);
+ assert.ok(compact.width<wide.width);assert.equal(compact.links.length,wide.links.length);
+ assert.deepEqual(Array.from(compact.links,link=>link.count),Array.from(wide.links,link=>link.count));
+ for(let i=0;i<compact.links.length;i++){assert.equal(compact.links[i].thickness,wide.links[i].thickness);assert.doesNotMatch(compact.links[i].path,/NaN|undefined|Infinity/);}
+ for(const node of compact.right)assert.ok(node.x+18<compact.width);
+});

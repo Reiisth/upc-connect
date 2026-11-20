@@ -36,6 +36,6 @@ async function CachedContent({ searchParams }: { searchParams: ReportSearchParam
       description="New branch transfers, departures from the church, and returns. Inactivity and ordinary archives are not departures."
       action={hasPermission(access.permissions, "members.view") ? <Link className="text-sm font-medium text-[#365FA6] hover:underline" href="/portal/members/migrations">View movement records</Link> : undefined} />
     <ReportFilters key={JSON.stringify(parsed.values)} action="/portal/reports/migrations" values={parsed.values} branches={branches.map(branch => ({ ...branch, inactivityThresholdWeeks: 0 }))} />
-    {error ? <FeedbackMessage>{error}</FeedbackMessage> : data && range && <MigrationAnalyticsPanel data={data} range={range} />}
+    {error ? <FeedbackMessage>{error}</FeedbackMessage> : data && range && <MigrationAnalyticsPanel data={data} range={range} grouping={parsed.request?.grouping} />}
   </PageContainer>;
 }
