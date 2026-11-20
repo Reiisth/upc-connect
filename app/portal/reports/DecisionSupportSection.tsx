@@ -122,7 +122,7 @@ export default function DecisionSupportSection({ filters, filtersChanged = false
     });
   }
 
-  return <section id="ai-decision-support" aria-labelledby="ai-decision-support-title" className="min-w-0 scroll-mt-6">
+  return <section id="ai-decision-support" aria-labelledby="ai-decision-support-title" className="min-w-0 scroll-mt-40 sm:scroll-mt-28">
     <Card><CardContent className="min-w-0 space-y-6 p-5 sm:p-6">
       <div>
         <div className="flex flex-wrap items-center gap-3">

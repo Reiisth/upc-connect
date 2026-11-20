@@ -4,11 +4,13 @@ export type AnalyticsRangeInput =
   | { preset: "custom"; from: string; to: string };
 export type AnalyticsDateRange = { from: string; to: string; timeZone: "Asia/Manila" };
 export type AnalyticsRequest = { range?: AnalyticsRangeInput; grouping?: AnalyticsGrouping; branchId?: string };
+export type MostAttendedService = { id: string; name: string; date: string; attendees: number };
 export type TimeSeriesPoint<T = number> = { periodStart: string; value: T };
 
 export type MembershipMetrics = {
   nonArchivedMembers: number;
   storedActiveMembers: number;
+  storedInactiveMembers: number | null;
   archivedMembers: number;
   /** Administrative record creation, not church membership acceptance. */
   recordsAddedInRange: number;
@@ -80,7 +82,7 @@ export type AnalyticsOverview = AnalyticsMetrics & {
 type Group<T> = T & { branchId: string | null };
 export type AnalyticsAggregates = {
   version: 1;
-  membership: Group<Omit<MembershipMetrics, "recordCreationTrend" | "firstAttendanceTrend">>[];
+  membership: Group<Omit<MembershipMetrics, "recordCreationTrend" | "firstAttendanceTrend" | "storedInactiveMembers">>[];
   membershipTrend: Group<{ periodStart: string; recordsAdded: number; firstAttendances: number }>[];
   attendance: Group<AttendanceCounts>[];
   attendanceByType: Group<AttendanceCounts & { serviceType: string }>[];
@@ -98,4 +100,9 @@ export type AnalyticsAggregates = {
   contributionTrend: Group<ContributionAmounts & { periodStart: string }>[];
   baptisms: Group<BaptismCounts>[];
   baptismTrend: Group<{ periodStart: string; total: number; water: number; holyGhost: number }>[];
+};
+
+export type MemberStatusHistory = {
+  trackingStartedAt: string;
+  points: { periodStart: string; asOfDate: string; active: number | null; inactive: number | null }[];
 };

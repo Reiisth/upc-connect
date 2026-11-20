@@ -36,7 +36,7 @@ export default function PortalFrame({userId,identity,branches,branchId,desktopNa
   }
   return <PortalBranchContext.Provider value={{branchId,branches}}>
     <div className="portal-chrome min-h-screen bg-[#EEF3FB] md:flex" data-sidebar-collapsed={collapsed?"true":undefined}>
-      <aside id={`${id}-sidebar`} className="portal-sidebar sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
+      <aside id={`${id}-sidebar`} className="portal-sidebar portal-sidebar-glow sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
         <Link href="/portal" aria-label="UPC Connect home" className="portal-sidebar-home flex h-20 shrink-0 items-center gap-1.5 border-b border-slate-200 px-4">
           <Image src="/upc-logo.png" alt="" width={56} height={56} priority className="shrink-0" />
           <span className="portal-sidebar-brand flex min-w-0 flex-col gap-0"><span className="block whitespace-nowrap font-heading text-xl font-semibold leading-none text-[#203264]">UPC CONNECT</span><span className="block text-sm leading-none text-slate-500">Unified Portal</span></span>
@@ -44,7 +44,7 @@ export default function PortalFrame({userId,identity,branches,branchId,desktopNa
         {desktopNavigation}
       </aside>
       <div className="min-w-0 flex-1">
-        <header className="portal-topbar sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur-md sm:px-5 sm:py-0">
+        <header className="portal-topbar portal-topbar-glow sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur-md sm:px-5 sm:py-0">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:min-h-[79px] sm:grid-cols-[minmax(0,1fr)_auto_auto] md:grid-cols-[auto_minmax(0,1fr)_auto_auto]">
             <Link href="/portal" aria-label="UPC Connect home" className="col-span-2 col-start-1 row-start-1 flex h-11 w-11 items-center justify-center justify-self-center sm:hidden">
               <Image src="/upc-logo.png" alt="" width={36} height={36} priority />

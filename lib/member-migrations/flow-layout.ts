@@ -4,7 +4,7 @@ export type FlowKind = "transfer" | "departure" | "return";
 export type FlowNode = { id: string; label: string; category: "branch" | "church" | "restricted"; color: string };
 export type MigrationFlow = { id: string; source: string; destination: string; count: number; kind: FlowKind; color: string };
 export type MigrationFlowModel = { nodes: FlowNode[]; flows: MigrationFlow[] };
-const colors = ["#16836B", "#A35B38", "#8B5CB5", "#587630", "#365FA6"];
+const colors = ["#16836B", "#A35B38", "#8B5CB5", "#587630", "#5D94E8"];
 
 export function migrationFlowModel(data: MigrationAnalytics, includeExternal: boolean): MigrationFlowModel {
   const nodes = new Map<string, FlowNode>();

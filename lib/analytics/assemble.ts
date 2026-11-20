@@ -25,6 +25,7 @@ export function assembleAnalytics(input: {
   aggregates: AnalyticsAggregates; branches: readonly AnalyticsBranch[]; inactivity: readonly MemberInactivitySummary[];
   range: AnalyticsDateRange; grouping: AnalyticsGrouping; asOfDate: string;
   membersAtEndDate?: number;
+  inactiveMembers?: number;
 }): AnalyticsOverview {
   const data = input.aggregates;
   function group<T extends { branchId: string | null }>(rows: readonly T[], id: string | null): Omit<T, "branchId">[] {
@@ -38,6 +39,7 @@ export function assembleAnalytics(input: {
     const weekly = group(data.weeklyAttendance, id);
     return {
       membership: { ...membership,
+        storedInactiveMembers: id === null ? input.inactiveMembers ?? null : null,
         recordCreationTrend: membershipTrend.map((point) => ({ periodStart: point.periodStart, value: point.recordsAdded })),
         firstAttendanceTrend: membershipTrend.map((point) => ({ periodStart: point.periodStart, value: point.firstAttendances })),
       },

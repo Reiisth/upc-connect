@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateWeeklyInactivity, manilaDateFromTimestamp, type MemberInactivitySummary } from "@/lib/inactivity/calculate";
 import { analyticsToday, resolveAnalyticsDateRange, validateAnalyticsGrouping } from "./date-range";
 import { assembleAnalytics, emptyAnalyticsAggregates } from "./assemble";
-import type { AnalyticsAggregates, AnalyticsBranch, AnalyticsOverview, AnalyticsRequest } from "./types";
+import type { AnalyticsAggregates, AnalyticsBranch, AnalyticsOverview, AnalyticsRequest, MemberStatusHistory, MostAttendedService } from "./types";
 
 type Page<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
 async function allRows<T>(page: (from: number, to: number) => Page<T>): Promise<T[]> {
@@ -35,7 +35,7 @@ const getAnalyticsContext = cache(async () => {
       .select("id, name, code, is_active, inactivity_threshold_weeks").in("id", ids).order("id").range(from, to)) : [];
     const branches: AnalyticsBranch[] = rows.map((row) => ({ id: row.id, name: row.name, code: row.code,
       isActive: row.is_active, inactivityThresholdWeeks: row.inactivity_threshold_weeks }));
-    return { admin, branches, branchIds: ids };
+    return { admin, branches, branchIds: ids, actorId: access.user.id };
   } catch (error) {
     console.error("Analytics branch access failed", error);
     throw new Error("Unable to load reporting branch access. Please try again.");
@@ -87,21 +87,68 @@ export async function getAnalyticsOverview(request: AnalyticsRequest = {}): Prom
     const { admin } = context;
     const branches = request.branchId ? context.branches.filter((branch) => branch.id === request.branchId) : context.branches;
     if (request.branchId && !branches.length) throw new Error("Reporting branch no longer exists.");
-    if (!branches.length) return assembleAnalytics({ aggregates: emptyAnalyticsAggregates(), branches, inactivity: [], range, grouping, asOfDate });
-    const [{ data, error }, inactivity, memberTotal] = await Promise.all([
+    if (!branches.length) return assembleAnalytics({ aggregates: emptyAnalyticsAggregates(), branches, inactivity: [], range, grouping, asOfDate, inactiveMembers: 0 });
+    const [{ data, error }, inactivity, memberTotal, inactiveTotal] = await Promise.all([
       admin.rpc("get_reports_analytics", { p_branch_ids: branches.map((branch) => branch.id), p_from: range.from, p_to: range.to, p_grouping: grouping, p_as_of: asOfDate }),
       loadInactivityInputs(admin, branches, asOfDate),
       admin.from("members").select("id", { count: "exact", head: true })
         .in("church_branch_id", branches.map(branch => branch.id))
         .lte("created_at", `${range.to}T23:59:59.999999+08:00`),
+      admin.from("members").select("id", { count: "exact", head: true })
+        .in("church_branch_id", branches.map(branch => branch.id)).eq("is_archived", false).eq("member_status", "inactive"),
     ]);
     if (error) throw error;
     if (memberTotal.error) throw memberTotal.error;
+    if (inactiveTotal.error) throw inactiveTotal.error;
+    if (typeof inactiveTotal.count !== "number" || !Number.isSafeInteger(inactiveTotal.count) || inactiveTotal.count < 0) throw new Error("Inactive membership total is unavailable.");
     if (typeof memberTotal.count !== "number" || !Number.isSafeInteger(memberTotal.count) || memberTotal.count < 0) throw new Error("Membership total is unavailable.");
     if (!data || data.version !== 1) throw new Error("Analytics aggregation migration is unavailable or incompatible.");
-    return assembleAnalytics({ aggregates: data as AnalyticsAggregates, branches, inactivity, range, grouping, asOfDate, membersAtEndDate: memberTotal.count });
+    return assembleAnalytics({ aggregates: data as AnalyticsAggregates, branches, inactivity, range, grouping, asOfDate, membersAtEndDate: memberTotal.count, inactiveMembers: inactiveTotal.count });
   } catch (error) {
     console.error("Analytics load failed", error);
     throw new Error("Unable to load reporting data. Verify the analytics migration is applied and try again.");
   }
+}
+
+export async function getMemberStatusHistory(request: AnalyticsRequest = {}): Promise<MemberStatusHistory> {
+  const context = await getAnalyticsContext();
+  const selected = await getPortalBranchId();
+  if (selected && request.branchId && selected !== request.branchId) throw new Error("The current branch has changed. Refresh and try again.");
+  const branchId = selected ?? request.branchId;
+  if (branchId && !context.branchIds.includes(branchId)) throw new Error("The selected reporting branch is outside your access.");
+  const ids = context.branches.filter(branch => !branchId || branch.id === branchId).map(branch => branch.id);
+  const range = resolveAnalyticsDateRange(request.range, analyticsToday(new Date()));
+  const grouping = request.grouping ?? "week";
+  validateAnalyticsGrouping(grouping);
+  const { data, error } = await context.admin.rpc("get_member_status_history", {
+    p_actor_id: context.actorId, p_branch_ids: ids, p_from: range.from, p_to: range.to, p_grouping: grouping,
+  });
+  if (error || !data || typeof data.trackingStartedAt !== "string" || !Array.isArray(data.points)) throw new Error("Member status history could not be loaded.");
+  return data as MemberStatusHistory;
+}
+
+/** Per-service database counts only: no attendee identities are loaded. */
+export async function getMostAttendedService(request: AnalyticsRequest = {}): Promise<MostAttendedService | null> {
+  const context = await getAnalyticsContext();
+  const selected = await getPortalBranchId();
+  if (selected && request.branchId && selected !== request.branchId) throw new Error("The current branch has changed. Refresh and try again.");
+  const branchId = selected ?? request.branchId;
+  if (branchId && !context.branchIds.includes(branchId)) throw new Error("The selected reporting branch is outside your access.");
+  const ids = context.branches.filter(branch => !branchId || branch.id === branchId).map(branch => branch.id);
+  if (!ids.length) return null;
+  const range = resolveAnalyticsDateRange(request.range, analyticsToday(new Date()));
+  const services = await allRows((from, to) => context.admin.from("services")
+    .select("id,name,service_date,start_time,attendance_records(count)")
+    .in("church_branch_id", ids).eq("status", "completed")
+    .gte("service_date", range.from).lte("service_date", range.to)
+    .eq("attendance_records.attendance_status", "present")
+    .order("service_date", { ascending: false }).order("start_time", { ascending: false, nullsFirst: false }).order("id").range(from, to));
+  let best: MostAttendedService | null = null;
+  for (const service of services) {
+    const attendees = service.attendance_records?.[0]?.count;
+    if (typeof attendees !== "number" || !Number.isSafeInteger(attendees) || attendees < 0) throw new Error("Service attendance count is unavailable.");
+    // Query order resolves ties by latest service, then ID, including across pages.
+    if (!best || attendees > best.attendees) best = { id: service.id, name: service.name, date: service.service_date, attendees };
+  }
+  return best;
 }

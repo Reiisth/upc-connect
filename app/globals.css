@@ -59,10 +59,54 @@
   :where(p) { text-wrap: pretty; }
 }
 
+/* Luminous sky-blue light with a separate origin for each portal surface. */
+.portal-sidebar-glow {
+  --sidebar-glow-x: 44px;
+  background-image: radial-gradient(
+    ellipse 220px 300px at var(--sidebar-glow-x) 40px,
+    rgb(125 211 252 / 0.13) 0%,
+    rgb(125 211 252 / 0.05) 45%,
+    rgb(125 211 252 / 0) 100%
+  );
+}
+.portal-topbar-glow {
+  background-image: radial-gradient(
+    ellipse 480px 170% at right center,
+    rgb(125 211 252 / 0.13) 0%,
+    rgb(125 211 252 / 0.05) 45%,
+    rgb(125 211 252 / 0) 100%
+  );
+}
+.portal-branch-glow {
+  background-image: linear-gradient(120deg, rgb(125 211 252 / 0.06), transparent 60%), radial-gradient(
+    ellipse at top center,
+    rgb(125 211 252 / 0.06) 0%,
+    rgb(125 211 252 / 0) 80%
+  );
+  box-shadow: 0 0 22px 2px rgb(125 211 252 / 0.09),
+    0 0 48px 8px rgb(125 211 252 / 0.06),
+    0 0 0 1px rgb(125 211 252 / 0.05);
+}
+
+@keyframes dashboard-chart-reveal {
+  from { opacity: 0; clip-path: inset(100% 0 0 0); }
+  to { opacity: 1; clip-path: inset(0); }
+}
+@keyframes dashboard-line-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.dashboard-chart-enter { animation: dashboard-chart-reveal 800ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.dashboard-sparkline polyline { animation: dashboard-line-draw 900ms ease-out both; }
+.dashboard-sparkline polygon { animation: dashboard-chart-reveal 900ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-chart-enter, .dashboard-sparkline polyline, .dashboard-sparkline polygon { animation: none; }
+}
+
 /* These tables retain a single set of records, controls and semantic roles. */
 .portal-sidebar { transition: width 160ms ease; }
 @media (min-width: 768px) {
-  .portal-chrome[data-sidebar-collapsed="true"] .portal-sidebar { width: 5rem; }
+  .portal-chrome[data-sidebar-collapsed="true"] .portal-sidebar { width: 5rem; --sidebar-glow-x: 40px; }
   .portal-chrome[data-sidebar-collapsed="true"] .portal-sidebar-home { justify-content: center; padding-left: 0; padding-right: 0; }
   .portal-chrome[data-sidebar-collapsed="true"] .portal-sidebar .portal-nav-label,
   .portal-chrome[data-sidebar-collapsed="true"] .portal-sidebar-brand,

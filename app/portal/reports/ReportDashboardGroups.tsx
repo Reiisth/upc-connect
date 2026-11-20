@@ -28,7 +28,6 @@ export default function ReportDashboardGroups({ groups }: {
           {group.label}
         </button>)}
       </div>
-      <a href="#ai-decision-support" className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-[#365FA6] transition hover:border-blue-300 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2">AI Decision Support</a>
     </nav>
     <Card className="min-w-0">
       <CardContent id={`${prefix}-panel`} role="tabpanel" aria-labelledby={`${prefix}-tab-${active.id}`} tabIndex={0} className="min-w-0 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5D94E8] sm:p-6">

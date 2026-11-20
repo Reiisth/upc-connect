@@ -1,5 +1,17 @@
 # Dashboard
 
+The branch card shows the selected branch name and a current service summary.
+Its date-range control sits at the upper right; expanding it reveals the date,
+grouping, and custom-range filters. All branches lists the authorized branch names and labels each service
+with its branch. Ongoing services take precedence; when none are ongoing, the
+card shows the next three scheduled services and the total scheduled count.
+Service lists are collapsed by default behind the service-count disclosure;
+clicking, tapping, or keyboard-activating the count expands or collapses the list.
+Empty and unavailable states are distinct. Current status uses the shared Manila
+service lifecycle and is independent of the analytics date filter. The minimal
+service summary is read-only under `reports.view`; it grants no service actions
+and reads no member or attendance details. See `tests/dashboard-services.test.cjs`.
+
 `/portal/reports` displays Dashboard throughout the UI. The existing route and
 `reports.view` permission key remain compatible with saved links and roles.
 All request data stays under Suspense. The shared analytics server context

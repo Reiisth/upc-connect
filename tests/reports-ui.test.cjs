@@ -20,6 +20,7 @@ function overviewFixture() {
   result.membersAtEndDate = 108;
   result.membership.nonArchivedMembers = 108;
   result.membership.storedActiveMembers = 99;
+  result.membership.storedInactiveMembers = 9;
   result.membership.recordsAddedInRange = 2;
   result.membership.recordCreationTrend = [{ periodStart: '2026-10-05', value: 2 }];
   result.attendance.completedServices = 2;
@@ -58,12 +59,17 @@ test('featured member card uses cumulative end-date totals for its value, growth
   const overview = overviewFixture(), previous = overviewFixture();
   previous.membersAtEndDate = 106;
   previous.membership.recordsAddedInRange = 40; // Period additions are not the growth denominator.
-  const render = () => renderToStaticMarkup(React.createElement(MembershipCard, { overview, previous }));
+  const render = () => renderToStaticMarkup(React.createElement(MembershipCard, { overview, previous, departures: 4 }));
   let html = render();
   assert.match(html, />108<\/p>/);assert.doesNotMatch(html, />2<\/p>/);
+  assert.equal(stat(html,'New Members'),'2');assert.equal(stat(html,'Departures'),'4');
+  assert.doesNotMatch(html,/lucide-users-round/);
   assert.match(html, /Membership growth: \+1.9% vs previous period/);
   assert.match(sparkline.label, /2026-09-30 to 2026-10-29, ending at 108/);
   assert.deepEqual(Array.from(sparkline.values), [106,106,108,108,108,108]);
+  assert.equal(sparkline.previousValues.at(-1),106);
+  assert.match(html,/As of <time[^>]*>Oct 29, 2026<\/time>/);
+  assert.match(html,/Grey comparison/);
   overview.membersAtEndDate = 54;
   overview.membership.recordCreationTrend = [{periodStart:'2026-10-12',value:4}];
   html = render();assert.match(html, />54<\/p>/);assert.match(html, /49.1% vs previous period/);
@@ -77,6 +83,7 @@ test('featured member card uses cumulative end-date totals for its value, growth
   html = render();assert.match(html, /\+3 vs previous period/);assert.doesNotMatch(html,/NaN|Infinity/);
   html = renderToStaticMarkup(React.createElement(MembershipCard,{overview,previous:null}));
   assert.match(html,/No previous comparison/);
+  assert.equal(stat(html,'Departures'),'Unavailable');
 });
 
 test('analytics overview and section metrics omit the removed card footnotes', () => {
@@ -85,8 +92,8 @@ test('analytics overview and section metrics omit the removed card footnotes', (
   }).default;
   const html = renderToStaticMarkup(React.createElement(Dashboard,{overview:overviewFixture()}));
   for (const text of ['Current non-archived members','In the selected period','Physical attendance at completed services','Recorded in the selected period','Includes Member, Visitor, and Anonymous contributions','Current Member Status','Current archive state']) assert.ok(!html.includes(text),text);
-  assert.match(html,/Membership trend/);assert.match(html,/Member Registrations/);
-  assert.equal(stat(html,'Registered Members'),'2');
+  assert.match(html,/role="img" aria-label="Total members from/);assert.match(html,/Member Registrations/);
+  assert.equal(stat(html,'Inactive Members'),'9');
 });
 
 test('URL presets, custom dates and grouping reuse inclusive Manila analytics boundaries', () => {
@@ -144,7 +151,7 @@ test('explicit relative money chart retains exact values in tooltips and accessi
   assert.equal(captured.options.scales.y.title.text, 'Relative amount');
   assert.equal(captured.options.plugins.tooltip.callbacks.label({ datasetIndex: 0, dataIndex: 0 }), `Contributions: ${formatReportMoney(amount)}`);
   assert.ok(html.includes(formatReportMoney(amount)));
-  assert.ok(html.includes('<details') && html.includes('View chart data'));
+  assert.ok(html.includes('aria-expanded="false"') && html.includes('View chart data'));
   assert.ok(html.includes('role="img"'));
 });
 
@@ -153,7 +160,7 @@ test('dashboard displays DTO states separately: stored status, derived status, l
     './ReportDashboardGroups': { __esModule: true, default: ({ groups }) => React.createElement('div', null, ...groups.map(group => group.content)) },
   }).default;
   const html = renderToStaticMarkup(React.createElement(Dashboard, { overview: overviewFixture() }));
-  assert.equal(stat(html, ' Active Members'), '99');
+  assert.equal(stat(html, 'Active Members'), '99');
   assert.equal(stat(html, 'Monitoring'), '7');
   assert.equal(stat(html, 'Needs Follow-up'), '2');
   assert.equal(stat(html, 'Needs Follow-up \u00b7 Current'), '0', 'Historical needs do not override latest resolved state');
@@ -161,7 +168,7 @@ test('dashboard displays DTO states separately: stored status, derived status, l
   assert.equal(stat(html, 'Baptisms in Period'), '0');
   assert.equal(stat(html, 'Undated Baptism Records'), '3');
   assert.ok(html.includes('\u20b199,999,999,999,900.01'));
-  assert.ok(html.includes('present only') && html.includes('never set administrative Member Status'));
+  assert.ok(!html.includes('present only') && html.includes('never set administrative Member Status'));
   assert.ok(html.includes('Branch Comparison') && !html.includes('Inaccessible Branch'));
 });
 
@@ -187,7 +194,7 @@ test('service type report labels resolve current names while report data retains
 });
 
 function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)], isSystemAdmin = false, rpcFailure = false, branchFailure = false, migrationFailure = false, selectedBranch = null } = {}) {
-  const calls = { rpc: [], permission: [], branchScope: [], migrations: [] };
+  const calls = { rpc: [], permission: [], branchScope: [], migrations: [], statuses: [] };
   const db = { church_branches: branches.map((branch) => ({ id: branch.id, name: branch.name, code: null, is_active: branch.isActive, inactivity_threshold_weeks: branch.inactivityThresholdWeeks })), members: [], service_types: [{ key: 'prayer_meeting', name: 'Wednesday Prayer', is_active: true }] };
   class Query {
     constructor(table) { this.table = table; this.rows = [...db[table]]; }
@@ -216,9 +223,10 @@ function pageHarness({ permissions = ['reports.view'], scopeIds = [id(1), id(2)]
     './date-range': { ...dates, analyticsToday: () => today },
   });
   const Page = loadTypeScript('app/portal/reports/page.tsx', { ...withLinks,
+    '@/lib/dashboard-services':{getDashboardServiceOverview:async()=>({branchName:'All branches',branchNames:[],multipleBranches:false,state:'empty',services:[],scheduledTotal:0})},
     '@/lib/portal-branch-server': {getPortalBranchId:async()=>selectedBranch},
     './actions': { generateReportInsights: () => assert.fail('Normal Reports rendering must not request AI insights') },
-    '@/lib/analytics/server': api,
+    '@/lib/analytics/server': {...api,getMostAttendedService:async()=>null,getMemberStatusHistory:async request=>{calls.statuses.push(request);return null;}},
     '@/lib/member-migrations/server': { getMigrationAnalytics: async request => {
       calls.migrations.push(request);
       if (migrationFailure) throw new Error('PRIVATE_MIGRATION_ERROR');
@@ -345,6 +353,7 @@ test('GET filters restore applied values, stack on mobile and enable date contro
   const dashboardHtml = renderToStaticMarkup(React.createElement(Dashboard, { overview: overviewFixture() }));
   assert.ok(dashboardHtml.includes('min-w-0') && dashboardHtml.includes('role="tabpanel"'));
   assert.ok(dashboardHtml.includes('aria-label="Dashboard sections"'));
+  assert.doesNotMatch(dashboardHtml,/href="#ai-decision-support"/);
   const loading = loadTypeScript('app/portal/reports/loading.tsx').default;
   assert.ok(renderToStaticMarkup(React.createElement(loading)).includes('Loading dashboard'));
   for (const file of ['page.tsx', 'ReportsDashboard.tsx', 'ReportChart.tsx', 'ReportFilters.tsx', 'ReportsView.tsx', 'DecisionSupportSection.tsx', 'loading.tsx', 'error.tsx']) {
@@ -362,4 +371,81 @@ test('report tickers show direction, zero baseline and unavailable comparison wi
   assert.ok(render(1, 0).includes('Previous value was 0'));
   assert.ok(render(1, null).includes('No previous comparison'));
   assert.ok(render('99999999999900.02', '99999999999900.01').includes('0% vs previous period'));
+});
+
+
+test('membership status history renders tracked zeros and unavailable dates with accessible data',()=>{
+ const Dashboard=loadTypeScript('app/portal/reports/ReportsDashboard.tsx',{
+  './ReportDashboardGroups':{__esModule:true,default:({groups})=>React.createElement('div',null,...groups.map(group=>group.content))},
+ }).default;
+ const html=renderToStaticMarkup(React.createElement(Dashboard,{overview:overviewFixture(),statusHistory:{trackingStartedAt:'2026-10-01T16:01:00Z',points:[{periodStart:'2026-10-01',asOfDate:'2026-10-01',active:null,inactive:null},{periodStart:'2026-10-02',asOfDate:'2026-10-02',active:0,inactive:0}]}}));
+ assert.match(html,/Active and Inactive Members/);assert.doesNotMatch(html,/Tracking began/);
+ assert.match(html,/View chart data/);assert.doesNotMatch(html,/>Registered Members</);
+ assert.equal(stat(html,'Inactive Members'),'9');
+});
+
+
+test('membership closing snapshots drive tickers and donut; first attendances live under Attendance',()=>{
+ const charts=[],sections={};
+ const Dashboard=loadTypeScript('app/portal/reports/ReportsDashboard.tsx',{
+  './ReportDashboardGroups':{__esModule:true,default:({groups})=>{for(const group of groups)sections[group.id]=renderToStaticMarkup(group.content);return React.createElement('div',null,...groups.map(group=>group.content));}},
+  './ReportChart':{__esModule:true,default:props=>{charts.push(props);return React.createElement('p',null,props.title);}},
+ }).default;
+ const overview=overviewFixture();
+ const history={trackingStartedAt:'2026-09-01T00:00:00Z',points:[{periodStart:'2026-10-29',asOfDate:'2026-10-29',active:120,inactive:5}]};
+ const prior={trackingStartedAt:history.trackingStartedAt,points:[{periodStart:'2026-09-29',asOfDate:'2026-09-29',active:100,inactive:10}]};
+ renderToStaticMarkup(React.createElement(Dashboard,{overview,statusHistory:history,previousStatusHistory:prior}));
+ assert.equal(stat(sections.membership,'Active Members'),'120');assert.equal(stat(sections.membership,'Inactive Members'),'5');
+ assert.match(sections.membership,/up 20% vs previous period/);assert.match(sections.membership,/down 50% vs previous period/);
+ assert.doesNotMatch(sections.membership,/Recorded First Attendances/);assert.match(sections.attendance,/Recorded First Attendances/);
+ const donut=charts.find(chart=>chart.title==='Member Status Distribution');assert.equal(donut.kind,'doughnut');assert.equal(donut.centerValue,'96%');assert.deepEqual(Array.from(donut.series[0].values),[120,5]);assert.equal(donut.appearance,'sparkline');
+});
+
+test('page loads prior closing status in the same branch scope without requiring a whole prior history',async()=>{
+ const h=pageHarness({selectedBranch:id(1)});await h.html({range:'custom',from:'2026-10-01',to:'2026-10-29',grouping:'week'});
+ assert.equal(h.calls.statuses.length,2);
+ assert.equal(h.calls.statuses[0].branchId,id(1));assert.equal(h.calls.statuses[1].branchId,id(1));
+ assert.deepEqual(JSON.parse(JSON.stringify(h.calls.statuses[1].range)),{preset:'custom',from:'2026-09-30',to:'2026-09-30'});
+ assert.equal(h.calls.statuses[1].grouping,'day');
+});
+
+test('status snapshots never substitute current members for untracked historical dates',()=>{
+ const {memberStatusSnapshot}=loadTypeScript('lib/analytics/member-status-presentation.ts');
+ const overview=overviewFixture();overview.range.to='2026-10-20';
+ assert.equal(memberStatusSnapshot(overview,null).active,null);
+ const history={trackingStartedAt:'2026-10-21T00:00:00Z',points:[{asOfDate:'2026-10-20',active:null,inactive:null}]};
+ assert.equal(memberStatusSnapshot(overview,history).inactive,null);
+ overview.range.to=today;assert.equal(memberStatusSnapshot(overview,null).active,99);
+ overview.range.from='2026-11-01';overview.range.to='2026-11-30';assert.equal(memberStatusSnapshot(overview,null).active,null);
+});
+
+
+test('Attendance replaces its average metric with the winning service name and attendee count without a ticker',()=>{
+ let attendance;
+ const Dashboard=loadTypeScript('app/portal/reports/ReportsDashboard.tsx',{
+  './ReportDashboardGroups':{__esModule:true,default:({groups})=>{attendance=renderToStaticMarkup(groups.find(group=>group.id==='attendance').content);return null;}},
+ }).default;
+ renderToStaticMarkup(React.createElement(Dashboard,{overview:overviewFixture(),mostAttendedService:{id:'one',name:'Sunday Worship',date:'2026-10-25',attendees:75}}));
+ assert.equal(stat(attendance,'Most Attended Service'),'Sunday Worship');assert.match(attendance,/75 attendees/);assert.doesNotMatch(attendance,/Avg Attendance \/ Completed Service/);
+ const card=attendance.split('Most Attended Service')[1].split('</dl>')[0];assert.doesNotMatch(card,/previous period/);
+ renderToStaticMarkup(React.createElement(Dashboard,{overview:overviewFixture(),mostAttendedService:null}));assert.equal(stat(attendance,'Most Attended Service'),'No completed services');
+ renderToStaticMarkup(React.createElement(Dashboard,{overview:overviewFixture()}));assert.equal(stat(attendance,'Most Attended Service'),'Unavailable');
+});
+
+
+test('most-attended service type ranks per-service averages instead of total check-ins and sits beside the winning service',()=>{
+ let attendance;
+ const Dashboard=loadTypeScript('app/portal/reports/ReportsDashboard.tsx',{
+  './ReportDashboardGroups':{__esModule:true,default:({groups})=>{attendance=renderToStaticMarkup(groups.find(group=>group.id==='attendance').content);return null;}},
+ }).default;
+ const overview=overviewFixture();overview.attendance.byServiceType=[
+  {serviceType:'frequent',completedServices:10,physicalCheckIns:200,averagePerService:20,uniqueMembers:50},
+  {serviceType:'special',completedServices:2,physicalCheckIns:100,averagePerService:50,uniqueMembers:80},
+  {serviceType:'none',completedServices:0,physicalCheckIns:999,averagePerService:null,uniqueMembers:0},
+ ];
+ renderToStaticMarkup(React.createElement(Dashboard,{overview,serviceTypeNames:{special:'Special Gathering'},mostAttendedService:{id:'one',name:'Sunday Worship',date:'2026-10-25',attendees:75}}));
+ assert.equal(stat(attendance,'Most Attended Service Type'),'Special Gathering');assert.match(attendance,/50 avg attendees\/service/);
+ assert.deepEqual([...attendance.matchAll(/<dt[^>]*>(.*?)<\/dt>/g)].map(match=>match[1]),['Completed Services','Unique Attendees','Most Attended Service Type','Most Attended Service']);
+ overview.attendance.byServiceType=[];
+ renderToStaticMarkup(React.createElement(Dashboard,{overview}));assert.equal(stat(attendance,'Most Attended Service Type'),'No completed services');
 });

@@ -7,13 +7,13 @@ import DecisionSupportSection from "./DecisionSupportSection";
 import ReportFilters from "./ReportFilters";
 
 /** Keep analytics as server-rendered children; coordinate only filter edits and ephemeral AI state. */
-export default function ReportsView({ branches, values, insightFilters, children }: {
+export default function ReportsView({ branches, values, insightFilters, branchOverview, children }: {
   branches: readonly AnalyticsBranch[]; values: ReportFilterValues;
-  insightFilters: AnalyticsRequest | null; children: ReactNode;
+  insightFilters: AnalyticsRequest | null; children: ReactNode; branchOverview?: ReactNode;
 }) {
   const [filtersChanged, setFiltersChanged] = useState(false);
   return <>
-    <ReportFilters branches={branches} values={values} onFiltersChange={() => setFiltersChanged(true)} />
+    <ReportFilters branches={branches} values={values} context={branchOverview} onFiltersChange={() => setFiltersChanged(true)} />
     {children}
     {insightFilters && <DecisionSupportSection key={`${JSON.stringify(insightFilters)}:${filtersChanged}`}
       filters={insightFilters} filtersChanged={filtersChanged} />}

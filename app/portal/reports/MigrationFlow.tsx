@@ -104,7 +104,7 @@ export default function MigrationFlow({ data }: { data: MigrationAnalytics }) {
       <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white xl:block">
         <div className="flex justify-between border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"><span>From branch</span><span>To branch</span></div>
         <div className="max-h-[38rem] overflow-y-auto p-3">
-          <svg viewBox={`0 0 ${layout.width} ${layout.height}`} className="block h-auto w-full" role="group" aria-labelledby={`${prefix}-title`} aria-describedby={`${prefix}-description`}>
+          <svg viewBox={`0 0 ${layout.width} ${layout.height}`} className="dashboard-chart-enter block h-auto w-full" role="group" aria-labelledby={`${prefix}-title`} aria-describedby={`${prefix}-description`}>
             <desc id={`${prefix}-description`}>Recorded movements flow from left to right. Each band represents events, not distinct members. Select a branch or route using the keyboard or pointer.</desc>
             {layout.links.map(flow => <g key={flow.id}>
               <path d={flow.path} fill={flow.color} opacity={!matches(flow) ? 0.08 : activeRoute ? activeRoute.id === flow.id ? 0.85 : 0.18 : selection === "all" ? 0.45 : 0.7}

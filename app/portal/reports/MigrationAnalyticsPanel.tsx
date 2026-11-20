@@ -1,3 +1,4 @@
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Card, CardContent } from "@/components/ui/card";
 import { FeedbackMessage } from "@/components/ui/feedback-message";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,7 +21,7 @@ export default function MigrationAnalyticsPanel({ data, range, headingLevel = 2 
         ["Transfer Events", data.totals.transfers], ["Distinct Members Moved", data.totals.members],
         ["Transfers In", data.totals.incoming], ["Transfers Out", data.totals.outgoing],
         ["Departures", data.totals.departures], ["Returns", data.totals.returns], ["Net Movement", data.totals.net],
-      ].map(([label,value]) => <Card key={label} className="min-w-0"><CardContent className="p-4"><p className="text-xs font-medium text-slate-500">{label}</p><p className="mt-2 break-words text-2xl font-semibold text-[#203264]">{Number(value).toLocaleString("en-PH")}</p></CardContent></Card>)}
+      ].map(([label,value]) => <Card key={label} className="min-w-0"><CardContent className="p-4"><p className="text-sm font-medium text-slate-500 sm:text-base">{label}</p><AnimatedNumber as="p" className="mt-1 break-words text-2xl font-semibold text-[#203264]" value={Number(value).toLocaleString("en-PH")} /></CardContent></Card>)}
     </div>
     <p className="text-xs text-slate-500">A member can move multiple times. Transfers within the selected branches count once as an event, once in, and once out. Net movement = transfers in + returns − transfers out − departures; it is not total membership growth.</p>
     <MigrationFlow data={data} />

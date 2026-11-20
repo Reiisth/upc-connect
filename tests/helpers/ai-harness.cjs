@@ -103,7 +103,8 @@ function aiServerHarness({ permissions = ['reports.view'], scopeIds = [id(1), id
     '@/lib/analytics/date-range': { ...dates, analyticsToday: () => today } });
   function loadReportsPage() {
     return loadTypeScript('app/portal/reports/page.tsx', { ...serverOnly,
-      '@/lib/analytics/server': analytics, '@/lib/analytics/date-range': { ...dates, analyticsToday: () => today },
+    '@/lib/dashboard-services':{getDashboardServiceOverview:async()=>({branchName:'All branches',branchNames:[],multipleBranches:false,state:'empty',services:[],scheduledTotal:0})},
+      '@/lib/analytics/server': {...analytics,getMostAttendedService:async()=>null,getMemberStatusHistory:async()=>null}, '@/lib/analytics/date-range': { ...dates, analyticsToday: () => today },
       '@/lib/member-migrations/server': { getMigrationAnalytics: async () => ({trackingStartedAt:'2026-11-16T00:00:00Z',totals:{events:0,members:0,transfers:0,incoming:0,outgoing:0,departures:0,returns:0,net:0},trend:[],branches:[],flows:[]}) },
       '@/lib/supabase/admin': { createAdminClient: () => admin },
       'next/navigation': navigation,

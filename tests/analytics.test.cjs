@@ -79,7 +79,7 @@ test('assembly preserves aggregate decimal strings, global distinct counts and s
   assert.ok(!Object.hasOwn(result.attendance, 'branchId'));
 });
 
-function serverHarness({ permissions = ['reports.view'], branchIds = ['a', 'b'], rpcError = false, inactiveBranch = false, memberCount = 3, registrationDate = '2026-01-01T00:00:00Z', countError = false } = {}) {
+function serverHarness({ permissions = ['reports.view'], branchIds = ['a', 'b'], rpcError = false, inactiveBranch = false, memberCount = 3, registrationDate = '2026-01-01T00:00:00Z', countError = false, selectedBranch = null } = {}) {
   const calls = [], reads = [], countReads = [];
   const tables = {
     church_branches: [
@@ -102,20 +102,21 @@ function serverHarness({ permissions = ['reports.view'], branchIds = ['a', 'b'],
     constructor(table) { this.table = table; this.rows = [...tables[table]]; }
     value(row, key) { return key.split('.').reduce((value, part) => value?.[part], row); }
     select(columns, options = {}) { this.columns = columns; this.options = options; return this; }
-    eq(key, value) { this.rows = this.rows.filter((row) => this.value(row, key) === value); return this; }
+    eq(key, value) { if(key==='attendance_records.attendance_status'){this.attendanceFilter=value;return this;}this.rows = this.rows.filter((row) => this.value(row, key) === value); return this; }
     in(key, values) { this.rows = this.rows.filter((row) => values.includes(this.value(row, key))); return this; }
     gte(key, value) { this.rows = this.rows.filter((row) => this.value(row, key) >= value); return this; }
     lte(key, value) { this.cutoff = value; this.rows = this.rows.filter((row) => this.value(row, key) != null && (key === 'created_at' ? Date.parse(this.value(row, key)) <= Date.parse(value) : this.value(row, key) <= value)); return this; }
-    order(key) { this.rows.sort((a, b) => String(a[key]).localeCompare(String(b[key]))); return this; }
+    order(key,options={}) { this.orders??=[];this.orders.push({key,options});this.rows.sort((a,b)=>{for(const {key,options} of this.orders){const diff=String(a[key]??'').localeCompare(String(b[key]??''));if(diff)return diff*(options.ascending===false?-1:1);}return 0;});return this; }
     range(from, to) { this.rows = this.rows.slice(from, to + 1); return this; }
-    then(resolve, reject) { reads.push(this.table); if(this.options.head)countReads.push({columns:this.columns,options:this.options,cutoff:this.cutoff});return Promise.resolve({ data: this.options.head ? null : this.rows, count: this.options.count ? this.rows.length : null, error: this.options.head && countError ? {message:'PRIVATE_COUNT_ERROR'} : null }).then(resolve, reject); }
+    then(resolve, reject) { reads.push(this.table); if(this.options.head)countReads.push({columns:this.columns,options:this.options,cutoff:this.cutoff});return Promise.resolve({ data: this.options.head ? null : this.attendanceFilter ? this.rows.map(row=>({...row,attendance_records:[{count:(row.attendance_records??[]).filter(record=>record.attendance_status===this.attendanceFilter).length}]})) : this.rows, count: this.options.count ? this.rows.length : null, error: this.options.head && countError ? {message:'PRIVATE_COUNT_ERROR'} : null }).then(resolve, reject); }
   }
   const admin = {
     from: (table) => { assert.ok(Object.hasOwn(tables, table), `Analytics must not fetch ${table} raw`); return new Query(table); },
-    rpc: async (name, args) => { calls.push({ name, args }); return { data: emptyAnalyticsAggregates(), error: rpcError ? { message: 'INTERNAL DATABASE ERROR' } : null }; },
+    rpc: async (name, args) => { calls.push({ name, args }); return { data: name === "get_member_status_history" ? {trackingStartedAt:"2026-11-18T00:00:00Z",points:[]} : emptyAnalyticsAggregates(), error: rpcError ? { message: 'INTERNAL DATABASE ERROR' } : null }; },
   };
   const api = loadTypeScript('lib/analytics/server.ts', {
     'server-only': {},
+    '@/lib/portal-branch-server': {getPortalBranchId:async()=>selectedBranch},
     '@/lib/permissions-server': { requirePermission: async (permission) => { assert.equal(permission, 'reports.view'); if (!permissions.includes(permission)) throw new Error('Access denied'); return { user: { id: 'reporter' }, permissions }; } },
     '@/lib/branch-access': { getUserBranchScope: async () => ({ branchIds, isSystemAdmin: false }) },
     '@/lib/supabase/admin': { createAdminClient: () => admin },
@@ -203,8 +204,47 @@ test('minimal inactivity input streams paginate beyond API row caps and never qu
   const h = serverHarness({ memberCount: 507 });
   const result = await h.getAnalyticsOverview();
   assert.equal(result.inactivity.monitoredMembers, 507);
-  assert.equal(h.reads.filter((table) => table === 'members').length, 3, 'Two paginated monitoring reads plus one exact head count');
-  assert.equal(h.countReads.length, 1);
+  assert.equal(h.reads.filter((table) => table === 'members').length, 4, 'Two paginated monitoring reads plus two exact head counts');
+  assert.equal(h.countReads.length, 2);
   assert.equal(h.reads.filter((table) => table === 'services').length, 1);
   assert.equal(h.calls.length, 1);
+});
+
+
+test('inactive count uses explicit status and excludes archives and outside branches',async()=>{
+ const h=serverHarness();
+ h.tables.members.push({id:'unspecified',church_branch_id:'a',is_archived:false,member_status:null});
+ h.tables.members.push({id:'old',church_branch_id:'a',is_archived:true,member_status:'inactive'});
+ h.tables.members.push({id:'private',church_branch_id:'outside',is_archived:false,member_status:'inactive'});
+ assert.equal((await h.getAnalyticsOverview({branchId:'a'})).membership.storedInactiveMembers,2);
+});
+test('status history loader enforces reporting access and global branch and date filters',async()=>{
+ const h=serverHarness({selectedBranch:'a'});
+ await h.getMemberStatusHistory({range:{preset:'custom',from:'2026-10-01',to:'2026-10-29'},grouping:'day'});
+ assert.equal(h.calls[0].name,'get_member_status_history');
+ assert.deepEqual(JSON.parse(JSON.stringify(h.calls[0].args)),{p_actor_id:'reporter',p_branch_ids:['a'],p_from:'2026-10-01',p_to:'2026-10-29',p_grouping:'day'});
+ await assert.rejects(h.getMemberStatusHistory({branchId:'b'}),/branch has changed/);
+ await assert.rejects(serverHarness().getMemberStatusHistory({branchId:'outside'}),/outside your access/);
+ const denied=serverHarness({permissions:[]});await assert.rejects(denied.getMemberStatusHistory(),/Access denied/);assert.equal(denied.calls.length,0);
+ await assert.rejects(serverHarness({rpcError:true}).getMemberStatusHistory(),/could not be loaded/);
+});
+
+
+test('most-attended service counts present attendance in completed services inside the selected dates and scope',async()=>{
+ const h=serverHarness();
+ const service=(id,branch,date,status,present)=>({id,name:'Service '+id,church_branch_id:branch,service_date:date,start_time:'10:00',status,attendance_records:[...Array.from({length:present},()=>({attendance_status:'present'})),{attendance_status:'excused'},{attendance_status:'absent'}]});
+ h.tables.services.splice(0,h.tables.services.length,service('first','a','2026-10-01','completed',2),service('latest','a','2026-10-29','completed',2),service('other','b','2026-10-15','completed',3),service('foreign','outside','2026-10-20','completed',10),service('old','a','2026-09-29','completed',12),service('scheduled','a','2026-10-20','scheduled',15));
+ const winner=await h.getMostAttendedService({branchId:'a',range:{preset:'custom',from:'2026-10-01',to:'2026-10-29'}});
+ assert.equal(winner.id,'latest');assert.equal(winner.attendees,2);assert.equal(winner.name,'Service latest');
+ assert.equal((await h.getMostAttendedService()).id,'other');
+ assert.equal(await h.getMostAttendedService({branchId:'a',range:{preset:'custom',from:'2026-10-02',to:'2026-10-03'}}),null);
+ await assert.rejects(h.getMostAttendedService({branchId:'outside'}),/outside your access/);
+ await assert.rejects(serverHarness({permissions:[]}).getMostAttendedService(),/Access denied/);
+ await assert.rejects(serverHarness({selectedBranch:'a'}).getMostAttendedService({branchId:'b'}),/branch has changed/);
+ assert.equal(await serverHarness({branchIds:[]}).getMostAttendedService(),null);
+});
+test('most-attended service searches beyond the first service page',async()=>{
+ const h=serverHarness({selectedBranch:'a'});
+ h.tables.services.splice(0,h.tables.services.length,...Array.from({length:507},(_,i)=>({id:String(i).padStart(4,'0'),name:'Service '+i,church_branch_id:'a',service_date:'2026-10-20',start_time:'10:00',status:'completed',attendance_records:Array.from({length:i===506?3:1},()=>({attendance_status:'present'}))})));
+ const winner=await h.getMostAttendedService();assert.equal(winner.id,'0506');assert.equal(winner.attendees,3);assert.equal(h.reads.filter(table=>table==='services').length,2);
 });

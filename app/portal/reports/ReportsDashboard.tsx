@@ -1,12 +1,14 @@
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import type { ReactNode } from "react";
-import { Activity, CalendarCheck, ClipboardPen, Coins, UserRoundX } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { AnalyticsOverview } from "@/lib/analytics/types";
+import type { AnalyticsOverview, MemberStatusHistory, MostAttendedService } from "@/lib/analytics/types";
+import { memberStatusSnapshot } from "@/lib/analytics/member-status-presentation";
 import { formatContributionType, formatPaymentMethod } from "@/app/portal/contributions/types";
 import { formatServiceType } from "@/app/portal/services/types";
 import { METHOD_LABELS, OUTCOME_LABELS, type FollowUpMethod, type FollowUpOutcome } from "@/app/portal/follow-ups/types";
 import ReportChart from "./ReportChart";
+import ServiceTypeAttendanceChart from "./ServiceTypeAttendanceChart";
 import ReportDashboardGroups from "./ReportDashboardGroups";
 import ReportComparisonTicker, { type ReportComparison } from "./ReportComparisonTicker";
 import MembershipOverviewCard from "./MembershipOverviewCard";
@@ -16,33 +18,43 @@ import { FeedbackMessage } from "@/components/ui/feedback-message";
 import { formatReportDate, formatReportMoney, formatReportNumber, formatReportPercent } from "./presentation";
 
 const count = (value: number | null) => formatReportNumber(value);
-function Stats({ items, comparisons }: { comparisons: Record<string, ReportComparison>; items: { label: string; value: string }[] }) {
-  return <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{items.map((item) => <div key={item.label} className="min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-4">
-    <dt className="text-xs font-medium text-slate-500">{item.label}</dt>
-    <dd className="mt-2 break-words text-xl font-semibold tabular-nums text-[#203264]">{item.value}</dd>
-    {comparisons[item.label] && <ReportComparisonTicker comparison={comparisons[item.label]} />}
+function Stats({ items, comparisons }: { comparisons: Record<string, ReportComparison>; items: { label: string; value: string; detail?: { value: string; label: string }; animate?: boolean }[] }) {
+  return <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{items.map((item) => <div key={item.label} className="grid min-w-0 grid-cols-1 gap-y-1 rounded-xl border border-slate-200 bg-white px-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-x-3">
+    <dt className="col-span-full text-sm font-medium text-slate-500 sm:text-base">{item.label}</dt>
+    {item.animate === false ? <dd title={item.value} className="min-w-0 line-clamp-2 break-words text-xl font-semibold text-[#203264]">{item.value}</dd> : <AnimatedNumber as="dd" className="break-words text-xl font-semibold tabular-nums text-[#203264]" value={item.value} />}
+    {item.detail && <dd aria-label={`${item.detail.value} ${item.detail.label}`} className="min-w-0 tabular-nums lg:max-w-28 lg:text-right"><AnimatedNumber className="block text-base font-semibold text-[#203264]" value={item.detail.value} /><span className="mt-0.5 block text-xs font-normal leading-tight text-slate-500">{item.detail.label}</span></dd>}
+    {comparisons[item.label] && <dd className="min-w-0 lg:max-w-36"><ReportComparisonTicker comparison={comparisons[item.label]} className="mt-0 text-base lg:justify-end lg:text-right" /></dd>}
   </div>)}</dl>;
 }
-function Section({ id, title, description, current, children }: { id: string; title: string; description: string; current?: string; children: ReactNode }) {
+function Section({ id, title, description, current, children }: { id: string; title: string; description?: string; current?: string; children: ReactNode }) {
   return <section id={id} aria-labelledby={`${id}-heading`} className="min-w-0 space-y-4">
     <div className="space-y-1"><div className="flex flex-wrap items-center gap-3"><h2 id={`${id}-heading`} className="font-radio-canada text-xl font-semibold text-[#203264]">{title}</h2>
       {current && <span className="rounded-full bg-blue-100 px-2.5 py-1 text-[11px] font-medium text-blue-800">Current · {current}</span>}
-    </div><p className="max-w-3xl text-sm leading-relaxed text-slate-500">{description}</p></div>
+    </div>{description && <p className="max-w-3xl text-sm leading-relaxed text-slate-500">{description}</p>}</div>
     {children}
   </section>;
 }
 
-export default function ReportsDashboard({ overview: data, previous = null, serviceTypeNames = {}, migration = null }: { overview: AnalyticsOverview; previous?: AnalyticsOverview | null; serviceTypeNames?: Record<string, string>; migration?: MigrationAnalytics | null }) {
+export default function ReportsDashboard({ overview: data, previous = null, serviceTypeNames = {}, migration = null, statusHistory = null, previousStatusHistory = null, mostAttendedService }: { overview: AnalyticsOverview; previous?: AnalyticsOverview | null; serviceTypeNames?: Record<string, string>; migration?: MigrationAnalytics | null; statusHistory?: MemberStatusHistory | null; previousStatusHistory?: MemberStatusHistory | null; mostAttendedService?: MostAttendedService | null }) {
   const { membership, attendance, inactivity, followUps, contributions, baptisms, branches } = data;
+  const mostAttendedType = attendance.byServiceType.filter(type => type.completedServices > 0).reduce<(typeof attendance.byServiceType)[number] | null>((best, type) => {
+    const average = type.physicalCheckIns / type.completedServices;
+    const bestAverage = best ? best.physicalCheckIns / best.completedServices : -1;
+    return average > bestAverage || (average === bestAverage && best && type.serviceType.localeCompare(best.serviceType) < 0) ? type : best;
+  }, null);
+  const status = memberStatusSnapshot(data, statusHistory);
+  const statusTotal = status.active !== null && status.inactive !== null ? status.active + status.inactive : null;
+  const activePercent = statusTotal !== null && statusTotal > 0 && status.active !== null ? formatReportPercent(status.active / statusTotal * 100) : undefined;
+  const priorDate = new Date(Date.parse(`${data.range.from}T00:00:00Z`) - 86400000).toISOString().slice(0,10);
+  const priorStatus = previousStatusHistory?.points.find(point => point.asOfDate === priorDate);
   const compare = (current: number | string | null, prior: number | string | null | undefined): ReportComparison => ({ current, previous: prior ?? null });
   const comparisons: Record<string, ReportComparison> = {
+    "Active Members": compare(status.active, priorStatus?.active),
+    "Inactive Members": compare(status.inactive, priorStatus?.inactive),
     "Completed Services": compare(attendance.completedServices, previous?.attendance.completedServices),
     "Avg Attendance / Service": compare(attendance.averagePerService, previous?.attendance.averagePerService),
-    "Avg Attendance / Completed Service": compare(attendance.averagePerService, previous?.attendance.averagePerService),
     "Physical Check-ins": compare(attendance.physicalCheckIns, previous?.attendance.physicalCheckIns),
     "Unique Attendees": compare(attendance.uniqueMembers, previous?.attendance.uniqueMembers),
-    "Registered Members": compare(membership.recordsAddedInRange, previous?.membership.recordsAddedInRange),
-    "Follow-ups": compare(followUps.total, previous?.followUps.total),
     "Follow-ups in Period": compare(followUps.total, previous?.followUps.total),
     "Unique Members Followed Up": compare(followUps.uniqueMembers, previous?.followUps.uniqueMembers),
     "Total Contributions": compare(contributions.totalAmount, previous?.contributions.totalAmount),
@@ -57,56 +69,68 @@ export default function ReportsDashboard({ overview: data, previous = null, serv
   const periodLabels = (points: { periodStart: string }[]) => points.map((point) => formatReportDate(point.periodStart));
   const periodNote = "Period start dates; activity is limited to the selected range. Periods without activity are omitted.";
   return <div className="min-w-0 space-y-7 tabular-nums">
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm">
-      <p className="font-medium text-[#203264]">{formatReportDate(data.range.from)} – {formatReportDate(data.range.to)}</p>
-      <p className="text-slate-600">{multiple ? `${branches.length} accessible branches` : branches[0]?.branch.name ?? "No branches"} · Asia/Manila</p>
-    </div>
-
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.9fr)]" aria-label="Dashboard overview">
-      <MembershipOverviewCard overview={data} previous={previous} />
+      <MembershipOverviewCard overview={data} previous={previous} departures={migration?.totals.departures ?? null} />
       <div className="grid grid-cols-2 gap-3">
       {[
-        { label: "Completed Services", value: count(attendance.completedServices), icon: CalendarCheck },
-        { label: "Avg Attendance / Service", value: count(attendance.averagePerService), icon: Activity },
-        { label: "Members Needing Follow-up", value: count(inactivity.needsFollowUpMembers), icon: UserRoundX },
-        { label: "Follow-ups", value: count(followUps.total), icon: ClipboardPen },
-        { label: "Total Contributions", value: formatReportMoney(contributions.totalAmount), icon: Coins },
-      ].map(({ label, value, icon: Icon }) => <Card key={label} className={`min-w-0 ${label === "Total Contributions" ? "col-span-2" : ""}`}><CardContent className="min-w-0 p-4">
-        <div className="flex items-start justify-between gap-2"><p className="text-xs font-medium text-slate-500">{label}</p><Icon className="h-4 w-4 shrink-0 text-[#365FA6]" aria-hidden="true" /></div>
-        <p className="mt-2 break-words text-xl font-semibold tabular-nums text-[#203264] sm:text-2xl">{value}</p>{comparisons[label] && <ReportComparisonTicker comparison={comparisons[label]} />}
+        { label: "Completed Services", value: count(attendance.completedServices) },
+        { label: "Avg Attendance / Service", value: count(attendance.averagePerService) },
+        { label: "Members Needing Follow-up", value: count(inactivity.needsFollowUpMembers) },
+        { label: "Total Contributions", value: formatReportMoney(contributions.totalAmount) },
+      ].map(({ label, value }) => <Card key={label} className="min-w-0"><CardContent className="min-w-0 p-4">
+        <p className="text-sm font-medium text-slate-500 sm:text-base">{label}</p>
+        <div className="mt-1 flex min-w-0 flex-col gap-1 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
+          <AnimatedNumber as="p" className="min-w-0 break-words text-2xl font-semibold tabular-nums text-[#203264] sm:text-3xl" value={value} />
+          {comparisons[label] && <ReportComparisonTicker comparison={comparisons[label]} className="mt-0 text-base lg:max-w-[55%] lg:justify-end lg:text-right" />}
+        </div>
       </CardContent></Card>)}
       </div>
     </div>
 
     <ReportDashboardGroups groups={[
 { id: "membership", label: "Membership", content: (
-<Section id="membership" title="Membership" description="Member registrations in the selected period, alongside current membership status.">
+<Section id="membership" title="Membership">
       <Stats comparisons={comparisons} items={[
         { label: "Non-archived Members", value: count(membership.nonArchivedMembers) },
-        { label: " Active Members", value: count(membership.storedActiveMembers) },
-        { label: "Registered Members", value: count(membership.recordsAddedInRange) },
+        { label: "Active Members", value: count(status.active) },
+        { label: "Inactive Members", value: count(status.inactive) },
         { label: "Archived Members", value: count(membership.archivedMembers) },
       ]} />
-      <div className="grid min-w-0 gap-4 xl:grid-cols-2">
-        <ReportChart title="Member Registrations" description={periodNote} labels={periodLabels(membership.recordCreationTrend)}
+      <div className="grid min-w-0 items-stretch gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+        <ReportChart title="Member Status Distribution" appearance="sparkline" kind="doughnut" cutout="62%" plotHeight={272}
+          className="flex flex-col [&>div:last-child]:flex [&>div:last-child]:flex-1 [&>div:last-child]:flex-col [&>div:last-child]:justify-between"
+          description={`As of ${formatReportDate(status.date)}.`}
+          labels={["Active Members", "Inactive Members"]} categoryColors={["#5D94E8", "#94A3B8"]} valueUnit="members"
+          centerLabel="Active members" centerValue={activePercent}
+          series={[{ label: "Members", values: status.active !== null && status.inactive !== null ? [status.active, status.inactive] : [null, null] }]}
+          emptyMessage={status.active === null || status.inactive === null ? "Member status counts are unavailable for this date." : "No active or inactive members in the selected branches."} />
+        <div className="grid min-w-0 gap-3">
+        <ReportChart title="Member Registrations" appearance="sparkline" compactHeader plotHeight={160} labels={periodLabels(membership.recordCreationTrend)}
           series={[{ label: "Registrations", values: membership.recordCreationTrend.map((point) => point.value) }]} kind="line" emptyMessage="No members registered in this period." />
-        <ReportChart title="Recorded First Attendances" description="Historical reference dates for when people first attended church." labels={periodLabels(membership.firstAttendanceTrend)}
-          series={[{ label: "First Attendances", values: membership.firstAttendanceTrend.map((point) => point.value), color: "#16836B" }]} kind="line" emptyMessage="No first-attendance dates were recorded in this period." />
+      {statusHistory ? <ReportChart title="Active and Inactive Members" appearance="sparkline" kind="line" showZeroData compact compactHeader plotHeight={136}
+        labels={statusHistory.points.map(point => formatReportDate(point.asOfDate))}
+        series={[{ label: "Active Members", values: statusHistory.points.map(point => point.active), color: "#5D94E8" }, { label: "Inactive Members", values: statusHistory.points.map(point => point.inactive), color: "#94A3B8" }]}
+        emptyMessage="No tracked member status counts are available in this period. Choose a date range that includes the tracking start date." />
+        : <FeedbackMessage>Member status history could not be loaded. Try applying the filters again.</FeedbackMessage>}
+        </div>
       </div>
     </Section>
 ) },
 { id: "attendance", label: "Attendance", content: (
-<Section id="attendance" title="Attendance" description="Physical attendance is present only at completed services. Excused entries are excluded, and each member is counted once per service.">
+<Section id="attendance" title="Attendance">
       <Stats comparisons={comparisons} items={[
-        { label: "Completed Services", value: count(attendance.completedServices) }, { label: "Physical Check-ins", value: count(attendance.physicalCheckIns) },
-        { label: "Unique Attendees", value: count(attendance.uniqueMembers) }, { label: "Avg Attendance / Completed Service", value: count(attendance.averagePerService) },
+        { label: "Completed Services", value: count(attendance.completedServices) },
+        { label: "Unique Attendees", value: count(attendance.uniqueMembers) },
+        { label: "Most Attended Service Type", animate: false, value: mostAttendedType ? formatServiceType(mostAttendedType.serviceType, serviceTypeNames) : "No completed services", detail: mostAttendedType ? { value: count(mostAttendedType.physicalCheckIns / mostAttendedType.completedServices), label: "avg attendees/service" } : undefined },
+        { label: "Most Attended Service", animate: false, value: mostAttendedService?.name ?? (mostAttendedService === null ? "No completed services" : "Unavailable"), detail: mostAttendedService ? { value: count(mostAttendedService.attendees), label: mostAttendedService.attendees === 1 ? "attendee" : "attendees" } : undefined },
       ]} />
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">
-        <ReportChart title="Attendance Trend" description={periodNote} labels={periodLabels(attendance.trend)} kind="line"
+        <ReportChart title="Recorded First Attendances" appearance="sparkline" compactHeader plotHeight={160} labels={periodLabels(membership.firstAttendanceTrend)}
+          series={[{ label: "First Attendances", values: membership.firstAttendanceTrend.map((point) => point.value) }]} kind="line" emptyMessage="No first-attendance dates were recorded in this period." />
+        <ReportChart title="Attendance Trend" appearance="sparkline" compactHeader plotHeight={160} labels={periodLabels(attendance.trend)} kind="line"
           series={[{ label: "Physical Check-ins", values: attendance.trend.map((point) => point.physicalCheckIns) }]} emptyMessage="No physical attendance was recorded at completed services in this period." />
-        <ReportChart title="Attendance by Service Type" labels={attendance.byServiceType.map((point) => formatServiceType(point.serviceType, serviceTypeNames))} horizontal
-          series={[{ label: "Physical Check-ins", values: attendance.byServiceType.map((point) => point.physicalCheckIns) }]} emptyMessage="There is no service-type attendance to compare in this period." />
-        {multiple && <ReportChart title="Attendance by Branch" labels={branches.map((row) => row.branch.name)} horizontal
+        <ServiceTypeAttendanceChart types={attendance.byServiceType.map(point => ({label: formatServiceType(point.serviceType, serviceTypeNames), attendance: point.physicalCheckIns, completedServices: point.completedServices}))} />
+        {multiple && <ReportChart title="Attendance by Branch" appearance="sparkline" compactHeader labels={branches.map((row) => row.branch.name)} horizontal
           series={[{ label: "Physical Check-ins", values: branches.map((row) => row.attendance.physicalCheckIns) }]} emptyMessage="No physical attendance was recorded in these branches during this period." />}
       </div>
     </Section>
